@@ -1,4 +1,4 @@
-<h1 align="center"> get-jobs-51job</h1>
+<h1 align="center"> get-jobs</h1>
 <div align="center">
     💼自动投简历(Boss直聘、猎聘、拉勾、51job)
 </div>
