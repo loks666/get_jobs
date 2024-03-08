@@ -226,33 +226,4 @@ public class SubmitJob {
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
     }
 
-    public static void updateProxy() {
-        // 定义代理信息
-        String proxyHost = "proxy.proxy-mesh.com";
-        int proxyPort = 31280;
-        String username = "your-username";
-        String password = "your-password";
-
-        // 创建ChromeOptions
-        ChromeOptions options = new ChromeOptions();
-
-        // 创建代理对象
-        Proxy proxy = new Proxy();
-        proxy.setHttpProxy(proxyHost + ":" + proxyPort);
-        proxy.setSslProxy(proxyHost + ":" + proxyPort);
-
-        // 设置代理认证信息
-        proxy.setProxyType(Proxy.ProxyType.MANUAL);
-        String proxyAuth = username + ":" + password;
-        proxy.setHttpProxy(proxyAuth);
-        proxy.setSslProxy(proxyAuth);
-
-        // 设置代理
-        options.setProxy(proxy);
-
-        // 更新ChromeDriver对象的代理设置
-        driver.quit(); // 关闭之前的ChromeDriver实例
-        driver = new ChromeDriver(options); // 创建新的ChromeDriver实例，应用更新后的代理设置
-    }
-
 }
