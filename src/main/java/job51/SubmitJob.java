@@ -2,19 +2,16 @@ package job51;
 
 import com.sun.tools.javac.Main;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.SeleniumUtil;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static utils.Constant.*;
 
 /**
  * 前程无忧自动投递简历
@@ -36,9 +33,6 @@ public class SubmitJob {
         put(3, "薪资优先");
         put(4, "距离优先");
     }};
-    static ChromeDriver driver;
-    static WebDriverWait wait;
-    static Actions actions;
     static List<String> returnList = new ArrayList<>();
     static Map<Integer, String> keywords = new HashMap<>() {{
         put(0, "java");
@@ -62,7 +56,7 @@ public class SubmitJob {
 //                log.error("投完关键词休息期间出现异常:", e);
 //            }
 //        });
-        resume(String.format(baseUrl, keywords.get(1)));
+        resume(String.format(baseUrl, keywords.get(0)));
         Date edate = new Date();
         log.info("共投递{}个简历,用时{}分", returnList.size(),
                 ((edate.getTime() - sdate.getTime()) / 1000) / 60);
@@ -77,7 +71,7 @@ public class SubmitJob {
         } catch (InterruptedException e) {
             log.error("投完简历休息期间出现异常:", e);
         } finally {
-            driver.quit();
+            CHROME_DRIVER.quit();
         }
     }
 
@@ -86,11 +80,11 @@ public class SubmitJob {
 
     @SneakyThrows
     private static void resume(String url) {
-        driver.get(url);
+        CHROME_DRIVER.get(url);
         Thread.sleep(1000);
         int i = 0;
         try {
-            driver.findElements(By.className("ss")).get(i).click();
+            CHROME_DRIVER.findElements(By.className("ss")).get(i).click();
         } catch (Exception e) {
             findAnomaly();
         }
@@ -99,11 +93,11 @@ public class SubmitJob {
             while (true) {
                 try {
                     TimeUnit.SECONDS.sleep(1);
-                    WebElement mytxt = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#jump_page")));
+                    WebElement mytxt = WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#jump_page")));
                     mytxt.clear();
                     mytxt.sendKeys(String.valueOf(j));
-                    wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage"))).click();
-                    actions.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
+                    WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage"))).click();
+                    ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
                     log.info("{} 中，第 {} 页", jobs.get(i), j);
                     break;
                 } catch (Exception e) {
@@ -120,11 +114,11 @@ public class SubmitJob {
 
     private static void findAnomaly() {
         try {
-            String verify = driver.findElement(By.cssSelector("#WAF_NC_WRAPPER > p.waf-nc-title")).getText();
+            String verify = CHROME_DRIVER.findElement(By.cssSelector("#WAF_NC_WRAPPER > p.waf-nc-title")).getText();
             if (verify.contains("访问验证")) {
                 //关闭弹窗
                 log.error("出现访问验证了！");
-                driver.quit(); // 关闭之前的ChromeDriver实例
+                CHROME_DRIVER.quit(); // 关闭之前的ChromeCHROME_DRIVER实例
                 System.exit(0);
             }
         } catch (Exception ignored) {
@@ -137,14 +131,14 @@ public class SubmitJob {
     private static Boolean page() {
         Thread.sleep(1000);
         // 选择所有岗位，批量投递
-        List<WebElement> checkboxes = driver.findElements(By.cssSelector("div.ick"));
+        List<WebElement> checkboxes = CHROME_DRIVER.findElements(By.cssSelector("div.ick"));
         if (checkboxes.isEmpty()) {
             return true;
         }
-        List<WebElement> titles = driver.findElements(By.cssSelector("[class*='jname text-cut']"));
-        List<WebElement> companies = driver.findElements(By.cssSelector("[class*='cname text-cut']"));
+        List<WebElement> titles = CHROME_DRIVER.findElements(By.cssSelector("[class*='jname text-cut']"));
+        List<WebElement> companies = CHROME_DRIVER.findElements(By.cssSelector("[class*='cname text-cut']"));
 
-        JavascriptExecutor executor = driver;
+        JavascriptExecutor executor = CHROME_DRIVER;
 
         for (int i = 0; i < checkboxes.size(); i++) {
             WebElement checkbox = checkboxes.get(i);
@@ -155,12 +149,12 @@ public class SubmitJob {
             log.info("选中:{} | {} 职位", company, title);
         }
         Thread.sleep(3000);
-        actions.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
+        ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
         boolean success = false;
         while (!success) {
             try {
                 // 查询按钮是否存在
-                WebElement parent = driver.findElement(By.cssSelector("div.tabs_in"));
+                WebElement parent = CHROME_DRIVER.findElement(By.cssSelector("div.tabs_in"));
                 List<WebElement> button = parent.findElements(By.cssSelector("button.p_but"));
                 // 如果按钮存在，则点击
                 if (button != null && !button.isEmpty()) {
@@ -178,25 +172,25 @@ public class SubmitJob {
         long startTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - startTime < 10000) {
             try {
-                String text = driver.findElement(By.cssSelector("[class*='van-popup van-popup--center']")).getText();
+                String text = CHROME_DRIVER.findElement(By.cssSelector("[class*='van-popup van-popup--center']")).getText();
                 if (text.contains("快来扫码下载~")) {
                     //关闭弹窗
-                    driver.findElement(By.cssSelector("[class*='van-icon van-icon-cross van-popup__close-icon van-popup__close-icon--top-right']")).click();
+                    CHROME_DRIVER.findElement(By.cssSelector("[class*='van-icon van-icon-cross van-popup__close-icon van-popup__close-icon--top-right']")).click();
                     return true;
                 }
             } catch (Exception ignored) {
                 log.info("未找到投递成功弹窗！可能为单独投递申请弹窗！");
             }
             try {
-                String particularly = driver.findElement(By.xpath("//div[@class='el-dialog__body']/span")).getText();
+                String particularly = CHROME_DRIVER.findElement(By.xpath("//div[@class='el-dialog__body']/span")).getText();
                 if (particularly.contains("需要到企业招聘平台单独申请")) {
                     //关闭弹窗
-                    driver.findElement(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div:nth-child(2) > div:nth-child(2) > div > div.el-dialog__header > button > i")).click();
+                    CHROME_DRIVER.findElement(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div:nth-child(2) > div:nth-child(2) > div > div.el-dialog__header > button > i")).click();
                     log.info("关闭单独投递申请弹窗成功！");
                     return true;
                 }
             } catch (Exception ignored) {
-                driver.navigate().refresh();
+                CHROME_DRIVER.navigate().refresh();
                 TimeUnit.SECONDS.sleep(1);
                 return true;
             }
@@ -208,22 +202,22 @@ public class SubmitJob {
 
 
     private static void scanLogin() {
-        driver.get(loginUrl);
+        CHROME_DRIVER.get(loginUrl);
         log.info("等待登陆..");
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
     }
 
     private static void inputLogin() {
-        driver.get(loginUrl);
+        CHROME_DRIVER.get(loginUrl);
         log.info("等待登陆..");
-        driver.findElement(By.cssSelector("i[data-sensor-id='sensor_login_wechatScan']")).click();
-        driver.findElement(By.cssSelector("a[data-sensor-id='sensor_login_passwordLogin']")).click();
-        driver.findElement(By.id("loginname")).sendKeys("你的账号");
-        driver.findElement(By.id("password")).sendKeys("你的密码");
-        driver.findElement(By.id("isread_em")).click();
-        driver.findElement(By.id("login_btn_withPwd")).click();
+        CHROME_DRIVER.findElement(By.cssSelector("i[data-sensor-id='sensor_login_wechatScan']")).click();
+        CHROME_DRIVER.findElement(By.cssSelector("a[data-sensor-id='sensor_login_passwordLogin']")).click();
+        CHROME_DRIVER.findElement(By.id("loginname")).sendKeys("你的账号");
+        CHROME_DRIVER.findElement(By.id("password")).sendKeys("你的密码");
+        CHROME_DRIVER.findElement(By.id("isread_em")).click();
+        CHROME_DRIVER.findElement(By.id("login_btn_withPwd")).click();
         // 手动点击登录按钮过验证登录
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
     }
 
 }
