@@ -1,46 +1,49 @@
+package boss;
+
+import com.sun.tools.javac.Main;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import utils.TelegramNotificationBot;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import utils.SeleniumUtil;
 
-import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static utils.Constant.*;
+
 /**
- * @author BeamStark
+ * @author loks666
  * Boss直聘自动投递
- * @date 2023-05-01-04:16
  */
-@Slf4j
-public class ResumeSubmission {
+public class SubmitBoss {
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
     static boolean EnableNotifications = true;
     static Integer page = 1;
     static Integer maxPage = 50;
     static String loginUrl = "https://www.zhipin.com/web/user/?ka=header-login";
-    static String baseUrl = "https://www.zhipin.com/web/geek/job?query=Java&city=101020100&page=";
+    static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&city=101020100&page=";
+    static List<String> blackCompanies = List.of("复深蓝");
+    static List<String> blackRecruiters = List.of("猎头");
+    static List<String> blackJobs = List.of("外包", "外派");
     static String sayHi = "您好，我有7年的工作经验，有Java，Python，Golang，大模型的相关项目经验，希望应聘这个岗位，期待可以与您进一步沟通，谢谢！";
-    static Actions actions;
-    static ChromeDriver driver;
-    static WebDriverWait wait15s;
     static List<String> returnList = new ArrayList<>();
+    static String keyword = "Java";
+
 
     public static void main(String[] args) {
-        initDriver();
+        SeleniumUtil.initDriver();
         Date sdate = new Date();
         login();
         for (int i = page; i <= maxPage; i++) {
             log.info("第{}页", i);
-            if (resumeSubmission(baseUrl + i) == -1) {
+            if (resumeSubmission(String.format(baseUrl, keyword) + i) == -1) {
                 log.info("今日沟通人数已达上限，请明天再试");
                 break;
             }
@@ -55,39 +58,38 @@ public class ResumeSubmission {
             log.info("岗位信息:{}", returnList);
 //            new TelegramNotificationBot().sendMessageWithList(message, listParameter, "Boss直聘投递");
         }
-        driver.close();
+        CHROME_DRIVER.quit();
     }
 
-    private static void initDriver() {
-        ChromeOptions options = new ChromeOptions();
-        options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
-        System.setProperty("webdriver.chrome.driver", "./src/chromedriver.exe");
-        options.addArguments("--window-position=2600,750"); // 将窗口移动到副屏的起始位置
-        options.addArguments("--window-size=1600,1000"); // 设置窗口大小以适应副屏分辨率
-        options.addArguments("--start-maximized"); // 最大化窗口
-        driver = new ChromeDriver(options);
-        actions = new Actions(driver);
-        wait15s = new WebDriverWait(driver, 15000);
-    }
 
     @SneakyThrows
     private static Integer resumeSubmission(String url) {
-        driver.get(url);
-        wait15s.until(ExpectedConditions.presenceOfElementLocated(
-                By.cssSelector("[class*='job-title clearfix']")));
-        List<WebElement> jobCards = driver.findElements(By.cssSelector("li.job-card-wrapper"));
+        CHROME_DRIVER.get(url);
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='job-title clearfix']")));
+        List<WebElement> jobCards = CHROME_DRIVER.findElements(By.cssSelector("li.job-card-wrapper"));
         List<Job> jobs = new ArrayList<>();
         for (WebElement jobCard : jobCards) {
             WebElement infoPublic = jobCard.findElement(By.cssSelector("div.info-public"));
             String recruiterText = infoPublic.getText();
             String recruiterName = infoPublic.findElement(By.cssSelector("em")).getText();
-            if (recruiterName.contains("猎头")) {
+            if (blackRecruiters.stream().anyMatch(recruiterName::contains)) {
+                // 排除黑名单招聘人员
+                continue;
+            }
+            String jobName = jobCard.findElement(By.cssSelector("div.job-title span.job-name")).getText();
+            if (blackJobs.stream().anyMatch(jobName::contains)) {
+                // 排除黑名单岗位
+                continue;
+            }
+            String companyName = jobCard.findElement(By.cssSelector("div.company-info h3.company-name")).getText();
+            if (blackCompanies.stream().anyMatch(companyName::contains)) {
+                // 排除黑名单公司
                 continue;
             }
             Job job = new Job();
             job.setRecruiter(recruiterText.replace(recruiterName, "") + ":" + recruiterName);
             job.setHref(jobCard.findElement(By.cssSelector("a")).getAttribute("href"));
-            job.setJobName(jobCard.findElement(By.cssSelector("div.job-title span.job-name")).getText());
+            job.setJobName(jobName);
             job.setJobArea(jobCard.findElement(By.cssSelector("div.job-title span.job-area")).getText());
             job.setSalary(jobCard.findElement(By.cssSelector("div.job-info span.salary")).getText());
             List<WebElement> tagElements = jobCard.findElements(By.cssSelector("div.job-info ul.tag-list li"));
@@ -101,62 +103,70 @@ public class ResumeSubmission {
         }
         for (Job job : jobs) {
             // 打开新的标签页并打开链接
-            JavascriptExecutor jse = driver;
+            JavascriptExecutor jse = CHROME_DRIVER;
             jse.executeScript("window.open(arguments[0], '_blank')", job.getHref());
 
             // 切换到新的标签页
-            ArrayList<String> tabs = new ArrayList<>(driver.getWindowHandles());
-            driver.switchTo().window(tabs.get(tabs.size() - 1));
-
-            wait15s.until(ExpectedConditions.presenceOfElementLocated(
-                    By.cssSelector("[class*='btn btn-startchat']")));
-
-            WebElement btn = driver.findElement(By.cssSelector("[class*='btn btn-startchat']"));
-
+            ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
+            CHROME_DRIVER.switchTo().window(tabs.get(tabs.size() - 1));
+            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
+            WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             if ("立即沟通".equals(btn.getText())) {
                 btn.click();
+                if (isLimit()) {
+                    TimeUnit.SECONDS.sleep(1);
+                    return -1;
+                }
                 try {
-                    WebElement input = wait15s.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"chat-input\"]")));
+                    WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"chat-input\"]")));
                     input.click();
                     input.sendKeys(sayHi);
-                    WebElement send = wait15s.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"container\"]/div/div/div[2]/div[3]/div/div[3]/button")));
+                    WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"container\"]/div/div/div[2]/div[3]/div/div[3]/button")));
                     send.click();
-//                String text = driver.findElement(By.className("dialog-con")).getText();
-//                if (text.contains("已达上限")) {
-//                    return -1;
-//                }
-                    WebElement recruiterNameElement = driver.findElement(By.xpath("//p[@class='base-info fl']/span[@class='name']"));
-                    WebElement recruiterTitleElement = driver.findElement(By.xpath("//p[@class='base-info fl']/span[@class='base-title']"));
+
+                    WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='name']"));
+                    WebElement recruiterTitleElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='base-title']"));
                     String recruiter = recruiterNameElement.getText() + " " + recruiterTitleElement.getText();
 
-                    WebElement companyElement = driver.findElement(By.xpath("//p[@class='base-info fl']/span[not(@class)]"));
+                    WebElement companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[not(@class)]"));
                     String company = companyElement.getText();
 
-                    WebElement positionNameElement = driver.findElement(By.xpath("//a[@class='position-content']/span[@class='position-name']"));
-                    WebElement salaryElement = driver.findElement(By.xpath("//a[@class='position-content']/span[@class='salary']"));
-                    WebElement cityElement = driver.findElement(By.xpath("//a[@class='position-content']/span[@class='city']"));
+                    WebElement positionNameElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='position-name']"));
+                    WebElement salaryElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='salary']"));
+                    WebElement cityElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='city']"));
                     String position = positionNameElement.getText() + " " + salaryElement.getText() + " " + cityElement.getText();
                     log.info("投递【{}】公司，【{}】职位，招聘官:【{}】", company, position, recruiter);
-                    driver.close();
-                    Thread.sleep(1500);
+                    TimeUnit.MILLISECONDS.sleep(1500);
                 } catch (Exception e) {
-                    log.error("发送消息失败", e);
+                    log.error("发送消息失败:{}", e.getMessage(), e);
                 }
             }
+            CHROME_DRIVER.close();
+            CHROME_DRIVER.switchTo().window(tabs.get(0));
         }
         return returnList.size();
     }
 
+    private static boolean isLimit() {
+        try {
+            TimeUnit.SECONDS.sleep(1);
+            String text = CHROME_DRIVER.findElement(By.className("dialog-con")).getText();
+            return text.contains("已达上限");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     @SneakyThrows
     private static void login() {
-        driver.get(loginUrl);
-        wait15s.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn-sign-switch ewm-switch']"))).click();
+        CHROME_DRIVER.get(loginUrl);
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn-sign-switch ewm-switch']"))).click();
         log.info("等待登陆..");
         boolean login = false;
         while (!login) {
             try {
-                wait15s.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"header\"]/div[1]/div[1]/a")));
-                wait15s.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"wrap\"]/div[2]/div[1]/div/div[1]/a[2]")));
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"header\"]/div[1]/div[1]/a")));
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"wrap\"]/div[2]/div[1]/div/div[1]/a[2]")));
                 login = true;
                 log.info("登录成功！执行下一步...");
             } catch (Exception e) {

@@ -9,7 +9,7 @@
 > driver下载链接：https://googlechromelabs.github.io/chrome-for-testing  
 > driver目前已放进根目录，版本号是：122.0.6261.112，如果后面发生升级，请自行下载对应版本的driver  
 > 配置chrome路径，如果你的路径是：C:/Program Files/Google/Chrome/Application/chrome.exe,则修改下面的代码
-```java
+```
 options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 ```
 
@@ -31,26 +31,26 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 
 #### 其他的有需要可以改，放开注释即可，不改不影响运行
 -  搜索地区设置
-```java
+```
 jobArea=020000
 ```
 > 020000是上海地区的码，可以在51job选择地区后在地址栏寻找自己的目标地区的地区码是什么，做相应修改即可
 -  搜索关键词设置
-```java
+```
 List<String> keywords = Arrays.asList("java", "python", "go", "golang", "大模型");
 ```
 > 这是默认的关键词列表，可以添加或修改。
-```java
+```
 resume(String.format(baseUrl, keywords.get(0)));
 ```
 > 以上代码会设置关键词为Java  
 > 由于51的反爬机制，如果是使用循环的方式，可能会被封ip，所以目前使用keywords.get(?)的方式
 -  推送Telegram消息
-```java
+```
 new TelegramNotificationBot().sendMessageWithList(message, returnList, "前程无忧投递");
 ```
 - 将窗口移动到副屏
-```java
+```
 options.addArguments("--window-position=2600,750"); // 将窗口移动到副屏的起始位置
 options.addArguments("--window-size=1600,1000"); // 设置窗口大小以适应副屏分辨率
 ```
@@ -68,6 +68,6 @@ options.addArguments("--window-size=1600,1000"); // 设置窗口大小以适应�
 > 希望能够在现在的大环境下帮助你找到一份满意的工作
 
 ## 请我喝杯咖啡☕️
-<img src="./src/public/微信支付.jpg" alt="" width="300"> <img src="./src/public/支付宝支付.jpg" alt="" width="300">
+<img src="./src/main/resources/images/aliPay.jpg" alt="" width="300"> <img src="./src/main/resources/images/wechatPay.jpg" alt="" width="300">
 
 

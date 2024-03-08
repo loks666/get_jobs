@@ -1,3 +1,5 @@
+package boss;
+
 import lombok.Data;
 
 import java.io.Serializable;
