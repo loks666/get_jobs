@@ -41,6 +41,8 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
   ```
   jobArea=020000 //上海地区码，可以在51job选择地区后点击搜索，在地址栏寻找自己的目标地区码
   keywords:关键词 //通过keywords.get(?)使用
+  scanLogin() //扫码登录(默认方式)
+  inputLogin() //密码登录(需要手动过验证)
   ```
 
 - 猎聘([SubmitLiepin.java](src%2Fmain%2Fjava%2Fliepin%2FSubmitLiepin.java))
