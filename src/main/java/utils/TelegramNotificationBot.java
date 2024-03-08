@@ -11,11 +11,14 @@ import java.util.List;
 /**
  * Telegram机器人通知
  *
- * @author BeamStark
+ * @author loks666
  * @date 2023-05-09-10:16
  */
 @Slf4j
 public class TelegramNotificationBot {
+    public static void main(String[] args) {
+        System.out.println();
+    }
     private static final String TELEGRAM_API_TOKEN = "";
     private static final long CHAT_ID = 1L;
 

@@ -1,3 +1,5 @@
+package job51;
+
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
@@ -6,6 +8,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.SeleniumUtil;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -14,10 +17,9 @@ import java.util.concurrent.TimeUnit;
  * 前程无忧自动投递简历
  *
  * @author loks666
- * @date 2023-05-15-05:58
  */
 @Slf4j
-public class ResumeSubmission {
+public class SubmitJob {
 
     static boolean EnableNotifications = true;
     static Integer page = 1;
@@ -32,7 +34,7 @@ public class ResumeSubmission {
         put(4, "距离优先");
     }};
     static ChromeDriver driver;
-    static WebDriverWait wait15s;
+    static WebDriverWait wait;
     static Actions actions;
     static List<String> returnList = new ArrayList<>();
     static Map<Integer, String> keywords = new HashMap<>() {{
@@ -45,7 +47,7 @@ public class ResumeSubmission {
     }};
 
     public static void main(String[] args) {
-        initDriver();
+        SeleniumUtil.initDriver();
         Date sdate = new Date();
         scanLogin();
 //        keywords.forEach((k, v) -> {
@@ -76,17 +78,7 @@ public class ResumeSubmission {
         }
     }
 
-    private static void initDriver() {
-        ChromeOptions options = new ChromeOptions();
-        options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
-        System.setProperty("webdriver.chrome.driver", "./src/chromedriver.exe");
-//        options.addArguments("--window-position=2600,750"); // 将窗口移动到副屏的起始位置
-//        options.addArguments("--window-size=1600,1000"); // 设置窗口大小以适应副屏分辨率
-        options.addArguments("--start-maximized"); // 最大化窗口
-        driver = new ChromeDriver(options);
-        actions = new Actions(driver);
-        wait15s = new WebDriverWait(driver, 15000);
-    }
+
 
     static boolean isLatest = false;
 
@@ -105,10 +97,10 @@ public class ResumeSubmission {
             while (true) {
                 try {
                     TimeUnit.SECONDS.sleep(1);
-                    WebElement mytxt = wait15s.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#jump_page")));
+                    WebElement mytxt = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#jump_page")));
                     mytxt.clear();
                     mytxt.sendKeys(String.valueOf(j));
-                    wait15s.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage"))).click();
+                    wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage"))).click();
                     actions.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
                     log.info("{} 中，第 {} 页", jobs.get(i), j);
                     break;
@@ -216,7 +208,7 @@ public class ResumeSubmission {
     private static void scanLogin() {
         driver.get(loginUrl);
         log.info("等待登陆..");
-        wait15s.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
     }
 
     private static void inputLogin() {
@@ -229,7 +221,7 @@ public class ResumeSubmission {
         driver.findElement(By.id("isread_em")).click();
         driver.findElement(By.id("login_btn_withPwd")).click();
         // 手动点击登录按钮过验证登录
-        wait15s.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
     }
 
     public static void updateProxy() {
