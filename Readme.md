@@ -10,7 +10,7 @@
 #### 第一步：配置Chrome(需和diver版本一致)
 
 > driver目前已放进根目录，版本号是：122.0.6261.112，如果后面发生升级，请自行下载对应版本的driver  
-> 如果你的路径是：C:/Program Files/Google/Chrome/Application/chrome.exe,则修改 **SeleniumUtil** 的 **getChromeDriver( )**
+> 如果你的路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil** 的 **getChromeDriver( )**
 > 代码
 
 ```
@@ -34,7 +34,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
    blackCompanies = List.of("复深蓝"); // 公司黑名单，多个用逗号分隔
    blackRecruiters = List.of("猎头"); // 排除招聘人员，比如猎头
    blackJobs = List.of("外包", "外派"); // 排除岗位，比如外包，外派
-   sayHi = "您好，我上班可以给公司钱！"; // 打招呼语，自行设置，需要关闭自动打招呼
+   sayHi = "您好，我上班不要工资而且可以给公司钱！"; // 打招呼语，自行设置，需要关闭自动打招呼
    ```
 
 - 51job([SubmitJob.java](src%2Fmain%2Fjava%2Fjob51%2FSubmitJob.java))
