@@ -1,5 +1,6 @@
 package job51;
 
+import com.sun.tools.javac.Main;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
@@ -8,6 +9,8 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.SeleniumUtil;
 
 import java.util.*;
@@ -18,8 +21,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author loks666
  */
-@Slf4j
 public class SubmitJob {
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
 
     static boolean EnableNotifications = true;
     static Integer page = 1;
@@ -77,7 +80,6 @@ public class SubmitJob {
             driver.quit();
         }
     }
-
 
 
     static boolean isLatest = false;
