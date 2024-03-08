@@ -19,7 +19,7 @@ import static utils.Constant.*;
  * @author loks666
  */
 public class SubmitJob {
-    private static final Logger log = LoggerFactory.getLogger(Main.class);
+    private static final Logger log = LoggerFactory.getLogger(SubmitJob.class);
 
     static boolean EnableNotifications = true;
     static Integer page = 1;
@@ -169,35 +169,31 @@ public class SubmitJob {
         }
 
         Thread.sleep(1000);
-        long startTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - startTime < 10000) {
-            try {
-                String text = CHROME_DRIVER.findElement(By.cssSelector("[class*='van-popup van-popup--center']")).getText();
-                if (text.contains("快来扫码下载~")) {
-                    //关闭弹窗
-                    CHROME_DRIVER.findElement(By.cssSelector("[class*='van-icon van-icon-cross van-popup__close-icon van-popup__close-icon--top-right']")).click();
-                    return true;
-                }
-            } catch (Exception ignored) {
-                log.info("未找到投递成功弹窗！可能为单独投递申请弹窗！");
-            }
-            try {
-                String particularly = CHROME_DRIVER.findElement(By.xpath("//div[@class='el-dialog__body']/span")).getText();
-                if (particularly.contains("需要到企业招聘平台单独申请")) {
-                    //关闭弹窗
-                    CHROME_DRIVER.findElement(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div:nth-child(2) > div:nth-child(2) > div > div.el-dialog__header > button > i")).click();
-                    log.info("关闭单独投递申请弹窗成功！");
-                    return true;
-                }
-            } catch (Exception ignored) {
-                CHROME_DRIVER.navigate().refresh();
-                TimeUnit.SECONDS.sleep(1);
+        try {
+            String text = CHROME_DRIVER.findElement(By.cssSelector("[class*='van-popup van-popup--center']")).getText();
+            if (text.contains("快来扫码下载~")) {
+                //关闭弹窗
+                CHROME_DRIVER.findElement(By.cssSelector("[class*='van-icon van-icon-cross van-popup__close-icon van-popup__close-icon--top-right']")).click();
                 return true;
             }
-            log.error("非常规投递弹窗！");
+        } catch (Exception ignored) {
+            log.info("未找到投递成功弹窗！可能为单独投递申请弹窗！");
+        }
+        try {
+            String particularly = CHROME_DRIVER.findElement(By.xpath("//div[@class='el-dialog__body']/span")).getText();
+            if (particularly.contains("需要到企业招聘平台单独申请")) {
+                //关闭弹窗
+                CHROME_DRIVER.findElement(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div:nth-child(2) > div:nth-child(2) > div > div.el-dialog__header > button > i")).click();
+                log.info("关闭单独投递申请弹窗成功！");
+                return true;
+            }
+        } catch (Exception ignored) {
+            CHROME_DRIVER.navigate().refresh();
+            TimeUnit.SECONDS.sleep(1);
             return true;
         }
-        return false;
+        log.error("非常规投递弹窗！");
+        return true;
     }
 
 
