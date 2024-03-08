@@ -22,13 +22,13 @@ import static utils.Constant.*;
  * Boss直聘自动投递
  */
 public class SubmitBoss {
-    private static final Logger log = LoggerFactory.getLogger(Main.class);
+    private static final Logger log = LoggerFactory.getLogger(SubmitBoss.class);
     static boolean EnableNotifications = true;
     static Integer page = 1;
     static Integer maxPage = 50;
     static String loginUrl = "https://www.zhipin.com/web/user/?ka=header-login";
     static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&city=101020100&page=";
-    static List<String> blackCompanies = List.of("复深蓝");
+    static List<String> blackCompanies = List.of("复深蓝","途虎");
     static List<String> blackRecruiters = List.of("猎头");
     static List<String> blackJobs = List.of("外包", "外派");
     static String sayHi = "您好，我有7年的工作经验，有Java，Python，Golang，大模型的相关项目经验，希望应聘这个岗位，期待可以与您进一步沟通，谢谢！";
