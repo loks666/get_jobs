@@ -9,8 +9,8 @@
 
 #### 第一步：配置Chrome(需和diver版本一致)
 
-> driver目前已放进根目录，版本号是：122.0.6261.112，如果后面发生升级，请自行下载对应版本的driver  
-> 如果你的路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil** 的 **getChromeDriver( )**
+> driver目前已放进根目录，版本号是：122.0.6261.112，Chrome需要更新到最新版本，若后面发生升级，请自行下载对应版本的driver  
+> 例：你的路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil** 的 **getChromeDriver( )**
 > 代码
 
 ```
