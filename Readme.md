@@ -9,7 +9,10 @@
 
 #### 第一步：配置Chrome(需和diver版本一致)
 
-> driver目前已放进根目录，版本号是：122.0.6261.112，Chrome需要更新到最新版本，若后面发生升级，请自行下载对应版本的driver  
+> driver目前已放进根目录，版本号是：122.0.6261.112，Chrome需要更新到最新版本。  
+> 若后面发生升级，请自行下载对应版本的driver
+- driver下载链接：https://googlechromelabs.github.io/chrome-for-testing
+
 > 例：你的路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil** 的 **getChromeDriver( )**
 > 代码
 
@@ -17,7 +20,7 @@
 options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 ```
 
-- driver下载链接：https://googlechromelabs.github.io/chrome-for-testing
+
 
 #### 第二步：修改代码(一般默认即可)
 
@@ -26,7 +29,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
     - **maxPage**：投递到第几页<br>
     - **EnableNotifications**：是否开启Telegram机器人通知
     - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
-    - cookie登录:登录后会在运行路径下保存一个json文件，下次运行会自动读取这个文件，无需再次登录(目前仅支持Boss)
+    - **cookie登录**: 登录后会在运行路径下保存一个json文件，下次运行会自动读取这个文件，无需再次登录(目前仅支持Boss)
 
 - boss直聘([SubmitBoss.java](src%2Fmain%2Fjava%2Fboss%2FSubmitBoss.java))
 
@@ -85,6 +88,11 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
    options.addArguments("--window-position=2600,750"); // 将窗口移动到副屏的起始位置
    options.addArguments("--window-size=1600,1000"); // 设置窗口大小以适应副屏分辨率
    ```
+****
+## 注意事项
+- boss出现访问异常：使用selenium在登录成功后boss会进行无限重定向导致账号ip异常(较低几率)
+    - 解决方案：一般3秒后如果代码没有打开新的界面请关闭脚本并重新运行，若已出现异常，则手动过验证后重新运行即可。
+
 
 ## 免责声名
 
