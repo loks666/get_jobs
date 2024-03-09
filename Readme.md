@@ -11,21 +11,21 @@
 
 > driver目前已放进根目录，版本号是：122.0.6261.112，Chrome需要更新到最新版本。  
 > 若后面发生升级，请自行下载对应版本的driver
+
 - driver下载链接：https://googlechromelabs.github.io/chrome-for-testing
 
-> 例：你的路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil** 的 **getChromeDriver( )**
+> 例：你的路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil** 的 *
+*getChromeDriver( )**
 > 代码
 
 ```
 options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 ```
 
-
-
 #### 第二步：修改代码(一般默认即可)
 
 - 通用配置
-    - **page** ：从第几页开始投递，page不能小于1<br>
+    - **page** ：从第几页开始投递，page不能小于1<br>`
     - **maxPage**：投递到第几页<br>
     - **EnableNotifications**：是否开启Telegram机器人通知
     - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
@@ -88,11 +88,13 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
    options.addArguments("--window-position=2600,750"); // 将窗口移动到副屏的起始位置
    options.addArguments("--window-size=1600,1000"); // 设置窗口大小以适应副屏分辨率
    ```
+
 ****
+
 ## 注意事项
+
 - boss出现访问异常：使用selenium在登录成功后boss会进行无限重定向导致账号ip异常(较低几率)
     - 解决方案：一般3秒后如果代码没有打开新的界面请关闭脚本并重新运行，若已出现异常，则手动过验证后重新运行即可。
-
 
 ## 免责声名
 
@@ -103,9 +105,13 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 - 作者已经失业很久了，真的很希望有个班上，开源这个项目也希望能帮到真正需要它的人
 - 最后，希望各位永远不需要本项目的帮助，但别忘了star哟！
 
+## 例:Boss投递日志
+
+<img src="./src/main/resources/images/boss.png" alt="Boss投递日志">
+
 ## 请我喝杯咖啡☕️
 
-<img src="./src/main/resources/images/aliPay.jpg" alt="" width="300"> <img src="./src/main/resources/images/wechatPay.jpg" alt="" width="300">
+<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" width="300"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" width="300">
 
 ## 联系方式📧
 
