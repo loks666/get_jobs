@@ -1,6 +1,5 @@
 package boss;
 
-import com.sun.tools.javac.Main;
 import lombok.SneakyThrows;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -9,7 +8,10 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.SeleniumUtil;
+import utils.TelegramNotificationBot;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -23,17 +25,18 @@ import static utils.Constant.*;
  */
 public class SubmitBoss {
     private static final Logger log = LoggerFactory.getLogger(SubmitBoss.class);
-    static boolean EnableNotifications = true;
+    static boolean EnableNotifications = false;
     static Integer page = 1;
     static Integer maxPage = 50;
-    static String loginUrl = "https://www.zhipin.com/web/user/?ka=header-login";
+    static String homeUrl = "https://www.zhipin.com";
     static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&city=101020100&page=";
-    static List<String> blackCompanies = List.of("复深蓝","途虎");
+    static List<String> blackCompanies = List.of("复深蓝", "途虎", "哈啰", "得物", "睿服");
     static List<String> blackRecruiters = List.of("猎头");
     static List<String> blackJobs = List.of("外包", "外派");
     static String sayHi = "您好，我有7年的工作经验，有Java，Python，Golang，大模型的相关项目经验，希望应聘这个岗位，期待可以与您进一步沟通，谢谢！";
-    static List<String> returnList = new ArrayList<>();
+    static List<Job> returnList = new ArrayList<>();
     static String keyword = "Java";
+    static String cookiePath = "./src/main/java/boss/cookie.json";
 
 
     public static void main(String[] args) {
@@ -48,15 +51,12 @@ public class SubmitBoss {
             }
         }
         Date edate = new Date();
-        log.info("共投递{}个简历,用时{}分", returnList.size(),
-                ((edate.getTime() - sdate.getTime()) / 1000) / 60);
-
+        String message = "共投递" + returnList.size() + "个简历,用时" + ((edate.getTime() - sdate.getTime()) / 1000) / 60 + "分";
+        log.info(message);
         if (EnableNotifications) {
-            String message = "共投递" + returnList.size() + "个简历,用时" + ((edate.getTime() - sdate.getTime()) / 1000) / 60 + "分";
-            log.info("投递信息:{}", message);
-            log.info("岗位信息:{}", returnList);
-//            new TelegramNotificationBot().sendMessageWithList(message, listParameter, "Boss直聘投递");
+            new TelegramNotificationBot().sendMessageWithList(message, returnList.stream().map(Job::toString).toList(), "Boss直聘投递");
         }
+        CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
 
@@ -97,7 +97,6 @@ public class SubmitBoss {
                 tag.append(tagElement.getText()).append("·");
             }
             job.setTag(tag.substring(0, tag.length() - 1)); // 删除最后一个 "·"
-
             jobs.add(job);
         }
         for (Job job : jobs) {
@@ -113,7 +112,7 @@ public class SubmitBoss {
             if ("立即沟通".equals(btn.getText())) {
                 btn.click();
                 if (isLimit()) {
-                    TimeUnit.SECONDS.sleep(1);
+                    SeleniumUtil.sleep(1);
                     return -1;
                 }
                 try {
@@ -135,6 +134,7 @@ public class SubmitBoss {
                     WebElement cityElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='city']"));
                     String position = positionNameElement.getText() + " " + salaryElement.getText() + " " + cityElement.getText();
                     log.info("投递【{}】公司，【{}】职位，招聘官:【{}】", company, position, recruiter);
+                    returnList.add(job);
                     TimeUnit.MILLISECONDS.sleep(1500);
                 } catch (Exception e) {
                     log.error("发送消息失败:{}", e.getMessage(), e);
@@ -148,7 +148,7 @@ public class SubmitBoss {
 
     private static boolean isLimit() {
         try {
-            TimeUnit.SECONDS.sleep(1);
+            SeleniumUtil.sleep(1);
             String text = CHROME_DRIVER.findElement(By.className("dialog-con")).getText();
             return text.contains("已达上限");
         } catch (Exception e) {
@@ -158,21 +158,52 @@ public class SubmitBoss {
 
     @SneakyThrows
     private static void login() {
-        CHROME_DRIVER.get(loginUrl);
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn-sign-switch ewm-switch']"))).click();
+        CHROME_DRIVER.get(homeUrl);
+        if (isCookieValid(cookiePath)) {
+            SeleniumUtil.updateCookie(cookiePath);
+            CHROME_DRIVER.navigate().refresh();
+            SeleniumUtil.sleep(2);
+        }
+
+        if (isLoginRequired()) {
+            log.error("cookie失效，尝试扫码登录...");
+            scanLogin();
+        }
+    }
+
+
+    private static boolean isCookieValid(String cookiePath) {
+        return Files.exists(Paths.get(cookiePath));
+    }
+
+    private static boolean isLoginRequired() {
+        try {
+            String text = CHROME_DRIVER.findElement(By.className("btns")).getText();
+            return text != null && text.contains("登录");
+        } catch (Exception e) {
+            log.error("获取登录按钮失败！{}", e.getCause() == null ? "" : " : " + e.getCause().toString());
+            return false;
+        }
+    }
+
+    @SneakyThrows
+    private static void scanLogin() {
+        CHROME_DRIVER.get(homeUrl + "/web/user/?ka=header-login");
         log.info("等待登陆..");
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn-sign-switch ewm-switch']"))).click();
         boolean login = false;
         while (!login) {
             try {
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"header\"]/div[1]/div[1]/a")));
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"wrap\"]/div[2]/div[1]/div/div[1]/a[2]")));
                 login = true;
-                log.info("登录成功！执行下一步...");
+                log.info("登录成功！保存cookie...");
             } catch (Exception e) {
-                log.error("登陆失败，正在等待...");
+                log.error("登陆失败，两秒后重试...");
             } finally {
-                TimeUnit.SECONDS.sleep(2);
+                SeleniumUtil.sleep(2);
             }
         }
+        SeleniumUtil.saveCookie(cookiePath);
     }
 }

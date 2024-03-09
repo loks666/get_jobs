@@ -6,7 +6,7 @@
 
     <groupId>com.superxiang</groupId>
     <artifactId>get_jobs</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1</version>
     <name>get_jobs</name>
 
     <parent>
@@ -22,6 +22,12 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20210307</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

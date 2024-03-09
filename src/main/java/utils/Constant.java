@@ -8,4 +8,5 @@ public class Constant {
     public static ChromeDriver CHROME_DRIVER;
     public static Actions ACTIONS;
     public static WebDriverWait WAIT;
+
 }
