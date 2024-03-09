@@ -12,4 +12,11 @@ public class Job implements Serializable {
     private String salary;
     private String tag;
     private String recruiter;
+
+    @Override
+    public String toString() {
+        return String.format("【%s, %s, %s, %s, %s】", jobName, jobArea, salary, tag, recruiter);
+    }
 }
+
+
