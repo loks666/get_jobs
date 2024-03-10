@@ -13,7 +13,7 @@ import utils.TelegramNotificationBot;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static utils.Constant.*;
 
@@ -28,10 +28,9 @@ public class Boss {
     static Integer maxPage = 50;
     static String homeUrl = "https://www.zhipin.com";
     static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&city=101020100&page=";
-    static List<String> blackCompanies = List.of("复深蓝", "途虎", "哈啰", "得物", "睿服", "滴滴");
+    static List<String> blackCompanies = List.of("复深蓝", "途虎", "哈啰", "得物", "睿服", "滴滴", "蚂蚁");
     static List<String> blackRecruiters = List.of("猎头");
     static List<String> blackJobs = List.of("外包", "外派");
-    static String sayHi = "您好，我有7年的工作经验，有Java，Python，Golang，大模型的相关项目经验，希望应聘这个岗位，期待可以与您进一步沟通，谢谢！";
     static List<Job> returnList = new ArrayList<>();
     static String keyword = "Java";
     static String cookiePath = "./src/main/java/boss/cookie.json";
@@ -49,7 +48,7 @@ public class Boss {
             }
         }
         Date end = new Date();
-        log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList);
+        log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList.stream().map(Object::toString).collect(Collectors.joining("\n")));
         long durationSeconds = (end.getTime() - start.getTime()) / 1000;
         long minutes = durationSeconds / 60;
         long seconds = durationSeconds % 60;
@@ -61,7 +60,6 @@ public class Boss {
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
-
 
     @SneakyThrows
     private static Integer resumeSubmission(String url) {
@@ -110,6 +108,7 @@ public class Boss {
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
             CHROME_DRIVER.switchTo().window(tabs.get(tabs.size() - 1));
             WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
+            SeleniumUtil.sleep(1);
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             if ("立即沟通".equals(btn.getText())) {
                 btn.click();
@@ -120,7 +119,7 @@ public class Boss {
                 try {
                     WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"chat-input\"]")));
                     input.click();
-                    input.sendKeys(sayHi);
+                    input.sendKeys(SAY_HI);
                     WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"container\"]/div/div/div[2]/div[3]/div/div[3]/button")));
                     send.click();
 
@@ -148,11 +147,11 @@ public class Boss {
                     String position = positionNameElement.getText() + " " + salaryElement.getText() + " " + cityElement.getText();
                     log.info("投递【{}】公司，【{}】职位，招聘官:【{}】", company == null ? "未知公司: " + job.getHref() : company, position, recruiter);
                     returnList.add(job);
-                    TimeUnit.MILLISECONDS.sleep(1500);
                 } catch (Exception e) {
                     log.error("发送消息失败:{}", e.getMessage(), e);
                 }
             }
+            SeleniumUtil.sleep(1);
             CHROME_DRIVER.close();
             CHROME_DRIVER.switchTo().window(tabs.get(0));
         }

@@ -16,10 +16,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static utils.Constant.*;
@@ -115,7 +112,7 @@ public class SeleniumUtil {
                 try {
                     CHROME_DRIVER.manage().addCookie(cookie);
                 } catch (Exception e) {
-                    log.error("This cookie has a question:【{}】", cookie);
+                    log.error("【小问题无须担心】cookie添加异常:【{}】", cookie);
                 }
             }
         }
@@ -138,12 +135,21 @@ public class SeleniumUtil {
         }
     }
 
-    public static Optional<List<WebElement>> findElement(By by) {
+    public static List<WebElement> findElements(By by) {
         try {
-            return Optional.of(CHROME_DRIVER.findElements(by));
+            return CHROME_DRIVER.findElements(by);
         } catch (Exception e) {
             log.error("Could not find element:{}", by, e);
-            return Optional.empty();
+            return new ArrayList<>();
+        }
+    }
+
+    public static WebElement findElement(By by) {
+        try {
+            return CHROME_DRIVER.findElement(by);
+        } catch (Exception e) {
+            log.error("Could not find element:{}", by, e);
+            return null;
         }
     }
 

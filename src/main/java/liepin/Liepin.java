@@ -2,7 +2,6 @@ package liepin;
 
 import lombok.SneakyThrows;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
@@ -10,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import utils.SeleniumUtil;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static utils.Constant.*;
 import static utils.Constant.CHROME_DRIVER;
@@ -17,14 +17,15 @@ import static utils.SeleniumUtil.isCookieValid;
 
 public class Liepin {
     private static final Logger log = LoggerFactory.getLogger(Liepin.class);
-
     static String homeUrl = "https://www.liepin.com/";
-    static String cityCode = "020";
     static String cookiePath = "./src/main/java/liepin/cookie.json";
     static int maxPage = 50;
-    static List<String> keywords = List.of("Java", "Python", "Golang", "大模型");
+    static String cityCode = "020";
+    static List<String> keywords = List.of("Python", "Golang", "大模型", "Java");
+    static List<String> returnList = new ArrayList<>();
     static String search = "https://www.liepin.com/zhaopin/?dq=%s&currentPage=%s&key=%s";
-    static int jobCount = 0;
+    static boolean isSayHi = true;
+    static boolean isStop = false;
 
 
     public static void main(String[] args) {
@@ -33,7 +34,12 @@ public class Liepin {
         for (String keyword : keywords) {
             submit(keyword);
         }
-        log.info("投递完成,共投递 {} 个岗位！", jobCount);
+        printResult();
+    }
+
+    private static void printResult() {
+        log.info("投递完成,共投递 {} 个岗位！", returnList.size());
+        log.info("今日投递岗位:\n{}", String.join("\n", returnList));
     }
 
     @SneakyThrows
@@ -52,8 +58,8 @@ public class Liepin {
             WebElement nextPage = div.findElement(By.xpath(".//li[@title='Next Page']"));
             if (nextPage.getAttribute("disabled") == null) {
                 nextPage.click();
-                SeleniumUtil.sleep(2);
             }
+            log.info("已投递第【{}】页所有的岗位...\n", i + 1);
         }
         log.info("【{}】投递完成！", keyword);
     }
@@ -71,112 +77,92 @@ public class Liepin {
 
     private static void submitJob() {
         int count = CHROME_DRIVER.findElements(By.cssSelector("div.job-list-box div[style*='margin-bottom']")).size();
-        List<WebElement> recruiters = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'recruiter-name')]"));
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; i++) {
-            WebElement job = CHROME_DRIVER.findElements(By.cssSelector("div.job-list-box div[style*='margin-bottom']")).get(i);
-            String info = job.getText().replaceAll("[\\n\\r]", " ");
-            WebElement recruiter = recruiters.get(i);
-            System.out.println(recruiter.getText());
-            ACTIONS.moveToElement(recruiter).perform();
+            String jobName = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'job-title-box')]")).get(i).getText().replaceAll("\n", " ").replaceAll("【 ", "[").replaceAll(" 】", "]");
+            String companyName = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'company-name')]")).get(i).getText().replaceAll("\n", " ");
+            String salary = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'job-salary')]")).get(i).getText().replaceAll("\n", " ");
+            String recruiterName = null;
+            WebElement name = null;
             try {
-                WebElement button = CHROME_DRIVER.findElement(By.xpath("//button"));
-                String text = button.getText();
-                if (text.contains("聊一聊")) {
-                    System.out.println();
-//                    button.click();
-                } else {
-                    log.info("公司【{}】没有聊一聊按钮,他的按钮是: 【{}】", info, text);
-                }
-                ACTIONS.sendKeys(Keys.ARROW_DOWN)
-                        .sendKeys(Keys.ARROW_DOWN)
-                        .sendKeys(Keys.ARROW_DOWN)
-                        .sendKeys(Keys.ARROW_DOWN)
-                        .sendKeys(Keys.ARROW_DOWN)
-                        .perform();
-                ACTIONS.moveByOffset(120, 0).perform();
+                name = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'recruiter-name')]")).get(i);
+                recruiterName = name.getText();
             } catch (Exception e) {
-                log.error("公司【{}】没有聊天按钮", info);
+                log.error("{}", e.getMessage());
             }
-        }
-        log.info("已提交所有职位");
-    }
-
-    private static int tryClick(WebElement element, int i) throws InterruptedException {
-        boolean isClicked = false;
-        int maxRetryCount = 3;
-        int retryCount = 0;
-
-        while (!isClicked && retryCount < maxRetryCount) {
+            WebElement title;
+            String recruiterTitle = null;
             try {
-                element.click();
-                isClicked = true;
+                title = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'recruiter-title')]")).get(i);
+                recruiterTitle = title.getText();
             } catch (Exception e) {
-                retryCount++;
-                log.error("element.click() 点击失败，正在尝试重新点击...(正在尝试：第 {} 次)", retryCount);
-                SeleniumUtil.sleep(5);
-                try {
-                    CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i).click();
-                    isClicked = true;
-                } catch (Exception ex) {
-                    log.error("get(i).click() 重试失败，尝试使用Actions点击...(正在尝试：第 {} 次)", retryCount);
-                    SeleniumUtil.sleep(5);
+                log.info("【{}】招聘人员:【{}】没有职位描述", companyName, recruiterName);
+            }
+            ACTIONS.moveToElement(name).perform();
+            WebElement button;
+            try {
+                button = CHROME_DRIVER.findElement(By.xpath("//button"));
+            } catch (Exception e) {
+                log.error("公司【{}】没有聊天按钮", companyName);
+                continue;
+            }
+            String text = button.getText();
+            if (text.contains("聊一聊")) {
+                button.click();
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("__im_basic__header-wrap")));
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//textarea[contains(@class, '__im_basic__textarea')]")));
+                WebElement input = CHROME_DRIVER.findElement(By.xpath("//textarea[contains(@class, '__im_basic__textarea')]"));
+                input.click();
+                if (isSayHi) {
+                    input.sendKeys(SAY_HI);
+                    WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[contains(@class, '__im_basic__basic-send-btn')]")));
+                    send.click();
                     try {
-                        ACTIONS.keyDown(Keys.CONTROL).click(element).keyUp(Keys.CONTROL).build().perform();
-                        isClicked = true;
-                    } catch (Exception exc) {
-                        log.error("使用Actions点击也失败，等待10秒后再次尝试...(正在尝试：第 {} 次)", retryCount);
-                        SeleniumUtil.sleep(10);
+                        WebElement result = CHROME_DRIVER.findElement(By.xpath("//div[@class='__im_basic__message']"));
+                        if (result.getText().contains("已达上限")) {
+                            if (isStop) {
+                                printResult();
+                                CHROME_DRIVER.close();
+                                CHROME_DRIVER.quit();
+                                System.exit(0);
+                            }
+                            log.info("发起会话已达上限，将开始使用系统使用默认打招呼方式...");
+                            isSayHi = false;
+                        }
+                    } catch (Exception ignored) {
                     }
                 }
+                SeleniumUtil.sleep(1);
+                WebElement close = CHROME_DRIVER.findElement(By.cssSelector("div.__im_basic__contacts-title svg"));
+                close.click();
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, 'recruiter-info-box')]")));
+
+                returnList.add(sb.append("【").append(companyName).append(" ").append(jobName).append(" ").append(salary).append(" ").append(recruiterName).append(" ").append(recruiterTitle).append("】").toString());
+                sb.setLength(0);
+                log.info("发起新聊天:【{}】的【{}·{}】岗位, 【{}:{}】", companyName, jobName, salary, recruiterName, recruiterTitle);
+            } else {
+                log.info("【{}】的【{}】已经聊过,可以和TA:【{}】", companyName, recruiterName, text);
             }
+            ACTIONS.moveByOffset(120, 0).perform();
         }
-        if (!isClicked) {
-            log.error("已尝试 {} 次，已达最大重试次数，少侠请重新来过！", maxRetryCount);
-            log.info("已投递 {} 次，正在退出...", jobCount);
-            CHROME_DRIVER.quit();
-            return -1;
-        } else {
-            return 0;
-        }
-    }
-
-    @SneakyThrows
-    private static void newTab(int index) {
-        String windowHandle = CHROME_DRIVER.getWindowHandle();
-        String company = CHROME_DRIVER.findElement(By.cssSelector(".company-name__2-SjF a")).getText();
-
-        String jobTitle = CHROME_DRIVER.findElement(By.cssSelector(".p-top__1F7CL a")).getText();
-        CHROME_DRIVER.findElements(By.id("openWinPostion")).get(index).click();
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("resume-deliver")));
-
-        Set<String> windowHandles = CHROME_DRIVER.getWindowHandles();
-        windowHandles.remove(windowHandle);
-        String newWindowHandle = windowHandles.iterator().next();
-        CHROME_DRIVER.switchTo().window(newWindowHandle);
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("resume-deliver")));
-
-        if (!"已投递".equals(CHROME_DRIVER.findElements(By.className("resume-deliver")).get(0).getText())) {
-            CHROME_DRIVER.findElements(By.className("resume-deliver")).get(0).click();
-            SeleniumUtil.sleep(1);
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("button.lg-design-btn.lg-design-btn-primary"))).click();
-            log.info("投递【{}】公司: 【{}】岗位", company, jobTitle);
-        }
-        CHROME_DRIVER.close();
-        CHROME_DRIVER.switchTo().window(windowHandle);
     }
 
     @SneakyThrows
     private static void login() {
+        log.info("正在打开猎聘网站...");
         CHROME_DRIVER.get(homeUrl);
+        log.info("猎聘正在登录...");
         if (isCookieValid(cookiePath)) {
             SeleniumUtil.loadCookie(cookiePath);
             CHROME_DRIVER.navigate().refresh();
         }
         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("header-logo-box")));
         if (isLoginRequired()) {
-            log.error("cookie失效，尝试扫码登录...");
+            log.info("cookie失效，尝试扫码登录...");
             scanLogin();
             SeleniumUtil.saveCookie(cookiePath);
+        } else {
+            log.info("cookie有效，准备投递...");
         }
     }
 
