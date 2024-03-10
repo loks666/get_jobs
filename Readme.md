@@ -29,9 +29,10 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
     - **maxPage**：投递到第几页<br>
     - **EnableNotifications**：是否开启Telegram机器人通知
     - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
-    - **cookie登录**: 登录后会在运行路径下保存一个json文件，下次运行会自动读取这个文件，无需再次登录(目前仅支持Boss)
+    - **cookie登录**: 登录后会在运行路径下保存一个json文件，下次运行会自动读取这个文件，无需再次登录(目前仅支持Boss)  
+  
 
-- boss直聘([SubmitBoss.java](src%2Fmain%2Fjava%2Fboss%2FSubmitBoss.java))
+- boss直聘([Boss.java](src%2Fmain%2Fjava%2Fboss%2FBoss.java))
 
    ```
    keyword = “Java”; // 岗位关键词
@@ -41,7 +42,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
    sayHi = "您好，我上班不要工资而且可以给公司钱！"; // 打招呼语，自行设置，需要关闭自动打招呼
    ```
 
-- 51job([SubmitJob.java](src%2Fmain%2Fjava%2Fjob51%2FSubmitJob.java))
+- 51job([Job.java](src%2Fmain%2Fjava%2Fjob51%2FJob51.java))
 
   ```
   jobArea=020000 //上海地区码，可以在51job选择地区后点击搜索，在地址栏寻找自己的目标地区码
@@ -49,18 +50,21 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
   scanLogin() //扫码登录(默认方式)
   inputLogin() //密码登录(需要手动过验证)
   ```
-- 拉勾([SubmitLagou.java](src%2Fmain%2Fjava%2Flagou%2FSubmitLagou.java))
+- 拉勾([Lagou.java](src%2Fmain%2Fjava%2Flagou%2FLagou.java))
 
    ```
    拉勾直接使用的是微信扫码登录，运行后直接扫码即可，开箱通用
    但是拉勾由于反爬机制较为严重，代码中嵌套了大量的sleep，导致效率较慢
-  这边建议拉勾的脚本运行一段时间后差不多就行了，配合手动在app或者微信小程序投递简历效果更佳！
+   这边建议拉勾的脚本运行一段时间后差不多就行了，配合手动在app或者微信小程序投递简历效果更佳！
    ```
 
-- 猎聘([SubmitLiepin.java](src%2Fmain%2Fjava%2Fliepin%2FSubmitLiepin.java))
+- 猎聘([Liepin.java](src%2Fmain%2Fjava%2Fliepin%2FLiepin.java))
 
    ```
-   正在开发中。。。
+   猎聘已支持cookie登录，有效期内无须每次扫码
+   在猎聘网选择自己要投递的地区后，在地址栏找到cityCode，修改cityCode为该值即可(默认为上海)
+   会遍历投递keywords中所有的关键词，可自行设置
+   当发起新会话到达上限后会使用系统默认的打招呼语，如需在上限后停止投递，将isStop改为true即可
    ```
 
 #### 最后一步：运行代码
