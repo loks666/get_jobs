@@ -2,12 +2,9 @@ package liepin;
 
 import lombok.SneakyThrows;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.SeleniumUtil;
@@ -16,11 +13,10 @@ import java.util.*;
 
 import static utils.Constant.*;
 import static utils.Constant.CHROME_DRIVER;
-import static utils.SeleniumUtil.findElement;
 import static utils.SeleniumUtil.isCookieValid;
 
-public class SubmitLiepin {
-    private static final Logger log = LoggerFactory.getLogger(SubmitLiepin.class);
+public class Liepin {
+    private static final Logger log = LoggerFactory.getLogger(Liepin.class);
 
     static String homeUrl = "https://www.liepin.com/";
     static String cityCode = "020";

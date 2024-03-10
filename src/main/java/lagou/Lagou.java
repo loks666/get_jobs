@@ -1,6 +1,5 @@
 package lagou;
 
-import com.sun.tools.javac.Main;
 import lombok.SneakyThrows;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -18,8 +17,8 @@ import java.util.stream.Collectors;
 
 import static utils.Constant.*;
 
-public class SubmitLagou {
-    private static final Logger log = LoggerFactory.getLogger(SubmitLagou.class);
+public class Lagou {
+    private static final Logger log = LoggerFactory.getLogger(Lagou.class);
 
     static Integer page = 1;
     static Integer maxPage = 30;

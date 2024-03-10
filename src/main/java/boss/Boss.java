@@ -21,8 +21,8 @@ import static utils.Constant.*;
  * @author loks666
  * Boss直聘自动投递
  */
-public class SubmitBoss {
-    private static final Logger log = LoggerFactory.getLogger(SubmitBoss.class);
+public class Boss {
+    private static final Logger log = LoggerFactory.getLogger(Boss.class);
     static boolean EnableNotifications = false;
     static Integer page = 1;
     static Integer maxPage = 50;
