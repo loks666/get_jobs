@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 import utils.SeleniumUtil;
 import utils.TelegramNotificationBot;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -30,7 +28,7 @@ public class SubmitBoss {
     static Integer maxPage = 50;
     static String homeUrl = "https://www.zhipin.com";
     static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&city=101020100&page=";
-    static List<String> blackCompanies = List.of("复深蓝", "途虎", "哈啰", "得物", "睿服");
+    static List<String> blackCompanies = List.of("复深蓝", "途虎", "哈啰", "得物", "睿服", "滴滴");
     static List<String> blackRecruiters = List.of("猎头");
     static List<String> blackJobs = List.of("外包", "外派");
     static String sayHi = "您好，我有7年的工作经验，有Java，Python，Golang，大模型的相关项目经验，希望应聘这个岗位，期待可以与您进一步沟通，谢谢！";
@@ -41,7 +39,7 @@ public class SubmitBoss {
 
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
-        Date sdate = new Date();
+        Date start = new Date();
         login();
         for (int i = page; i <= maxPage; i++) {
             log.info("第{}页", i);
@@ -50,8 +48,9 @@ public class SubmitBoss {
                 break;
             }
         }
-        Date edate = new Date();
-        String message = "共投递" + returnList.size() + "个简历,用时" + ((edate.getTime() - sdate.getTime()) / 1000) / 60 + "分";
+        Date end = new Date();
+        log.info(returnList.isEmpty() ? "新发起聊天公司如下:\n{}" : "未发起新的聊天...", returnList);
+        String message = "共发起 " + returnList.size() + " 个聊天,用时" + ((end.getTime() - start.getTime()) / 1000) / 60 + "分";
         log.info(message);
         if (EnableNotifications) {
             new TelegramNotificationBot().sendMessageWithList(message, returnList.stream().map(Job::toString).toList(), "Boss直聘投递");
@@ -126,14 +125,25 @@ public class SubmitBoss {
                     WebElement recruiterTitleElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='base-title']"));
                     String recruiter = recruiterNameElement.getText() + " " + recruiterTitleElement.getText();
 
-                    WebElement companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[not(@class)]"));
-                    String company = companyElement.getText();
+                    WebElement companyElement;
+                    try {
+                        companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[not(@class)]"));
+                    } catch (Exception e) {
+                        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//p[@class='base-info fl']/span[not(@class)]")));
+                        companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[not(@class)]"));
+
+                    }
+                    String company = null;
+                    if (companyElement != null) {
+                        company = companyElement.getText();
+                        job.setCompanyName(company);
+                    }
 
                     WebElement positionNameElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='position-name']"));
                     WebElement salaryElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='salary']"));
                     WebElement cityElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='city']"));
                     String position = positionNameElement.getText() + " " + salaryElement.getText() + " " + cityElement.getText();
-                    log.info("投递【{}】公司，【{}】职位，招聘官:【{}】", company, position, recruiter);
+                    log.info("投递【{}】公司，【{}】职位，招聘官:【{}】", company == null ? "未知公司: " + job.getHref() : company, position, recruiter);
                     returnList.add(job);
                     TimeUnit.MILLISECONDS.sleep(1500);
                 } catch (Exception e) {
@@ -159,8 +169,8 @@ public class SubmitBoss {
     @SneakyThrows
     private static void login() {
         CHROME_DRIVER.get(homeUrl);
-        if (isCookieValid(cookiePath)) {
-            SeleniumUtil.updateCookie(cookiePath);
+        if (SeleniumUtil.isCookieValid(cookiePath)) {
+            SeleniumUtil.loadCookie(cookiePath);
             CHROME_DRIVER.navigate().refresh();
             SeleniumUtil.sleep(2);
         }
@@ -171,10 +181,6 @@ public class SubmitBoss {
         }
     }
 
-
-    private static boolean isCookieValid(String cookiePath) {
-        return Files.exists(Paths.get(cookiePath));
-    }
 
     private static boolean isLoginRequired() {
         try {

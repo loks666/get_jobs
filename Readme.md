@@ -25,7 +25,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 #### 第二步：修改代码(一般默认即可)
 
 - 通用配置
-    - **page** ：从第几页开始投递，page不能小于1<br>`
+    - **page** ：从第几页开始投递，page不能小于1<br>
     - **maxPage**：投递到第几页<br>
     - **EnableNotifications**：是否开启Telegram机器人通知
     - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
@@ -82,7 +82,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
    new TelegramNotificationBot().sendMessageWithList(message, returnList, "xx平台投递");
    ```
 
-- 将窗口移动到副屏
+- 将窗口移动到副屏(没有副屏需要注释这两行)
 
    ```
    options.addArguments("--window-position=2600,750"); // 将窗口移动到副屏的起始位置
@@ -111,7 +111,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 
 ## 请我喝杯咖啡☕️
 
-<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" width="300"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" width="300">
+<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
 
 ## 联系方式📧
 

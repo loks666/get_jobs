@@ -3,7 +3,9 @@ package utils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.openqa.selenium.By;
 import org.openqa.selenium.Cookie;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
@@ -12,11 +14,11 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -71,7 +73,7 @@ public class SeleniumUtil {
         }
     }
 
-    public static void updateCookie(String cookiePath) {
+    public static void loadCookie(String cookiePath) {
         // 首先清除由于浏览器打开已有的cookies
         CHROME_DRIVER.manage().deleteAllCookies();
 
@@ -88,28 +90,34 @@ public class SeleniumUtil {
         }
 
         // 遍历JSONArray中的每个JSONObject，并从中获取cookie的信息
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject jsonObject = jsonArray.getJSONObject(i);
-            String name = jsonObject.getString("name");
-            String value = jsonObject.getString("value");
-            String domain = jsonObject.getString("domain");
-            String path = jsonObject.getString("path");
-            Date expiry = null;
-            if (!jsonObject.isNull("expiry")) {
-                expiry = new Date(jsonObject.getLong("expiry"));
-            }
-            boolean isSecure = jsonObject.getBoolean("isSecure");
-            boolean isHttpOnly = jsonObject.getBoolean("isHttpOnly");
+        if (jsonArray != null) {
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject jsonObject = jsonArray.getJSONObject(i);
+                String name = jsonObject.getString("name");
+                String value = jsonObject.getString("value");
+                String domain = jsonObject.getString("domain");
+                String path = jsonObject.getString("path");
+                Date expiry = null;
+                if (!jsonObject.isNull("expiry")) {
+                    expiry = new Date(jsonObject.getLong("expiry"));
+                }
+                boolean isSecure = jsonObject.getBoolean("isSecure");
+                boolean isHttpOnly = jsonObject.getBoolean("isHttpOnly");
 
-            // 使用这些信息来创建新的Cookie对象，并将它们添加到WebDriver中
-            Cookie cookie = new Cookie.Builder(name, value)
-                    .domain(domain)
-                    .path(path)
-                    .expiresOn(expiry)
-                    .isSecure(isSecure)
-                    .isHttpOnly(isHttpOnly)
-                    .build();
-            CHROME_DRIVER.manage().addCookie(cookie);
+                // 使用这些信息来创建新的Cookie对象，并将它们添加到WebDriver中
+                Cookie cookie = new Cookie.Builder(name, value)
+                        .domain(domain)
+                        .path(path)
+                        .expiresOn(expiry)
+                        .isSecure(isSecure)
+                        .isHttpOnly(isHttpOnly)
+                        .build();
+                try {
+                    CHROME_DRIVER.manage().addCookie(cookie);
+                } catch (Exception e) {
+                    log.error("This cookie has a question:【{}】", cookie);
+                }
+            }
         }
     }
 
@@ -130,4 +138,24 @@ public class SeleniumUtil {
         }
     }
 
+    public static Optional<List<WebElement>> findElement(By by) {
+        try {
+            return Optional.of(CHROME_DRIVER.findElements(by));
+        } catch (Exception e) {
+            log.error("Could not find element:{}", by, e);
+            return Optional.empty();
+        }
+    }
+
+    public static void click(By by) {
+        try {
+            CHROME_DRIVER.findElement(by).click();
+        } catch (Exception e) {
+            log.error("click element:{}", by, e);
+        }
+    }
+
+    public static boolean isCookieValid(String cookiePath) {
+        return Files.exists(Paths.get(cookiePath));
+    }
 }
