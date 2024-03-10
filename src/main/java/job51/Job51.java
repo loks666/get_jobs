@@ -1,6 +1,5 @@
 package job51;
 
-import com.sun.tools.javac.Main;
 import lombok.SneakyThrows;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -18,8 +17,8 @@ import static utils.Constant.*;
  *
  * @author loks666
  */
-public class SubmitJob {
-    private static final Logger log = LoggerFactory.getLogger(SubmitJob.class);
+public class Job51 {
+    private static final Logger log = LoggerFactory.getLogger(Job51.class);
 
     static boolean EnableNotifications = true;
     static Integer page = 1;
