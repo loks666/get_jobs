@@ -190,7 +190,7 @@ public class SubmitBoss {
             String text = CHROME_DRIVER.findElement(By.className("btns")).getText();
             return text != null && text.contains("登录");
         } catch (Exception e) {
-            log.error("cookie有效，已登录...");
+            log.info("cookie有效，已登录...");
             return false;
         }
     }
