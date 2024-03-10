@@ -49,8 +49,11 @@ public class SubmitBoss {
             }
         }
         Date end = new Date();
-        log.info(returnList.isEmpty() ? "新发起聊天公司如下:\n{}" : "未发起新的聊天...", returnList);
-        String message = "共发起 " + returnList.size() + " 个聊天,用时" + ((end.getTime() - start.getTime()) / 1000) / 60 + "分";
+        log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList);
+        long durationSeconds = (end.getTime() - start.getTime()) / 1000;
+        long minutes = durationSeconds / 60;
+        long seconds = durationSeconds % 60;
+        String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
         log.info(message);
         if (EnableNotifications) {
             new TelegramNotificationBot().sendMessageWithList(message, returnList.stream().map(Job::toString).toList(), "Boss直聘投递");
@@ -187,7 +190,7 @@ public class SubmitBoss {
             String text = CHROME_DRIVER.findElement(By.className("btns")).getText();
             return text != null && text.contains("登录");
         } catch (Exception e) {
-            log.error("获取登录按钮失败！{}", e.getCause() == null ? "" : " : " + e.getCause().toString());
+            log.error("cookie有效，已登录...");
             return false;
         }
     }
