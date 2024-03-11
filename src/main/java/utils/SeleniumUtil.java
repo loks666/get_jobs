@@ -26,7 +26,7 @@ public class SeleniumUtil {
     public static void initDriver() {
         SeleniumUtil.getChromeDriver();
         SeleniumUtil.getActions();
-        SeleniumUtil.getWait(1500);
+        SeleniumUtil.getWait(15);
     }
 
     public static void getChromeDriver() {
@@ -42,10 +42,8 @@ public class SeleniumUtil {
     public static void saveCookie(String path) {
         // 获取所有的cookies
         Set<Cookie> cookies = CHROME_DRIVER.manage().getCookies();
-
         // 创建一个JSONArray来保存所有的cookie信息
         JSONArray jsonArray = new JSONArray();
-
         // 将每个cookie转换为一个JSONObject，并添加到JSONArray中
         for (Cookie cookie : cookies) {
             JSONObject jsonObject = new JSONObject();
@@ -60,32 +58,30 @@ public class SeleniumUtil {
             jsonObject.put("isHttpOnly", cookie.isHttpOnly());
             jsonArray.put(jsonObject);
         }
-
         // 将JSONArray写入到一个文件中
         try (FileWriter file = new FileWriter(path)) {
-            file.write(jsonArray.toString());
+            file.write(jsonArray.toString(4));  // 使用4个空格的缩进
             log.info("Cookie已保存到文件：{}", path);
         } catch (IOException e) {
             log.error("保存cookie异常！保存路径:{}", path);
         }
     }
 
+
     public static void loadCookie(String cookiePath) {
         // 首先清除由于浏览器打开已有的cookies
         CHROME_DRIVER.manage().deleteAllCookies();
 
         // 从文件中读取JSONArray
-        String jsonText = null;
+        JSONArray jsonArray = null;
         try {
-            jsonText = new String(Files.readAllBytes(Paths.get(cookiePath)));
+            String jsonText = new String(Files.readAllBytes(Paths.get(cookiePath)));
+            if (!jsonText.isBlank()){
+                jsonArray = new JSONArray(jsonText);
+            }
         } catch (IOException e) {
             log.error("读取cookie异常！");
         }
-        JSONArray jsonArray = null;
-        if (jsonText != null) {
-            jsonArray = new JSONArray(jsonText);
-        }
-
         // 遍历JSONArray中的每个JSONObject，并从中获取cookie的信息
         if (jsonArray != null) {
             for (int i = 0; i < jsonArray.length(); i++) {

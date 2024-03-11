@@ -1,6 +1,7 @@
 package boss;
 
 import lombok.SneakyThrows;
+import org.json.JSONObject;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
@@ -10,9 +11,10 @@ import org.slf4j.LoggerFactory;
 import utils.SeleniumUtil;
 import utils.TelegramNotificationBot;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static utils.Constant.*;
@@ -28,15 +30,18 @@ public class Boss {
     static Integer maxPage = 50;
     static String homeUrl = "https://www.zhipin.com";
     static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&city=101020100&page=";
-    static List<String> blackCompanies = List.of("复深蓝", "途虎", "哈啰", "得物", "睿服", "滴滴", "蚂蚁");
-    static List<String> blackRecruiters = List.of("猎头");
-    static List<String> blackJobs = List.of("外包", "外派");
+    static List<String> blackCompanies;
+    static List<String> blackRecruiters;
+    static List<String> blackJobs;
+
     static List<Job> returnList = new ArrayList<>();
     static String keyword = "Java";
+    static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
 
 
     public static void main(String[] args) {
+        loadData(dataPath);
         SeleniumUtil.initDriver();
         Date start = new Date();
         login();
@@ -57,8 +62,114 @@ public class Boss {
         if (EnableNotifications) {
             new TelegramNotificationBot().sendMessageWithList(message, returnList.stream().map(Job::toString).toList(), "Boss直聘投递");
         }
+        saveData(dataPath);
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
+    }
+
+    private static void saveData(String path) {
+        try {
+            updateListData();
+            Map<String, List<String>> data = new HashMap<>();
+            data.put("blackCompanies", blackCompanies);
+            data.put("blackRecruiters", blackRecruiters);
+            data.put("blackJobs", blackJobs);
+            String json = customJsonFormat(data);
+            Files.write(Paths.get(path), json.getBytes());
+        } catch (IOException e) {
+            log.error("保存【{}】数据失败！", path);
+        }
+    }
+
+    private static void updateListData() {
+        CHROME_DRIVER.get("https://www.zhipin.com/web/geek/chat");
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//li[@role='listitem']")));
+        SeleniumUtil.getWait(3);
+        JavascriptExecutor js = CHROME_DRIVER;
+        boolean shouldBreak = false;
+        while (!shouldBreak) {
+            try {
+                WebElement bottom = CHROME_DRIVER.findElement(By.xpath("//div[@class='finished']"));
+                if ("没有更多了".equals(bottom.getText())) {
+                    shouldBreak = true;
+                }
+            } catch (Exception e) {
+                log.info("还未到底");
+            }
+            List<WebElement> items = CHROME_DRIVER.findElements(By.xpath("//li[@role='listitem']"));
+            items.forEach(info -> {
+                try {
+                    System.out.println(info.getText());
+                    WebElement companyElement = info.findElement(By.xpath(".//span[@class='name-box']//span[2]"));
+                    String companyName = companyElement.getText();
+                    WebElement messageElement = info.findElement(By.xpath(".//span[@class='last-msg-text']"));
+                    String message = messageElement.getText();
+                    boolean match = message.contains("不") || message.contains("感谢") || message.contains("但") || message.contains("遗憾") || message.contains("需要本") || message.contains("对不");
+                    boolean nomatch = message.contains("不是") || message.contains("不生");
+                    if (match && !nomatch) {
+                        log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
+                        if (blackCompanies.stream().anyMatch(companyName::contains)) {
+                            return;
+                        }
+                        blackCompanies.add(companyName);
+                    }
+                } catch (Exception e) {
+                    log.error("元素没找到...");
+                }
+            });
+            WebElement element = null;
+            try {
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(text(), '滚动加载更多')]")));
+                element = CHROME_DRIVER.findElement(By.xpath("//div[contains(text(), '滚动加载更多')]"));
+            } catch (Exception e) {
+                log.info("没找到滚动条...");
+            }
+
+            if (element != null) {
+                try {
+                    js.executeScript("arguments[0].scrollIntoView();", element);
+                } catch (Exception e) {
+                    log.error("滚动到元素出错", e);
+                }
+            } else {
+                try {
+                    js.executeScript("window.scrollTo(0, document.body.scrollHeight);");
+                } catch (Exception e) {
+                    log.error("滚动到页面底部出错", e);
+                }
+            }
+        }
+        log.info("黑名单公司数量：{}", blackCompanies.size());
+    }
+
+
+    private static String customJsonFormat(Map<String, List<String>> data) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n");
+        for (Map.Entry<String, List<String>> entry : data.entrySet()) {
+            sb.append("    \"").append(entry.getKey()).append("\": ");
+            sb.append(entry.getValue().stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(", ", "[", "]")));
+            sb.append(",\n");
+        }
+        sb.delete(sb.length() - 2, sb.length());
+        sb.append("\n}");
+        return sb.toString();
+    }
+
+    private static void loadData(String path) {
+        try {
+            String json = new String(Files.readAllBytes(Paths.get(path)));
+            parseJson(json);
+        } catch (IOException e) {
+            log.error("读取【{}】数据失败！", path);
+        }
+    }
+
+    private static void parseJson(String json) {
+        JSONObject jsonObject = new JSONObject(json);
+        blackCompanies = jsonObject.getJSONArray("blackCompanies").toList().stream().map(Object::toString).collect(Collectors.toList());
+        blackRecruiters = jsonObject.getJSONArray("blackRecruiters").toList().stream().map(Object::toString).collect(Collectors.toList());
+        blackJobs = jsonObject.getJSONArray("blackJobs").toList().stream().map(Object::toString).collect(Collectors.toList());
     }
 
     @SneakyThrows
@@ -170,6 +281,7 @@ public class Boss {
 
     @SneakyThrows
     private static void login() {
+        log.info("打开Boss直聘网站中...");
         CHROME_DRIVER.get(homeUrl);
         if (SeleniumUtil.isCookieValid(cookiePath)) {
             SeleniumUtil.loadCookie(cookiePath);
