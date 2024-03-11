@@ -43,7 +43,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
     - **Constant.SAY_HI**: 打招呼语，boss需要关闭软件内自动打招呼功能(支持猎聘，boss)
 
 
-- boss直聘([Boss.java](src%2Fmain%2Fjava%2Fboss%2FBoss.java))
+- boss直聘([Boss.java](src/main/java/boss/Boss.java))
 
    ```
    data.json //黑名单数据，在投递结束后会查询聊天记录寻找不合适的公司添加进去
@@ -54,7 +54,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
    sayHi = "您好，我上班不要工资而且可以给公司钱！"; // 打招呼语，自行设置，需要关闭自动打招呼
    ```
 
-- 51job([Job.java](src%2Fmain%2Fjava%2Fjob51%2FJob51.java))
+- 51job([Job.java](src/main/java/job51/Job51.java))
 
   ```
   jobArea=020000 //上海地区码，可以在51job选择地区后点击搜索，在地址栏寻找自己的目标地区码
@@ -62,7 +62,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
   scanLogin() //扫码登录(默认方式)
   inputLogin() //密码登录(需要手动过验证)
   ```
-- 拉勾([Lagou.java](src%2Fmain%2Fjava%2Flagou%2FLagou.java))
+- 拉勾([Lagou.java](src/main/java/lagou/Lagou.java))
 
    ```
    拉勾直接使用的是微信扫码登录，运行后直接扫码即可，开箱通用
@@ -70,7 +70,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
    这边建议拉勾的脚本运行一段时间后差不多就行了，配合手动在app或者微信小程序投递简历效果更佳！
    ```
 
-- 猎聘([Liepin.java](src%2Fmain%2Fjava%2Fliepin%2FLiepin.java))
+- 猎聘([Liepin.java](src/main/java/liepin/Liepin.java))
 
    ```
    猎聘已支持cookie登录，有效期内无须每次扫码
