@@ -127,7 +127,6 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 
 ## 群聊
 
-<img src="./src/main/resources/images/qq.jpg" alt="qq群" height="500" width="300">
-<img src="./src/main/resources/images/wechat.jpg" alt="微信群" height="500" width="300">
+<img src="./src/main/resources/images/qq.jpg" alt="qq群" height="500" width="300"> <img src="./src/main/resources/images/wechat.jpg" alt="微信群" height="500" width="300">
 
 
