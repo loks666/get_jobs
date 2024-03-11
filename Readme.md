@@ -23,8 +23,8 @@
 > driver路径为：**src/main/resources/chromedriver.exe** 版本号：122.0.6261.112  
 > Chrome需要版本为:122.0.6261.112
 
-> 例：你的Chrome【注意不是driver】路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil
-** 的 **getChromeDriver( )** 代码
+> 例：你的Chrome【注意不是driver】路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil**
+的 **getChromeDriver( )** 代码
 
 ```
 options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
@@ -109,7 +109,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 - 作者已经失业很久了，真的很希望有个班上，开源这个项目也希望能帮到真正需要它的人
 - 最后，希望各位永远不需要本项目的帮助，但别忘了star哟！
 
-## 例:Boss投递日志
+### 例:Boss投递日志
 
 <img src="./src/main/resources/images/boss.png" alt="Boss投递日志">
 
@@ -124,5 +124,10 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 ## 联系方式📧
 
 - V2VDaGF0OkFpckVsaWF1azk1Mjcs6K+35aSH5rOo77ya5pq06aOO6Zuo5bCx6KaB5p2l5LqG
+
+## 群聊
+
+<img src="./src/main/resources/images/qq.jpg" alt="qq群" height="500" width="300">
+<img src="./src/main/resources/images/wechat.jpg" alt="微信群" height="500" width="300">
 
 
