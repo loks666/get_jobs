@@ -30,7 +30,7 @@
 options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 ```
 
-更多详情请点击:[环境配置](Detail.md)
+更多详情请点击:[环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
 
 #### 第二步：修改代码(一般默认即可)
 
