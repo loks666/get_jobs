@@ -29,11 +29,34 @@ public class Boss {
     static Integer page = 1;
     static Integer maxPage = 50;
     static String homeUrl = "https://www.zhipin.com";
-    static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&city=101020100&page=";
+    static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&experience=%s&city=%s&page=%s";
+
+    static Map<String, String> experience = new HashMap<>() {
+        {
+            put("在校生", "108");
+            put("应届生", "102");
+            put("经验不限", "101");
+            put("一年以内", "103");
+            put("1-3年", "104");
+            put("3-5年", "105");
+            put("5-10年", "106");
+            put("10年以上", "107");
+        }
+    };
+
+    static Map<String, String> cityCode = new HashMap<>() {
+        {
+            put("全国", "100010000");
+            put("北京", "101010100");
+            put("上海", "101020100");
+            put("广州", "101280100");
+            put("深圳", "101280600");
+            put("成都", "101270100");
+        }
+    };
     static List<String> blackCompanies;
     static List<String> blackRecruiters;
     static List<String> blackJobs;
-
     static List<Job> returnList = new ArrayList<>();
     static String keyword = "Java";
     static String dataPath = "./src/main/java/boss/data.json";
@@ -47,7 +70,8 @@ public class Boss {
         login();
         for (int i = page; i <= maxPage; i++) {
             log.info("第{}页", i);
-            if (resumeSubmission(String.format(baseUrl, keyword) + i) == -1) {
+            String url = String.format(baseUrl, keyword, setYear(List.of()), cityCode.get("上海"), i);
+            if (resumeSubmission(url) == -1) {
                 log.info("今日沟通人数已达上限，请明天再试");
                 break;
             }
@@ -58,13 +82,20 @@ public class Boss {
         long minutes = durationSeconds / 60;
         long seconds = durationSeconds % 60;
         String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
-        log.info(message);
         if (EnableNotifications) {
             new TelegramNotificationBot().sendMessageWithList(message, returnList.stream().map(Job::toString).toList(), "Boss直聘投递");
         }
-        saveData(dataPath);
+//        saveData(dataPath);
+        log.info(message);
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
+    }
+
+    private static String setYear(List<String> params) {
+        if (params == null || params.isEmpty()) {
+            return "";
+        }
+        return params.stream().map(experience::get).collect(Collectors.joining(","));
     }
 
     private static void saveData(String path) {
@@ -94,12 +125,11 @@ public class Boss {
                     shouldBreak = true;
                 }
             } catch (Exception e) {
-                log.info("还未到底");
+//                log.info("还未到底");
             }
             List<WebElement> items = CHROME_DRIVER.findElements(By.xpath("//li[@role='listitem']"));
             items.forEach(info -> {
                 try {
-                    System.out.println(info.getText());
                     WebElement companyElement = info.findElement(By.xpath(".//span[@class='name-box']//span[2]"));
                     String companyName = companyElement.getText();
                     WebElement messageElement = info.findElement(By.xpath(".//span[@class='last-msg-text']"));
@@ -114,7 +144,7 @@ public class Boss {
                         blackCompanies.add(companyName);
                     }
                 } catch (Exception e) {
-                    log.error("元素没找到...");
+//                    log.error("元素没找到...");
                 }
             });
             WebElement element = null;
@@ -228,10 +258,10 @@ public class Boss {
                     return -1;
                 }
                 try {
-                    WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"chat-input\"]")));
+                    WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//textarea[@class='input-area']")));
                     input.click();
                     input.sendKeys(SAY_HI);
-                    WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"container\"]/div/div/div[2]/div[3]/div/div[3]/button")));
+                    WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[11]/div[2]/div[2]/div/div[1]/div[2]/div")));
                     send.click();
 
                     WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='name']"));
@@ -310,7 +340,7 @@ public class Boss {
     private static void scanLogin() {
         CHROME_DRIVER.get(homeUrl + "/web/user/?ka=header-login");
         log.info("等待登陆..");
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn-sign-switch ewm-switch']"))).click();
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//a[@ka='header-home-logo']")));
         boolean login = false;
         while (!login) {
             try {
