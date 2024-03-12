@@ -44,16 +44,20 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
     - **cookie登录**: 目前已支持boss，猎聘，扫码一次即可无须再次登录，会在文件夹下保存cookie.json文件
 
 
-- boss直聘([Boss.java](src/main/java/boss/Boss.java))
-
-   ```
-   data.json //黑名单数据，在投递结束后会查询聊天记录寻找不合适的公司添加进去
-   keyword = “Java”; // 岗位关键词
-   blackCompanies = List.of("复深蓝"); // 公司黑名单，多个用逗号分隔
-   blackRecruiters = List.of("猎头"); // 排除招聘人员，比如猎头
-   blackJobs = List.of("外包", "外派"); // 排除岗位，比如外包，外派
-   Constant类的SAY_HI = "您好，我上班不要工资而且可以给公司钱！"; // 打招呼语，自行设置，需要关闭自动打招呼
-   ```
+- boss直聘([Boss.java](src/main/java/boss/Boss.java)) 
+    ```
+    experience //工作年限:在校生=108, 应届生=102, 经验不限=101, 一年以内=103, 1-3年=104, 3-5年=105, 5-10年=106, 10年以上=107
+        └──设置工作年限：setYear(List.of("1-3年", "3-5年") //默认不设置年限筛选，需要手动添加
+    page = 1; // 开始页 maxPage可以忽略，因为基本投不到
+    data.json //黑名单数据，在投递结束后会查询聊天记录寻找不合适的公司添加进去
+        ├── blackCompanies: List.of("复深蓝"); // 公司黑名单，多个用逗号分隔
+        ├── blackRecruiters: List.of("猎头"); // 排除招聘人员，比如猎头
+        └── blackJobs: List.of("外包", "外派"); // 排除岗位，比如外包，外派
+    keyword = “Java”; // 岗位关键词
+    Constant类的SAY_HI = "您好，我上班不要工资而且可以给公司钱！"; // 打招呼语，自行设置，需要关闭自动打招呼
+    cityCode //城市代码，默认已给出热门城市，可以在boss直聘选择城市后，在地址栏寻找自己的目标城市码
+    注意：建议先在手机投递一些目标岗位，不想投时再使用脚本投递，以提高投递成功率
+    ```
 
 - 51job([Job.java](src/main/java/job51/Job51.java))
 
