@@ -82,6 +82,8 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
    在猎聘网选择自己要投递的地区后，在地址栏找到cityCode，修改cityCode为该值即可(默认为上海)
    会遍历投递keywords中所有的关键词，可自行设置
    当发起新会话到达上限后会使用系统默认的打招呼语，如需在上限后停止投递，将isStop改为true即可
+   目前猎聘关闭了发自定义消息，需要打开猎聘的自动招呼设置(可支持自定义)，如需程序发送可以将isSayHi的值改为true即可
+   后续会给出破解猎聘发消息限制的问题，敬请期待...
    ```
 
 #### 最后一步：运行代码
@@ -134,4 +136,6 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 
 <img src="./src/main/resources/images/qq.jpg" alt="qq群" height="500"> <img src="./src/main/resources/images/wechat.jpg" alt="微信群" height="500">
 
+--- 
 
+授人以渔: [自定义修改你的代码](https://github.com/loks666/get_jobs/wiki/授人以渔‐自定义修改你的代码)
