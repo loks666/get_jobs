@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import utils.SeleniumUtil;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static utils.Constant.*;
 import static utils.Constant.CHROME_DRIVER;
@@ -24,7 +23,7 @@ public class Liepin {
     static List<String> keywords = List.of("Python", "Golang", "大模型", "Java");
     static List<String> returnList = new ArrayList<>();
     static String search = "https://www.liepin.com/zhaopin/?dq=%s&currentPage=%s&key=%s";
-    static boolean isSayHi = true;
+    static boolean isSayHi = false;
     static boolean isStop = false;
 
 
