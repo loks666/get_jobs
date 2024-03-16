@@ -26,7 +26,7 @@ public class SeleniumUtil {
     public static void initDriver() {
         SeleniumUtil.getChromeDriver();
         SeleniumUtil.getActions();
-        SeleniumUtil.getWait(150);
+        SeleniumUtil.getWait(20);
     }
 
     public static void getChromeDriver() {
