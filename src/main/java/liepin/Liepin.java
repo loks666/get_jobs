@@ -20,7 +20,7 @@ public class Liepin {
     static String cookiePath = "./src/main/java/liepin/cookie.json";
     static int maxPage = 50;
     static String cityCode = "020";
-    static List<String> keywords = List.of("Python", "Golang", "大模型", "Java");
+    static List<String> keywords = List.of("AIGC", "Python", "Golang", "大模型", "Java");
     static List<String> returnList = new ArrayList<>();
     static String search = "https://www.liepin.com/zhaopin/?dq=%s&currentPage=%s&key=%s";
     static boolean isSayHi = false;
@@ -34,6 +34,7 @@ public class Liepin {
             submit(keyword);
         }
         printResult();
+        CHROME_DRIVER.quit();
     }
 
     private static void printResult() {
@@ -51,7 +52,7 @@ public class Liepin {
         setMaxPage(lis);
         for (int i = 0; i < maxPage; i++) {
             WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("subscribe-card-box")));
-            log.info("正在投递第【{}】页...", i + 1);
+            log.info("正在投递【{}】第【{}】页...", keyword, i + 1);
             submitJob();
             div = CHROME_DRIVER.findElement(By.className("list-pagination-box"));
             WebElement nextPage = div.findElement(By.xpath(".//li[@title='Next Page']"));
@@ -60,7 +61,7 @@ public class Liepin {
             }
             log.info("已投递第【{}】页所有的岗位...\n", i + 1);
         }
-        log.info("【{}】投递完成！", keyword);
+        log.info("【{}】关键词投递完成！", keyword);
     }
 
 
@@ -139,8 +140,9 @@ public class Liepin {
                 returnList.add(sb.append("【").append(companyName).append(" ").append(jobName).append(" ").append(salary).append(" ").append(recruiterName).append(" ").append(recruiterTitle).append("】").toString());
                 sb.setLength(0);
                 log.info("发起新聊天:【{}】的【{}·{}】岗位, 【{}:{}】", companyName, jobName, salary, recruiterName, recruiterTitle);
-            } else {
-                log.info("【{}】的【{}】已经聊过,可以和TA:【{}】", companyName, recruiterName, text);
+            }
+            else {
+//                log.info("【{}】的【{}】已经聊过,可以和TA:【{}】", companyName, recruiterName, text);
             }
             ACTIONS.moveByOffset(120, 0).perform();
         }
