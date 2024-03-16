@@ -23,6 +23,8 @@ public class Job51 {
     static boolean EnableNotifications = true;
     static Integer page = 1;
     static Integer maxPage = 50;
+    static String cookiePath = "./src/main/java/job51/cookie.json";
+    static String homeUrl = "https://www.51job.com";
     static String loginUrl = "https://login.51job.com/login.php?lang=c&url=http%3A%2F%2Fwww.51job.com%2F&qrlogin=2";
     static String baseUrl = "https://we.51job.com/pc/search?keyword=%s&jobArea=020000&searchType=2&sortType=0&metro=";
     static Map<Integer, String> jobs = new HashMap<>() {{
@@ -45,16 +47,8 @@ public class Job51 {
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
         Date sdate = new Date();
-        scanLogin();
-//        keywords.forEach((k, v) -> {
-//            resume(String.format(baseUrl, v));
-//            try {
-//                log.info("投完关键词【{}】休息30秒！", v);
-//                Thread.sleep(30000);
-//            } catch (InterruptedException e) {
-//                log.error("投完关键词休息期间出现异常:", e);
-//            }
-//        });
+        Login();
+
         resume(String.format(baseUrl, keywords.get(0)));
         Date edate = new Date();
         log.info("共投递{}个简历,用时{}分", returnList.size(),
@@ -71,6 +65,30 @@ public class Job51 {
             log.error("投完简历休息期间出现异常:", e);
         } finally {
             CHROME_DRIVER.quit();
+        }
+    }
+
+    private static void Login() {
+        CHROME_DRIVER.get(homeUrl);
+        if (SeleniumUtil.isCookieValid(cookiePath)) {
+            SeleniumUtil.loadCookie(cookiePath);
+            CHROME_DRIVER.navigate().refresh();
+            SeleniumUtil.sleep(2);
+        }
+
+        if (isLoginRequired()) {
+            log.error("cookie失效，尝试扫码登录...");
+            scanLogin();
+        }
+    }
+
+    private static boolean isLoginRequired() {
+        try {
+            String text = CHROME_DRIVER.findElement(By.xpath("//p[@class=\"tit\"]")).getText();
+            return text != null && text.contains("登录");
+        } catch (Exception e) {
+            log.info("cookie有效，已登录...");
+            return false;
         }
     }
 
@@ -92,7 +110,8 @@ public class Job51 {
             while (true) {
                 try {
                     TimeUnit.SECONDS.sleep(1);
-                    WebElement mytxt = WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#jump_page")));
+                    WebElement mytxt = WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.id("jump_page")));
+                    mytxt.click();
                     mytxt.clear();
                     mytxt.sendKeys(String.valueOf(j));
                     WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage"))).click();
@@ -102,6 +121,7 @@ public class Job51 {
                 } catch (Exception e) {
                     TimeUnit.SECONDS.sleep(1);
                     log.error("mytxt.clear()可能异常！信息:{},完整异常:", e.getMessage(), e);
+                    CHROME_DRIVER.navigate().refresh();
                 }
             }
             if (!page()) {
@@ -197,9 +217,10 @@ public class Job51 {
 
 
     private static void scanLogin() {
+        log.info("等待扫码登陆..");
         CHROME_DRIVER.get(loginUrl);
-        log.info("等待登陆..");
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("hasresume")));
+        SeleniumUtil.saveCookie(cookiePath);
     }
 
     private static void inputLogin() {
@@ -212,7 +233,7 @@ public class Job51 {
         CHROME_DRIVER.findElement(By.id("isread_em")).click();
         CHROME_DRIVER.findElement(By.id("login_btn_withPwd")).click();
         // 手动点击登录按钮过验证登录
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("choose_best_list")));
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("hasresume")));
     }
 
 }
