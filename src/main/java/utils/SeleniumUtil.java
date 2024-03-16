@@ -131,6 +131,15 @@ public class SeleniumUtil {
         }
     }
 
+    public static void sleepByMilliSeconds(int milliSeconds) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(milliSeconds);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Sleep was interrupted", e);
+        }
+    }
+
     public static List<WebElement> findElements(By by) {
         try {
             return CHROME_DRIVER.findElements(by);

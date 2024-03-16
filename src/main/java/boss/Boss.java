@@ -58,7 +58,7 @@ public class Boss {
     static List<String> blackRecruiters;
     static List<String> blackJobs;
     static List<Job> returnList = new ArrayList<>();
-    static String keyword = "Java";
+    static String keyword = "AIGC";
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
 
@@ -258,10 +258,22 @@ public class Boss {
                     return -1;
                 }
                 try {
-                    WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//textarea[@class='input-area']")));
+                    WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
                     input.click();
+                    SeleniumUtil.sleepByMilliSeconds(500);
+                    try {
+                        // 是否出现不匹配的对话框
+                        WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
+                        if ("不匹配".equals(element.getText())) {
+                            CHROME_DRIVER.close();
+                            CHROME_DRIVER.switchTo().window(tabs.get(0));
+                            continue;
+                        }
+                    } catch (Exception e) {
+                        log.debug("岗位匹配，下一步发送消息...");
+                    }
                     input.sendKeys(SAY_HI);
-                    WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[11]/div[2]/div[2]/div/div[1]/div[2]/div")));
+                    WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
                     send.click();
 
                     WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='name']"));
