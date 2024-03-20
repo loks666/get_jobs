@@ -110,8 +110,10 @@ public class Job51 {
             while (true) {
                 try {
                     TimeUnit.SECONDS.sleep(1);
-                    JavascriptExecutor js = CHROME_DRIVER;
-                    js.executeScript("document.getElementById('jump_page').value = '" + j + "'");
+                    WebElement mytxt = WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.id("jump_page")));
+                    mytxt.click();
+                    mytxt.clear();
+                    mytxt.sendKeys(String.valueOf(j));
                     WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage"))).click();
                     ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
                     log.info("{} 中，第 {} 页", jobs.get(i), j);
