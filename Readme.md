@@ -40,9 +40,8 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
     - **maxPage**：投递到第几页<br>
     - **EnableNotifications**：是否开启Telegram机器人通知
     - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
-    - **cookie登录**: 登录后会在运行路径下保存一个json文件，下次运行会自动读取这个文件，无需再次登录(目前仅支持Boss)
     - **Constant.SAY_HI**: 打招呼语，boss需要关闭软件内自动打招呼功能(支持猎聘，boss)
-    - **cookie登录**: 目前已支持boss，猎聘，扫码一次即可无须再次登录，会在文件夹下保存cookie.json文件
+    - **cookie登录**: 目前已支持boss，51job，猎聘，扫码一次在有效期内无须再次登录，会在文件夹下保存cookie.json文件
 
 
 - boss直聘([Boss.java](src/main/java/boss/Boss.java))
