@@ -58,7 +58,7 @@ public class Boss {
     static List<String> blackRecruiters;
     static List<String> blackJobs;
     static List<Job> returnList = new ArrayList<>();
-    static String keyword = "AIGC";
+    static String keyword = "AIGC工程师";
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
 
