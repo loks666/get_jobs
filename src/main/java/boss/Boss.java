@@ -8,6 +8,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import utils.Job;
 import utils.SeleniumUtil;
 import utils.TelegramNotificationBot;
 
@@ -58,7 +59,7 @@ public class Boss {
     static List<String> blackRecruiters;
     static List<String> blackJobs;
     static List<Job> returnList = new ArrayList<>();
-    static String keyword = "AIGC工程师";
+    static String keyword = "大模型工程师";
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
 
@@ -237,7 +238,7 @@ public class Boss {
             for (WebElement tagElement : tagElements) {
                 tag.append(tagElement.getText()).append("·");
             }
-            job.setTag(tag.substring(0, tag.length() - 1)); // 删除最后一个 "·"
+            job.setCompanyTag(tag.substring(0, tag.length() - 1)); // 删除最后一个 "·"
             jobs.add(job);
         }
         for (Job job : jobs) {
