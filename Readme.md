@@ -1,6 +1,6 @@
 <h1 align="center"> get-jobs</h1>
 <div align="center">
-    💼自动投简历(Boss直聘、猎聘、拉勾、51job)
+    💼自动投简历(Boss直聘、猎聘、拉勾、51job、智联招聘)
 </div><br>
 
 - 本项目受此启发:https://github.com/BeammNotFound/get-jobs-51job , 感谢大佬，让我们将爱传递下去~
