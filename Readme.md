@@ -47,6 +47,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
     - **EnableNotifications**：是否开启Telegram机器人通知
     - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
     - **Constant.SAY_HI**: 打招呼语，boss需要关闭软件内自动打招呼功能(支持猎聘，boss)
+    - **Constant.WAIT_TIME**：超时等待时间，单位秒，用于等待页面加载
     - **cookie登录**: 扫码后自动cookie.json文件在代码运行目录下，换号直接删除cookie.json即可
 
 
