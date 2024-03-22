@@ -4,11 +4,17 @@
 </div><br>
 
 - 本项目受此启发:https://github.com/BeammNotFound/get-jobs-51job , 感谢大佬，让我们将爱传递下去~
+### 特色功能
+- 支持cookie登录，每日仅需扫码一次
+- 内置xpathHelper插件，方便快速定位元素
+- 全局日志记录，投递记录可追踪
+- Boss直聘默认过滤猎头岗位，可修改代码自定义
 
 ### 注意事项
 
 - 由于不同系统的页面不一样，导致可能不兼容，文末会给出文档，尽可能让大家能自定义修改
 - 如果你没有副屏，需要注释掉以下代码
+- 关闭墙外代理，由于主要针对的国内平台，墙外代理会导致页面加载缓慢
    ```
    options.addArguments("--window-position=2600,750"); // 将窗口移动到副屏的起始位置
    options.addArguments("--window-size=1600,1000"); // 设置窗口大小以适应副屏分辨率
@@ -41,59 +47,82 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
     - **EnableNotifications**：是否开启Telegram机器人通知
     - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
     - **Constant.SAY_HI**: 打招呼语，boss需要关闭软件内自动打招呼功能(支持猎聘，boss)
-    - **cookie登录**: 目前已支持boss，51job，猎聘，扫码一次在有效期内无须再次登录，会在文件夹下保存cookie.json文件
+    - **cookie登录**: 扫码后自动cookie.json文件在代码运行目录下，换号直接删除cookie.json即可
 
 
-- boss直聘([Boss.java](src/main/java/boss/Boss.java))
+- boss直聘([Boss.java](src/main/java/boss/Boss.java))【每日仅可发起100次新聊天】
   ```
   experience //工作年限:在校生=108, 应届生=102, 经验不限=101, 一年以内=103, 1-3年=104, 3-5年=105, 5-10年=106, 10年以上=107
       └──设置工作年限：setYear(List.of("1-3年", "3-5年") //此为选择多种经验的方式，默认不设置年限筛选，需要手动添加
-  ```
-  ```
+ 
   page = 1; // 开始页 maxPage可以忽略，因为基本投不到
-  ```
-  ```
+  
   data.json //黑名单数据，在投递结束后会查询聊天记录寻找不合适的公司添加进去
       ├── blackCompanies: List.of("复深蓝"); // 公司黑名单，多个用逗号分隔
       ├── blackRecruiters: List.of("猎头"); // 排除招聘人员，比如猎头
       └── blackJobs: List.of("外包", "外派"); // 排除岗位，比如外包，外派
-  ```
-  ```
+  
   keyword = “Java”; // 岗位关键词
-  ```
-  ```
+  
   Constant类的SAY_HI = "您好，我上班不要工资而且可以给公司钱！"; // 打招呼语，自行设置，需要关闭自动打招呼
-  ```
-  ```
+  
   cityCode //城市代码，默认已给出热门城市，可以在boss直聘选择城市后，在地址栏寻找自己的目标城市码
   注意：建议先在手机投递一些目标岗位，不想投时再使用脚本投递，以提高投递成功率
   ```
 
-- 51job([Job.java](src/main/java/job51/Job51.java))
+- 51job([Job.java](src/main/java/job51/Job51.java))【投递无上限，会限制搜索到的岗位数量】
 
   ```
   jobArea=020000 //上海地区码，可以在51job选择地区后点击搜索，在地址栏寻找自己的目标地区码
+  
   keywords:关键词 //通过keywords.get(?)使用
-  scanLogin() //扫码登录(默认方式)
+  
+  scanLogin() //扫码登录(默认方式) 只可微信扫码，请绑定微信账号
+  
   inputLogin() //密码登录(需要手动过验证)
   ```
-- 拉勾([Lagou.java](src/main/java/lagou/Lagou.java))
+- 拉勾([Lagou.java](src/main/java/lagou/Lagou.java))【投递无上限，会限制投递的频率】
 
    ```
+   默认使用微信扫码，请绑定微信账号
+  
+   拉勾需要指定默认投递简历(在线简历 or 附件简历)，否则会投递失败
+  
    拉勾直接使用的是微信扫码登录，运行后直接扫码即可，开箱通用
+  
    但是拉勾由于反爬机制较为严重，代码中嵌套了大量的sleep，导致效率较慢
+  
    这边建议拉勾的脚本运行一段时间后差不多就行了，配合手动在app或者微信小程序投递简历效果更佳！
    ```
 
-- 猎聘([Liepin.java](src/main/java/liepin/Liepin.java))
+- 猎聘([Liepin.java](src/main/java/liepin/Liepin.java))【系统默认打招呼无上限，主动发消息有上限】
 
    ```
-   猎聘已支持cookie登录，有效期内无须每次扫码
+   猎聘已支持cookie登录，有效期内无须每次扫码，只可微信扫码，请绑定微信账号
+  
    在猎聘网选择自己要投递的地区后，在地址栏找到cityCode，修改cityCode为该值即可(默认为上海)
+  
    会遍历投递keywords中所有的关键词，可自行设置
+  
    当发起新会话到达上限后会使用系统默认的打招呼语，如需在上限后停止投递，将isStop改为true即可
+  
    目前猎聘关闭了发自定义消息，需要打开猎聘的自动招呼设置(可支持自定义)，如需程序发送可以将isSayHi的值改为true即可
-   后续会给出破解猎聘发消息限制的问题，敬请期待...
+  
+   最新版猎聘手机端可以自定义打招呼方式，只要不主动发消息，可以无限制对猎头打招呼，目前默认配置已支持这样做。
+   ```
+
+- 智联招聘([ZhiLian.java](src%2Fmain%2Fjava%2Fzhilian%2FZhiLian.java))【投递有上限，数量暂时未知】
+
+   ```
+  智联招聘需要指定默认投递简历(在线简历 or 附件简历)，否则会投递失败
+  
+  只可微信扫码，请绑定微信账号
+  
+  cityCode //地区码，需要选择地区后在地址栏找到cityCode，修改cityCode为该值即可(默认为上海)
+  
+  salaryScope //工资区间，同上，可自行设置
+  
+  keywords //关键词列表，默认从第一个关键词投递到最后一个，投递上限时停止
    ```
 
 #### 最后一步：运行代码

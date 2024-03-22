@@ -21,7 +21,7 @@ public class Liepin {
     static int maxPage = 50;
     static String cityCode = "020";
     static List<String> keywords = List.of("AIGC", "Python", "Golang", "大模型", "Java");
-    static List<String> returnList = new ArrayList<>();
+    static List<String> resultList = new ArrayList<>();
     static String search = "https://www.liepin.com/zhaopin/?dq=%s&currentPage=%s&key=%s";
     static boolean isSayHi = false;
     static boolean isStop = false;
@@ -38,8 +38,8 @@ public class Liepin {
     }
 
     private static void printResult() {
-        log.info("投递完成,共投递 {} 个岗位！", returnList.size());
-        log.info("今日投递岗位:\n{}", String.join("\n", returnList));
+        log.info("投递完成,共投递 {} 个岗位！", resultList.size());
+        log.info("今日投递岗位:\n{}", String.join("\n", resultList));
     }
 
     @SneakyThrows
@@ -137,7 +137,7 @@ public class Liepin {
                 close.click();
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, 'recruiter-info-box')]")));
 
-                returnList.add(sb.append("【").append(companyName).append(" ").append(jobName).append(" ").append(salary).append(" ").append(recruiterName).append(" ").append(recruiterTitle).append("】").toString());
+                resultList.add(sb.append("【").append(companyName).append(" ").append(jobName).append(" ").append(salary).append(" ").append(recruiterName).append(" ").append(recruiterTitle).append("】").toString());
                 sb.setLength(0);
                 log.info("发起新聊天:【{}】的【{}·{}】岗位, 【{}:{}】", companyName, jobName, salary, recruiterName, recruiterTitle);
             }

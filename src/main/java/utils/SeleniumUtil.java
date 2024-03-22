@@ -3,15 +3,15 @@ package utils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Cookie;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +31,9 @@ public class SeleniumUtil {
 
     public static void getChromeDriver() {
         ChromeOptions options = new ChromeOptions();
+        // 添加扩展插件
         options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
+        options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
         System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver.exe");
         options.addArguments("--window-position=2600,750"); // 将窗口移动到副屏的起始位置
         options.addArguments("--window-size=1600,1000"); // 设置窗口大小以适应副屏分辨率
