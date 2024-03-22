@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static utils.Constant.*;
+import static utils.SeleniumUtil.isCookieValid;
 
 public class Lagou {
     private static final Logger log = LoggerFactory.getLogger(Lagou.class);
@@ -25,6 +26,7 @@ public class Lagou {
     static String baseUrl = "https://www.lagou.com/wn/jobs?fromSearch=true&kd=%s&city=%s&pn=%s";
     static String wechatUrl = "https://open.weixin.qq.com/connect/qrconnect?appid=wx9d8d3686b76baff8&redirect_uri=https%3A%2F%2Fpassport.lagou.com%2Foauth20%2Fcallback_weixinProvider.html&response_type=code&scope=snsapi_login#wechat_redirect";
     static int jobCount = 0;
+    static String cookiePath = "./src/main/java/lagou/cookie.json";
 
 
     public static void main(String[] args) {
@@ -200,6 +202,29 @@ public class Lagou {
 
     @SneakyThrows
     private static void login() {
+        log.info("正在打开拉勾...");
+        CHROME_DRIVER.get("https://www.lagou.com");
+        log.info("拉勾正在登录...");
+        if (isCookieValid(cookiePath)) {
+            SeleniumUtil.loadCookie(cookiePath);
+            CHROME_DRIVER.navigate().refresh();
+        }
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("search_button")));
+        if (isLoginRequired()) {
+            log.info("cookie失效，尝试扫码登录...");
+            scanLogin();
+            SeleniumUtil.saveCookie(cookiePath);
+        } else {
+            log.info("cookie有效，准备投递...");
+        }
+    }
+
+    private static boolean isLoginRequired() {
+        WebElement header = CHROME_DRIVER.findElement(By.id("lg_tbar"));
+        return header.getText().contains("登录");
+    }
+
+    private static void scanLogin() {
         try {
             CHROME_DRIVER.get(wechatUrl);
             log.info("等待扫码..");
@@ -207,5 +232,8 @@ public class Lagou {
         } catch (Exception e) {
             CHROME_DRIVER.navigate().refresh();
         }
+
     }
+
+
 }
