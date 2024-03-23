@@ -34,6 +34,7 @@ public class Liepin {
             submit(keyword);
         }
         printResult();
+        CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
 
@@ -98,7 +99,11 @@ public class Liepin {
             } catch (Exception e) {
                 log.info("【{}】招聘人员:【{}】没有职位描述", companyName, recruiterName);
             }
-            ACTIONS.moveToElement(name).perform();
+            try {
+                ACTIONS.moveToElement(name).perform();
+            } catch (Exception e) {
+                log.error("鼠标移动到HR标签异常...");
+            }
             WebElement button;
             try {
                 button = CHROME_DRIVER.findElement(By.xpath("//button"));
