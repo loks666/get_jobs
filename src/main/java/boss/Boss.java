@@ -30,6 +30,16 @@ public class Boss {
     static Integer page = 1;
     static String homeUrl = "https://www.zhipin.com";
     static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&experience=%s&city=%s&page=%s";
+    static List<String> blackCompanies;
+    static List<String> blackRecruiters;
+    static List<String> blackJobs;
+    static List<Job> returnList = new ArrayList<>();
+    static List<String> keywords = List.of("大模型工程师", "Java", "Python", "Golang");
+    static String dataPath = "./src/main/java/boss/data.json";
+    static String cookiePath = "./src/main/java/boss/cookie.json";
+    static final int noJobMaxPages = 10; // 无岗位最大页数
+    static int noJobPages;
+    static int lastSize;
 
     static Map<String, String> experience = new HashMap<>() {
         {
@@ -54,16 +64,7 @@ public class Boss {
             put("成都", "101270100");
         }
     };
-    static List<String> blackCompanies;
-    static List<String> blackRecruiters;
-    static List<String> blackJobs;
-    static List<Job> returnList = new ArrayList<>();
-    static List<String> keywords = List.of("大模型工程师", "Java", "Python", "Golang");
-    static String dataPath = "./src/main/java/boss/data.json";
-    static String cookiePath = "./src/main/java/boss/cookie.json";
-    static final int noJobMaxPages = 10; // 无岗位最大页数
-    static int noJobPages;
-    static int lastSize;
+
 
     public static void main(String[] args) {
         loadData(dataPath);
