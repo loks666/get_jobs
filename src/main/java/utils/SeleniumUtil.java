@@ -28,16 +28,16 @@ public class SeleniumUtil {
         SeleniumUtil.getActions();
         SeleniumUtil.getWait(WAIT_TIME);
     }
-
     public static void getChromeDriver() {
         ChromeOptions options = new ChromeOptions();
         // 添加扩展插件
         options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
         options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
         System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver.exe");
-        options.addArguments("--window-position=2600,750"); // 将窗口移动到副屏的起始位置
-        options.addArguments("--window-size=1600,1000"); // 设置窗口大小以适应副屏分辨率
-        options.addArguments("--start-maximized"); // 最大化窗口
+        options.addArguments("--window-position=2600,750"); //将窗口移动到副屏的起始位置
+        options.addArguments("--window-size=1600,1000"); //设置窗口大小以适应副屏分辨率
+        options.addArguments("--start-maximized"); //最大化窗口
+//        options.addArguments("--headless"); //使用无头模式
         CHROME_DRIVER = new ChromeDriver(options);
     }
 
@@ -68,7 +68,6 @@ public class SeleniumUtil {
             log.error("保存cookie异常！保存路径:{}", path);
         }
     }
-
 
     public static void loadCookie(String cookiePath) {
         // 首先清除由于浏览器打开已有的cookies
