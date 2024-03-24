@@ -70,23 +70,27 @@ public class Boss {
         SeleniumUtil.initDriver();
         Date start = new Date();
         login();
+        endSubmission:
         for (String keyword : keywords) {
             page = 1;
             noJobPages = 0;
             lastSize = -1;
             while (true) {
-                log.info("第{}页", page);
+                log.info("投递【{}】关键词第【{}】页", keyword, page);
                 String url = String.format(baseUrl, keyword, setYear(List.of()), cityCode.get("上海"), page);
+                int startSize = returnList.size();
                 Integer resultSize = resumeSubmission(url);
                 if (resultSize == -1) {
                     log.info("今日沟通人数已达上限，请明天再试");
-                    break;
+                    break endSubmission;
                 } else {
-                    if (lastSize == resultSize) {
+                    if (startSize == resultSize) {
                         noJobPages++;
-                        if (noJobPages > noJobMaxPages) {
-                            log.info("【{}】关键词已经连续 {} 页无岗位，结束该关键词的投递...", keyword, noJobPages);
+                        if (noJobPages >= noJobMaxPages) {
+                            log.info("【{}】关键词已经连续【{}】页无岗位，结束该关键词的投递...", keyword, noJobPages);
                             break;
+                        } else {
+                            log.info("【{}】关键词第【{}】页无岗位,目前已连续【{}】页无岗位...", keyword, page, noJobPages);
                         }
                     } else {
                         lastSize = resultSize;
