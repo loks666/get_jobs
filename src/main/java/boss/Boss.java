@@ -28,7 +28,6 @@ public class Boss {
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
     static boolean EnableNotifications = false;
     static Integer page = 1;
-    static Integer maxPage = 50;
     static String homeUrl = "https://www.zhipin.com";
     static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&experience=%s&city=%s&page=%s";
 
@@ -59,22 +58,42 @@ public class Boss {
     static List<String> blackRecruiters;
     static List<String> blackJobs;
     static List<Job> returnList = new ArrayList<>();
-    static String keyword = "大模型工程师";
+    static List<String> keywords = List.of("大模型工程师", "Java", "Python", "Golang");
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
-
+    static final int noJobMaxPages = 10; // 无岗位最大页数
+    static int noJobPages;
+    static int lastSize;
 
     public static void main(String[] args) {
         loadData(dataPath);
         SeleniumUtil.initDriver();
         Date start = new Date();
         login();
-        for (int i = page; i <= maxPage; i++) {
-            log.info("第{}页", i);
-            String url = String.format(baseUrl, keyword, setYear(List.of()), cityCode.get("上海"), i);
-            if (resumeSubmission(url) == -1) {
-                log.info("今日沟通人数已达上限，请明天再试");
-                break;
+        for (String keyword : keywords) {
+            page = 1;
+            noJobPages = 0;
+            lastSize = -1;
+            while (true) {
+                log.info("第{}页", page);
+                String url = String.format(baseUrl, keyword, setYear(List.of()), cityCode.get("上海"), page);
+                Integer resultSize = resumeSubmission(url);
+                if (resultSize == -1) {
+                    log.info("今日沟通人数已达上限，请明天再试");
+                    break;
+                } else {
+                    if (lastSize == resultSize) {
+                        noJobPages++;
+                        if (noJobPages > noJobMaxPages) {
+                            log.info("【{}】关键词已经连续 {} 页无岗位，结束该关键词的投递...", keyword, noJobPages);
+                            break;
+                        }
+                    } else {
+                        lastSize = resultSize;
+                        noJobPages = 0;
+                    }
+                    page++;
+                }
             }
         }
         Date end = new Date();
@@ -301,6 +320,7 @@ public class Boss {
                     String position = positionNameElement.getText() + " " + salaryElement.getText() + " " + cityElement.getText();
                     log.info("投递【{}】公司，【{}】职位，招聘官:【{}】", company == null ? "未知公司: " + job.getHref() : company, position, recruiter);
                     returnList.add(job);
+                    noJobPages = 0;
                 } catch (Exception e) {
                     log.error("发送消息失败:{}", e.getMessage(), e);
                 }

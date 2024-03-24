@@ -88,12 +88,14 @@ public class ZhiLian {
                 WebElement close = CHROME_DRIVER.findElement(By.xpath("//img[@title='close-icon']"));
                 close.click();
             } catch (Exception e) {
-                WebElement result = CHROME_DRIVER.findElement(By.xpath("//div[@class='a-job-apply-workflow']"));
-                if (result.getText().contains("达到上限")) {
-                    log.info("今日投递已达上限！");
-                    isLimit = true;
-                    break;
-                }
+                try {
+                    WebElement result = CHROME_DRIVER.findElement(By.xpath("//div[@class='a-job-apply-workflow']"));
+                    if (result.getText().contains("达到上限")) {
+                        log.info("今日投递已达上限！");
+                        isLimit = true;
+                        break;
+                    }
+                } catch (Exception ignored) {}
             }
             try {
                 WebElement checkButton = CHROME_DRIVER.findElement(By.xpath("//div[contains(@class, 'applied-select-all')]//input"));
