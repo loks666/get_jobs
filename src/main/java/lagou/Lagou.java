@@ -22,7 +22,7 @@ public class Lagou {
     private static final Logger log = LoggerFactory.getLogger(Lagou.class);
 
     static Integer page = 1;
-    static Integer maxPage = 30;
+    static Integer maxPage = 500;
     static String baseUrl = "https://www.lagou.com/wn/jobs?fromSearch=true&kd=%s&city=%s&pn=%s";
     static String wechatUrl = "https://open.weixin.qq.com/connect/qrconnect?appid=wx9d8d3686b76baff8&redirect_uri=https%3A%2F%2Fpassport.lagou.com%2Foauth20%2Fcallback_weixinProvider.html&response_type=code&scope=snsapi_login#wechat_redirect";
     static int jobCount = 0;
@@ -54,7 +54,13 @@ public class Lagou {
             TimeUnit.SECONDS.sleep(3);
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
             CHROME_DRIVER.switchTo().window(tabs.get(1));
-            WebElement submit = CHROME_DRIVER.findElement(By.className("resume-deliver"));
+            WebElement submit;
+            try {
+                submit = CHROME_DRIVER.findElement(By.className("resume-deliver"));
+            } catch (Exception e) {
+                SeleniumUtil.sleep(10);
+                continue;
+            }
             if ("投简历".equals(submit.getText())) {
                 String jobTitle = null;
                 String companyName = null;
