@@ -42,8 +42,8 @@ public class ZhiLian {
     }
 
     private static void printResult() {
-        log.info("投递完成,共投递 {} 个岗位！", resultList.size());
         log.info("今日投递岗位:\n{}", resultList.stream().map(job -> job.toString(Platform.ZHILIAN)).collect(Collectors.joining("\n")));
+        log.info("投递完成,共投递 {} 个岗位！", resultList.size());
     }
 
     private static void submitJobs(String key) {

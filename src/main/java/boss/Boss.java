@@ -34,10 +34,10 @@ public class Boss {
     static List<String> blackRecruiters;
     static List<String> blackJobs;
     static List<Job> returnList = new ArrayList<>();
-    static List<String> keywords = List.of("大模型工程师", "Java", "Python", "Golang");
+    static List<String> keywords = List.of("大模型工程师", "AIGC", "AI", "Java", "Python", "Golang");
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
-    static final int noJobMaxPages = 10; // 无岗位最大页数
+    static final int noJobMaxPages = 5; // 无岗位最大页数
     static int noJobPages;
     static int lastSize;
 
@@ -80,25 +80,29 @@ public class Boss {
                 log.info("投递【{}】关键词第【{}】页", keyword, page);
                 String url = String.format(baseUrl, keyword, setYear(List.of()), cityCode.get("上海"), page);
                 int startSize = returnList.size();
-                Integer resultSize = resumeSubmission(url);
+                Integer resultSize = resumeSubmission(url, keyword);
                 if (resultSize == -1) {
                     log.info("今日沟通人数已达上限，请明天再试");
                     break endSubmission;
-                } else {
-                    if (startSize == resultSize) {
-                        noJobPages++;
-                        if (noJobPages >= noJobMaxPages) {
-                            log.info("【{}】关键词已经连续【{}】页无岗位，结束该关键词的投递...", keyword, noJobPages);
-                            break;
-                        } else {
-                            log.info("【{}】关键词第【{}】页无岗位,目前已连续【{}】页无岗位...", keyword, page, noJobPages);
-                        }
-                    } else {
-                        lastSize = resultSize;
-                        noJobPages = 0;
-                    }
-                    page++;
                 }
+                if (resultSize == -2) {
+                    log.info("出现异常访问，请手动过验证后再继续投递...");
+                    break endSubmission;
+                }
+                if (resultSize == startSize) {
+                    noJobPages++;
+                    if (noJobPages >= noJobMaxPages) {
+                        log.info("【{}】关键词已经连续【{}】页无岗位，结束该关键词的投递...", keyword, noJobPages);
+                        break;
+                    } else {
+                        log.info("【{}】关键词第【{}】页无岗位,目前已连续【{}】页无新岗位...", keyword, page, noJobPages);
+                    }
+                } else {
+                    lastSize = resultSize;
+                    noJobPages = 0;
+                }
+                page++;
+
             }
         }
         Date end = new Date();
@@ -228,7 +232,7 @@ public class Boss {
     }
 
     @SneakyThrows
-    private static Integer resumeSubmission(String url) {
+    private static Integer resumeSubmission(String url, String keyword) {
         CHROME_DRIVER.get(url);
         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='job-title clearfix']")));
         List<WebElement> jobCards = CHROME_DRIVER.findElements(By.cssSelector("li.job-card-wrapper"));
@@ -242,7 +246,8 @@ public class Boss {
                 continue;
             }
             String jobName = jobCard.findElement(By.cssSelector("div.job-title span.job-name")).getText();
-            if (blackJobs.stream().anyMatch(jobName::contains)) {
+            boolean isNotTargetJob = (keyword.contains("大模型") || keyword.contains("AI")) && !jobName.contains("AI") && !jobName.contains("人工智能") && !jobName.contains("大模型") && !jobName.contains("生成");
+            if (blackJobs.stream().anyMatch(jobName::contains) || isNotTargetJob) {
                 // 排除黑名单岗位
                 continue;
             }
@@ -273,7 +278,14 @@ public class Boss {
             // 切换到新的标签页
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
             CHROME_DRIVER.switchTo().window(tabs.get(tabs.size() - 1));
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
+            try {
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
+            } catch (Exception e) {
+                WebElement element = SeleniumUtil.findElement(By.xpath("//div[@class='error-content']"));
+                if (element != null && element.getText().contains("异常访问")) {
+                    return -2;
+                }
+            }
             SeleniumUtil.sleep(1);
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             if ("立即沟通".equals(btn.getText())) {
