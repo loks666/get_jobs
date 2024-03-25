@@ -226,8 +226,12 @@ public class Lagou {
     }
 
     private static boolean isLoginRequired() {
-        WebElement header = CHROME_DRIVER.findElement(By.id("lg_tbar"));
-        return header.getText().contains("登录");
+        try {
+            WebElement header = CHROME_DRIVER.findElement(By.id("lg_tbar"));
+            return header.getText().contains("登录");
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     private static void scanLogin() {
