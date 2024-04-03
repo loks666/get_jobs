@@ -6,7 +6,7 @@
 
     <groupId>com.superxiang</groupId>
     <artifactId>get_jobs</artifactId>
-    <version>v1.0.1</version>
+    <version>v1.0.2</version>
     <name>get_jobs</name>
 
     <parent>
@@ -62,6 +62,14 @@
             <version>5.3.0</version>
         </dependency>
     </dependencies>
+
+    <distributionManagement>
+        <repository>
+            <id>get_jobs</id>
+            <name>get_jobs</name>
+            <url>https://maven.pkg.github.com/loks666/get_jobs</url>
+        </repository>
+    </distributionManagement>
 
     <build>
         <plugins>
