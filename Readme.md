@@ -4,6 +4,7 @@
 </div><br>
 
 ### 特色功能
+- 支持国内全部招聘平台！(Boss直聘、猎聘、拉勾、51job、智联招聘)
 - 支持cookie登录，每日仅需扫码一次
 - 内置xpathHelper插件，方便快速定位元素
 - 全局日志记录，投递记录可追踪
@@ -111,7 +112,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
    最新版猎聘手机端可以自定义打招呼方式，只要不主动发消息，可以无限制对猎头打招呼，目前默认配置已支持这样做。
    ```
 
-- 智联招聘([ZhiLian.java](src%2Fmain%2Fjava%2Fzhilian%2FZhiLian.java))【投递上限100左右，岗位质量较差】
+- 智联招聘([ZhiLian.java](src%2Fmain%2Fjava%2Fzhilian%2FZhiLian.java))【投递上限100左右，岗位质量较差,走投无路可以考虑】
 
    ```
   智联招聘需要指定默认投递简历(在线简历 or 附件简历)，否则会投递失败
