@@ -59,7 +59,12 @@ public class ZhiLian {
             CHROME_DRIVER.get(searchUrl.formatted(cityCode, key, salaryScope, String.valueOf(i)));
             log.info("开始投递【{}】关键词，第【{}】页...", key, i);
             // 等待岗位出现
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='positionlist']")));
+            try {
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='positionlist']")));
+            } catch (Exception ignore) {
+                CHROME_DRIVER.navigate().refresh();
+                SeleniumUtil.sleep(1);
+            }
             // 全选
             WebElement allSelect = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//i[@class='betch__checkall__checkbox']")));
             allSelect.click();
