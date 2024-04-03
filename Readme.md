@@ -175,7 +175,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 ## 联系方式📧
 
 - V2VDaGF0OkFpckVsaWF1azk1Mjcs6K+35aSH5rOo77ya5pq06aOO6Zuo5bCx6KaB5p2l5LqG
-- 添加上面的微信，或者进入QQ群，联系进入微信群
+- 如想进入微信群，请添加上面的微信，或者进入QQ群联系
 
 ## QQ群
 - 扫码添加：加群答案为本项目仓库名【是仓库名！】  
