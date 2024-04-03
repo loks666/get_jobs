@@ -29,9 +29,7 @@
 > driver路径为：**src/main/resources/chromedriver.exe** 版本号：122.0.6261.112  
 > Chrome需要版本为:122.0.6261.112
 
-> 例：你的Chrome【注意不是driver】路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil
-**
-> 的 **getChromeDriver( )** 代码
+> 例：你的Chrome【注意不是driver】路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil** 的 **getChromeDriver( )** 代码，如下所示：
 
 ```
 options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
