@@ -3,7 +3,6 @@
     💼自动投简历(Boss直聘、猎聘、拉勾、51job、智联招聘)
 </div><br>
 
-- 本项目受此启发:https://github.com/BeammNotFound/get-jobs-51job , 感谢大佬，让我们将爱传递下去~
 ### 特色功能
 - 支持cookie登录，每日仅需扫码一次
 - 内置xpathHelper插件，方便快速定位元素
@@ -178,4 +177,6 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 
 --- 
 
-授人以渔: [自定义修改你的代码](https://github.com/loks666/get_jobs/wiki/授人以渔‐自定义修改你的代码)
+- 授人以渔: [自定义修改你的代码](https://github.com/loks666/get_jobs/wiki/授人以渔‐自定义修改你的代码)
+
+- 本项目受此启发:https://github.com/BeammNotFound/get-jobs-51job , 感谢大佬，让我们将爱传递下去~
