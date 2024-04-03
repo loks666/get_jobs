@@ -55,7 +55,7 @@
                 <id>aliyunmavenApache</id>
                 <url>https://maven.aliyun.com/repository/apache-snapshots</url>
             </repository>
-        </repositories>             
-     </profile>
+        </repositories>
+    </profile>
   </profiles>
 </settings>
