@@ -148,7 +148,7 @@ public class Job51 {
 
     @SneakyThrows
     private static Boolean page() {
-        Thread.sleep(1000);
+        SeleniumUtil.sleep(10);
         // 选择所有岗位，批量投递
         List<WebElement> checkboxes = CHROME_DRIVER.findElements(By.cssSelector("div.ick"));
         if (checkboxes.isEmpty()) {
