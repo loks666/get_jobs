@@ -148,7 +148,7 @@
 
 ****
 
-## 免责声名
+## 免责声明
 
 为避免别有用心之人利用本代码进行违法活动，特此声明：
 
@@ -201,6 +201,7 @@
 
 - 本项目受此启发:https://github.com/BeammNotFound/get-jobs-51job , 感谢大佬，让我们将爱传递下去~
 
+--- 
 ## 请我喝杯咖啡☕️
 
 <img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
