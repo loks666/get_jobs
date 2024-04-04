@@ -1,9 +1,13 @@
-<h1 align="center"> get-jobs</h1>
-<div align="center">
+<h1 style="text-align:center">get-jobs</h1>
+<div style="text-align:center">
+    <a href="https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606"><img src="https://img.shields.io/badge/QQ交流群-get_jobs-0FB5EB?labelColor=235389&logo=tencent-qq&logoColor=white&style=flat" alt=""></a>
+</div>
+<div style="text-align:center">
     💼自动投简历(Boss直聘、猎聘、拉勾、51job、智联招聘)
 </div><br>
 
 ### 特色功能
+
 - 支持国内全部招聘平台(Boss直聘、猎聘、拉勾、51job、智联招聘)
 - 内置driver驱动，自动判断系统环境，选择适配的驱动版本
 - 支持cookie登录，每日仅需扫码一次
@@ -22,10 +26,11 @@
 
 > 目前driver版本号：122.0.6261.112  
 > chrome需要版本为：122.0.6261.112及以上(默认最新即可)
- 
+
 - 目前程序自动判断系统环境，使用对应的chromedriver，无需手动下载
 - 但是你的Chrome版本必须是在Chrome官网下载的，并且为最新版本，才可使用
-- 由于github隐私问题无法将mac版的驱动上传，所以需要解压[chromedriver.zip](src%2Fmain%2Fresources%2Fchromedriver.zip)，其中就是mac版的驱动
+- 由于github隐私问题无法将mac版的驱动上传，所以需要解压[chromedriver.zip](src%2Fmain%2Fresources%2Fchromedriver.zip)
+  ，其中就是mac版的驱动
 
 更多详情请点击:[环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
 
@@ -42,7 +47,9 @@
 
 
 - boss直聘([Boss.java](src/main/java/boss/Boss.java))【每日仅可发起100次新聊天，活跃度还行，但是每日投递次数太少】
-> 注意：Boss必须要关闭手动打招呼,设置Constant类的SAY_HI为你的打招呼语，否则会投递失败 
+
+> 注意：Boss必须要关闭手动打招呼,设置Constant类的SAY_HI为你的打招呼语，否则会投递失败
+
   ```
   experience //工作年限:在校生=108, 应届生=102, 经验不限=101, 一年以内=103, 1-3年=104, 3-5年=105, 5-10年=106, 10年以上=107
       └──设置工作年限：setYear(List.of("1-3年", "3-5年") //此为选择多种经验的方式，默认不设置年限筛选，需要手动添加
@@ -88,7 +95,9 @@
    ```
 
 - 猎聘([Liepin.java](src/main/java/liepin/Liepin.java))【默认打招呼无上限，主动发消息有上限，虽然成功率不高，好在量大】
+
 > 注意：需要在猎聘App最新版设置打招呼语(默或者自定义皆可)，即可自动发送消息，不会被限制
+
    ```
    猎聘已支持cookie登录，有效期内无须每次扫码，只可微信扫码，请绑定微信账号
   
@@ -146,6 +155,7 @@
 - 现在这个大环境下就算有脚本的帮助可能机会也很少，但总归要试一试，不是么？
 - 开源这个项目也希望能帮到真正需要它的人，不希望被任何有心之人利用
 - 最后，希望各位永远不需要本项目的帮助，但别忘了star哟！
+
 > 已经有人在交流群里发广告等与本项目无关的信息  
 > 如果带着不同目的或者没想清楚就进群的  
 > 一经发现群主会对您的家人及朋友进行亲切(没有素质)的问候  
@@ -169,7 +179,8 @@
 - 如想进入微信群，请添加上面的微信，或者进入QQ群联系
 
 ## QQ群
-- 扫码添加：加群答案为本项目仓库名【是仓库名！】  
+
+- 扫码添加：加群答案为本项目仓库名【是仓库名！】
 
 <img src="./src/main/resources/images/qq.jpg" alt="qq群" WIDTH="500">
 
@@ -177,16 +188,16 @@
 
 [![][qq-shield-badge]][qq-link]
 
-
 ## 付费部署
+
 - 本项目文档已相对完善，如仍需付费部署，请添加QQ群或微信联系群主
 - win下环境部署：50/次
 - mac下环境部署：100/次
-- 如需定制修改具体功能请联系商议  
+- 如需定制修改具体功能请联系商议
 - 注意：
-  1. 付费部署若下载chrome需要自备梯子，请知悉
-  2. 本项目不支持服务器部署，无须尝试，如招聘网站发现访问者为服务器IP，不会返回任何网站数据
-  
+    1. 付费部署若下载chrome需要自备梯子，请知悉
+    2. 本项目不支持服务器部署，无须尝试，如招聘网站发现访问者为服务器IP，不会返回任何网站数据
+
 --- 
 
 - 授人以渔: [自定义修改你的代码](https://github.com/loks666/get_jobs/wiki/授人以渔‐自定义修改你的代码)
@@ -195,6 +206,6 @@
 
 <!-- LINK GROUP -->
 
-[qq-link]: http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606
+[qq-link]: https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606
 
 [qq-shield-badge]: https://img.shields.io/badge/QQ交流群-get_jobs-0FB5EB?labelColor=235389&logo=tencent-qq&logoColor=white&style=flat
