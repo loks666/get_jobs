@@ -14,6 +14,7 @@
 - 内置xpathHelper插件，方便快速定位元素
 - 全局日志记录，投递记录可追踪
 - Boss直聘默认过滤猎头岗位，可修改代码自定义
+- QQ交流群暗號：get_jobs
 
 ### 注意事项
 
@@ -180,7 +181,7 @@
 
 ## QQ群
 
-- 扫码添加：加群答案为本项目仓库名【是仓库名！】
+- 扫码添加：加群答案为本项目仓库名【get_jobs】
 
 <img src="./src/main/resources/images/qq.jpg" alt="qq群" WIDTH="500">
 
