@@ -1,8 +1,8 @@
-<h1 style="text-align:center">get-jobs</h1>
-<div style="text-align:center">
+<h1 align="center">get-jobs</h1>
+<div align="center">
     <a href="https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606"><img src="https://img.shields.io/badge/QQ交流群-get_jobs-0FB5EB?labelColor=235389&logo=tencent-qq&logoColor=white&style=flat" alt=""></a>
 </div>
-<div style="text-align:center">
+<div align="center">
     💼自动投简历(Boss直聘、猎聘、拉勾、51job、智联招聘)
 </div><br>
 
