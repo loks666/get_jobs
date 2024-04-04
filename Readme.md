@@ -170,10 +170,6 @@
 
 <img src="./src/main/resources/images/liepin.png" alt="Boss投递日志">
 
-## 请我喝杯咖啡☕️
-
-<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
-
 ## 联系方式📧
 
 - V2VDaGF0OkFpckVsaWF1azk1Mjcs6K+35aSH5rOo77ya5pq06aOO6Zuo5bCx6KaB5p2l5LqG
@@ -204,6 +200,10 @@
 - 授人以渔: [自定义修改你的代码](https://github.com/loks666/get_jobs/wiki/授人以渔‐自定义修改你的代码)
 
 - 本项目受此启发:https://github.com/BeammNotFound/get-jobs-51job , 感谢大佬，让我们将爱传递下去~
+
+## 请我喝杯咖啡☕️
+
+<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
 
 <!-- LINK GROUP -->
 
