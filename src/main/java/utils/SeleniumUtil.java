@@ -11,12 +11,14 @@ import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 
+import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static utils.Constant.*;
@@ -28,17 +30,45 @@ public class SeleniumUtil {
         SeleniumUtil.getActions();
         SeleniumUtil.getWait(WAIT_TIME);
     }
+
     public static void getChromeDriver() {
         ChromeOptions options = new ChromeOptions();
         // 添加扩展插件
-        options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
+        String osName = System.getProperty("os.name").toLowerCase();
+        log.info("当前操作系统为【{}】", osName);
+        String osType = getOSType(osName);
+        switch (osType) {
+            case "windows":
+                options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
+                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver.exe");
+                break;
+            case "mac":
+                options.setBinary("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
+                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver");
+                break;
+            default:
+                log.info("你这什么破系统，没见过，别跑了!");
+                break;
+        }
         options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
-        System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver.exe");
-        options.addArguments("--window-position=2600,750"); //将窗口移动到副屏的起始位置
-        options.addArguments("--window-size=1600,1000"); //设置窗口大小以适应副屏分辨率
+        GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+        if (screens.length > 1) {
+            options.addArguments("--window-position=2600,750"); //将窗口移动到副屏的起始位置
+            options.addArguments("--window-size=1600,1000"); //设置窗口大小以适应副屏分辨率
+        }
         options.addArguments("--start-maximized"); //最大化窗口
 //        options.addArguments("--headless"); //使用无头模式
         CHROME_DRIVER = new ChromeDriver(options);
+    }
+
+    private static String getOSType(String osName) {
+        if (osName.contains("win")) {
+            return "windows";
+        } else if (osName.contains("mac") || osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
+            return "mac";
+        } else {
+            return "unknown";
+        }
     }
 
     public static void saveCookie(String path) {
@@ -77,7 +107,7 @@ public class SeleniumUtil {
         JSONArray jsonArray = null;
         try {
             String jsonText = new String(Files.readAllBytes(Paths.get(cookiePath)));
-            if (!jsonText.isBlank()){
+            if (!jsonText.isBlank()) {
                 jsonArray = new JSONArray(jsonText);
             }
         } catch (IOException e) {

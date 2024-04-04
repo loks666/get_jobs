@@ -5,6 +5,7 @@
 
 ### 特色功能
 - 支持国内全部招聘平台(Boss直聘、猎聘、拉勾、51job、智联招聘)
+- 内置driver驱动，自动判断系统环境，选择适配的驱动版本
 - 支持cookie登录，每日仅需扫码一次
 - 内置xpathHelper插件，方便快速定位元素
 - 全局日志记录，投递记录可追踪
@@ -13,27 +14,17 @@
 ### 注意事项
 
 - 由于不同系统的页面不一样，导致可能不兼容，文末会给出文档，尽可能让大家能自定义修改
-- 需要关闭墙外代理，由于主要针对的国内平台，墙外代理会导致页面加载缓慢
-- 如果你没有副屏，需要注释掉以下代码
-   ```
-   options.addArguments("--window-position=2600,750"); // 将窗口移动到副屏的起始位置
-   options.addArguments("--window-size=1600,1000"); // 设置窗口大小以适应副屏分辨率
-   ```
-- boss出现访问异常：使用selenium在登录成功后boss会进行无限重定向导致账号ip异常(较低几率)
-    - 解决方案：一般3秒后如果代码没有打开新的界面请关闭脚本并重新运行，若已出现异常，则手动过验证后重新运行即可。
+- 必须要关闭墙外代理，由于主要针对的国内平台，墙外代理会导致页面加载缓慢
 
 ## 如何使用？
 
 #### 第一步：环境配置:JDK17+、Maven、Chrome、ChromeDriver
 
-> driver路径为：**src/main/resources/chromedriver.exe** 版本号：122.0.6261.112  
-> Chrome需要版本为:122.0.6261.112
-
-> 例：你的Chrome【注意不是driver】路径是：**C:/Program Files/Google/Chrome/Application/chrome.exe** , 则修改 **SeleniumUtil** 的 **getChromeDriver( )** 代码，如下所示：
-
-```
-options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
-```
+> 目前driver版本号：122.0.6261.112  
+> chrome需要版本为：122.0.6261.112及以上(默认最新即可)
+ 
+- 目前程序自动判断系统环境，使用对应的chromedriver，无需手动下载
+- 但是你的Chrome版本必须是在Chrome官网下载的，并且为最新版本，才可使用
 
 更多详情请点击:[环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
 
@@ -50,6 +41,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 
 
 - boss直聘([Boss.java](src/main/java/boss/Boss.java))【每日仅可发起100次新聊天，活跃度还行，但是每日投递次数太少】
+> 注意：Boss必须要关闭手动打招呼,设置Constant类的SAY_HI为你的打招呼语，否则会投递失败 
   ```
   experience //工作年限:在校生=108, 应届生=102, 经验不限=101, 一年以内=103, 1-3年=104, 3-5年=105, 5-10年=106, 10年以上=107
       └──设置工作年限：setYear(List.of("1-3年", "3-5年") //此为选择多种经验的方式，默认不设置年限筛选，需要手动添加
@@ -95,7 +87,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
    ```
 
 - 猎聘([Liepin.java](src/main/java/liepin/Liepin.java))【默认打招呼无上限，主动发消息有上限，虽然成功率不高，好在量大】
-
+> 注意：需要在猎聘App最新版设置打招呼语(默或者自定义皆可)，即可自动发送消息，不会被限制
    ```
    猎聘已支持cookie登录，有效期内无须每次扫码，只可微信扫码，请绑定微信账号
   
@@ -190,7 +182,7 @@ options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
 - win下环境部署：50/次
 - mac下环境部署：100/次
 - 如需定制修改具体功能请联系商议  
-- 注意：本项目不支持服务器部署，因为招聘网站发现访问者为服务器IP，不会返回任何网站数据
+- 注意：本项目不支持服务器部署，如招聘网站发现访问者为服务器IP，不会返回任何网站数据
 --- 
 
 - 授人以渔: [自定义修改你的代码](https://github.com/loks666/get_jobs/wiki/授人以渔‐自定义修改你的代码)
