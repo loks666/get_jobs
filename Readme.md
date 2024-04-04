@@ -25,6 +25,7 @@
  
 - 目前程序自动判断系统环境，使用对应的chromedriver，无需手动下载
 - 但是你的Chrome版本必须是在Chrome官网下载的，并且为最新版本，才可使用
+- 由于github隐私问题无法将mac版的驱动上传，所以需要解压[chromedriver.zip](src%2Fmain%2Fresources%2Fchromedriver.zip)，其中就是mac版的驱动
 
 更多详情请点击:[环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
 
