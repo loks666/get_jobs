@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.Job;
 import utils.SeleniumUtil;
-import utils.TelegramNotificationBot;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +25,6 @@ import static utils.Constant.*;
  */
 public class Boss {
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
-    static boolean EnableNotifications = false;
     static Integer page = 1;
     static String homeUrl = "https://www.zhipin.com";
     static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&experience=%s&city=%s&page=%s";
@@ -111,9 +109,6 @@ public class Boss {
         long minutes = durationSeconds / 60;
         long seconds = durationSeconds % 60;
         String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
-        if (EnableNotifications) {
-            new TelegramNotificationBot().sendMessageWithList(message, returnList.stream().map(Job::toString).toList(), "Boss直聘投递");
-        }
 //        saveData(dataPath);
         log.info(message);
         CHROME_DRIVER.close();
