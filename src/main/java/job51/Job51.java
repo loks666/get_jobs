@@ -35,21 +35,15 @@ public class Job51 {
         put(4, "距离优先");
     }};
     static List<String> returnList = new ArrayList<>();
-    static Map<Integer, String> keywords = new HashMap<>() {{
-        put(0, "java");
-        put(1, "python");
-        put(2, "go");
-        put(3, "golang");
-        put(4, "大模型");
-        put(5, "软件工程师");
-    }};
+    static List<String> keywords = List.of("java", "python", "go", "golang", "大模型", "软件工程师");
+
 
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
         Date sdate = new Date();
         Login();
 
-        resume(String.format(baseUrl, keywords.get(0)));
+        keywords.forEach(keyword -> resume(String.format(baseUrl, keyword)));
         Date edate = new Date();
         log.info("共投递{}个简历,用时{}分", returnList.size(),
                 ((edate.getTime() - sdate.getTime()) / 1000) / 60);
