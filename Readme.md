@@ -30,10 +30,9 @@
 
 - 目前程序自动判断系统环境，使用对应的chromedriver，无需手动下载
 - 但是你的Chrome版本必须是在Chrome官网下载的，并且为最新版本，才可使用
-- 由于github隐私问题无法将mac版的驱动上传，所以需要解压[chromedriver.zip](src%2Fmain%2Fresources%2Fchromedriver.zip)
-  ，其中就是mac版的驱动
+- 如果你是mac，需要解压【[chromedriver.zip](src%2Fmain%2Fresources%2Fchromedriver.zip)】后才能使用
 
-更多详情请点击:[环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
+更多环境配置详情请点击：[环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
 
 #### 第二步：修改代码(一般默认即可)
 
@@ -49,7 +48,7 @@
 
 - boss直聘([Boss.java](src/main/java/boss/Boss.java))【每日仅可发起100次新聊天，活跃度还行，但是每日投递次数太少】
 
-  > 注意：Boss必须要关闭手动打招呼,设置Constant类的SAY_HI为你的打招呼语，否则会投递失败
+  > 注意：Boss必须要关闭自动打招呼,设置Constant类的SAY_HI为你的打招呼语，否则会投递失败
 
   ```
   experience //工作年限:在校生=108, 应届生=102, 经验不限=101, 一年以内=103, 1-3年=104, 3-5年=105, 5-10年=106, 10年以上=107

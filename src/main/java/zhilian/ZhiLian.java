@@ -66,8 +66,13 @@ public class ZhiLian {
                 SeleniumUtil.sleep(1);
             }
             // 全选
-            WebElement allSelect = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//i[@class='betch__checkall__checkbox']")));
-            allSelect.click();
+            try {
+                WebElement allSelect = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//i[@class='betch__checkall__checkbox']")));
+                allSelect.click();
+            } catch (Exception e) {
+                log.info("没有全选按钮，程序退出...");
+                System.exit(-1);
+            }
 
             // 投递
             WebElement submit = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='a-job-apply-button']")));
