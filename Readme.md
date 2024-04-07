@@ -128,22 +128,8 @@
 
 #### 最后一步：运行代码
 
-- 直接运行你想要投递平台的下的代码即可
-
-****
-
-#### 其他的有需要可以改，放开注释即可，不改不影响运行
-
-- TelegramBot机器人通知（可选，需要代理）
-   ```
-   TELEGRAM_API_TOKEN: 你的机器人的token
-   CHAT_ID: 你的机器人的chat_id
-   ```
-
-- 推送Telegram消息
-   ```
-   new TelegramNotificationBot().sendMessageWithList(message, returnList, "xx平台投递");
-   ```
+- 直接运行你想要投递平台的下的代码即可  
+ ![运行图片](src/main/resources/images/run1.png)
 
 ****
 
