@@ -22,6 +22,11 @@
 - 必须要关闭墙外代理，由于主要针对的国内平台，墙外代理会导致页面加载缓慢
 
 ## 如何使用？
+#### 前置准备：使用git拉取代码
+```
+git clone https://github.com/loks666/get_jobs.git
+cd get_jobs
+```
 
 #### 第一步：环境配置:JDK17+、Maven、Chrome、ChromeDriver
 
@@ -34,8 +39,7 @@
 
 更多环境配置详情请点击：[环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
 
-#### 第二步：修改代码(一般默认即可)
-
+#### 第二步：修改代码(一般默认即可,需要修改自己的地区和岗位)
 - 通用配置
     - **page** ：从第几页开始投递，page不能小于1<br>
     - **maxPage**：投递到第几页<br>
