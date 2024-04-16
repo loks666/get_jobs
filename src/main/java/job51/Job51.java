@@ -25,15 +25,8 @@ public class Job51 {
     static Integer maxPage = 50;
     static String cookiePath = "./src/main/java/job51/cookie.json";
     static String homeUrl = "https://www.51job.com";
-    static String loginUrl = "https://login.51job.com/login.php?lang=c&url=http%3A%2F%2Fwww.51job.com%2F&qrlogin=2";
+    static String loginUrl = "https://login.51job.com/login.php?lang=c&url=https://www.51job.com/&qrlogin=2";
     static String baseUrl = "https://we.51job.com/pc/search?keyword=%s&jobArea=020000&searchType=2&sortType=0&metro=";
-    static Map<Integer, String> jobs = new HashMap<>() {{
-        put(0, "综合排序");
-        put(1, "活跃职位优先");
-        put(2, "最新优先");
-        put(3, "薪资优先");
-        put(4, "距离优先");
-    }};
     static List<String> returnList = new ArrayList<>();
     static List<String> keywords = List.of("java", "python", "go", "golang", "大模型", "软件工程师");
 
@@ -110,7 +103,7 @@ public class Job51 {
                     mytxt.sendKeys(String.valueOf(j));
                     WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage"))).click();
                     ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
-                    log.info("{} 中，第 {} 页", jobs.get(i), j);
+                    log.info("第 {} 页", j);
                     break;
                 } catch (Exception e) {
                     TimeUnit.SECONDS.sleep(1);
