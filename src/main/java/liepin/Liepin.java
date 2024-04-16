@@ -125,7 +125,7 @@ public class Liepin {
                 continue;
             }
             String text = button.getText();
-            log.info("{}:{}", recruiterName, text);
+//            log.info("{}:{}", recruiterName, text);
             if (text.contains("聊一聊")) {
                 button.click();
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("__im_basic__header-wrap")));
