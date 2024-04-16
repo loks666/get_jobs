@@ -2,16 +2,18 @@ package liepin;
 
 import lombok.SneakyThrows;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import utils.JobUtils;
 import utils.SeleniumUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static utils.Constant.*;
-import static utils.Constant.CHROME_DRIVER;
 import static utils.SeleniumUtil.isCookieValid;
 
 public class Liepin {
@@ -19,18 +21,16 @@ public class Liepin {
     static String homeUrl = "https://www.liepin.com/";
     static String cookiePath = "./src/main/java/liepin/cookie.json";
     static int maxPage = 50;
-    static String cityCode = "020";
-    static List<String> keywords = List.of("AIGC", "Python", "Golang", "大模型", "Java");
     static List<String> resultList = new ArrayList<>();
-    static String search = "https://www.liepin.com/zhaopin/?dq=%s&currentPage=%s&key=%s";
-    static boolean isSayHi = false;
-    static boolean isStop = false;
+    static String baseUrl = "https://www.liepin.com/zhaopin/?";
+    static LiepinConfig config = LiepinConfig.init();
 
 
     public static void main(String[] args) {
+        String searchUrl = getSearchUrl();
         SeleniumUtil.initDriver();
         login();
-        for (String keyword : keywords) {
+        for (String keyword : config.getKeywords()) {
             submit(keyword);
         }
         printResult();
@@ -45,8 +45,8 @@ public class Liepin {
 
     @SneakyThrows
     private static void submit(String keyword) {
-        String searchUrl = search.formatted(cityCode, 0, keyword);
-        CHROME_DRIVER.get(searchUrl);
+        String searchUrl = getSearchUrl();
+        CHROME_DRIVER.get(searchUrl + "&key=" + keyword);
         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("list-pagination-box")));
         WebElement div = CHROME_DRIVER.findElement(By.className("list-pagination-box"));
         List<WebElement> lis = div.findElements(By.tagName("li"));
@@ -55,14 +55,23 @@ public class Liepin {
             WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("subscribe-card-box")));
             log.info("正在投递【{}】第【{}】页...", keyword, i + 1);
             submitJob();
+            log.info("已投递第【{}】页所有的岗位...\n", i + 1);
             div = CHROME_DRIVER.findElement(By.className("list-pagination-box"));
             WebElement nextPage = div.findElement(By.xpath(".//li[@title='Next Page']"));
             if (nextPage.getAttribute("disabled") == null) {
                 nextPage.click();
+            } else {
+                break;
             }
-            log.info("已投递第【{}】页所有的岗位...\n", i + 1);
         }
         log.info("【{}】关键词投递完成！", keyword);
+    }
+
+    private static String getSearchUrl() {
+        return baseUrl +
+                JobUtils.appendParam("city", config.getCityCode()) +
+                JobUtils.appendParam("salary", config.getSalary()) +
+                "&currentPage=" + 0 + "&dq=" + config.getCityCode();
     }
 
 
@@ -78,13 +87,14 @@ public class Liepin {
 
     private static void submitJob() {
         int count = CHROME_DRIVER.findElements(By.cssSelector("div.job-list-box div[style*='margin-bottom']")).size();
+        System.out.println(count);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; i++) {
             String jobName = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'job-title-box')]")).get(i).getText().replaceAll("\n", " ").replaceAll("【 ", "[").replaceAll(" 】", "]");
             String companyName = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'company-name')]")).get(i).getText().replaceAll("\n", " ");
             String salary = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'job-salary')]")).get(i).getText().replaceAll("\n", " ");
             String recruiterName = null;
-            WebElement name = null;
+            WebElement name;
             try {
                 name = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'recruiter-name')]")).get(i);
                 recruiterName = name.getText();
@@ -99,10 +109,13 @@ public class Liepin {
             } catch (Exception e) {
                 log.info("【{}】招聘人员:【{}】没有职位描述", companyName, recruiterName);
             }
+            JavascriptExecutor js = CHROME_DRIVER;
+            WebElement profile = CHROME_DRIVER.findElements(By.xpath("//img[@class='jsx-1313209507']")).get(i);
+            js.executeScript("window.scrollBy(0, 128);");
             try {
-                ACTIONS.moveToElement(name).perform();
-            } catch (Exception e) {
-                log.error("鼠标移动到HR标签异常...");
+                ACTIONS.moveToElement(profile).perform();
+            } catch (Exception ignore) {
+                log.error("这个猎头没有按钮...");
             }
             WebElement button;
             try {
@@ -112,31 +125,13 @@ public class Liepin {
                 continue;
             }
             String text = button.getText();
+            log.info("{}:{}", recruiterName, text);
             if (text.contains("聊一聊")) {
                 button.click();
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("__im_basic__header-wrap")));
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//textarea[contains(@class, '__im_basic__textarea')]")));
                 WebElement input = CHROME_DRIVER.findElement(By.xpath("//textarea[contains(@class, '__im_basic__textarea')]"));
                 input.click();
-                if (isSayHi) {
-                    input.sendKeys(SAY_HI);
-                    WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[contains(@class, '__im_basic__basic-send-btn')]")));
-                    send.click();
-                    try {
-                        WebElement result = CHROME_DRIVER.findElement(By.xpath("//div[@class='__im_basic__message']"));
-                        if (result.getText().contains("已达上限")) {
-                            if (isStop) {
-                                printResult();
-                                CHROME_DRIVER.close();
-                                CHROME_DRIVER.quit();
-                                System.exit(0);
-                            }
-                            log.info("发起会话已达上限，将开始使用系统使用默认打招呼方式...");
-                            isSayHi = false;
-                        }
-                    } catch (Exception ignored) {
-                    }
-                }
                 SeleniumUtil.sleep(1);
                 WebElement close = CHROME_DRIVER.findElement(By.cssSelector("div.__im_basic__contacts-title svg"));
                 close.click();
@@ -146,10 +141,7 @@ public class Liepin {
                 sb.setLength(0);
                 log.info("发起新聊天:【{}】的【{}·{}】岗位, 【{}:{}】", companyName, jobName, salary, recruiterName, recruiterTitle);
             }
-            else {
-//                log.info("【{}】的【{}】已经聊过,可以和TA:【{}】", companyName, recruiterName, text);
-            }
-            ACTIONS.moveByOffset(120, 0).perform();
+            ACTIONS.moveByOffset(125, 0).perform();
         }
     }
 

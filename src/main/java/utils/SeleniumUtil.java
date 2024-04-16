@@ -1,15 +1,16 @@
 package utils;
 
-import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.openqa.selenium.*;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Cookie;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
-import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.WebDriverWait;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.File;
@@ -17,14 +18,19 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static utils.Constant.*;
 
-@Slf4j
 public class SeleniumUtil {
+    private static final Logger log = LoggerFactory.getLogger(SeleniumUtil.class);
+
     public static void initDriver() {
         SeleniumUtil.getChromeDriver();
         SeleniumUtil.getActions();
@@ -91,6 +97,11 @@ public class SeleniumUtil {
             jsonArray.put(jsonObject);
         }
         // 将JSONArray写入到一个文件中
+        saveCookieToFile(jsonArray, path);
+    }
+
+    private static void saveCookieToFile(JSONArray jsonArray, String path) {
+        // 将JSONArray写入到一个文件中
         try (FileWriter file = new FileWriter(path)) {
             file.write(jsonArray.toString(4));  // 使用4个空格的缩进
             log.info("Cookie已保存到文件：{}", path);
@@ -102,7 +113,6 @@ public class SeleniumUtil {
     public static void loadCookie(String cookiePath) {
         // 首先清除由于浏览器打开已有的cookies
         CHROME_DRIVER.manage().deleteAllCookies();
-
         // 从文件中读取JSONArray
         JSONArray jsonArray = null;
         try {
@@ -123,11 +133,11 @@ public class SeleniumUtil {
                 String path = jsonObject.getString("path");
                 Date expiry = null;
                 if (!jsonObject.isNull("expiry")) {
-                    expiry = new Date(jsonObject.getLong("expiry"));
+                    expiry = new Date(Instant.now().plus(7, ChronoUnit.DAYS).toEpochMilli());
+                    jsonObject.put("expiry", Instant.now().plus(7, ChronoUnit.DAYS).toEpochMilli()); // 更新expiry
                 }
                 boolean isSecure = jsonObject.getBoolean("isSecure");
                 boolean isHttpOnly = jsonObject.getBoolean("isHttpOnly");
-
                 // 使用这些信息来创建新的Cookie对象，并将它们添加到WebDriver中
                 Cookie cookie = new Cookie.Builder(name, value)
                         .domain(domain)
@@ -142,6 +152,8 @@ public class SeleniumUtil {
                     log.error("【小问题无须担心】cookie添加异常:【{}】", cookie);
                 }
             }
+            // 将修改后的jsonArray写回文件
+            saveCookieToFile(jsonArray, cookiePath);
         }
     }
 
@@ -200,4 +212,5 @@ public class SeleniumUtil {
     public static boolean isCookieValid(String cookiePath) {
         return Files.exists(Paths.get(cookiePath));
     }
+
 }
