@@ -9,6 +9,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.Job;
+import utils.JobUtils;
 import utils.SeleniumUtil;
 
 import java.io.IOException;
@@ -17,7 +18,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static utils.Constant.*;
+import static utils.Constant.CHROME_DRIVER;
+import static utils.Constant.WAIT;
 
 /**
  * @author loks666
@@ -27,56 +29,32 @@ public class Boss {
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
     static Integer page = 1;
     static String homeUrl = "https://www.zhipin.com";
-    static String baseUrl = "https://www.zhipin.com/web/geek/job?query=%s&experience=%s&city=%s&page=%s";
+    static String baseUrl = "https://www.zhipin.com/web/geek/job?";
     static List<String> blackCompanies;
     static List<String> blackRecruiters;
     static List<String> blackJobs;
     static List<Job> returnList = new ArrayList<>();
-    static List<String> keywords = List.of("大模型工程师", "AIGC", "AI", "Java", "Python", "Golang");
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
     static final int noJobMaxPages = 5; // 无岗位最大页数
     static int noJobPages;
     static int lastSize;
-
-    static Map<String, String> experience = new HashMap<>() {
-        {
-            put("在校生", "108");
-            put("应届生", "102");
-            put("经验不限", "101");
-            put("一年以内", "103");
-            put("1-3年", "104");
-            put("3-5年", "105");
-            put("5-10年", "106");
-            put("10年以上", "107");
-        }
-    };
-
-    static Map<String, String> cityCode = new HashMap<>() {
-        {
-            put("全国", "100010000");
-            put("北京", "101010100");
-            put("上海", "101020100");
-            put("广州", "101280100");
-            put("深圳", "101280600");
-            put("成都", "101270100");
-        }
-    };
-
+    static BossConfig config = BossConfig.init();
 
     public static void main(String[] args) {
         loadData(dataPath);
         SeleniumUtil.initDriver();
         Date start = new Date();
         login();
+        String searchUrl = getSearchUrl();
         endSubmission:
-        for (String keyword : keywords) {
+        for (String keyword : config.getKeywords()) {
             page = 1;
             noJobPages = 0;
             lastSize = -1;
             while (true) {
                 log.info("投递【{}】关键词第【{}】页", keyword, page);
-                String url = String.format(baseUrl, keyword, setYear(List.of()), cityCode.get("上海"), page);
+                String url = searchUrl + "&page=" + page;
                 int startSize = returnList.size();
                 Integer resultSize = resumeSubmission(url, keyword);
                 if (resultSize == -1) {
@@ -100,7 +78,6 @@ public class Boss {
                     noJobPages = 0;
                 }
                 page++;
-
             }
         }
         Date end = new Date();
@@ -115,11 +92,15 @@ public class Boss {
         CHROME_DRIVER.quit();
     }
 
-    private static String setYear(List<String> params) {
-        if (params == null || params.isEmpty()) {
-            return "";
-        }
-        return params.stream().map(experience::get).collect(Collectors.joining(","));
+    private static String getSearchUrl() {
+        return baseUrl +
+                JobUtils.appendParam("city", config.getCityCode()) +
+                JobUtils.appendParam("jobType", config.getJobType()) +
+                JobUtils.appendParam("salary", config.getSalary()) +
+                JobUtils.appendListParam("experience", config.getExperience()) +
+                JobUtils.appendListParam("degree", config.getDegree()) +
+                JobUtils.appendListParam("scale", config.getScale()) +
+                JobUtils.appendListParam("stage", config.getStage());
     }
 
     private static void saveData(String path) {
@@ -228,7 +209,7 @@ public class Boss {
 
     @SneakyThrows
     private static Integer resumeSubmission(String url, String keyword) {
-        CHROME_DRIVER.get(url);
+        CHROME_DRIVER.get(url + "&query=" + keyword);
         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='job-title clearfix']")));
         List<WebElement> jobCards = CHROME_DRIVER.findElements(By.cssSelector("li.job-card-wrapper"));
         List<Job> jobs = new ArrayList<>();
@@ -241,7 +222,7 @@ public class Boss {
                 continue;
             }
             String jobName = jobCard.findElement(By.cssSelector("div.job-title span.job-name")).getText();
-            boolean isNotTargetJob = (keyword.contains("大模型") || keyword.contains("AI")) && !jobName.contains("AI") && !jobName.contains("人工智能") && !jobName.contains("大模型") && !jobName.contains("生成");
+            boolean isNotTargetJob = (keyword.contains("大模型") || keyword.contains("AI")) && !jobName.contains("AI") && !jobName.contains("人工智能") && jobName.contains("大模型") && !jobName.contains("生成") && jobName.contains("设计") && jobName.contains("视觉");
             if (blackJobs.stream().anyMatch(jobName::contains) || isNotTargetJob) {
                 // 排除黑名单岗位
                 continue;
@@ -304,7 +285,7 @@ public class Boss {
                     } catch (Exception e) {
                         log.debug("岗位匹配，下一步发送消息...");
                     }
-                    input.sendKeys(SAY_HI);
+                    input.sendKeys(config.getSayHi());
                     WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
                     send.click();
 

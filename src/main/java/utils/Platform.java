@@ -1,5 +1,5 @@
 package utils;
 
 public enum Platform {
-    ZHILIAN, BOSS, UNKNOWN
+    ZHILIAN, BOSS, LIEPIN, JOB51, LAGOU, UNKNOWN
 }
