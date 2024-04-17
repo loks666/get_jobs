@@ -2,7 +2,6 @@ package liepin;
 
 import lombok.SneakyThrows;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
@@ -85,7 +84,6 @@ public class Liepin {
 
     private static void submitJob() {
         int count = CHROME_DRIVER.findElements(By.cssSelector("div.job-list-box div[style*='margin-bottom']")).size();
-        System.out.println(count);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; i++) {
             String jobName = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'job-title-box')]")).get(i).getText().replaceAll("\n", " ").replaceAll("【 ", "[").replaceAll(" 】", "]");
@@ -107,17 +105,15 @@ public class Liepin {
             } catch (Exception e) {
                 log.info("【{}】招聘人员:【{}】没有职位描述", companyName, recruiterName);
             }
-            JavascriptExecutor js = CHROME_DRIVER;
-            WebElement profile = CHROME_DRIVER.findElements(By.xpath("//img[@class='jsx-1313209507']")).get(i);
-            js.executeScript("window.scrollBy(0, 128);");
             try {
-                ACTIONS.moveToElement(profile).perform();
+                name = CHROME_DRIVER.findElements(By.xpath("//div[@class='jsx-1313209507 recruiter-name ellipsis-1']")).get(i);
+                ACTIONS.moveToElement(name).perform();
             } catch (Exception ignore) {
                 log.error("这个猎头没有按钮...");
             }
             WebElement button;
             try {
-                button = CHROME_DRIVER.findElements(By.xpath("//button[@class='ant-btn ant-btn-primary ant-btn-round']")).get(i);
+                button = CHROME_DRIVER.findElement(By.xpath("//button[@class='ant-btn ant-btn-primary ant-btn-round']"));
             } catch (Exception e) {
                 log.error("公司【{}】没有聊天按钮", companyName);
                 continue;
