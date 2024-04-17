@@ -27,7 +27,6 @@ public class Liepin {
 
 
     public static void main(String[] args) {
-        String searchUrl = getSearchUrl();
         SeleniumUtil.initDriver();
         login();
         for (String keyword : config.getKeywords()) {
@@ -45,8 +44,7 @@ public class Liepin {
 
     @SneakyThrows
     private static void submit(String keyword) {
-        String searchUrl = getSearchUrl();
-        CHROME_DRIVER.get(searchUrl + "&key=" + keyword);
+        CHROME_DRIVER.get(getSearchUrl() + "&key=" + keyword);
         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("list-pagination-box")));
         WebElement div = CHROME_DRIVER.findElement(By.className("list-pagination-box"));
         List<WebElement> lis = div.findElements(By.tagName("li"));
@@ -125,7 +123,6 @@ public class Liepin {
                 continue;
             }
             String text = button.getText();
-//            log.info("{}:{}", recruiterName, text);
             if (text.contains("聊一聊")) {
                 button.click();
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("__im_basic__header-wrap")));

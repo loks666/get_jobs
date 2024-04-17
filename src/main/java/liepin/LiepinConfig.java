@@ -30,8 +30,6 @@ public class LiepinConfig {
         LiepinConfig config = JobUtils.getConfig(LiepinConfig.class);
         // 转换城市编码
         config.setCityCode(LiepinEnum.CityCode.forValue(config.getCityCode()).getCode());
-        // 转换薪资范围
-        config.setSalary(LiepinEnum.CityCode.forValue(config.getSalary()).getCode());
         return config;
     }
 
