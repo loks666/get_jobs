@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import utils.JobUtils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 public class BossConfig {
@@ -68,15 +69,15 @@ public class BossConfig {
         // 转换薪资范围
         config.setSalary(BossEnum.Salary.forValue(config.getSalary()).getCode());
         // 转换工作经验要求
-        config.getExperience().replaceAll(value -> BossEnum.Experience.forValue(value).getCode());
+        config.setExperience(config.getExperience().stream().map(value -> BossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
         // 转换学历要求
-        config.getDegree().replaceAll(value -> BossEnum.Degree.forValue(value).getCode());
+        config.setDegree(config.getDegree().stream().map(value -> BossEnum.Degree.forValue(value).getCode()).collect(Collectors.toList()));
         // 转换公司规模
-        config.getScale().replaceAll(value -> BossEnum.Scale.forValue(value).getCode());
+        config.setScale(config.getScale().stream().map(value -> BossEnum.Scale.forValue(value).getCode()).collect(Collectors.toList()));
         // 转换公司融资阶段
-        config.getStage().replaceAll(value -> BossEnum.Financing.forValue(value).getCode());
+        config.setStage(config.getStage().stream().map(value -> BossEnum.Financing.forValue(value).getCode()).collect(Collectors.toList()));
         // 转换行业
-        config.getIndustry().replaceAll(value -> BossEnum.Industry.forValue(value).getCode());
+        config.setIndustry(config.getIndustry().stream().map(value -> BossEnum.Industry.forValue(value).getCode()).collect(Collectors.toList()));
 
         return config;
     }
