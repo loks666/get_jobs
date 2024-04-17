@@ -6,7 +6,7 @@
 
     <groupId>com.superxiang</groupId>
     <artifactId>get_jobs</artifactId>
-    <version>v1.0.2</version>
+    <version>v1.0.3</version>
     <name>get_jobs</name>
 
     <parent>
