@@ -109,18 +109,19 @@ public class Liepin {
                 name = CHROME_DRIVER.findElements(By.xpath("//div[@class='jsx-1313209507 recruiter-name ellipsis-1']")).get(i);
                 ACTIONS.moveToElement(name).perform();
             } catch (Exception ignore) {
-                log.error("这个猎头没有按钮...");
             }
             WebElement button;
             try {
                 button = CHROME_DRIVER.findElement(By.xpath("//button[@class='ant-btn ant-btn-primary ant-btn-round']"));
             } catch (Exception e) {
-                log.error("公司【{}】没有聊天按钮", companyName);
                 continue;
             }
             String text = button.getText();
             if (text.contains("聊一聊")) {
-                button.click();
+                try {
+                    button.click();
+                } catch (Exception ignore) {
+                }
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("__im_basic__header-wrap")));
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//textarea[contains(@class, '__im_basic__textarea')]")));
                 WebElement input = CHROME_DRIVER.findElement(By.xpath("//textarea[contains(@class, '__im_basic__textarea')]"));
