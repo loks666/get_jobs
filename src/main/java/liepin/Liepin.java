@@ -117,7 +117,7 @@ public class Liepin {
             }
             WebElement button;
             try {
-                button = CHROME_DRIVER.findElement(By.xpath("//button"));
+                button = CHROME_DRIVER.findElements(By.xpath("//button[@class='ant-btn ant-btn-primary ant-btn-round']")).get(i);
             } catch (Exception e) {
                 log.error("公司【{}】没有聊天按钮", companyName);
                 continue;
