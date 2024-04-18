@@ -12,7 +12,6 @@ import utils.SeleniumUtil;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -25,7 +24,7 @@ public class Lagou {
 
     static Integer page = 1;
     static Integer maxPage = 500;
-    static String homeUrl = "https://www.lagou.com/wn/zhaopin?fromSearch=true";
+    static String homeUrl = "https://www.lagou.com?";
     static String wechatUrl = "https://open.weixin.qq.com/connect/qrconnect?appid=wx9d8d3686b76baff8&redirect_uri=https%3A%2F%2Fpassport.lagou.com%2Foauth20%2Fcallback_weixinProvider.html&response_type=code&scope=snsapi_login#wechat_redirect";
     static int jobCount = 0;
     static String cookiePath = "./src/main/java/lagou/cookie.json";
@@ -35,22 +34,24 @@ public class Lagou {
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
         login();
+
+        CHROME_DRIVER.get(homeUrl);
+        homeUrl = "https://www.lagou.com/wn/zhaopin?fromSearch=true";
         config.getKeywords().forEach(kw -> {
-            String url = getSearchUrl(kw);
-            CHROME_DRIVER.get(url);
-            setOptions();
+            String searchUrl = getSearchUrl(kw);
+            CHROME_DRIVER.get(searchUrl);
+            updateMaxPage();
             for (int i = page; i <= maxPage; i++) {
-//                submit();
-                System.out.println(maxPage);
+                submit();
             }
         });
         log.info("投递完成,共投递 {} 个岗位！", jobCount);
     }
 
-    private static String getSearchUrl(String kw) {
+    private static String getSearchUrl(String keyword) {
         return homeUrl +
                 JobUtils.appendParam("city", config.getCityCode())+
-                JobUtils.appendParam("kw", kw)+
+                JobUtils.appendParam("kd", keyword)+
                 JobUtils.appendParam("yx", config.getSalary())+
                 JobUtils.appendListParam("gm", config.getScale());
     }
@@ -58,15 +59,19 @@ public class Lagou {
     /**
      * 设置选项
      */
-    private static void setOptions() {
-        if (!Objects.equals("不限", config.getCityCode()) || !Objects.equals("全国", config.getCityCode())) {
-
+    private static void updateMaxPage() {
+        // 模拟 Ctrl + End
+        ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.END).keyUp(Keys.CONTROL).perform();
+        WebElement secondLastLi = CHROME_DRIVER.findElement(By.xpath("(//ul[@class='lg-pagination']/li)[last()-1]"));
+        if (secondLastLi != null && secondLastLi.getText().matches("\\d+")) {
+            maxPage = Integer.parseInt(secondLastLi.getText());
         }
-
+        // 模拟 Ctrl + Home
+        ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
     }
 
     @SneakyThrows
-    void submit() {
+    private static void submit() {
         // 获取所有的元素
         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("openWinPostion")));
         List<WebElement> elements = CHROME_DRIVER.findElements(By.id("openWinPostion"));
