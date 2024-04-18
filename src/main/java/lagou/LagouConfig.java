@@ -5,7 +5,7 @@ import lombok.SneakyThrows;
 import utils.JobUtils;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 @Data
 public class LagouConfig {
@@ -33,8 +33,9 @@ public class LagouConfig {
     public static LagouConfig init() {
         LagouConfig config = JobUtils.getConfig(LagouConfig.class);
         // 转换城市编码
-        config.setSalary(LagouEnum.Salary.forValue(config.getSalary()).getCode());
-        config.setScale(config.getScale().stream().map(value -> LagouEnum.Scale.forValue(value).getCode()).collect(Collectors.toList()));
+        config.setSalary(Objects.equals("不限", config.getSalary()) ? "0" : config.getSalary());
+        List<String> scales = config.getScale();
+        config.setScale(scales.stream().map(scale -> "不限".equals(scale) ? "0" : scale).toList());
         return config;
     }
 
