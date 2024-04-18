@@ -29,5 +29,5 @@ liepin:
 
 zhilian:
   cityCode: "上海"
-  salaryScope: "25001,35000" #薪资区间
+  salary: "25001,35000" #薪资区间
   keywords: [ "AI工程师", "AIGC", "Java", "Python", "Golang" ]

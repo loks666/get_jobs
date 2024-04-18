@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import utils.JobUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 @Data
 public class ZhilianConfig {
@@ -23,13 +24,14 @@ public class ZhilianConfig {
      */
     private String salary;
 
-   
 
     @SneakyThrows
     public static ZhilianConfig init() {
         ZhilianConfig config = JobUtils.getConfig(ZhilianConfig.class);
         // 转换城市编码
         config.setCityCode(ZhilianEnum.CityCode.forValue(config.getCityCode()).getCode());
+        String salary = config.getSalary();
+        config.setSalary(Objects.equals("不限", salary) ? "0" : salary);
         return config;
     }
 

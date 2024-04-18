@@ -8,12 +8,11 @@ public class ZhilianEnum {
     @Getter
     public enum CityCode {
         NULL("不限", "0"),
-        ALL("全国", "410"),
-        BEIJING("北京", "010"),
-        SHANGHAI("上海", "020"),
-        GUANGZHOU("广州", "050020"),
-        SHENZHEN("深圳", "050090"),
-        CHENGDU("成都", "280020");
+        BEIJING("北京", "530"),
+        SHANGHAI("上海", "538"),
+        GUANGZHOU("广州", "763"),
+        SHENZHEN("深圳", "765"),
+        CHENGDU("成都", "801");
 
         private final String name;
         private final String code;
@@ -32,7 +31,6 @@ public class ZhilianEnum {
             }
             return NULL;
         }
-
     }
 
 }
