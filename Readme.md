@@ -1,6 +1,6 @@
 <h1 align="center">🍀Get Jobs【工作无忧】</h1>
 <div align="center">
-    
+
 [![Stars](https://img.shields.io/github/stars/loks666/get_jobs?style=flat&label=%F0%9F%8C%9Fstars&labelColor=ff4f4f&color=ff8383)](https://github.com/loks666/get_jobs)
 [![QQ交流群](https://img.shields.io/badge/🐧QQ交流群-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat)](https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606)
 [![License](https://img.shields.io/badge/📑licenses-MIT-34D058?labelColor=22863A&style=flat)](https://github.com/loks666/get_jobs/blob/master/LICENSE)
@@ -25,6 +25,7 @@
 - 如你有“折腾精神”希望自己配置，QQ群内提供免费答疑，如你不想麻烦，可联系群主付费部署
 - 由于不同系统的页面不一样，导致可能不兼容，文末会给出文档，尽可能让大家能自定义修改
 - 必须要关闭墙外代理，由于主要针对的国内平台，墙外代理会导致页面加载缓慢
+- 如您不方便访问github，可使用码云镜像(中国大陆)版本：[gitee/getjobs](https://gitee.com/loks666/get_jobs)
 
 > 已经有人在交流群里 **发广告** 等与本项目无关的信息  
 > 如果带着不同目的或者没想清楚就进群的  
@@ -47,7 +48,8 @@ cd get_jobs
 
 - 目前程序自动判断系统环境，使用对应的chromedriver，无需手动下载
 - 但是你的Chrome版本必须是在Chrome官网下载的，并且为最新版本，才可使用
-- 如果你是mac m1芯片的版本，需要解压【[chromedriver-mac-arm64.zip](src%2Fmain%2Fresources%2Fchromedriver-mac-arm64.zip)】后才能使用
+- 如果你是mac m1芯片的版本，需要解压【[chromedriver-mac-arm64.zip](src%2Fmain%2Fresources%2Fchromedriver-mac-arm64.zip)
+  】后才能使用
 
 更多环境配置详情请点击：📚 [环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
 
@@ -56,7 +58,8 @@ cd get_jobs
 - 🔩 通用配置
     - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
     - **Constant.WAIT_TIME**：超时等待时间，单位秒，用于等待页面加载
-    - **cookie登录**: 扫码后自动cookie.json文件在代码运行目录下，换号直接删除cookie.json即可
+    - **cookie登录**: 扫码后会自动保存**cookie.json**文件在代码运行目录下，换号直接删除**cookie.json**即可
+    - 每个平台的配置转换码都在平台文件夹下的Enum类里，找到相应的代码添加到类中即可
 
 - ⚙️ **主要的配置文件**（[config.yaml](src/main/resources/config.yaml)）
   ```
@@ -68,7 +71,7 @@ cd get_jobs
     cityCode: "上海" # 只列举了部分,如果没有的需要自己找：目前支持的：全国 北京 上海 广州 深圳 成都
     experience: [ "不限" ] # 工作经验："应届毕业生", "1年以下", "1-3年", "3-5年", "5-10年", "10年以上"
     jobType: "不限" #求职类型："全职", "兼职"
-    salary: "不限" # 薪资："3K以下", "3-5K", "5-10K", "10-20K", "20-50K", "50K以上"
+    salary: "不限" # 薪资（单选）："3K以下", "3-5K", "5-10K", "10-20K", "20-50K", "50K以上"
     degree: [ "不限" ] # 学历: "初中及以下", "中专/中技", "高中", "大专", "本科", "硕士", "博士"
     scale: [ "不限" ] # 公司规模："0-20人", "20-99人", "100-499人", "500-999人", "1000-9999人", "10000人以上"
     stage: [ "不限" ] # "未融资", "天使轮", "A轮", "B轮", "C轮", "D轮及以上", "已上市", "不需要融资"
@@ -79,10 +82,10 @@ cd get_jobs
     salary: [ "不限" ] #薪资范围：只能选5个【"2千以下", "2-3千", "3-4.5千", "4.5-6千", "6-8千", "0.8-1万", "1-1.5万", "1.5-2万", "2-3万", "3-4万", "4-5万", "5万以上"】
   
   lagou:
-    keyword: "AI工程师" #搜索关键词
-    city: "上海" #拉勾城市名没有限制,直接填写即可
-    yx: "不限" #薪资【"2k以下", "2k-5k", "5k-10k", "10k-15k", "15k-25k", "25k-50k", "50k以上"】
-    gm: [ "不限" ] #公司规模【"少于15人", "15-50人", "50-150人", "150-500人", "500-2000人", "2000人以上"】
+    keywords: [ "AI工程师","Java","Golang","Python" ] #搜索关键词
+    cityCode: "上海" #拉勾城市名没有限制,直接填写即可
+    salary: "不限" #薪资【"不限","2k以下", "2k-5k", "5k-10k", "10k-15k", "15k-25k", "25k-50k", "50k以上"】
+    scale: [ "不限" ] #公司规模【"不限","少于15人", "15-50人", "50-150人", "150-500人", "500-2000人", "2000人以上"】
   
   liepin:
     cityCode: "上海" # 目前支持的：全国 北京 上海 广州 深圳 成都
@@ -91,7 +94,7 @@ cd get_jobs
   
   zhilian:
     cityCode: "上海"
-    salaryScope: "25001,35000" #薪资区间
+    salary: "25001,35000" #薪资区间
     keywords: [ "AI工程师", "AIGC", "Java", "Python", "Golang" ]
   ```
 - boss直聘([Boss.java](src/main/java/boss/Boss.java))【每日仅可发起100次新聊天，活跃度还行，但是每日投递次数太少】
@@ -112,7 +115,7 @@ cd get_jobs
   
   inputLogin() //密码登录(需要手动过验证)
   ```
-- 拉勾([Lagou.java](src/main/java/lagou/Lagou.java))【投递无上限，会限制投递的频率，被51收购，和上面的一个德性】
+- 拉勾([Lagou.java](src/main/java/lagou/Lagou.java))【投递无上限，会限制投递的频率，没什么活人而且投不了几个岗位】
 
    ```
    默认使用微信扫码，请绑定微信账号
@@ -133,13 +136,7 @@ cd get_jobs
    ```
    只可微信扫码，请绑定微信账号
   
-   在猎聘网选择自己要投递的地区后，在地址栏找到cityCode，修改cityCode为该值即可(默认为上海)
-  
-   会遍历投递keywords中所有的关键词，可自行设置
-   
-   目前猎聘关闭了发自定义消息，需要打开猎聘的自动招呼设置(可支持自定义)
-  
-   最新版猎聘手机端可以自定义打招呼方式，只要不主动发消息，可以无限制对猎头打招呼，程序默认为该配置。
+   需要使用最新版猎聘手机app设置打招呼文本，只要不主动发消息，可以无限制对猎头打招呼，程序默认为该配置。
    ```
 
 - 智联招聘([ZhiLian.java](src%2Fmain%2Fjava%2Fzhilian%2FZhiLian.java))【投递上限100左右，岗位质量较差,走投无路可以考虑】
@@ -186,17 +183,17 @@ cd get_jobs
 
 - win与mac下环境部署：100/次
 - 如需定制化修改请联系商议
-- 注意：
-    1. 付费部署若下载chrome需要自备梯子，请知悉
-    2. 本项目不支持服务器部署，无须尝试，如招聘网站发现访问者为服务器IP，不会返回任何网站数据
+- 请注意：
+    1. 本项目不支持服务器部署，无须尝试，如招聘网站发现访问者为服务器IP，不会返回任何网站数据
+    2. 在开发与部署过程有任何问题都可在群内沟通，如您需要远程调试，需要付费(视问题大小决定，一般50以内)
 
 --- 
 
 ## 📑 更新日志
 
-- 2024-4-17
-    1. 新增config.yaml,目前仅需修改配置文件即可，暂时只支持Boss，猎聘，51
-    2. cookie有效期延长，保持至少一周，理论上可以一直保持有效状态
+- 2024-4-15 01:52:18
+    1. 新增config.yaml,目前仅需修改配置文件即可，已全平台支持
+    2. cookie有效期延长，保持至少一周（拉勾平台除外）
 
 --- 
 
@@ -204,13 +201,10 @@ cd get_jobs
 
 我们非常欢迎各种形式的贡献  
 如果你对贡献代码感兴趣  
-可以查看我们的 [Issues](https://github.com/loks666/get_jobs/issues) 和 [discussions](https://github.com/loks666/get_jobs/discussions)  
+可以查看我们的 [Issues](https://github.com/loks666/get_jobs/issues)
+和 [discussions](https://github.com/loks666/get_jobs/discussions)  
 期待你的大展身手，向我们展示你的奇思妙想。  
 [![][pr-welcome-shield]][pr-welcome-link]
-
-## ☕️ 请我喝杯咖啡
-
-<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
 
 --- 
 
@@ -225,6 +219,12 @@ cd get_jobs
 
 - 授人以渔: [自定义修改你的代码](https://github.com/loks666/get_jobs/wiki/授人以渔‐自定义修改你的代码)
 - 本项目受此启发:https://github.com/BeammNotFound/get-jobs-51job , 感谢大佬，让我们将爱传递下去~
+
+---
+
+## ☕️ 请我喝杯咖啡
+
+<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
 
 <!-- LINK GROUP -->
 
