@@ -1,12 +1,12 @@
 <h1 align="center">get-jobs【工作无忧】</h1>
 <div align="center">
     <a href="https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606"><img src="https://img.shields.io/badge/QQ交流群-get_jobs-0FB5EB?labelColor=235389&logo=tencent-qq&logoColor=white&style=flat" alt=""></a>
-</div>
+    <a href="https://app.fossa.com/projects/git+github.com/loks666/get_jobs?ref=badge_shield"><img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=shield" alt="FOSSA Status"></a></div>
 <div align="center">
     💼自动投简历(Boss直聘、猎聘、拉勾、51job、智联招聘)
 </div><br>
 
-### 特色功能
+### 🌞 特色功能
 
 - 支持国内全部招聘平台(Boss直聘、猎聘、拉勾、51job、智联招聘)
 - 集中化配置，仅需修改配置文件即可完成自定义筛选
@@ -17,22 +17,27 @@
 - Boss默认过滤猎头岗位，可修改代码自定义修改条件
 - QQ交流群暗號：get_jobs
 
-### 注意事项
+### 🔞️ 注意事项
 
 - 如你有“折腾精神”希望自己配置，QQ群内提供免费答疑，如你不想麻烦，可联系群主付费部署
 - 由于不同系统的页面不一样，导致可能不兼容，文末会给出文档，尽可能让大家能自定义修改
 - 必须要关闭墙外代理，由于主要针对的国内平台，墙外代理会导致页面加载缓慢
 
-## 如何使用？
+> 已经有人在交流群里 **发广告** 等与本项目无关的信息  
+> 如果带着不同目的或者没想清楚就进群的  
+> 一经发现群主会对您的家人及朋友进行亲切(**没有素质**)的问候  
+> 并将您请出群聊，请珍惜交流的机会，谢谢！
 
-#### 前置准备：使用git拉取代码
+## 🚀 如何使用？
+
+### 1️⃣ 使用git拉取代码
 
 ```
 git clone https://github.com/loks666/get_jobs.git
 cd get_jobs
 ```
 
-#### 第一步：环境配置:JDK17+、Maven、Chrome、ChromeDriver
+### 2️⃣ 环境配置:JDK17+、Maven、Chrome、ChromeDriver
 
 > 目前driver版本号：122.0.6261.112  
 > chrome需要版本为：122.0.6261.112及以上(默认最新即可)
@@ -41,16 +46,16 @@ cd get_jobs
 - 但是你的Chrome版本必须是在Chrome官网下载的，并且为最新版本，才可使用
 - 如果你是mac，需要解压【[chromedriver.zip](src%2Fmain%2Fresources%2Fchromedriver.zip)】后才能使用
 
-更多环境配置详情请点击：[环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
+更多环境配置详情请点击：📚 [环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
 
-#### 第二步：修改配置文件(一般默认即可,需要修改自己的地区和岗位)
+### 3️⃣ 修改配置文件(一般默认即可,需要修改自己的地区和岗位)
 
-- 通用配置
+- 🔩 通用配置
     - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
     - **Constant.WAIT_TIME**：超时等待时间，单位秒，用于等待页面加载
     - **cookie登录**: 扫码后自动cookie.json文件在代码运行目录下，换号直接删除cookie.json即可
 
-- **主要的配置文件**（[config.yaml](src/main/resources/config.yaml)）
+- ⚙️ **主要的配置文件**（[config.yaml](src/main/resources/config.yaml)）
   ```
   # 带[ ]括号的，就是多选，不带的就是单选
   boss:
@@ -142,42 +147,27 @@ cd get_jobs
   只可微信扫码，请绑定微信账号
    ```
 
-#### 最后一步：运行代码
+### 4️⃣ 最后一步：运行代码
 
-- 直接运行你想要投递平台的下的代码即可  
+- 🏃🏻‍♂️‍➡️ 直接运行你想要投递平台的下的代码即可  
   ![运行图片](src/main/resources/images/run1.png)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs?ref=badge_shield)
 
 ****
 
-## 免责声明
-
-为避免别有用心之人利用本代码进行违法活动，特此声明：
-
-- 本项目完全开源，但将项目用于其他用途目的均与本项目无关，由此引发的一切法律责任由使用者自行承担。
-- 现在这个大环境下就算有脚本的帮助可能机会也很少，但总归要试一试，不是么？
-- 开源这个项目也希望能帮到真正需要它的人，不希望被任何有心之人利用
-- 最后，希望各位永远不需要本项目的帮助，但别忘了star哟！
-
-> 已经有人在交流群里发广告等与本项目无关的信息  
-> 如果带着不同目的或者没想清楚就进群的  
-> 一经发现群主会对您的家人及朋友进行亲切(没有素质)的问候  
-> 并将您请出群聊，请珍惜交流的机会
-
-### 例:Boss投递日志
+### ✍🏼 例:Boss投递日志
 
 <img src="./src/main/resources/images/boss.png" alt="Boss投递日志">
 
-### 猎聘投递日志
+### ✍🏼 猎聘投递日志
 
 <img src="./src/main/resources/images/liepin.png" alt="Boss投递日志">
 
-## 联系方式📧
+## 📧 联系方式
 
 - V2VDaGF0OkFpckVsaWF1azk1Mjcs6K+35aSH5rOo77ya5pq06aOO6Zuo5bCx6KaB5p2l5LqG
 - 如想进入微信群，请添加上面的微信，或者进入QQ群联系
 
-## QQ群
+## 👨🏻‍🔧 QQ群
 
 - 扫码添加：加群答案为本项目仓库名【get_jobs】
 
@@ -187,7 +177,7 @@ cd get_jobs
 
 [![][qq-shield-badge]][qq-link]
 
-## 付费部署
+## 🚩 付费部署
 
 > 本项目文档已相对完善，如仍需付费部署，请添加QQ群或微信联系群主
 
@@ -199,7 +189,7 @@ cd get_jobs
 
 --- 
 
-## 更新日志
+## 📑 更新日志
 
 - 2024-4-17
     1. 新增config.yaml,目前仅需修改配置文件即可，暂时只支持Boss，猎聘，51
@@ -212,16 +202,37 @@ cd get_jobs
 
 --- 
 
-## 请我喝杯咖啡☕️
+## 🤝 参与贡献
+
+我们非常欢迎各种形式的贡献。如果你对贡献代码感兴趣，可以查看我们的 GitHub [Issues][github-issues-link]
+和 [Projects][github-project-link]，大展身手，向我们展示你的奇思妙想。
+
+[![][pr-welcome-shield]][pr-welcome-link]
+
+--- 
+### 📰 开源协议
+
+<details><summary><h4>📝 License</h4></summary>
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs?ref=badge_large)
+</details>
+
+## ☕️ 请我喝杯咖啡
 
 <img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
 
 <!-- LINK GROUP -->
 
+<!-- [![][fossa-license-shield]][fossa-license-link] -->
+
 [qq-link]: https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606
 
 [qq-shield-badge]: https://img.shields.io/badge/QQ交流群-get_jobs-0FB5EB?labelColor=235389&logo=tencent-qq&logoColor=white&style=flat
 
+[pr-welcome-link]: https://github.com/loks666/get_jobs/pulls
 
-## License
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs?ref=badge_large)
+[pr-welcome-shield]: https://img.shields.io/badge/🤯_pr_welcome-%E2%86%92-ffcb47?labelColor=black&style=for-the-badge
+
+[fossa-license-shield]: https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=shield
+
+[fossa-license-link]: https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs?ref=badge_shield
