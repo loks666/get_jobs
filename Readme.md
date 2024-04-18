@@ -1,10 +1,26 @@
 <h1 align="center">get-jobs【工作无忧】</h1>
 <div align="center">
-    <a href="https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606"><img src="https://img.shields.io/badge/QQ交流群-get_jobs-0FB5EB?labelColor=235389&logo=tencent-qq&logoColor=white&style=flat" alt=""></a>
-    <a href="https://app.fossa.com/projects/git+github.com/loks666/get_jobs?ref=badge_shield"><img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=shield" alt="FOSSA Status"></a></div>
-<div align="center">
-    💼自动投简历(Boss直聘、猎聘、拉勾、51job、智联招聘)
-</div><br>
+    <a href="https://github.com/loks666/get_jobs" target="_blank">
+        <img alt="Stars"
+             src="https://img.shields.io/github/stars/loks666/get_jobs?style=flat&label=🌟stars&labelColor=ff4f4f&color=ff8383">
+    </a>
+    <a href="https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606"><img
+            src="https://img.shields.io/badge/QQ交流群-get_jobs-0FB5EB?labelColor=235389&logo=tencent-qq&logoColor=white&style=flat"
+            alt="">
+    </a>
+    <a href="https://github.com/loks666/get_jobs/blob/master/LICENSE">
+        <img src="https://img.shields.io/badge/📑licenses-MIT-34D058?labelColor=22863A&style=flat" alt="License">
+    </a>
+    <a href="https://github.com/loks666/get_jobs/issues?q=is%3Aissue+is%3Aclosed" target="_blank">
+        <img alt="🤏🏻Issues closed"
+             src="https://img.shields.io/github/issues-search?query=repo%3Aloks666%2Fget_jobs%20is%3Aclosed&label=🤏🏻issues%20closed&labelColor=008B8B&color=00CCCC">
+    </a>
+    <a href="https://github.com/loks666/get_jobs/forks" target="_blank">
+        <img alt="Forks"
+             src="https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=Forks&labelColor=800080&color=912CEE">
+    </a>
+</div>
+<br>
 
 ### 🌞 特色功能
 
@@ -204,6 +220,10 @@ cd get_jobs
 
 [![][pr-welcome-shield]][pr-welcome-link]
 
+## ☕️ 请我喝杯咖啡
+
+<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
+
 --- 
 
 ### 📰 开源协议
@@ -212,10 +232,6 @@ cd get_jobs
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs?ref=badge_large)
 </details>
-
-## ☕️ 请我喝杯咖啡
-
-<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
 
 --- 
 
