@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import utils.JobUtils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 public class LagouConfig {
@@ -23,13 +24,17 @@ public class LagouConfig {
      */
     private String salary;
 
-   
+    /**
+     * 公司规模
+     */
+    private List<String> scale;
 
     @SneakyThrows
     public static LagouConfig init() {
         LagouConfig config = JobUtils.getConfig(LagouConfig.class);
         // 转换城市编码
-        config.setCityCode(LagouEnum.CityCode.forValue(config.getCityCode()).getCode());
+        config.setSalary(LagouEnum.Salary.forValue(config.getSalary()).getCode());
+        config.setScale(config.getScale().stream().map(value -> LagouEnum.Scale.forValue(value).getCode()).collect(Collectors.toList()));
         return config;
     }
 
