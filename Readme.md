@@ -1,5 +1,4 @@
 <h1 align="center">🍀Get Jobs【工作无忧】</h1>
-
 <div align="center">
     <a href="https://github.com/loks666/get_jobs" target="_blank">
         <img alt="Stars"
