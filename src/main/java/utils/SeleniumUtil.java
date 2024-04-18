@@ -148,8 +148,7 @@ public class SeleniumUtil {
                         .build();
                 try {
                     CHROME_DRIVER.manage().addCookie(cookie);
-                } catch (Exception e) {
-                    log.error("【小问题无须担心】cookie添加异常:【{}】", cookie);
+                } catch (Exception ignore) {
                 }
             }
             // 将修改后的jsonArray写回文件
