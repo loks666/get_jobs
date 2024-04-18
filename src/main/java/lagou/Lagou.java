@@ -34,13 +34,12 @@ public class Lagou {
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
         login();
-
         CHROME_DRIVER.get(homeUrl);
         homeUrl = "https://www.lagou.com/wn/zhaopin?fromSearch=true";
-        config.getKeywords().forEach(kw -> {
-            String searchUrl = getSearchUrl(kw);
+        config.getKeywords().forEach(keyword -> {
+            String searchUrl = getSearchUrl(keyword);
             CHROME_DRIVER.get(searchUrl);
-            updateMaxPage();
+            setMaxPage();
             for (int i = page; i <= maxPage; i++) {
                 submit();
             }
@@ -59,7 +58,7 @@ public class Lagou {
     /**
      * 设置选项
      */
-    private static void updateMaxPage() {
+    private static void setMaxPage() {
         // 模拟 Ctrl + End
         ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.END).keyUp(Keys.CONTROL).perform();
         WebElement secondLastLi = CHROME_DRIVER.findElement(By.xpath("(//ul[@class='lg-pagination']/li)[last()-1]"));
