@@ -114,6 +114,8 @@ cd get_jobs
   scanLogin() //扫码登录(默认方式) 只可微信扫码，请绑定微信账号
   
   inputLogin() //密码登录(需要手动过验证)
+  
+  51投递一段时间后会出现滑块验证，是某个时间段内投递量达到上限，需要关闭脚本，等待一段时间再运行
   ```
 - 拉勾([Lagou.java](src/main/java/lagou/Lagou.java))【投递无上限，会限制投递的频率，没什么活人而且投不了几个岗位】
 
@@ -160,7 +162,7 @@ cd get_jobs
 
 ### ✍🏼 猎聘投递日志
 
-<img src="./src/main/resources/images/liepin.png" alt="Boss投递日志">
+<img src="./src/main/resources/images/liepin.png" alt="猎聘投递日志">
 
 ## 📧 联系方式
 
