@@ -36,12 +36,12 @@ public class ZhiLian {
         config.getKeywords().forEach(keyword -> {
             CHROME_DRIVER.get(getSearchUrl(keyword, 1));
             submitJobs(keyword);
+            isLimit = false;
         });
-        printResult();
         CHROME_DRIVER.quit();
     }
 
-    private static String getSearchUrl(String keyword,int page) {
+    private static String getSearchUrl(String keyword, int page) {
         return homeUrl +
                 JobUtils.appendParam("jl", config.getCityCode()) +
                 JobUtils.appendParam("kw", keyword) +
@@ -49,15 +49,11 @@ public class ZhiLian {
                 "&p=" + page;
     }
 
-    private static void printResult() {
-//        log.info("今日投递岗位:\n{}", resultList.stream().map(job -> job.toString(Platform.ZHILIAN)).collect(Collectors.joining("\n")));
-//        log.info("投递完成,共投递 {} 个岗位！", resultList.size());
-    }
-
     private static void submitJobs(String keyword) {
         if (isLimit) {
             return;
         }
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, 'joblist-box__item')]")));
         setMaxPages();
         for (int i = 1; i <= maxPage; i++) {
             if (i != 1) {
@@ -79,13 +75,12 @@ public class ZhiLian {
                 log.info("没有全选按钮，程序退出...");
                 continue;
             }
-
             // 投递
             WebElement submit = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='a-job-apply-button']")));
-
-            // 保存投递的岗位
-            List<Job> positions = getPositionList();
             submit.click();
+            if (checkIsLimit()){
+                break;
+            }
             SeleniumUtil.sleep(1);
             // 切换到新的标签页
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
@@ -103,14 +98,8 @@ public class ZhiLian {
                 WebElement close = CHROME_DRIVER.findElement(By.xpath("//img[@title='close-icon']"));
                 close.click();
             } catch (Exception e) {
-                try {
-                    WebElement result = CHROME_DRIVER.findElement(By.xpath("//div[@class='a-job-apply-workflow']"));
-                    if (result.getText().contains("达到上限")) {
-                        log.info("今日投递已达上限！");
-                        isLimit = true;
-                        break;
-                    }
-                } catch (Exception ignored) {
+                if (checkIsLimit()) {
+                    break;
                 }
             }
             try {
@@ -135,6 +124,21 @@ public class ZhiLian {
         }
     }
 
+    private static boolean checkIsLimit() {
+        try {
+            SeleniumUtil.sleepByMilliSeconds(500);
+            WebElement result = CHROME_DRIVER.findElement(By.xpath("//div[@class='a-job-apply-workflow']"));
+            if (result.getText().contains("达到上限")) {
+                log.info("今日投递已达上限！");
+                isLimit = true;
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     private static void setMaxPages() {
         // 模拟 Ctrl + End
         ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.END).keyUp(Keys.CONTROL).perform();
@@ -146,7 +150,8 @@ public class ZhiLian {
                     break;
                 }
                 button.click();
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         }
         WebElement lastPage = CHROME_DRIVER.findElement(By.xpath("//span[@class='soupager__index soupager__index--active']"));
         if (lastPage != null && lastPage.getText().matches("\\d+")) {
