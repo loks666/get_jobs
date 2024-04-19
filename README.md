@@ -206,6 +206,12 @@ cd get_jobs
 可以查看我们的 [Issues](https://github.com/loks666/get_jobs/issues)
 和 [discussions](https://github.com/loks666/get_jobs/discussions)  
 期待你的大展身手，向我们展示你的奇思妙想。  
+- 提交Pr流程：
+  1. fork本项目
+  2. 从master分支新建分支
+  3. 开发完成后提交pull request到lok666/get_jobs的release分支
+  4. 等待管理员审核验证提交代码无误后，合并到master分支
+  
 [![][pr-welcome-shield]][pr-welcome-link]
 
 --- 
