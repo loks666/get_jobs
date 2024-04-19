@@ -6,8 +6,12 @@
 [![License](https://img.shields.io/badge/📑licenses-MIT-34D058?labelColor=22863A&style=flat)](https://github.com/loks666/get_jobs/blob/master/LICENSE)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Aloks666%2Fget_jobs%20is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues%20closed&labelColor=008B8B&color=00CCCC)](https://github.com/loks666/get_jobs/issues?q=is%3Aissue+is%3Aclosed)
 [![Forks](https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE)](https://github.com/loks666/get_jobs/forks)
-
 </div>
+
+### 🌴源码地址
+
+- Github(国外访问)：https://github.com/loks666/get_jobs 
+- Gitee·码云(中国大陆)：https://github.com/loks666/get_jobs
 
 ### 🌞 特色功能
 
@@ -158,11 +162,11 @@ cd get_jobs
 
 ### ✍🏼 例:Boss投递日志
 
-<img src="./src/main/resources/images/boss.png" alt="Boss投递日志">
+<img src="https://gitee.com/lok666/images/raw/master/img/boss.png" alt="Boss投递日志">
 
 ### ✍🏼 猎聘投递日志
 
-<img src="./src/main/resources/images/liepin.png" alt="猎聘投递日志">
+<img src="https://gitee.com/lok666/images/raw/master/img/liepin.png" alt="猎聘投递日志">
 
 ## 📧 联系方式
 
@@ -173,7 +177,7 @@ cd get_jobs
 
 - 扫码添加：加群答案为本项目仓库名【get_jobs】
 
-<img src="./src/main/resources/images/qq.jpg" alt="qq群" WIDTH="500">
+<img src="https://gitee.com/lok666/images/raw/master/img/qq.jpg" alt="qq群" WIDTH="500">
 
 > 点击下面的链接可直接加群
 
@@ -233,7 +237,7 @@ cd get_jobs
 
 ## ☕️ 请我喝杯咖啡
 
-<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
+<img src="https://gitee.com/lok666/images/raw/master/img/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="https://gitee.com/lok666/images/raw/master/img/wechatPay.jpg" alt="微信付款码" height="500">
 
 <!-- LINK GROUP -->
 
