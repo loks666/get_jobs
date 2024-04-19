@@ -66,6 +66,6 @@ JDK 安装目录可能是 C:\Program Files\Java\jdk1.8.0_231（这个路径可�
 ![img.png](src/main/resources/images/maven.png)
 
 ### 运行代码
-运行代码前，需要修改代码中的配置，如投递页数、投递关键词等，详情请参阅[配置说明](Readme.md)  
+运行代码前，需要修改代码中的配置，如投递页数、投递关键词等，详情请参阅[配置说明](README)  
 
 ![img.png](src/main/resources/images/run.png)
