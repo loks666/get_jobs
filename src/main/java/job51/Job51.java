@@ -98,7 +98,7 @@ public class Job51 {
             while (true) {
                 try {
                     WebElement mytxt = WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.id("jump_page")));
-                    SeleniumUtil.sleep(3);
+                    SeleniumUtil.sleep(5);
                     mytxt.click();
                     mytxt.clear();
                     mytxt.sendKeys(String.valueOf(j));
