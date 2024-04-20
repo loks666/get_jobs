@@ -222,8 +222,7 @@ public class Boss {
                 continue;
             }
             String jobName = jobCard.findElement(By.cssSelector("div.job-title span.job-name")).getText();
-            boolean isNotTargetJob = (keyword.contains("大模型") || keyword.contains("AI")) && !jobName.contains("AI") && !jobName.contains("人工智能") && jobName.contains("大模型") && !jobName.contains("生成") && jobName.contains("设计") && jobName.contains("视觉");
-            if (blackJobs.stream().anyMatch(jobName::contains) || isNotTargetJob) {
+            if (blackJobs.stream().anyMatch(jobName::contains) || !isTargetJob(keyword, jobName)) {
                 // 排除黑名单岗位
                 continue;
             }
@@ -324,6 +323,42 @@ public class Boss {
         }
         return returnList.size();
     }
+
+    private static boolean isTargetJob(String keyword, String jobName) {
+    boolean keywordIsAI = false;
+    for (String target : new String[]{"大模型", "AI"}) {
+        if (keyword.contains(target)) {
+            keywordIsAI = true;
+            break;
+        }
+    }
+
+    boolean jobIsDesign = false;
+    for (String designOrVision : new String[]{"设计", "视觉","产品","运营"}) {
+        if (jobName.contains(designOrVision)) {
+            jobIsDesign = true;
+            break;
+        }
+    }
+
+    boolean jobIsAI = false;
+    for (String target : new String[]{"AI", "人工智能", "大模型", "生成"}) {
+        if (jobName.contains(target)) {
+            jobIsAI = true;
+            break;
+        }
+    }
+
+    if (keywordIsAI) {
+        if (jobIsDesign) {
+            return false;
+        } else if (!jobIsAI) {
+            return true;
+        }
+    }
+    return true;
+}
+
 
     private static boolean isLimit() {
         try {

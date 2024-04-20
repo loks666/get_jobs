@@ -49,9 +49,9 @@ public class Lagou {
 
     private static String getSearchUrl(String keyword) {
         return homeUrl +
-                JobUtils.appendParam("city", config.getCityCode())+
-                JobUtils.appendParam("kd", keyword)+
-                JobUtils.appendParam("yx", config.getSalary())+
+                JobUtils.appendParam("city", config.getCityCode()) +
+                JobUtils.appendParam("kd", keyword) +
+                JobUtils.appendParam("yx", config.getSalary()) +
                 JobUtils.appendListParam("gm", config.getScale());
     }
 
@@ -72,16 +72,23 @@ public class Lagou {
     @SneakyThrows
     private static void submit() {
         // 获取所有的元素
+        ACTIONS.sendKeys(Keys.HOME).perform();
+        SeleniumUtil.sleep(1);
         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("openWinPostion")));
         List<WebElement> elements = CHROME_DRIVER.findElements(By.id("openWinPostion"));
         for (int i = 0; i < elements.size(); i++) {
-            WebElement element = elements.get(i);
+            WebElement element = CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i);
+            ACTIONS.moveToElement(element).perform();
             if (-1 == tryClick(element, i)) {
                 continue;
             }
-            TimeUnit.SECONDS.sleep(3);
+            TimeUnit.SECONDS.sleep(1);
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
-            CHROME_DRIVER.switchTo().window(tabs.get(1));
+            try {
+                CHROME_DRIVER.switchTo().window(tabs.get(1));
+            } catch (Exception e) {
+                CHROME_DRIVER.switchTo().window(tabs.get(0));
+            }
             WebElement submit;
             try {
                 submit = CHROME_DRIVER.findElement(By.className("resume-deliver"));
@@ -161,6 +168,9 @@ public class Lagou {
                     log.error("这个岗位没有推荐职位...");
                     TimeUnit.SECONDS.sleep(1);
                 }
+            } else if ("立即沟通".equals(submit.getText())) {
+                submit.click();
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"modalConIm\"]"))).click();
             } else {
                 log.info("这个岗位没有投简历按钮...一秒后关闭标签页面！");
                 TimeUnit.SECONDS.sleep(1);
@@ -172,7 +182,7 @@ public class Lagou {
 
     private static int tryClick(WebElement element, int i) throws InterruptedException {
         boolean isClicked = false;
-        int maxRetryCount = 3;
+        int maxRetryCount = 10;
         int retryCount = 0;
 
         while (!isClicked && retryCount < maxRetryCount) {
