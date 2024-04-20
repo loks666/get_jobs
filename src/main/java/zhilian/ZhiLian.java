@@ -135,7 +135,7 @@ public class ZhiLian {
             }
             return false;
         } catch (Exception e) {
-            return true;
+            return false;
         }
     }
 
