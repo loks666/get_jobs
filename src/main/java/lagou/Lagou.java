@@ -77,18 +77,22 @@ public class Lagou {
         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("openWinPostion")));
         List<WebElement> elements = CHROME_DRIVER.findElements(By.id("openWinPostion"));
         for (int i = 0; i < elements.size(); i++) {
-            WebElement element = CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i);
-            ACTIONS.moveToElement(element).perform();
+            WebElement element = null;
+            try {
+                element = CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i);
+            } catch (Exception e) {
+                log.error("获取岗位列表中某个岗位失败，岗位列表数量：{},获取第【{}】个元素失败", i + 1, elements.size());
+            }
+            try {
+                ACTIONS.moveToElement(element).perform();
+            } catch (Exception e) {
+                getWindow();
+            }
             if (-1 == tryClick(element, i)) {
                 continue;
             }
             TimeUnit.SECONDS.sleep(1);
-            ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
-            try {
-                CHROME_DRIVER.switchTo().window(tabs.get(1));
-            } catch (Exception e) {
-                CHROME_DRIVER.switchTo().window(tabs.get(0));
-            }
+            getWindow();
             WebElement submit;
             try {
                 submit = CHROME_DRIVER.findElement(By.className("resume-deliver"));
@@ -176,6 +180,15 @@ public class Lagou {
                 TimeUnit.SECONDS.sleep(1);
             }
             CHROME_DRIVER.close();
+            getWindow();
+        }
+    }
+
+    private static void getWindow() {
+        ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
+        if (tabs.size() > 1) {
+            CHROME_DRIVER.switchTo().window(tabs.get(1));
+        } else {
             CHROME_DRIVER.switchTo().window(tabs.get(0));
         }
     }
