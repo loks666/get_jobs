@@ -79,7 +79,7 @@ public class Lagou {
         for (int i = 0; i < elements.size(); i++) {
             WebElement element = null;
             try {
-                element = CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i);
+                element = elements.get(i);
             } catch (Exception e) {
                 log.error("获取岗位列表中某个岗位失败，岗位列表数量：{},获取第【{}】个元素失败", i + 1, elements.size());
             }
@@ -185,11 +185,14 @@ public class Lagou {
     }
 
     private static void getWindow() {
-        ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
-        if (tabs.size() > 1) {
-            CHROME_DRIVER.switchTo().window(tabs.get(1));
-        } else {
-            CHROME_DRIVER.switchTo().window(tabs.get(0));
+        try {
+            ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
+            if (tabs.size() > 1) {
+                CHROME_DRIVER.switchTo().window(tabs.get(1));
+            } else {
+                CHROME_DRIVER.switchTo().window(tabs.get(0));
+            }
+        } catch (Exception ignore) {
         }
     }
 
