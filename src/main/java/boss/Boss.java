@@ -270,6 +270,14 @@ public class Boss {
                     return -1;
                 }
                 try {
+                    SeleniumUtil.sleep(1);
+                    try {
+                        CHROME_DRIVER.findElement(By.xpath("//textarea[@class='input-area']"));
+                        WebElement close = CHROME_DRIVER.findElement(By.xpath("//i[@class='icon-close']"));
+                        close.click();
+                        btn.click();
+                    } catch (Exception ignore) {
+                    }
                     WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
                     input.click();
                     SeleniumUtil.sleepByMilliSeconds(500);
@@ -325,39 +333,39 @@ public class Boss {
     }
 
     private static boolean isTargetJob(String keyword, String jobName) {
-    boolean keywordIsAI = false;
-    for (String target : new String[]{"大模型", "AI"}) {
-        if (keyword.contains(target)) {
-            keywordIsAI = true;
-            break;
+        boolean keywordIsAI = false;
+        for (String target : new String[]{"大模型", "AI"}) {
+            if (keyword.contains(target)) {
+                keywordIsAI = true;
+                break;
+            }
         }
-    }
 
-    boolean jobIsDesign = false;
-    for (String designOrVision : new String[]{"设计", "视觉","产品","运营"}) {
-        if (jobName.contains(designOrVision)) {
-            jobIsDesign = true;
-            break;
+        boolean jobIsDesign = false;
+        for (String designOrVision : new String[]{"设计", "视觉", "产品", "运营"}) {
+            if (jobName.contains(designOrVision)) {
+                jobIsDesign = true;
+                break;
+            }
         }
-    }
 
-    boolean jobIsAI = false;
-    for (String target : new String[]{"AI", "人工智能", "大模型", "生成"}) {
-        if (jobName.contains(target)) {
-            jobIsAI = true;
-            break;
+        boolean jobIsAI = false;
+        for (String target : new String[]{"AI", "人工智能", "大模型", "生成"}) {
+            if (jobName.contains(target)) {
+                jobIsAI = true;
+                break;
+            }
         }
-    }
 
-    if (keywordIsAI) {
-        if (jobIsDesign) {
-            return false;
-        } else if (!jobIsAI) {
-            return true;
+        if (keywordIsAI) {
+            if (jobIsDesign) {
+                return false;
+            } else if (!jobIsAI) {
+                return true;
+            }
         }
+        return true;
     }
-    return true;
-}
 
 
     private static boolean isLimit() {
