@@ -270,7 +270,15 @@ public class Boss {
                     return -1;
                 }
                 try {
-                    WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
+                    WebElement input;
+                    List<WebElement> elements = CHROME_DRIVER.findElements(By.xpath("//textarea[@class='input-area']"));
+                    if (elements.isEmpty()) {
+                        // 元素不存在的处理逻辑
+                        input = WAIT.until(ExpectedConditions.presenceOfElementLocated((By.xpath("//div[@id='chat-input']"))));
+                    } else {
+                        // 元素存在的处理逻辑
+                        input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//textarea[@class='input-area']")));
+                    }
                     input.click();
                     SeleniumUtil.sleepByMilliSeconds(500);
                     try {
@@ -285,7 +293,16 @@ public class Boss {
                         log.debug("岗位匹配，下一步发送消息...");
                     }
                     input.sendKeys(config.getSayHi());
-                    WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
+                    WebElement send;
+                    List<WebElement> element = CHROME_DRIVER.findElements(By.xpath("//div[@class='send-message']"));
+                    if (element.isEmpty()) {
+                        // 元素不存在的处理逻辑
+                        send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
+                    } else {
+                        // 元素存在的处理逻辑
+                        send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='send-message']")));
+
+                    }
                     send.click();
 
                     WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='name']"));
