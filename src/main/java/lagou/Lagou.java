@@ -72,10 +72,14 @@ public class Lagou {
     @SneakyThrows
     private static void submit() {
         // 获取所有的元素
-        ACTIONS.sendKeys(Keys.HOME).perform();
-        SeleniumUtil.sleep(1);
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("openWinPostion")));
-        List<WebElement> elements = CHROME_DRIVER.findElements(By.id("openWinPostion"));
+        List<WebElement> elements = null;
+        try {
+            ACTIONS.sendKeys(Keys.HOME).perform();
+            SeleniumUtil.sleep(1);
+            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("openWinPostion")));
+            elements = CHROME_DRIVER.findElements(By.id("openWinPostion"));
+        } catch (Exception ignore) {
+        }
         for (int i = 0; i < elements.size(); i++) {
             WebElement element = null;
             try {
