@@ -10,7 +10,7 @@
 
 ### 🌴源码地址
 
-- Github(国外访问)：https://github.com/loks666/get_jobs 
+- Github(国外访问)：https://github.com/loks666/get_jobs
 - Gitee·码云(中国大陆)：https://gitee.com/lok666/get_jobs
 
 ### 🌞 特色功能
@@ -177,8 +177,11 @@ cd get_jobs
 
 - 扫码添加：加群答案为本项目仓库名【get_jobs】
 
-<img src="https://gitee.com/lok666/images/raw/master/img/qq.jpg" alt="qq群" WIDTH="500">
-<img src="https://gitee.com/lok666/images/raw/master/img/wgroup.jpg" alt="微信群" WIDTH="500">
+  <div style="display: flex;">
+    <img src="https://gitee.com/lok666/images/raw/master/img/qq.jpg" alt="qq群" height="600">
+    <img src="https://gitee.com/lok666/images/raw/master/img/wgroup.jpg" alt="微信群" height="600">
+
+</div>
 
 > 点击下面的链接可直接加群
 
