@@ -36,7 +36,7 @@ public class Boss {
     static List<Job> returnList = new ArrayList<>();
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
-    static final int noJobMaxPages = 5; // 无岗位最大页数
+    static final int noJobMaxPages = 10; // 无岗位最大页数
     static int noJobPages;
     static int lastSize;
     static BossConfig config = BossConfig.init();

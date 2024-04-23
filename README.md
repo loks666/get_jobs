@@ -2,16 +2,16 @@
 <div align="center">
 
 [![Stars](https://img.shields.io/github/stars/loks666/get_jobs?style=flat&label=%F0%9F%8C%9Fstars&labelColor=ff4f4f&color=ff8383)](https://github.com/loks666/get_jobs)
-[![QQ交流群](https://img.shields.io/badge/🐧QQ交流群-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat)](https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606)
+[![QQ交流群](https://img.shields.io/badge/🐧QQ交流群-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat)](https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij/FNZAHGBT05KmLgLTG/BL&noverify=0&group_code=219885606)
 [![License](https://img.shields.io/badge/📑licenses-MIT-34D058?labelColor=22863A&style=flat)](https://github.com/loks666/get_jobs/blob/master/LICENSE)
-[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Aloks666%2Fget_jobs%20is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues%20closed&labelColor=008B8B&color=00CCCC)](https://github.com/loks666/get_jobs/issues?q=is%3Aissue+is%3Aclosed)
+[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Aloks666/Fget_jobs/0is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues/0closed&labelColor=008B8B&color=00CCCC)](https://github.com/loks666/get_jobs/issues?q=is%3Aissue+is%3Aclosed)
 [![Forks](https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE)](https://github.com/loks666/get_jobs/forks)
 </div>
 
 ### 🌴源码地址
 
 - Github(国外访问)：https://github.com/loks666/get_jobs 
-- Gitee·码云(中国大陆)：https://github.com/loks666/get_jobs
+- Gitee·码云(中国大陆)：https://gitee.com/lok666/get_jobs
 
 ### 🌞 特色功能
 
@@ -52,7 +52,7 @@ cd get_jobs
 
 - 目前程序自动判断系统环境，使用对应的chromedriver，无需手动下载
 - 但是你的Chrome版本必须是在Chrome官网下载的，并且为最新版本，才可使用
-- 如果你是mac m1芯片的版本，需要解压【[chromedriver-mac-arm64.zip](src%2Fmain%2Fresources%2Fchromedriver-mac-arm64.zip)
+- 如果你是mac m1芯片的版本，需要解压【[chromedriver-mac-arm64.zip](src/Fmain/Fresources/Fchromedriver-mac-arm64.zip)
   】后才能使用
 
 更多环境配置详情请点击：📚 [环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
@@ -145,7 +145,7 @@ cd get_jobs
    需要使用最新版猎聘手机app设置打招呼文本，只要不主动发消息，可以无限制对猎头打招呼，程序默认为该配置。
    ```
 
-- 智联招聘([ZhiLian.java](src%2Fmain%2Fjava%2Fzhilian%2FZhiLian.java))【投递上限100左右，岗位质量较差,走投无路可以考虑】
+- 智联招聘([ZhiLian.java](src/Fmain/Fjava/Fzhilian/FZhiLian.java))【投递上限100左右，岗位质量较差,走投无路可以考虑】
 
    ```
   智联招聘需要指定默认投递简历(在线简历 or 附件简历)，否则会投递失败
@@ -178,6 +178,7 @@ cd get_jobs
 - 扫码添加：加群答案为本项目仓库名【get_jobs】
 
 <img src="https://gitee.com/lok666/images/raw/master/img/qq.jpg" alt="qq群" WIDTH="500">
+<img src="https://gitee.com/lok666/images/raw/master/img/wgroup.jpg" alt="微信群" WIDTH="500">
 
 > 点击下面的链接可直接加群
 
@@ -225,7 +226,7 @@ cd get_jobs
 
 <details><summary><h4>📝 License</h4></summary>
 
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs?ref=badge_large)
+[![FOSSA Status](https://app.fossa.com/api/projects/git/Bgithub.com/Floks666/Fget_jobs.svg?type=large)](https://app.fossa.com/projects/git/Bgithub.com/Floks666/Fget_jobs?ref=badge_large)
 </details>
 
 --- 
@@ -243,7 +244,7 @@ cd get_jobs
 
 <!-- [![][fossa-license-shield]][fossa-license-link] -->
 
-[qq-link]: https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606
+[qq-link]: https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij/FNZAHGBT05KmLgLTG/BL&noverify=0&group_code=219885606
 
 [qq-shield-badge]: https://img.shields.io/badge/QQ交流群-get_jobs-0FB5EB?labelColor=235389&logo=tencent-qq&logoColor=white&style=flat
 
@@ -251,6 +252,6 @@ cd get_jobs
 
 [pr-welcome-shield]: https://img.shields.io/badge/🤯_pr_welcome-%E2%86%92-ffcb47?labelColor=black&style=for-the-badge
 
-[fossa-license-shield]: https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=shield
+[fossa-license-shield]: https://app.fossa.com/api/projects/git/Bgithub.com/Floks666/Fget_jobs.svg?type=shield
 
-[fossa-license-link]: https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs?ref=badge_shield
+[fossa-license-link]: https://app.fossa.com/projects/git/Bgithub.com/Floks666/Fget_jobs?ref=badge_shield
