@@ -162,11 +162,15 @@ cd get_jobs
 
 ### ✍🏼 例:Boss投递日志
 
-<img src="https://gitee.com/lok666/images/raw/master/img/boss.png" alt="Boss投递日志">
+<img src="src/main/resources/images/boss.png" alt="Boss投递日志">
 
 ### ✍🏼 猎聘投递日志
 
-<img src="https://gitee.com/lok666/images/raw/master/img/liepin.png" alt="猎聘投递日志">
+<img src="src/main/resources/images/liepin.png" alt="猎聘投递日志">
+
+### ✍🏼 寻找城市码
+
+<img src="src/main/resources/images/getCity.png" alt="猎聘投递日志">
 
 ## 📧 联系方式
 
@@ -178,8 +182,8 @@ cd get_jobs
 - 扫码添加：加群答案为本项目仓库名【get_jobs】
 
   <div style="display: flex;">
-    <img src="https://gitee.com/lok666/images/raw/master/img/qq.jpg" alt="qq群" height="600">
-    <img src="https://gitee.com/lok666/images/raw/master/img/wgroup.jpg" alt="微信群" height="600">
+    <img src="src/main/resources/images/qq.jpg" alt="qq群" height="600">
+    <img src="src/main/resources/images/wgroup.jpg" alt="微信群" height="600">
 
 </div>
 
@@ -241,7 +245,7 @@ cd get_jobs
 
 ## ☕️ 请我喝杯咖啡
 
-<img src="https://gitee.com/lok666/images/raw/master/img/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="https://gitee.com/lok666/images/raw/master/img/wechatPay.jpg" alt="微信付款码" height="500">
+<img src="src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
 
 <!-- LINK GROUP -->
 
