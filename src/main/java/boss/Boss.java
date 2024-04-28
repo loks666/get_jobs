@@ -46,7 +46,6 @@ public class Boss {
         SeleniumUtil.initDriver();
         Date start = new Date();
         login();
-        saveData(dataPath);
         String searchUrl = getSearchUrl();
         endSubmission:
         for (String keyword : config.getKeywords()) {
