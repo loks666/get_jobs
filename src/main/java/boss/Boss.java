@@ -145,7 +145,7 @@ public class Boss {
                         if (blackCompanies.stream().anyMatch(companyName::contains)) {
                             return;
                         }
-                        blackCompanies.add(companyName);
+                        blackCompanies.add(companyName.replaceAll("...", ""));
                     }
                 } catch (Exception e) {
                     log.error("寻找黑名单公司异常...");
