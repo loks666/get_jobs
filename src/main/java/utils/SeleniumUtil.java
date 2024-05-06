@@ -52,6 +52,10 @@ public class SeleniumUtil {
                 options.setBinary("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
                 System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver");
                 break;
+            case "linux":
+                options.setBinary("/usr/bin/google-chrome-stable");
+                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver");
+                break;
             default:
                 log.info("你这什么破系统，没见过，别跑了!");
                 break;
@@ -70,6 +74,8 @@ public class SeleniumUtil {
     private static String getOSType(String osName) {
         if (osName.contains("win")) {
             return "windows";
+        } else if (osName.contains("linux")) {
+            return "linux";
         } else if (osName.contains("mac") || osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
             return "mac";
         } else {
