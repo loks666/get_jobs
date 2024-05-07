@@ -23,9 +23,11 @@ public class Lagou {
     private static final Logger log = LoggerFactory.getLogger(Lagou.class);
 
     static Integer page = 1;
-    static Integer maxPage = 500;
+    static Integer maxPage = 4;
     static String homeUrl = "https://www.lagou.com?";
     static String wechatUrl = "https://open.weixin.qq.com/connect/qrconnect?appid=wx9d8d3686b76baff8&redirect_uri=https%3A%2F%2Fpassport.lagou.com%2Foauth20%2Fcallback_weixinProvider.html&response_type=code&scope=snsapi_login#wechat_redirect";
+    static int oneKeyMaxJob = 20;
+    static int currentKeyJobNum = 0;
     static int jobCount = 0;
     static String cookiePath = "./src/main/java/lagou/cookie.json";
     static LagouConfig config = LagouConfig.init();
@@ -40,9 +42,16 @@ public class Lagou {
             String searchUrl = getSearchUrl(keyword);
             CHROME_DRIVER.get(searchUrl);
             setMaxPage();
-            for (int i = page; i <= maxPage; i++) {
+            for (int i = page; i <= maxPage || currentKeyJobNum > oneKeyMaxJob; i++) {
                 submit();
+                try {
+                    getWindow();
+                    CHROME_DRIVER.findElements(By.className("lg-pagination-item-link")).get(1).click();
+                }catch (Exception e){
+                    break;
+                }
             }
+            currentKeyJobNum = 0;
         });
         log.info("投递完成,共投递 {} 个岗位！", jobCount);
     }
@@ -52,6 +61,7 @@ public class Lagou {
                 JobUtils.appendParam("city", config.getCityCode()) +
                 JobUtils.appendParam("kd", keyword) +
                 JobUtils.appendParam("yx", config.getSalary()) +
+                JobUtils.appendParam("gj", config.getGj()) +
                 JobUtils.appendListParam("gm", config.getScale());
     }
 
@@ -78,9 +88,10 @@ public class Lagou {
             SeleniumUtil.sleep(1);
             WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("openWinPostion")));
             elements = CHROME_DRIVER.findElements(By.id("openWinPostion"));
+
         } catch (Exception ignore) {
         }
-        for (int i = 0; i < elements.size(); i++) {
+        for (int i = 0; i < elements.size() || currentKeyJobNum > oneKeyMaxJob; i++) {
             WebElement element = null;
             try {
                 element = elements.get(i);
@@ -97,13 +108,25 @@ public class Lagou {
             }
             TimeUnit.SECONDS.sleep(1);
             getWindow();
+            String jobName;
             WebElement submit;
             try {
-                submit = CHROME_DRIVER.findElement(By.className("resume-deliver"));
+                jobName = CHROME_DRIVER.findElement(By.className("header__HY1Cm")).getText();
             } catch (Exception e) {
-                SeleniumUtil.sleep(10);
+                try {
+                    jobName = CHROME_DRIVER.findElement(By.className("position-head-wrap-position-name")).getText();
+                } catch (Exception ex){
+                    SeleniumUtil.sleep(10);
+                    continue;
+                }
+
+            }
+            if (!(jobName != null && !jobName.equals("") && !jobName.contains("销"))) {
+                CHROME_DRIVER.close();
+                getWindow();
                 continue;
             }
+            submit = CHROME_DRIVER.findElement(By.className("resume-deliver"));
             if ("投简历".equals(submit.getText())) {
                 String jobTitle = null;
                 String companyName = null;
@@ -139,6 +162,7 @@ public class Lagou {
                 }
                 log.info("投递: {},职位: {},公司: {},职位信息: {},公司信息: {},薪资: {},福利: {}", jobTitle, jobTitle, companyName, jobInfo, companyInfo, salary, weal);
                 jobCount++;
+                currentKeyJobNum++;
                 TimeUnit.SECONDS.sleep(2);
                 submit.click();
                 TimeUnit.SECONDS.sleep(2);
@@ -178,7 +202,12 @@ public class Lagou {
                 }
             } else if ("立即沟通".equals(submit.getText())) {
                 submit.click();
-                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"modalConIm\"]"))).click();
+                try {
+                    WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"modalConIm\"]"))).click();
+                } catch (Exception e){
+                    submit.click();
+                    WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"modalConIm\"]"))).click();
+                }
             } else {
                 log.info("这个岗位没有投简历按钮...一秒后关闭标签页面！");
                 TimeUnit.SECONDS.sleep(1);
@@ -202,41 +231,57 @@ public class Lagou {
 
     private static int tryClick(WebElement element, int i) throws InterruptedException {
         boolean isClicked = false;
-        int maxRetryCount = 10;
+        int maxRetryCount = 5;
         int retryCount = 0;
 
-        while (!isClicked && retryCount < maxRetryCount) {
+        try {
+            element.click();
+            isClicked = true;
+        } catch (Exception e) {
             try {
-                element.click();
+                CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i).click();
                 isClicked = true;
-            } catch (Exception e) {
-                retryCount++;
-                log.error("element.click() 点击失败，正在尝试重新点击...(正在尝试：第 {} 次)", retryCount);
-                TimeUnit.SECONDS.sleep(5);
-                try {
-                    CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i).click();
-                    isClicked = true;
-                } catch (Exception ex) {
-                    log.error("get(i).click() 重试失败，尝试使用Actions点击...(正在尝试：第 {} 次)", retryCount);
-                    TimeUnit.SECONDS.sleep(5);
-                    try {
-                        ACTIONS.keyDown(Keys.CONTROL).click(element).keyUp(Keys.CONTROL).build().perform();
-                        isClicked = true;
-                    } catch (Exception exc) {
-                        log.error("使用Actions点击也失败，等待10秒后再次尝试...(正在尝试：第 {} 次)", retryCount);
-                        TimeUnit.SECONDS.sleep(10);
-                    }
-                }
+            } catch (Exception ex){
+                log.info(ex.getMessage());
             }
         }
-        if (!isClicked) {
-            log.error("已尝试 {} 次，已达最大重试次数，少侠请重新来过！", maxRetryCount);
-            log.info("已投递 {} 次，正在退出...", jobCount);
-            CHROME_DRIVER.quit();
-            return -1;
-        } else {
-            return 0;
-        }
+        return 0;
+
+        /**
+         while (!isClicked && retryCount < maxRetryCount) {
+         try {
+         element.click();
+         isClicked = true;
+         } catch (Exception e) {
+         retryCount++;
+         log.error("element.click() 点击失败，正在尝试重新点击...(正在尝试：第 {} 次)", retryCount);
+         TimeUnit.SECONDS.sleep(5);
+
+         try {
+         CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i).click();
+         isClicked = true;
+         } catch (Exception ex) {
+         log.error(" get(i).click() 重试失败，尝试使用Actions点击...(正在尝试：第 {} 次)", retryCount);
+         TimeUnit.SECONDS.sleep(5);
+         try {
+         ACTIONS.keyDown(Keys.CONTROL).click(element).keyUp(Keys.CONTROL).build().perform();
+         isClicked = true;
+         } catch (Exception exc) {
+         log.error("使用Actions点击也失败，等待10秒后再次尝试...(正在尝试：第 {} 次)", retryCount);
+         TimeUnit.SECONDS.sleep(10);
+         }
+         }
+         }
+         }
+         if (!isClicked) {
+         log.error("已尝试 {} 次，已达最大重试次数，少侠请重新来过！", maxRetryCount);
+         log.info("已投递 {} 次，正在退出...", jobCount);
+         CHROME_DRIVER.quit();
+         return -1;
+         } else {
+         return 0;
+         }
+         **/
     }
 
     @SneakyThrows
