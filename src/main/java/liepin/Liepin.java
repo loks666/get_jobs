@@ -135,7 +135,11 @@ public class Liepin {
                 sb.setLength(0);
                 log.info("发起新聊天:【{}】的【{}·{}】岗位, 【{}:{}】", companyName, jobName, salary, recruiterName, recruiterTitle);
             }
-            ACTIONS.moveByOffset(125, 0).perform();
+            try {
+                ACTIONS.moveByOffset(125, 0).perform();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
