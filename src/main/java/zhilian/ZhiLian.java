@@ -78,7 +78,7 @@ public class ZhiLian {
             // 投递
             WebElement submit = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='a-job-apply-button']")));
             submit.click();
-            if (checkIsLimit()){
+            if (checkIsLimit()) {
                 break;
             }
             SeleniumUtil.sleep(1);
