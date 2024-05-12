@@ -179,7 +179,7 @@ cd get_jobs
 ## 📧 联系方式
 
 - V2VDaGF0OkFpckVsaWF1azk1Mjcs6K+35aSH5rOo77ya5pq06aOO6Zuo5bCx6KaB5p2l5LqG
-- 如想进入微信群，请添加上面的微信，或者进入QQ群联系
+- 如果微信群链接失效，请添加上面的微信，或者进入QQ群联系
 
 ## 👨🏻‍🔧 QQ群
 
