@@ -26,6 +26,7 @@ import static utils.Constant.WAIT;
  * Boss直聘自动投递
  */
 public class Boss {
+    static final int noJobMaxPages = 10; // 无岗位最大页数
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
     static Integer page = 1;
     static String homeUrl = "https://www.zhipin.com";
@@ -36,7 +37,6 @@ public class Boss {
     static List<Job> returnList = new ArrayList<>();
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
-    static final int noJobMaxPages = 10; // 无岗位最大页数
     static int noJobPages;
     static int lastSize;
     static BossConfig config = BossConfig.init();
