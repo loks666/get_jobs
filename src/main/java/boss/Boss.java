@@ -143,9 +143,12 @@ public class Boss {
                     if (match && !nomatch) {
                         log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
                         if (blackCompanies.stream().anyMatch(companyName::contains)) {
-                            return;
+                            continue;
                         }
-                        blackCompanies.add(companyName.replaceAll("...", ""));
+                        companyName = companyName.replaceAll("\\.{3}", "");
+                        if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
+                            blackCompanies.add(companyName);
+                        }
                     }
                 } catch (Exception e) {
                     log.error("寻找黑名单公司异常...");
@@ -178,20 +181,20 @@ public class Boss {
 
 
     private static String customJsonFormat(Map<String, Set<String>> data) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("{\n");
-    for (Map.Entry<String, Set<String>> entry : data.entrySet()) {
-        sb.append("    \"").append(entry.getKey()).append("\": [\n");
-        sb.append(entry.getValue().stream()
-            .map(s -> "        \"" + s + "\"")
-            .collect(Collectors.joining(",\n")));
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n");
+        for (Map.Entry<String, Set<String>> entry : data.entrySet()) {
+            sb.append("    \"").append(entry.getKey()).append("\": [\n");
+            sb.append(entry.getValue().stream()
+                    .map(s -> "        \"" + s + "\"")
+                    .collect(Collectors.joining(",\n")));
 
-        sb.append("\n    ],\n");
+            sb.append("\n    ],\n");
+        }
+        sb.delete(sb.length() - 2, sb.length());
+        sb.append("\n}");
+        return sb.toString();
     }
-    sb.delete(sb.length() - 2, sb.length());
-    sb.append("\n}");
-    return sb.toString();
-}
 
     private static void loadData(String path) {
         try {
@@ -427,4 +430,7 @@ public class Boss {
         }
         SeleniumUtil.saveCookie(cookiePath);
     }
+
+
 }
+
