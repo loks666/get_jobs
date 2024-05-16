@@ -63,12 +63,11 @@ public class SeleniumUtil {
         options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
         GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
         if (screens.length > 1) {
-            options.addArguments("--window-position=2600,750"); //将窗口移动到副屏的起始位置
-            options.addArguments("--window-size=1600,1000"); //设置窗口大小以适应副屏分辨率
+            options.addArguments("--window-position=2800,1000"); //将窗口移动到副屏的起始位置
         }
-        options.addArguments("--start-maximized"); //最大化窗口
 //        options.addArguments("--headless"); //使用无头模式
         CHROME_DRIVER = new ChromeDriver(options);
+        CHROME_DRIVER.manage().window().maximize();
     }
 
     private static String getOSType(String osName) {

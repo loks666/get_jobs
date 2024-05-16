@@ -16,7 +16,6 @@ config.yaml
 .settings
 .springBeans
 .sts4-cache
-config.yaml
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
@@ -26,7 +25,6 @@ config.yaml
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
-
 ### VS Code ###
 .vscode/
 
