@@ -31,7 +31,7 @@ public class Job51 {
     static String baseUrl = "https://we.51job.com/pc/search?";
     static List<String> returnList = new ArrayList<>();
     static Job51Config config = Job51Config.init();
-
+    static boolean isLatest = false;
 
     public static void main(String[] args) {
         String searchUrl = getSearchUrl();
@@ -80,9 +80,6 @@ public class Job51 {
             return false;
         }
     }
-
-
-    static boolean isLatest = false;
 
     @SneakyThrows
     private static void resume(String url) {
