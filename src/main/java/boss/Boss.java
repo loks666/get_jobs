@@ -26,6 +26,7 @@ import static utils.Constant.WAIT;
  * Boss直聘自动投递
  */
 public class Boss {
+    static final int noJobMaxPages = 10; // 无岗位最大页数
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
     static Integer page = 1;
     static String homeUrl = "https://www.zhipin.com";
@@ -36,8 +37,8 @@ public class Boss {
     static List<Job> returnList = new ArrayList<>();
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
-    static final int noJobMaxPages = 10; // 无岗位最大页数
     static int noJobPages;
+    static int lastSize;
     static BossConfig config = BossConfig.init();
 
     public static void main(String[] args) {
@@ -50,22 +51,12 @@ public class Boss {
         for (String keyword : config.getKeywords()) {
             page = 1;
             noJobPages = 0;
+            lastSize = -1;
             while (true) {
                 log.info("投递【{}】关键词第【{}】页", keyword, page);
                 String url = searchUrl + "&page=" + page;
                 int startSize = returnList.size();
-                Integer resultSize = null;
-                try {
-                    resultSize = resumeSubmission(url, keyword);
-                } catch (Exception e) {
-                    WebElement element = SeleniumUtil.findElement(By.xpath("//div[@class='error-content']"));
-                    if (element != null && element.getText().contains("异常访问")) {
-                        Scanner scanner = new Scanner(System.in);
-                        log.error("出现访问验证，请手动过验证后在控制台敲回车继续...");
-                        scanner.nextLine();
-                    }
-                    resultSize = -3;
-                }
+                Integer resultSize = resumeSubmission(url, keyword);
                 if (resultSize == -1) {
                     log.info("今日沟通人数已达上限，请明天再试");
                     break endSubmission;
@@ -73,10 +64,6 @@ public class Boss {
                 if (resultSize == -2) {
                     log.info("出现异常访问，请手动过验证后再继续投递...");
                     break endSubmission;
-                }
-                if (resultSize == -3) {
-                    log.info("访问异常已解决...投递继续...");
-                    continue;
                 }
                 if (resultSize == startSize) {
                     noJobPages++;
@@ -87,6 +74,7 @@ public class Boss {
                         log.info("【{}】关键词第【{}】页无岗位,目前已连续【{}】页无新岗位...", keyword, page, noJobPages);
                     }
                 } else {
+                    lastSize = resultSize;
                     noJobPages = 0;
                 }
                 page++;
@@ -155,9 +143,12 @@ public class Boss {
                     if (match && !nomatch) {
                         log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
                         if (blackCompanies.stream().anyMatch(companyName::contains)) {
-                            return;
+                            continue;
                         }
-                        blackCompanies.add(companyName.replaceAll("...", ""));
+                        companyName = companyName.replaceAll("\\.{3}", "");
+                        if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
+                            blackCompanies.add(companyName);
+                        }
                     }
                 } catch (Exception e) {
                     log.error("寻找黑名单公司异常...");
@@ -267,7 +258,14 @@ public class Boss {
             // 切换到新的标签页
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
             CHROME_DRIVER.switchTo().window(tabs.get(tabs.size() - 1));
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
+            try {
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
+            } catch (Exception e) {
+                WebElement element = SeleniumUtil.findElement(By.xpath("//div[@class='error-content']"));
+                if (element != null && element.getText().contains("异常访问")) {
+                    return -2;
+                }
+            }
             SeleniumUtil.sleep(1);
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             if ("立即沟通".equals(btn.getText())) {
@@ -432,4 +430,7 @@ public class Boss {
         }
         SeleniumUtil.saveCookie(cookiePath);
     }
+
+
 }
+
