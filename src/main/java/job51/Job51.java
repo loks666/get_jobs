@@ -31,7 +31,6 @@ public class Job51 {
     static String baseUrl = "https://we.51job.com/pc/search?";
     static List<String> returnList = new ArrayList<>();
     static Job51Config config = Job51Config.init();
-    static boolean isLatest = false;
 
     public static void main(String[] args) {
         String searchUrl = getSearchUrl();
@@ -62,9 +61,8 @@ public class Job51 {
         if (SeleniumUtil.isCookieValid(cookiePath)) {
             SeleniumUtil.loadCookie(cookiePath);
             CHROME_DRIVER.navigate().refresh();
-            SeleniumUtil.sleep(2);
+            SeleniumUtil.sleep(1);
         }
-
         if (isLoginRequired()) {
             log.error("cookie失效，尝试扫码登录...");
             scanLogin();
@@ -195,19 +193,6 @@ public class Job51 {
         CHROME_DRIVER.get(loginUrl);
         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("hasresume")));
         SeleniumUtil.saveCookie(cookiePath);
-    }
-
-    private static void inputLogin() {
-        CHROME_DRIVER.get(loginUrl);
-        log.info("等待登陆..");
-        CHROME_DRIVER.findElement(By.cssSelector("i[data-sensor-id='sensor_login_wechatScan']")).click();
-        CHROME_DRIVER.findElement(By.cssSelector("a[data-sensor-id='sensor_login_passwordLogin']")).click();
-        CHROME_DRIVER.findElement(By.id("loginname")).sendKeys("你的账号");
-        CHROME_DRIVER.findElement(By.id("password")).sendKeys("你的密码");
-        CHROME_DRIVER.findElement(By.id("isread_em")).click();
-        CHROME_DRIVER.findElement(By.id("login_btn_withPwd")).click();
-        // 手动点击登录按钮过验证登录
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("hasresume")));
     }
 
 }

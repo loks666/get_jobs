@@ -46,7 +46,21 @@ public class Boss {
         SeleniumUtil.initDriver();
         Date start = new Date();
         login();
-        String searchUrl = getSearchUrl();
+        config.getCityCode().forEach(Boss::postJobByCity);
+        Date end = new Date();
+        log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList.stream().map(Object::toString).collect(Collectors.joining("\n")));
+        long durationSeconds = (end.getTime() - start.getTime()) / 1000;
+        long minutes = durationSeconds / 60;
+        long seconds = durationSeconds % 60;
+        String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
+        log.info(message);
+        saveData(dataPath);
+        CHROME_DRIVER.close();
+        CHROME_DRIVER.quit();
+    }
+
+    private static void postJobByCity(String cityCode) {
+        String searchUrl = getSearchUrl(cityCode);
         endSubmission:
         for (String keyword : config.getKeywords()) {
             page = 1;
@@ -80,21 +94,11 @@ public class Boss {
                 page++;
             }
         }
-        Date end = new Date();
-        log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList.stream().map(Object::toString).collect(Collectors.joining("\n")));
-        long durationSeconds = (end.getTime() - start.getTime()) / 1000;
-        long minutes = durationSeconds / 60;
-        long seconds = durationSeconds % 60;
-        String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
-        log.info(message);
-        saveData(dataPath);
-        CHROME_DRIVER.close();
-        CHROME_DRIVER.quit();
     }
 
-    private static String getSearchUrl() {
+    private static String getSearchUrl(String cityCode) {
         return baseUrl +
-                JobUtils.appendParam("city", config.getCityCode()) +
+                JobUtils.appendParam("city", cityCode) +
                 JobUtils.appendParam("jobType", config.getJobType()) +
                 JobUtils.appendParam("salary", config.getSalary()) +
                 JobUtils.appendListParam("experience", config.getExperience()) +
@@ -392,7 +396,6 @@ public class Boss {
             CHROME_DRIVER.navigate().refresh();
             SeleniumUtil.sleep(2);
         }
-
         if (isLoginRequired()) {
             log.error("cookie失效，尝试扫码登录...");
             scanLogin();
