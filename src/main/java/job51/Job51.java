@@ -53,7 +53,7 @@ public class Job51 {
 
     private static String getSearchUrl() {
         return baseUrl +
-                JobUtils.appendListParam("city", config.getJobArea()) +
+                JobUtils.appendListParam("jobArea", config.getJobArea()) +
                 JobUtils.appendListParam("salary", config.getSalary());
     }
 
@@ -108,7 +108,8 @@ public class Job51 {
                     break;
                 } catch (Exception e) {
                     log.error("mytxt.clear()可能异常...");
-                    SeleniumUtil.sleep(2);
+                    SeleniumUtil.sleep(1);
+                    findAnomaly();
                     CHROME_DRIVER.navigate().refresh();
                 }
             }
@@ -118,7 +119,6 @@ public class Job51 {
 
     @SneakyThrows
     private static void postCurrentJob() {
-        findAnomaly();
         SeleniumUtil.sleep(1);
         // 选择所有岗位，批量投递
         List<WebElement> checkboxes = CHROME_DRIVER.findElements(By.cssSelector("div.ick"));
@@ -178,20 +178,18 @@ public class Job51 {
         }
     }
 
-    private static boolean findAnomaly() {
+    private static void findAnomaly() {
         try {
             String verify = CHROME_DRIVER.findElement(By.cssSelector("#WAF_NC_WRAPPER > p.waf-nc-title")).getText();
             if (verify.contains("访问验证")) {
                 //关闭弹窗
-                log.error("出现访问验证了！");
+                log.error("出现访问验证了！程序退出...");
+                CHROME_DRIVER.close();
                 CHROME_DRIVER.quit(); // 关闭之前的ChromeCHROME_DRIVER实例
-                System.exit(0);
-                return true;
+                System.exit(-2);
             }
-            return false;
         } catch (Exception ignored) {
-            log.info("未出现访问验证，继续运行！");
-            return false;
+            log.info("未出现访问验证，继续运行...");
         }
     }
 
