@@ -2,12 +2,16 @@
 <div align="center">
 
 [![Stars](https://img.shields.io/github/stars/loks666/get_jobs?style=flat&label=%F0%9F%8C%9Fstars&labelColor=ff4f4f&color=ff8383)](https://github.com/loks666/get_jobs)
-[![QQ交流群](https://img.shields.io/badge/🐧QQ交流群-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat)](https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606)
+[![QQ交流群](https://img.shields.io/badge/🐧QQ交流群-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat)](https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij/FNZAHGBT05KmLgLTG/BL&noverify=0&group_code=219885606)
 [![License](https://img.shields.io/badge/📑licenses-MIT-34D058?labelColor=22863A&style=flat)](https://github.com/loks666/get_jobs/blob/master/LICENSE)
-[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Aloks666%2Fget_jobs%20is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues%20closed&labelColor=008B8B&color=00CCCC)](https://github.com/loks666/get_jobs/issues?q=is%3Aissue+is%3Aclosed)
+[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Aloks666/Fget_jobs/0is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues/0closed&labelColor=008B8B&color=00CCCC)](https://github.com/loks666/get_jobs/issues?q=is%3Aissue+is%3Aclosed)
 [![Forks](https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE)](https://github.com/loks666/get_jobs/forks)
-
 </div>
+
+### 🌴源码地址
+
+- Github(国外访问)：https://github.com/loks666/get_jobs
+- Gitee·码云(中国大陆)：https://gitee.com/lok666/get_jobs
 
 ### 🌞 特色功能
 
@@ -18,6 +22,7 @@
 - 超长cookie登录，每周仅需扫码一次(理论上时间更久)
 - 内置xpathHelper插件，方便快速定位元素
 - Boss默认过滤猎头岗位，可修改代码自定义修改条件
+- Boss自动更新黑名单企业，避免重复投递
 - QQ交流群暗號：get_jobs
 
 ### 🔞️ 注意事项
@@ -48,7 +53,7 @@ cd get_jobs
 
 - 目前程序自动判断系统环境，使用对应的chromedriver，无需手动下载
 - 但是你的Chrome版本必须是在Chrome官网下载的，并且为最新版本，才可使用
-- 如果你是mac m1芯片的版本，需要解压【[chromedriver-mac-arm64.zip](src%2Fmain%2Fresources%2Fchromedriver-mac-arm64.zip)
+- 如果你是mac m1芯片的版本，需要解压【[chromedriver-mac-arm64.zip](src/Fmain/Fresources/Fchromedriver-mac-arm64.zip)
   】后才能使用
 
 更多环境配置详情请点击：📚 [环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
@@ -99,8 +104,9 @@ cd get_jobs
   ```
 - boss直聘([Boss.java](src/main/java/boss/Boss.java))【每日仅可发起100次新聊天，活跃度还行，但是每日投递次数太少】
 
-  > 注意：Boss必须要关闭自动打招呼，设置配置文件的sayHi为你的打招呼语，否则会投递失败
-
+  > 注意：Boss必须要关闭自动打招呼，设置配置文件的sayHi为你的打招呼语，否则会投递失败  
+  > 投递结束后会自动更新黑名单企业，发送过不合适等消息的HR的公司会加入黑名单，不会在投递该公司  
+  > 现在找工作是很难，但也别做舔狗，我们是打工人不是牛马！
   ```
   data.json //黑名单数据，在投递结束后会查询聊天记录寻找不合适的公司添加进去
       ├── blackCompanies: List.of("复深蓝"); // 公司黑名单，多个用逗号分隔
@@ -141,7 +147,7 @@ cd get_jobs
    需要使用最新版猎聘手机app设置打招呼文本，只要不主动发消息，可以无限制对猎头打招呼，程序默认为该配置。
    ```
 
-- 智联招聘([ZhiLian.java](src%2Fmain%2Fjava%2Fzhilian%2FZhiLian.java))【投递上限100左右，岗位质量较差,走投无路可以考虑】
+- 智联招聘([ZhiLian.java](src/Fmain/Fjava/Fzhilian/FZhiLian.java))【投递上限100左右，岗位质量较差,走投无路可以考虑】
 
    ```
   智联招聘需要指定默认投递简历(在线简历 or 附件简历)，否则会投递失败
@@ -158,11 +164,15 @@ cd get_jobs
 
 ### ✍🏼 例:Boss投递日志
 
-<img src="./src/main/resources/images/boss.png" alt="Boss投递日志">
+<img src="src/main/resources/images/boss.png" alt="Boss投递日志">
 
 ### ✍🏼 猎聘投递日志
 
-<img src="./src/main/resources/images/liepin.png" alt="猎聘投递日志">
+<img src="src/main/resources/images/liepin.png" alt="猎聘投递日志">
+
+### ✍🏼 寻找城市码
+
+<img src="src/main/resources/images/getCity.png" alt="猎聘投递日志">
 
 ## 📧 联系方式
 
@@ -173,7 +183,11 @@ cd get_jobs
 
 - 扫码添加：加群答案为本项目仓库名【get_jobs】
 
-<img src="./src/main/resources/images/qq.jpg" alt="qq群" WIDTH="500">
+  <div style="display: flex;">
+    <img src="src/main/resources/images/qq.jpg" alt="qq群" height="600">
+    <img src="src/main/resources/images/wgroup.jpg" alt="微信群" height="600">
+
+</div>
 
 > 点击下面的链接可直接加群
 
@@ -196,7 +210,8 @@ cd get_jobs
 - 2024-4-15 01:52:18
     1. 新增config.yaml,目前仅需修改配置文件即可，已全平台支持
     2. cookie有效期延长，保持至少一周（拉勾平台除外）
-
+- 2024-4-28 15:20:06
+    1. boos,自动更新黑名单公司
 --- 
 
 ## 🤝 参与贡献
@@ -205,7 +220,14 @@ cd get_jobs
 如果你对贡献代码感兴趣  
 可以查看我们的 [Issues](https://github.com/loks666/get_jobs/issues)
 和 [discussions](https://github.com/loks666/get_jobs/discussions)  
-期待你的大展身手，向我们展示你的奇思妙想。  
+期待你的大展身手，向我们展示你的奇思妙想。
+
+- 提交Pr流程：
+    1. fork本项目
+    2. 从master分支新建分支
+    3. 开发完成后提交pull request到lok666/get_jobs的release分支
+    4. 等待管理员审核验证提交代码无误后，合并到master分支
+
 [![][pr-welcome-shield]][pr-welcome-link]
 
 --- 
@@ -214,7 +236,7 @@ cd get_jobs
 
 <details><summary><h4>📝 License</h4></summary>
 
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs?ref=badge_large)
+[![FOSSA Status](https://app.fossa.com/api/projects/git/Bgithub.com/Floks666/Fget_jobs.svg?type=large)](https://app.fossa.com/projects/git/Bgithub.com/Floks666/Fget_jobs?ref=badge_large)
 </details>
 
 --- 
@@ -226,13 +248,13 @@ cd get_jobs
 
 ## ☕️ 请我喝杯咖啡
 
-<img src="./src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="./src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
+<img src="src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
 
 <!-- LINK GROUP -->
 
 <!-- [![][fossa-license-shield]][fossa-license-link] -->
 
-[qq-link]: https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij%2FNZAHGBT05KmLgLTG%2BL&noverify=0&group_code=219885606
+[qq-link]: https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij/FNZAHGBT05KmLgLTG/BL&noverify=0&group_code=219885606
 
 [qq-shield-badge]: https://img.shields.io/badge/QQ交流群-get_jobs-0FB5EB?labelColor=235389&logo=tencent-qq&logoColor=white&style=flat
 
@@ -240,6 +262,6 @@ cd get_jobs
 
 [pr-welcome-shield]: https://img.shields.io/badge/🤯_pr_welcome-%E2%86%92-ffcb47?labelColor=black&style=for-the-badge
 
-[fossa-license-shield]: https://app.fossa.com/api/projects/git%2Bgithub.com%2Floks666%2Fget_jobs.svg?type=shield
+[fossa-license-shield]: https://app.fossa.com/api/projects/git/Bgithub.com/Floks666/Fget_jobs.svg?type=shield
 
-[fossa-license-link]: https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs?ref=badge_shield
+[fossa-license-link]: https://app.fossa.com/projects/git/Bgithub.com/Floks666/Fget_jobs?ref=badge_shield
