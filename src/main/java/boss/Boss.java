@@ -30,13 +30,13 @@ public class Boss {
     static Integer page = 1;
     static String homeUrl = "https://www.zhipin.com";
     static String baseUrl = "https://www.zhipin.com/web/geek/job?";
-    static List<String> blackCompanies;
-    static List<String> blackRecruiters;
-    static List<String> blackJobs;
+    static Set<String> blackCompanies;
+    static Set<String> blackRecruiters;
+    static Set<String> blackJobs;
     static List<Job> returnList = new ArrayList<>();
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
-    static final int noJobMaxPages = 5; // 无岗位最大页数
+    static final int noJobMaxPages = 10; // 无岗位最大页数
     static int noJobPages;
     static int lastSize;
     static BossConfig config = BossConfig.init();
@@ -86,8 +86,8 @@ public class Boss {
         long minutes = durationSeconds / 60;
         long seconds = durationSeconds % 60;
         String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
-//        saveData(dataPath);
         log.info(message);
+        saveData(dataPath);
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
@@ -106,7 +106,7 @@ public class Boss {
     private static void saveData(String path) {
         try {
             updateListData();
-            Map<String, List<String>> data = new HashMap<>();
+            Map<String, Set<String>> data = new HashMap<>();
             data.put("blackCompanies", blackCompanies);
             data.put("blackRecruiters", blackRecruiters);
             data.put("blackJobs", blackJobs);
@@ -119,8 +119,8 @@ public class Boss {
 
     private static void updateListData() {
         CHROME_DRIVER.get("https://www.zhipin.com/web/geek/chat");
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//li[@role='listitem']")));
         SeleniumUtil.getWait(3);
+
         JavascriptExecutor js = CHROME_DRIVER;
         boolean shouldBreak = false;
         while (!shouldBreak) {
@@ -129,15 +129,14 @@ public class Boss {
                 if ("没有更多了".equals(bottom.getText())) {
                     shouldBreak = true;
                 }
-            } catch (Exception e) {
-//                log.info("还未到底");
+            } catch (Exception ignore) {
             }
             List<WebElement> items = CHROME_DRIVER.findElements(By.xpath("//li[@role='listitem']"));
-            items.forEach(info -> {
+            for (int i = 0; i < items.size(); i++) {
                 try {
-                    WebElement companyElement = info.findElement(By.xpath(".//span[@class='name-box']//span[2]"));
+                    WebElement companyElement = CHROME_DRIVER.findElements(By.xpath("//span[@class='name-box']//span[2]")).get(i);
                     String companyName = companyElement.getText();
-                    WebElement messageElement = info.findElement(By.xpath(".//span[@class='last-msg-text']"));
+                    WebElement messageElement = CHROME_DRIVER.findElements(By.xpath("//span[@class='last-msg-text']")).get(i);
                     String message = messageElement.getText();
                     boolean match = message.contains("不") || message.contains("感谢") || message.contains("但") || message.contains("遗憾") || message.contains("需要本") || message.contains("对不");
                     boolean nomatch = message.contains("不是") || message.contains("不生");
@@ -146,12 +145,12 @@ public class Boss {
                         if (blackCompanies.stream().anyMatch(companyName::contains)) {
                             return;
                         }
-                        blackCompanies.add(companyName);
+                        blackCompanies.add(companyName.replaceAll("...", ""));
                     }
                 } catch (Exception e) {
-//                    log.error("元素没找到...");
+                    log.error("寻找黑名单公司异常...");
                 }
-            });
+            }
             WebElement element = null;
             try {
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(text(), '滚动加载更多')]")));
@@ -178,18 +177,21 @@ public class Boss {
     }
 
 
-    private static String customJsonFormat(Map<String, List<String>> data) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\n");
-        for (Map.Entry<String, List<String>> entry : data.entrySet()) {
-            sb.append("    \"").append(entry.getKey()).append("\": ");
-            sb.append(entry.getValue().stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(", ", "[", "]")));
-            sb.append(",\n");
-        }
-        sb.delete(sb.length() - 2, sb.length());
-        sb.append("\n}");
-        return sb.toString();
+    private static String customJsonFormat(Map<String, Set<String>> data) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{\n");
+    for (Map.Entry<String, Set<String>> entry : data.entrySet()) {
+        sb.append("    \"").append(entry.getKey()).append("\": [\n");
+        sb.append(entry.getValue().stream()
+            .map(s -> "        \"" + s + "\"")
+            .collect(Collectors.joining(",\n")));
+
+        sb.append("\n    ],\n");
     }
+    sb.delete(sb.length() - 2, sb.length());
+    sb.append("\n}");
+    return sb.toString();
+}
 
     private static void loadData(String path) {
         try {
@@ -202,9 +204,9 @@ public class Boss {
 
     private static void parseJson(String json) {
         JSONObject jsonObject = new JSONObject(json);
-        blackCompanies = jsonObject.getJSONArray("blackCompanies").toList().stream().map(Object::toString).collect(Collectors.toList());
-        blackRecruiters = jsonObject.getJSONArray("blackRecruiters").toList().stream().map(Object::toString).collect(Collectors.toList());
-        blackJobs = jsonObject.getJSONArray("blackJobs").toList().stream().map(Object::toString).collect(Collectors.toList());
+        blackCompanies = jsonObject.getJSONArray("blackCompanies").toList().stream().map(Object::toString).collect(Collectors.toSet());
+        blackRecruiters = jsonObject.getJSONArray("blackRecruiters").toList().stream().map(Object::toString).collect(Collectors.toSet());
+        blackJobs = jsonObject.getJSONArray("blackJobs").toList().stream().map(Object::toString).collect(Collectors.toSet());
     }
 
     @SneakyThrows
@@ -222,8 +224,7 @@ public class Boss {
                 continue;
             }
             String jobName = jobCard.findElement(By.cssSelector("div.job-title span.job-name")).getText();
-            boolean isNotTargetJob = (keyword.contains("大模型") || keyword.contains("AI")) && !jobName.contains("AI") && !jobName.contains("人工智能") && jobName.contains("大模型") && !jobName.contains("生成") && jobName.contains("设计") && jobName.contains("视觉");
-            if (blackJobs.stream().anyMatch(jobName::contains) || isNotTargetJob) {
+            if (blackJobs.stream().anyMatch(jobName::contains) || !isTargetJob(keyword, jobName)) {
                 // 排除黑名单岗位
                 continue;
             }
@@ -271,6 +272,14 @@ public class Boss {
                     return -1;
                 }
                 try {
+                    SeleniumUtil.sleep(1);
+                    try {
+                        CHROME_DRIVER.findElement(By.xpath("//textarea[@class='input-area']"));
+                        WebElement close = CHROME_DRIVER.findElement(By.xpath("//i[@class='icon-close']"));
+                        close.click();
+                        btn.click();
+                    } catch (Exception ignore) {
+                    }
                     WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
                     input.click();
                     SeleniumUtil.sleepByMilliSeconds(500);
@@ -324,6 +333,42 @@ public class Boss {
         }
         return returnList.size();
     }
+
+    private static boolean isTargetJob(String keyword, String jobName) {
+        boolean keywordIsAI = false;
+        for (String target : new String[]{"大模型", "AI"}) {
+            if (keyword.contains(target)) {
+                keywordIsAI = true;
+                break;
+            }
+        }
+
+        boolean jobIsDesign = false;
+        for (String designOrVision : new String[]{"设计", "视觉", "产品", "运营"}) {
+            if (jobName.contains(designOrVision)) {
+                jobIsDesign = true;
+                break;
+            }
+        }
+
+        boolean jobIsAI = false;
+        for (String target : new String[]{"AI", "人工智能", "大模型", "生成"}) {
+            if (jobName.contains(target)) {
+                jobIsAI = true;
+                break;
+            }
+        }
+
+        if (keywordIsAI) {
+            if (jobIsDesign) {
+                return false;
+            } else if (!jobIsAI) {
+                return true;
+            }
+        }
+        return true;
+    }
+
 
     private static boolean isLimit() {
         try {
