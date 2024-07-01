@@ -16,6 +16,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static utils.Constant.CHROME_DRIVER;
@@ -40,24 +43,79 @@ public class Boss {
     static int noJobPages;
     static int lastSize;
     static BossConfig config = BossConfig.init();
+    static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public static void main(String[] args) {
-        loadData(dataPath);
-        SeleniumUtil.initDriver();
-        Date start = new Date();
-        login();
-        config.getCityCode().forEach(Boss::postJobByCity);
-        Date end = new Date();
-        log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList.stream().map(Object::toString).collect(Collectors.joining("\n")));
-        long durationSeconds = (end.getTime() - start.getTime()) / 1000;
-        long minutes = durationSeconds / 60;
-        long seconds = durationSeconds % 60;
-        String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
-        log.info(message);
-        saveData(dataPath);
-        CHROME_DRIVER.close();
-        CHROME_DRIVER.quit();
+        // 初次执行任务
+        runJobSubmissionProcess();
+        scheduleHourlyRefresh();
+        scheduleNextDayExecution();
     }
+
+    private static void runJobSubmissionProcess() {
+        try {
+            loadData(dataPath);
+            SeleniumUtil.initDriver();
+            Date start = new Date();
+            login();
+            config.getCityCode().forEach(Boss::postJobByCity);
+            Date end = new Date();
+            log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList.stream().map(Object::toString).collect(Collectors.joining("\n")));
+            long durationSeconds = (end.getTime() - start.getTime()) / 1000;
+            long minutes = durationSeconds / 60;
+            long seconds = durationSeconds % 60;
+            String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
+            log.info(message);
+            saveData(dataPath);
+        } catch (Exception e) {
+            log.error("执行投递流程时出错: {}", e.getMessage(), e);
+        }
+    }
+
+    private static void scheduleHourlyRefresh() {
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                CHROME_DRIVER.navigate().refresh();
+                log.info("页面已刷新");
+            } catch (Exception e) {
+                log.error("刷新页面时出错: {}", e.getMessage(), e);
+            }
+        }, 0, 1, TimeUnit.HOURS);
+    }
+
+    private static void scheduleNextDayExecution() {
+        // 计算到第二天早上八点的延迟时间
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_YEAR, 1); // 加一天
+        calendar.set(Calendar.HOUR_OF_DAY, 8); // 设置小时为8点
+        calendar.set(Calendar.MINUTE, 0); // 设置分钟为0分
+        calendar.set(Calendar.SECOND, 0); // 设置秒为0秒
+        long delay = calendar.getTimeInMillis() - System.currentTimeMillis();
+
+        scheduler.schedule(() -> {
+            log.info("重新执行任务");
+            runJobSubmissionProcess();
+            scheduleNextDayExecution(); // 再次安排下一天的执行
+        }, delay, TimeUnit.MILLISECONDS);
+    }
+
+//    public static void main(String[] args) {
+//        loadData(dataPath);
+//        SeleniumUtil.initDriver();
+//        Date start = new Date();
+//        login();
+//        config.getCityCode().forEach(Boss::postJobByCity);
+//        Date end = new Date();
+//        log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList.stream().map(Object::toString).collect(Collectors.joining("\n")));
+//        long durationSeconds = (end.getTime() - start.getTime()) / 1000;
+//        long minutes = durationSeconds / 60;
+//        long seconds = durationSeconds % 60;
+//        String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
+//        log.info(message);
+//        saveData(dataPath);
+//        CHROME_DRIVER.close();
+//        CHROME_DRIVER.quit();
+//    }
 
     private static void postJobByCity(String cityCode) {
         String searchUrl = getSearchUrl(cityCode);
