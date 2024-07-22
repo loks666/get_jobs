@@ -83,6 +83,20 @@ public class Job51 {
     private static void resume(String url) {
         CHROME_DRIVER.get(url);
         SeleniumUtil.sleep(1);
+
+        // 再次判断是否登录
+        WebElement login = WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//a[contains(@class, 'uname')]")));
+        if (login != null && isNotNullOrEmpty(login.getText()) && login.getText().contains("登录")) {
+            login.click();
+            WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//i[contains(@class, 'passIcon')]"))).click();
+            log.info("请扫码登录...");
+            WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[contains(@class, 'joblist')]")));
+            SeleniumUtil.saveCookie(cookiePath);
+        }
+
+        //由于51更新，每投递一页之前，停止10秒
+        SeleniumUtil.sleep(10);
+
         int i = 0;
         try {
             CHROME_DRIVER.findElements(By.className("ss")).get(i).click();
@@ -111,6 +125,14 @@ public class Job51 {
             postCurrentJob();
         }
     }
+    public static boolean isNullOrEmpty(String str) {
+        return str == null || str.isBlank();
+    }
+
+    public static boolean isNotNullOrEmpty(String str) {
+        return !isNullOrEmpty(str);
+    }
+
 
     @SneakyThrows
     private static void postCurrentJob() {
