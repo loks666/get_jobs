@@ -116,6 +116,16 @@ public class SeleniumUtil {
         }
     }
 
+    private static void updateCookieFile(JSONArray jsonArray, String path) {
+        // 将JSONArray写入到一个文件中
+        try (FileWriter file = new FileWriter(path)) {
+            file.write(jsonArray.toString(4));  // 使用4个空格的缩进
+            log.info("cookie文件更新：{}", path);
+        } catch (IOException e) {
+            log.error("更新cookie异常！保存路径:{}", path);
+        }
+    }
+
     public static void loadCookie(String cookiePath) {
         // 首先清除由于浏览器打开已有的cookies
         CHROME_DRIVER.manage().deleteAllCookies();
@@ -157,8 +167,8 @@ public class SeleniumUtil {
                 } catch (Exception ignore) {
                 }
             }
-            // 将修改后的jsonArray写回文件
-            saveCookieToFile(jsonArray, cookiePath);
+            // 更新cookie文件
+            updateCookieFile(jsonArray, cookiePath);
         }
     }
 
