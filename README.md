@@ -116,14 +116,11 @@ cd get_jobs
       └── blackJobs: List.of("外包", "外派"); // 排除岗位，比如外包，外派
   ```
 
-- 51job([Job.java](src/main/java/job51/Job51.java))【投递无上限，会限制搜索到的岗位数量，没什么活人】
+- 51job([Job.java](src/main/java/job51/Job51.java))【投递有上限，且限制搜索到的岗位数量，没什么活人】
 
   ```
-  scanLogin() //扫码登录(默认方式) 只可微信扫码，请绑定微信账号
-  
-  inputLogin() //密码登录(需要手动过验证)
-  
-  51投递一段时间后会出现滑块验证，是某个时间段内投递量达到上限，需要关闭脚本，等待一段时间再运行
+  51job现在已经烂掉了，不建议使用
+  现在投递一段时间后会出现投递上限，
   ```
 - 拉勾([Lagou.java](src/main/java/lagou/Lagou.java))【投递无上限，会限制投递的频率，没什么活人而且投不了几个岗位】
 
