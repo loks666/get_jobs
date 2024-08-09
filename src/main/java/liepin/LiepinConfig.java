@@ -23,7 +23,6 @@ public class LiepinConfig {
      */
     private String salary;
 
-   
 
     @SneakyThrows
     public static LiepinConfig init() {
