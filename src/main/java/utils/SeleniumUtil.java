@@ -1,5 +1,6 @@
 package utils;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -42,7 +43,7 @@ public class SeleniumUtil {
         // 添加扩展插件
         String osName = System.getProperty("os.name").toLowerCase();
         log.info("当前操作系统为【{}】", osName);
-        String osType = getOSType(osName);
+   /*     String osType = getOSType(osName);
         switch (osType) {
             case "windows":
                 options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
@@ -50,31 +51,40 @@ public class SeleniumUtil {
                 break;
             case "mac":
                 options.setBinary("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
-                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver");
+                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver-mac-arm64/chromedriver");
+                break;
+            case "linux":
+                options.setBinary("/usr/bin/google-chrome-stable");
+                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver-linux64/chromedriver");
                 break;
             default:
                 log.info("你这什么破系统，没见过，别跑了!");
                 break;
         }
         options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
+        */
         GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
         if (screens.length > 1) {
-            options.addArguments("--window-position=2600,750"); //将窗口移动到副屏的起始位置
-            options.addArguments("--window-size=1600,1000"); //设置窗口大小以适应副屏分辨率
+            options.addArguments("--window-position=2800,1000"); //将窗口移动到副屏的起始位置
         }
-        options.addArguments("--start-maximized"); //最大化窗口
 //        options.addArguments("--headless"); //使用无头模式
+        // 自动下载对应驱动依赖 仅测试win10最新版谷歌浏览器
+        WebDriverManager.chromedriver().setup();
         CHROME_DRIVER = new ChromeDriver(options);
+        CHROME_DRIVER.manage().window().maximize();
     }
 
     private static String getOSType(String osName) {
         if (osName.contains("win")) {
             return "windows";
-        } else if (osName.contains("mac") || osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
-            return "mac";
-        } else {
-            return "unknown";
         }
+        if (osName.contains("linux")) {
+            return "linux";
+        }
+        if (osName.contains("mac") || osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
+            return "mac";
+        }
+        return "unknown";
     }
 
     public static void saveCookie(String path) {
@@ -107,6 +117,16 @@ public class SeleniumUtil {
             log.info("Cookie已保存到文件：{}", path);
         } catch (IOException e) {
             log.error("保存cookie异常！保存路径:{}", path);
+        }
+    }
+
+    private static void updateCookieFile(JSONArray jsonArray, String path) {
+        // 将JSONArray写入到一个文件中
+        try (FileWriter file = new FileWriter(path)) {
+            file.write(jsonArray.toString(4));  // 使用4个空格的缩进
+            log.info("cookie文件更新：{}", path);
+        } catch (IOException e) {
+            log.error("更新cookie异常！保存路径:{}", path);
         }
     }
 
@@ -151,8 +171,8 @@ public class SeleniumUtil {
                 } catch (Exception ignore) {
                 }
             }
-            // 将修改后的jsonArray写回文件
-            saveCookieToFile(jsonArray, cookiePath);
+            // 更新cookie文件
+            updateCookieFile(jsonArray, cookiePath);
         }
     }
 
