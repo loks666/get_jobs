@@ -56,7 +56,7 @@ public class Job implements Serializable {
         return String.format("【%s, %s, %s, %s, %s, %s】", companyName, jobName, jobArea, salary, companyTag, recruiter);
     }
 
-     public String toString(Platform platform) {
+    public String toString(Platform platform) {
         if (platform == Platform.ZHILIAN) {
             return String.format("【%s, %s, %s, %s, %s, %s, %s】", companyName, jobName, jobArea, companyTag, salary, recruiter, href);
         }
