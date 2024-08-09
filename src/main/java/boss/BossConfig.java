@@ -22,7 +22,7 @@ public class BossConfig {
     /**
      * 城市编码
      */
-    private String cityCode;
+    private List<String> cityCode;
 
     /**
      * 行业列表
@@ -62,12 +62,13 @@ public class BossConfig {
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
-        // 转换城市编码
-        config.setCityCode(BossEnum.CityCode.forValue(config.getCityCode()).getCode());
+
         // 转换工作类型
         config.setJobType(BossEnum.JobType.forValue(config.getJobType()).getCode());
         // 转换薪资范围
         config.setSalary(BossEnum.Salary.forValue(config.getSalary()).getCode());
+        // 转换城市编码
+        config.setCityCode(config.getCityCode().stream().map(value -> BossEnum.CityCode.forValue(value).getCode()).collect(Collectors.toList()));
         // 转换工作经验要求
         config.setExperience(config.getExperience().stream().map(value -> BossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
         // 转换学历要求
