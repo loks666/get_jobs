@@ -32,7 +32,6 @@ public class Job51 {
     static List<String> returnList = new ArrayList<>();
     static Job51Config config = Job51Config.init();
 
-
     public static void main(String[] args) {
         String searchUrl = getSearchUrl();
         SeleniumUtil.initDriver();
@@ -62,9 +61,8 @@ public class Job51 {
         if (SeleniumUtil.isCookieValid(cookiePath)) {
             SeleniumUtil.loadCookie(cookiePath);
             CHROME_DRIVER.navigate().refresh();
-            SeleniumUtil.sleep(2);
+            SeleniumUtil.sleep(1);
         }
-
         if (isLoginRequired()) {
             log.error("cookie失效，尝试扫码登录...");
             scanLogin();
@@ -81,13 +79,24 @@ public class Job51 {
         }
     }
 
-
-    static boolean isLatest = false;
-
     @SneakyThrows
     private static void resume(String url) {
         CHROME_DRIVER.get(url);
         SeleniumUtil.sleep(1);
+
+        // 再次判断是否登录
+        WebElement login = WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//a[contains(@class, 'uname')]")));
+        if (login != null && isNotNullOrEmpty(login.getText()) && login.getText().contains("登录")) {
+            login.click();
+            WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//i[contains(@class, 'passIcon')]"))).click();
+            log.info("请扫码登录...");
+            WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[contains(@class, 'joblist')]")));
+            SeleniumUtil.saveCookie(cookiePath);
+        }
+
+        //由于51更新，每投递一页之前，停止10秒
+        SeleniumUtil.sleep(10);
+
         int i = 0;
         try {
             CHROME_DRIVER.findElements(By.className("ss")).get(i).click();
@@ -116,6 +125,14 @@ public class Job51 {
             postCurrentJob();
         }
     }
+    public static boolean isNullOrEmpty(String str) {
+        return str == null || str.isBlank();
+    }
+
+    public static boolean isNotNullOrEmpty(String str) {
+        return !isNullOrEmpty(str);
+    }
+
 
     @SneakyThrows
     private static void postCurrentJob() {
@@ -181,13 +198,15 @@ public class Job51 {
     private static void findAnomaly() {
         try {
             String verify = CHROME_DRIVER.findElement(By.cssSelector("#WAF_NC_WRAPPER > p.waf-nc-title")).getText();
-            if (verify.contains("访问验证")) {
+            String limit = CHROME_DRIVER.findElement(By.xpath("//div[contains(@class, 'van-toast')]")).getText();
+            if (verify.contains("访问验证") || limit.contains("投递太多")) {
                 //关闭弹窗
                 log.error("出现访问验证了！程序退出...");
                 CHROME_DRIVER.close();
                 CHROME_DRIVER.quit(); // 关闭之前的ChromeCHROME_DRIVER实例
                 System.exit(-2);
             }
+
         } catch (Exception ignored) {
             log.info("未出现访问验证，继续运行...");
         }
@@ -198,19 +217,6 @@ public class Job51 {
         CHROME_DRIVER.get(loginUrl);
         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("hasresume")));
         SeleniumUtil.saveCookie(cookiePath);
-    }
-
-    private static void inputLogin() {
-        CHROME_DRIVER.get(loginUrl);
-        log.info("等待登陆..");
-        CHROME_DRIVER.findElement(By.cssSelector("i[data-sensor-id='sensor_login_wechatScan']")).click();
-        CHROME_DRIVER.findElement(By.cssSelector("a[data-sensor-id='sensor_login_passwordLogin']")).click();
-        CHROME_DRIVER.findElement(By.id("loginname")).sendKeys("你的账号");
-        CHROME_DRIVER.findElement(By.id("password")).sendKeys("你的密码");
-        CHROME_DRIVER.findElement(By.id("isread_em")).click();
-        CHROME_DRIVER.findElement(By.id("login_btn_withPwd")).click();
-        // 手动点击登录按钮过验证登录
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("hasresume")));
     }
 
 }
