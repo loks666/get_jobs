@@ -48,15 +48,10 @@ cd get_jobs
 
 ### 2️⃣ 环境配置:JDK17+、Maven、Chrome、ChromeDriver
 
-> 目前driver版本号：123.0.6312.122
-> chrome需要版本为：124.0.6367.61及以上(默认最新即可)
-
-- 目前程序自动判断系统环境，使用对应的chromedriver，无需手动下载
-- 但是你的Chrome版本必须是在Chrome官网下载的，并且为最新版本，才可使用
-- 如果你是mac intel芯片版本，请自行下载对应的驱动到src/main/resources路径下解压
-- 如果你是mac m1芯片的版本，需要解压【[chromedriver-mac-arm64.zip](src/main/resources/chromedriver-mac-arm64.zip)
-  】后使用
-- 如果你是linux系统，需要解压【[chromedriver-linux64.zip](src/main/resources/chromedriver-linux64.zip)】后使用
+- 目前程序自动判断系统环境，使用对应的chromedriver，并进行浏览器操作
+- 但是你的Chrome版本必须是在[Chrome官网](https://googlechromelabs.github.io/chrome-for-testing)下载的，并且为对应版本(默认最新)，才可使用
+- 非windows的操作系统，请自行下载对应的驱动到src/main/resources路径下解压使用
+  
 
 更多环境配置详情请点击：📚 [环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
 
@@ -146,7 +141,7 @@ cd get_jobs
    需要使用最新版猎聘手机app设置打招呼文本，只要不主动发消息，可以无限制对猎头打招呼，程序默认为该配置。
    ```
 
-- 智联招聘([ZhiLian.java](src/Fmain/Fjava/Fzhilian/FZhiLian.java))【投递上限100左右，岗位质量较差,走投无路可以考虑】
+- 智联招聘([ZhiLian.java](src/main/java/zhilian/ZhiLian.java))【投递上限100左右，岗位质量较差,走投无路可以考虑】
 
    ```
   智联招聘需要指定默认投递简历(在线简历 or 附件简历)，否则会投递失败
