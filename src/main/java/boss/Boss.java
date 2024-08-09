@@ -26,6 +26,7 @@ import static utils.Constant.WAIT;
  * Boss直聘自动投递
  */
 public class Boss {
+    static final int noJobMaxPages = 5; // 无岗位最大页数
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
     static Integer page = 1;
     static String homeUrl = "https://www.zhipin.com";
@@ -36,7 +37,6 @@ public class Boss {
     static List<Job> returnList = new ArrayList<>();
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
-    static final int noJobMaxPages = 10; // 无岗位最大页数
     static int noJobPages;
     static int lastSize;
     static BossConfig config = BossConfig.init();
@@ -46,7 +46,21 @@ public class Boss {
         SeleniumUtil.initDriver();
         Date start = new Date();
         login();
-        String searchUrl = getSearchUrl();
+        config.getCityCode().forEach(Boss::postJobByCity);
+        Date end = new Date();
+        log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList.stream().map(Object::toString).collect(Collectors.joining("\n")));
+        long durationSeconds = (end.getTime() - start.getTime()) / 1000;
+        long minutes = durationSeconds / 60;
+        long seconds = durationSeconds % 60;
+        String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
+        log.info(message);
+        saveData(dataPath);
+        CHROME_DRIVER.close();
+        CHROME_DRIVER.quit();
+    }
+
+    private static void postJobByCity(String cityCode) {
+        String searchUrl = getSearchUrl(cityCode);
         endSubmission:
         for (String keyword : config.getKeywords()) {
             page = 1;
@@ -80,21 +94,11 @@ public class Boss {
                 page++;
             }
         }
-        Date end = new Date();
-        log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList.stream().map(Object::toString).collect(Collectors.joining("\n")));
-        long durationSeconds = (end.getTime() - start.getTime()) / 1000;
-        long minutes = durationSeconds / 60;
-        long seconds = durationSeconds % 60;
-        String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
-        log.info(message);
-        saveData(dataPath);
-        CHROME_DRIVER.close();
-        CHROME_DRIVER.quit();
     }
 
-    private static String getSearchUrl() {
+    private static String getSearchUrl(String cityCode) {
         return baseUrl +
-                JobUtils.appendParam("city", config.getCityCode()) +
+                JobUtils.appendParam("city", cityCode) +
                 JobUtils.appendParam("jobType", config.getJobType()) +
                 JobUtils.appendParam("salary", config.getSalary()) +
                 JobUtils.appendListParam("experience", config.getExperience()) +
@@ -143,9 +147,12 @@ public class Boss {
                     if (match && !nomatch) {
                         log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
                         if (blackCompanies.stream().anyMatch(companyName::contains)) {
-                            return;
+                            continue;
                         }
-                        blackCompanies.add(companyName.replaceAll("...", ""));
+                        companyName = companyName.replaceAll("\\.{3}", "");
+                        if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
+                            blackCompanies.add(companyName);
+                        }
                     }
                 } catch (Exception e) {
                     log.error("寻找黑名单公司异常...");
@@ -178,20 +185,20 @@ public class Boss {
 
 
     private static String customJsonFormat(Map<String, Set<String>> data) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("{\n");
-    for (Map.Entry<String, Set<String>> entry : data.entrySet()) {
-        sb.append("    \"").append(entry.getKey()).append("\": [\n");
-        sb.append(entry.getValue().stream()
-            .map(s -> "        \"" + s + "\"")
-            .collect(Collectors.joining(",\n")));
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n");
+        for (Map.Entry<String, Set<String>> entry : data.entrySet()) {
+            sb.append("    \"").append(entry.getKey()).append("\": [\n");
+            sb.append(entry.getValue().stream()
+                    .map(s -> "        \"" + s + "\"")
+                    .collect(Collectors.joining(",\n")));
 
-        sb.append("\n    ],\n");
+            sb.append("\n    ],\n");
+        }
+        sb.delete(sb.length() - 2, sb.length());
+        sb.append("\n}");
+        return sb.toString();
     }
-    sb.delete(sb.length() - 2, sb.length());
-    sb.append("\n}");
-    return sb.toString();
-}
 
     private static void loadData(String path) {
         try {
@@ -282,7 +289,7 @@ public class Boss {
                     }
                     WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
                     input.click();
-                    SeleniumUtil.sleepByMilliSeconds(500);
+                    SeleniumUtil.sleep(1);
                     try {
                         // 是否出现不匹配的对话框
                         WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
@@ -389,7 +396,6 @@ public class Boss {
             CHROME_DRIVER.navigate().refresh();
             SeleniumUtil.sleep(2);
         }
-
         if (isLoginRequired()) {
             log.error("cookie失效，尝试扫码登录...");
             scanLogin();
@@ -427,4 +433,7 @@ public class Boss {
         }
         SeleniumUtil.saveCookie(cookiePath);
     }
+
+
 }
+
