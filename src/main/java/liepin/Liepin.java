@@ -114,7 +114,12 @@ public class Liepin {
             try {
                 button = CHROME_DRIVER.findElement(By.xpath("//button[@class='ant-btn ant-btn-primary ant-btn-round']"));
             } catch (Exception e) {
-                continue;
+                //嵌套一个异常，用来获取对应按钮
+                try {
+                    button = CHROME_DRIVER.findElement(By.xpath("//button[@Class='ant-btn ant-btn-round ant-btn-primary']"));
+                } catch (Exception e1) {
+                    continue;
+                }
             }
             String text = button.getText();
             if (text.contains("聊一聊")) {
