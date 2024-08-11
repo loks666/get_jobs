@@ -10,7 +10,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class Application {
+public class StartAll {
 
     public static void main(String[] args) {
         // 创建一个调度任务的服务，线程池大小为4，确保任务按顺序执行
@@ -20,10 +20,9 @@ public class Application {
         runAllPlatforms();
 
         // 调度执行
-        scheduleTask(scheduler, Application::runAllPlatforms);
+        scheduleTask(scheduler, StartAll::runAllPlatforms);
     }
 
-    // 方法依次执行四个平台的main方法
     private static void runAllPlatforms() {
         safeRun(() -> Boss.main(null));
         safeRun(() -> Job51.main(null));
