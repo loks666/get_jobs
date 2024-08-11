@@ -1,6 +1,5 @@
 package utils;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -43,7 +42,7 @@ public class SeleniumUtil {
         // 添加扩展插件
         String osName = System.getProperty("os.name").toLowerCase();
         log.info("当前操作系统为【{}】", osName);
-   /*     String osType = getOSType(osName);
+       String osType = getOSType(osName);
         switch (osType) {
             case "windows":
                 options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
@@ -62,14 +61,11 @@ public class SeleniumUtil {
                 break;
         }
         options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
-        */
         GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
         if (screens.length > 1) {
             options.addArguments("--window-position=2800,1000"); //将窗口移动到副屏的起始位置
         }
 //        options.addArguments("--headless"); //使用无头模式
-        // 自动下载对应驱动依赖 仅测试win10最新版谷歌浏览器
-        WebDriverManager.chromedriver().setup();
         CHROME_DRIVER = new ChromeDriver(options);
         CHROME_DRIVER.manage().window().maximize();
     }
