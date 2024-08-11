@@ -121,7 +121,12 @@ public class Liepin {
                     continue;
                 }
             }
-            String text = button.getText();
+            String text;
+            try {
+                text = button.getText();
+            } catch (Exception ignore) {
+                text = "";
+            }
             if (text.contains("聊一聊")) {
                 try {
                     button.click();
