@@ -170,12 +170,23 @@ public class Liepin {
 
     private static void scanLogin() {
         try {
-            SeleniumUtil.click(By.className("btn-sign-switch"));
+            SeleniumUtil.click(By.className("switch-login-type-btn-box"));
             log.info("等待扫码..");
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"main-container\"]/div/div[3]/div[2]/div[3]/div[1]/div[1]")));
+            boolean isLoggedIn = false;
+
+            // 一直循环，直到元素出现（用户扫码登录成功）
+            while (!isLoggedIn) {
+                try {
+                    isLoggedIn = !CHROME_DRIVER.findElements(By.xpath("//*[@id=\"main-container\"]/div/div[3]/div[2]/div[3]/div[1]/div[1]")).isEmpty();
+                } catch (Exception ignored) {
+                    SeleniumUtil.sleep(1);
+                }
+            }
+            log.info("用户扫码成功，继续执行...");
         } catch (Exception e) {
             log.error("scanLogin() 失败: {}", e.getMessage());
         }
     }
+
 
 }
