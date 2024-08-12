@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static utils.Bot.sendMessage;
 import static utils.Constant.*;
 import static utils.SeleniumUtil.isCookieValid;
 
@@ -47,13 +48,15 @@ public class Lagou {
                 try {
                     getWindow();
                     CHROME_DRIVER.findElements(By.className("lg-pagination-item-link")).get(1).click();
-                }catch (Exception e){
+                } catch (Exception e) {
                     break;
                 }
             }
             currentKeyJobNum = 0;
         });
-        log.info("投递完成,共投递 {} 个岗位！", jobCount);
+        String message = "【拉勾】投递完成,共投递 " + jobCount + " 个岗位！";
+        sendMessage(message);
+        log.info(message);
     }
 
     private static String getSearchUrl(String keyword) {
@@ -91,129 +94,131 @@ public class Lagou {
 
         } catch (Exception ignore) {
         }
-        for (int i = 0; i < elements.size() || currentKeyJobNum > oneKeyMaxJob; i++) {
-            WebElement element = null;
-            try {
-                element = elements.get(i);
-            } catch (Exception e) {
-                log.error("获取岗位列表中某个岗位失败，岗位列表数量：{},获取第【{}】个元素失败", i + 1, elements.size());
-            }
-            try {
-                ACTIONS.moveToElement(element).perform();
-            } catch (Exception e) {
-                getWindow();
-            }
-            if (-1 == tryClick(element, i)) {
-                continue;
-            }
-            TimeUnit.SECONDS.sleep(1);
-            getWindow();
-            String jobName;
-            WebElement submit;
-            try {
-                jobName = CHROME_DRIVER.findElement(By.className("header__HY1Cm")).getText();
-            } catch (Exception e) {
+        if (elements != null) {
+            for (int i = 0; i < elements.size() || currentKeyJobNum > oneKeyMaxJob; i++) {
+                WebElement element = null;
                 try {
-                    jobName = CHROME_DRIVER.findElement(By.className("position-head-wrap-position-name")).getText();
-                } catch (Exception ex){
-                    SeleniumUtil.sleep(10);
+                    element = elements.get(i);
+                } catch (Exception e) {
+                    log.error("获取岗位列表中某个岗位失败，岗位列表数量：{},获取第【{}】个元素失败", i + 1, elements.size());
+                }
+                try {
+                    ACTIONS.moveToElement(element).perform();
+                } catch (Exception e) {
+                    getWindow();
+                }
+                if (-1 == tryClick(element, i)) {
                     continue;
                 }
-
-            }
-            if (!(jobName != null && !jobName.equals("") && !jobName.contains("销"))) {
-                CHROME_DRIVER.close();
+                TimeUnit.SECONDS.sleep(1);
                 getWindow();
-                continue;
-            }
-            submit = CHROME_DRIVER.findElement(By.className("resume-deliver"));
-            if ("投简历".equals(submit.getText())) {
-                String jobTitle = null;
-                String companyName = null;
-                String jobInfo = null;
-                String companyInfo = null;
-                String salary = null;
-                String weal = null;
+                String jobName;
+                WebElement submit;
                 try {
-                    jobTitle = CHROME_DRIVER.findElement(By.cssSelector("span.name__36WTQ")).getText();
-                    companyName = CHROME_DRIVER.findElement(By.cssSelector("span.company")).getText();
-                    jobInfo = CHROME_DRIVER.findElements(By.cssSelector("h3.position-tags span"))
-                            .stream()
-                            .map(WebElement::getText)
-                            .collect(Collectors.joining("/"));
-                    companyInfo = CHROME_DRIVER.findElement(By.cssSelector("div.header__HY1Cm")).getText();
-                    salary = CHROME_DRIVER.findElement(By.cssSelector("span.salary__22Kt_")).getText();
-                    weal = CHROME_DRIVER.findElement(By.cssSelector("li.labels")).getText();
+                    jobName = CHROME_DRIVER.findElement(By.className("header__HY1Cm")).getText();
                 } catch (Exception e) {
-                    log.error("获取职位信息失败", e);
                     try {
-                        jobTitle = CHROME_DRIVER.findElement(By.cssSelector("span.position-head-wrap-position-name")).getText();
+                        jobName = CHROME_DRIVER.findElement(By.className("position-head-wrap-position-name")).getText();
+                    } catch (Exception ex) {
+                        SeleniumUtil.sleep(10);
+                        continue;
+                    }
+
+                }
+                if (!(jobName != null && !jobName.isEmpty() && !jobName.contains("销"))) {
+                    CHROME_DRIVER.close();
+                    getWindow();
+                    continue;
+                }
+                submit = CHROME_DRIVER.findElement(By.className("resume-deliver"));
+                if ("投简历".equals(submit.getText())) {
+                    String jobTitle = null;
+                    String companyName = null;
+                    String jobInfo = null;
+                    String companyInfo = null;
+                    String salary = null;
+                    String weal = null;
+                    try {
+                        jobTitle = CHROME_DRIVER.findElement(By.cssSelector("span.name__36WTQ")).getText();
                         companyName = CHROME_DRIVER.findElement(By.cssSelector("span.company")).getText();
-                        List<WebElement> jobInfoElements = CHROME_DRIVER.findElements(By.cssSelector("h3.position-tags span:not(.tag-point)"));
-                        jobInfo = jobInfoElements.stream()
+                        jobInfo = CHROME_DRIVER.findElements(By.cssSelector("h3.position-tags span"))
+                                .stream()
                                 .map(WebElement::getText)
                                 .collect(Collectors.joining("/"));
-                        companyInfo = CHROME_DRIVER.findElement(By.cssSelector("span.company")).getText();
-                        salary = CHROME_DRIVER.findElement(By.cssSelector("span.salary")).getText();
-                        weal = CHROME_DRIVER.findElement(By.cssSelector("dd.job-advantage p")).getText();
-                    } catch (Exception ex) {
-                        log.error("第二次获取职位信息失败，放弃了！", ex);
+                        companyInfo = CHROME_DRIVER.findElement(By.cssSelector("div.header__HY1Cm")).getText();
+                        salary = CHROME_DRIVER.findElement(By.cssSelector("span.salary__22Kt_")).getText();
+                        weal = CHROME_DRIVER.findElement(By.cssSelector("li.labels")).getText();
+                    } catch (Exception e) {
+                        log.error("获取职位信息失败", e);
+                        try {
+                            jobTitle = CHROME_DRIVER.findElement(By.cssSelector("span.position-head-wrap-position-name")).getText();
+                            companyName = CHROME_DRIVER.findElement(By.cssSelector("span.company")).getText();
+                            List<WebElement> jobInfoElements = CHROME_DRIVER.findElements(By.cssSelector("h3.position-tags span:not(.tag-point)"));
+                            jobInfo = jobInfoElements.stream()
+                                    .map(WebElement::getText)
+                                    .collect(Collectors.joining("/"));
+                            companyInfo = CHROME_DRIVER.findElement(By.cssSelector("span.company")).getText();
+                            salary = CHROME_DRIVER.findElement(By.cssSelector("span.salary")).getText();
+                            weal = CHROME_DRIVER.findElement(By.cssSelector("dd.job-advantage p")).getText();
+                        } catch (Exception ex) {
+                            log.error("第二次获取职位信息失败，放弃了！", ex);
+                        }
                     }
-                }
-                log.info("投递: {},职位: {},公司: {},职位信息: {},公司信息: {},薪资: {},福利: {}", jobTitle, jobTitle, companyName, jobInfo, companyInfo, salary, weal);
-                jobCount++;
-                currentKeyJobNum++;
-                TimeUnit.SECONDS.sleep(2);
-                submit.click();
-                TimeUnit.SECONDS.sleep(2);
-                try {
-                    WebElement send = CHROME_DRIVER.findElement(By.cssSelector("body > div:nth-child(45) > div > div.lg-design-modal-wrap.position-modal > div > div.lg-design-modal-content > div.lg-design-modal-footer > button.lg-design-btn.lg-design-btn-default"));
-                    if ("确认投递".equals(send.getText())) {
-                        send.click();
+                    log.info("投递: {},职位: {},公司: {},职位信息: {},公司信息: {},薪资: {},福利: {}", jobTitle, jobTitle, companyName, jobInfo, companyInfo, salary, weal);
+                    jobCount++;
+                    currentKeyJobNum++;
+                    TimeUnit.SECONDS.sleep(2);
+                    submit.click();
+                    TimeUnit.SECONDS.sleep(2);
+                    try {
+                        WebElement send = CHROME_DRIVER.findElement(By.cssSelector("body > div:nth-child(45) > div > div.lg-design-modal-wrap.position-modal > div > div.lg-design-modal-content > div.lg-design-modal-footer > button.lg-design-btn.lg-design-btn-default"));
+                        if ("确认投递".equals(send.getText())) {
+                            send.click();
+                        }
+                    } catch (Exception e) {
+                        log.error("没有【确认投递】的弹窗，继续！");
                     }
-                } catch (Exception e) {
-                    log.error("没有【确认投递】的弹窗，继续！");
-                }
-                try {
-                    WebElement confirm = CHROME_DRIVER.findElement(By.cssSelector("button.lg-design-btn.lg-design-btn-primary span"));
-                    String buttonText = confirm.getText();
-                    if ("我知道了".equals(buttonText)) {
-                        confirm.click();
-                    } else {
+                    try {
+                        WebElement confirm = CHROME_DRIVER.findElement(By.cssSelector("button.lg-design-btn.lg-design-btn-primary span"));
+                        String buttonText = confirm.getText();
+                        if ("我知道了".equals(buttonText)) {
+                            confirm.click();
+                        } else {
+                            TimeUnit.SECONDS.sleep(1);
+                        }
+                    } catch (Exception e) {
+                        log.error("第一次点击【我知道了】按钮失败...重试xpath点击...");
+                        TimeUnit.SECONDS.sleep(1);
+                        try {
+                            CHROME_DRIVER.findElement(By.xpath("/html/body/div[7]/div/div[2]/div/div[2]/div[2]/button[2]")).click();
+                        } catch (Exception ex) {
+                            log.error("第二次点击【我知道了】按钮失败...放弃了！", ex);
+                            TimeUnit.SECONDS.sleep(10);
+                            CHROME_DRIVER.navigate().refresh();
+                        }
+                    }
+                    try {
+                        TimeUnit.SECONDS.sleep(2);
+                        CHROME_DRIVER.findElement(By.cssSelector("#__next > div:nth-child(3) > div > div > div.feedback_job__3EnWp > div.feedback_job_title__2y8Bj > div.feedback_job_deliver__3UIB5.feedback_job_active__3bbLa")).click();
+                    } catch (Exception e) {
+                        log.error("这个岗位没有推荐职位...");
                         TimeUnit.SECONDS.sleep(1);
                     }
-                } catch (Exception e) {
-                    log.error("第一次点击【我知道了】按钮失败...重试xpath点击...");
-                    TimeUnit.SECONDS.sleep(1);
-                    try {
-                        CHROME_DRIVER.findElement(By.xpath("/html/body/div[7]/div/div[2]/div/div[2]/div[2]/button[2]")).click();
-                    } catch (Exception ex) {
-                        log.error("第二次点击【我知道了】按钮失败...放弃了！", ex);
-                        TimeUnit.SECONDS.sleep(10);
-                        CHROME_DRIVER.navigate().refresh();
-                    }
-                }
-                try {
-                    TimeUnit.SECONDS.sleep(2);
-                    CHROME_DRIVER.findElement(By.cssSelector("#__next > div:nth-child(3) > div > div > div.feedback_job__3EnWp > div.feedback_job_title__2y8Bj > div.feedback_job_deliver__3UIB5.feedback_job_active__3bbLa")).click();
-                } catch (Exception e) {
-                    log.error("这个岗位没有推荐职位...");
-                    TimeUnit.SECONDS.sleep(1);
-                }
-            } else if ("立即沟通".equals(submit.getText())) {
-                submit.click();
-                try {
-                    WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"modalConIm\"]"))).click();
-                } catch (Exception e){
+                } else if ("立即沟通".equals(submit.getText())) {
                     submit.click();
-                    WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"modalConIm\"]"))).click();
+                    try {
+                        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"modalConIm\"]"))).click();
+                    } catch (Exception e) {
+                        submit.click();
+                        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"modalConIm\"]"))).click();
+                    }
+                } else {
+                    log.info("这个岗位没有投简历按钮...一秒后关闭标签页面！");
+                    TimeUnit.SECONDS.sleep(1);
                 }
-            } else {
-                log.info("这个岗位没有投简历按钮...一秒后关闭标签页面！");
-                TimeUnit.SECONDS.sleep(1);
+                CHROME_DRIVER.close();
+                getWindow();
             }
-            CHROME_DRIVER.close();
-            getWindow();
         }
     }
 
@@ -229,7 +234,7 @@ public class Lagou {
         }
     }
 
-    private static int tryClick(WebElement element, int i) throws InterruptedException {
+    private static int tryClick(WebElement element, int i) {
         boolean isClicked = false;
         int maxRetryCount = 5;
         int retryCount = 0;
@@ -241,13 +246,13 @@ public class Lagou {
             try {
                 CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i).click();
                 isClicked = true;
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 log.info(ex.getMessage());
             }
         }
         return 0;
 
-        /**
+        /*
          while (!isClicked && retryCount < maxRetryCount) {
          try {
          element.click();
@@ -281,7 +286,7 @@ public class Lagou {
          } else {
          return 0;
          }
-         **/
+         */
     }
 
     @SneakyThrows

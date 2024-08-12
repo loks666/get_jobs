@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static utils.Bot.sendMessage;
 import static utils.Constant.*;
 
 /**
@@ -35,12 +36,14 @@ public class Job51 {
     public static void main(String[] args) {
         String searchUrl = getSearchUrl();
         SeleniumUtil.initDriver();
-        Date sdate = new Date();
+        Date startDate = new Date();
         Login();
         config.getKeywords().forEach(keyword -> resume(searchUrl + "&keyword=" + keyword));
-        Date edate = new Date();
-        log.info("共投递{}个简历,用时{}分", returnList.size(),
-                ((edate.getTime() - sdate.getTime()) / 1000) / 60);
+        Date endDate = new Date();
+        long durationMinutes = ((endDate.getTime() - startDate.getTime()) / 1000) / 60;
+        String message = String.format("【51job】共投递%d个简历,用时%d分", returnList.size(), durationMinutes);
+        log.info(message);
+        sendMessage(message);
         try {
             TimeUnit.SECONDS.sleep(30);
         } catch (InterruptedException e) {
@@ -125,6 +128,7 @@ public class Job51 {
             postCurrentJob();
         }
     }
+
     public static boolean isNullOrEmpty(String str) {
         return str == null || str.isBlank();
     }
