@@ -1,11 +1,13 @@
 package utils;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.fluent.Request;
-import org.yaml.snakeyaml.Yaml;
 
-import java.io.FileInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -22,13 +24,13 @@ public class Bot {
         Dotenv dotenv = Dotenv.load();
         HOOK_URL = dotenv.get("HOOK_URL");
 
-        // 加载 config.yaml 配置
-        try (FileInputStream fis = new FileInputStream("src/main/resources/config.yaml")) {
-            Yaml yaml = new Yaml();
-            HashMap<String, Object> config = yaml.load(fis);
+        // 使用 Jackson 加载 config.yaml 配置
+        try {
+            ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+            HashMap<String, Object> config = mapper.readValue(new File("src/main/resources/config.yaml"), new TypeReference<HashMap<String, Object>>() {});
             log.info("YAML 配置内容: {}", config);
 
-            // 获取 bot 配置，使用安全的类型转换方法
+            // 获取 bot 配置
             HashMap<String, Object> botConfig = safeCast(config.get("bot"), HashMap.class);
             if (botConfig != null && botConfig.get("is_send") != null) {
                 isSend = Boolean.TRUE.equals(safeCast(botConfig.get("is_send"), Boolean.class));
