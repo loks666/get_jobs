@@ -12,6 +12,7 @@ import utils.SeleniumUtil;
 import java.util.ArrayList;
 import java.util.List;
 
+import static utils.Bot.sendMessage;
 import static utils.Constant.*;
 import static utils.SeleniumUtil.isCookieValid;
 
@@ -37,8 +38,11 @@ public class Liepin {
     }
 
     private static void printResult() {
-        log.info("投递完成,共投递 {} 个岗位！", resultList.size());
-        log.info("今日投递岗位:\n{}", String.join("\n", resultList));
+        String message = String.format("【猎聘】投递完成,共投递 %d 个岗位！\n今日投递岗位:\n%s",
+                resultList.size(),
+                String.join("\n", resultList));
+        log.info(message);
+        sendMessage(message);
     }
 
     @SneakyThrows

@@ -61,6 +61,28 @@
             <artifactId>jackson-dataformat-yaml</artifactId>
             <version>2.12.3</version>
         </dependency>
+
+        <!-- Apache HttpClient 用于发送 HTTP 请求 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5-fluent</artifactId>
+            <version>5.1</version>
+        </dependency>
+
+
+        <!-- SnakeYAML 用于解析 YAML 文件 -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.0</version>
+        </dependency>
+
+        <!-- dotenv-java 用于加载 .env 文件中的环境变量 -->
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>2.2.0</version>
+        </dependency>
     </dependencies>
 
     <distributionManagement>
