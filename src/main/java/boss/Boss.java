@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static utils.Bot.sendMessage;
 import static utils.Constant.CHROME_DRIVER;
 import static utils.Constant.WAIT;
 
@@ -52,8 +53,9 @@ public class Boss {
         long durationSeconds = (end.getTime() - start.getTime()) / 1000;
         long minutes = durationSeconds / 60;
         long seconds = durationSeconds % 60;
-        String message = "共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
+        String message = "【Boss】共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
         log.info(message);
+        sendMessage(message);
         saveData(dataPath);
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
