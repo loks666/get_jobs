@@ -12,8 +12,11 @@ import utils.JobUtils;
 import utils.SeleniumUtil;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import static utils.Bot.sendMessage;
 import static utils.Constant.*;
 
 public class ZhiLian {
@@ -29,15 +32,27 @@ public class ZhiLian {
 
     static ZhilianConfig config = ZhilianConfig.init();
 
+    static List<Job> resultList = new ArrayList<>();
+
 
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
+        Date start = new Date();
         login();
         config.getKeywords().forEach(keyword -> {
             CHROME_DRIVER.get(getSearchUrl(keyword, 1));
             submitJobs(keyword);
             isLimit = false;
         });
+        Date end = new Date();
+        log.info(resultList.isEmpty() ? "未投递新的岗位..." : "新投递公司如下:\n{}", resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
+        long durationSeconds = (end.getTime() - start.getTime()) / 1000;
+        long minutes = durationSeconds / 60;
+        long seconds = durationSeconds % 60;
+        String message = "【猎聘】共发起 " + resultList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
+        log.info(message);
+        sendMessage(message);
+        CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
 
@@ -185,6 +200,7 @@ public class ZhiLian {
             job.setCompanyName(companyName);
             job.setJobInfo(years + "·" + education);
             log.info("投递【{}】公司【{}】岗位，薪资【{}】，要求【{}·{}】，规模【{}】", companyName, jobName, salary, years, education, companyTag);
+            resultList.add(job);
         });
     }
 
