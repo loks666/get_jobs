@@ -41,7 +41,7 @@ public class JobUtils {
     }
 
     /**
-     * 计算并格式化时间差
+     * 计算并格式化时间（毫秒）
      *
      * @param startDate 开始时间
      * @param endDate   结束时间
@@ -49,16 +49,16 @@ public class JobUtils {
      */
     public static String formatDuration(Date startDate, Date endDate) {
         long durationMillis = endDate.getTime() - startDate.getTime();
-        long seconds = durationMillis % 60;
-        long minutes = (durationMillis / 60) % 60;
-        long hours = durationMillis / 3600; // 直接计算总小时数
-        return String.format("%02d时%02d分%02d秒", hours, minutes, seconds);
+        long seconds = (durationMillis / 1000) % 60;
+        long minutes = (durationMillis / (1000 * 60)) % 60;
+        long hours = durationMillis / (1000 * 60 * 60);
+        return String.format("%d时%d分%d秒", hours, minutes, seconds);
     }
 
     /**
      * 将给定的毫秒时间戳转换为格式化的时间字符串
      *
-     * @param durationSeconds 持续时间的时间戳（毫秒）
+     * @param durationSeconds 持续时间的时间戳（秒）
      * @return 格式化后的时间字符串，格式为 "HH:mm:ss"
      */
     public static String formatDuration(long durationSeconds) {
@@ -83,9 +83,9 @@ public class JobUtils {
     }
 
     public static void main(String[] args) {
-        long delay = getDelayTime();
-        System.out.println(delay);
-        String msg = "【Boss】距离下次投递还有 " + formatDuration(delay);
-        System.out.println(msg);
+        Date star = new Date();
+        SeleniumUtil.sleep(3);
+        String a = formatDuration(star, new Date());
+        System.out.println(a);
     }
 }
