@@ -55,7 +55,7 @@ public class Boss {
     }
 
     private static void printResult() {
-        String message = String.format("\n【Boss】投递完成!\n共发起%d个聊天\n用时%s", returnList.size(), formatDuration(startDate, new Date()));
+        String message = String.format("\nBoss投递完成，共发起%d个聊天，用时%s", returnList.size(), formatDuration(startDate, new Date()));
         log.info(message);
         sendMessage(message);
         saveData(dataPath);
