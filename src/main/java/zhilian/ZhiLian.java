@@ -18,38 +18,33 @@ import java.util.stream.Collectors;
 
 import static utils.Bot.sendMessage;
 import static utils.Constant.*;
+import static utils.JobUtils.formatDuration;
 
 public class ZhiLian {
     private static final Logger log = LoggerFactory.getLogger(ZhiLian.class);
-
     static String loginUrl = "https://passport.zhaopin.com/login";
-
     static String homeUrl = "https://sou.zhaopin.com/?";
-
     static boolean isLimit = false;
-
     static int maxPage = 500;
-
     static ZhilianConfig config = ZhilianConfig.init();
-
     static List<Job> resultList = new ArrayList<>();
-
+    static Date startDate;
 
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
-        Date start = new Date();
+        startDate = new Date();
         login();
         config.getKeywords().forEach(keyword -> {
             CHROME_DRIVER.get(getSearchUrl(keyword, 1));
             submitJobs(keyword);
             isLimit = false;
         });
-        Date end = new Date();
         log.info(resultList.isEmpty() ? "未投递新的岗位..." : "新投递公司如下:\n{}", resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
-        long durationSeconds = (end.getTime() - start.getTime()) / 1000;
-        long minutes = durationSeconds / 60;
-        long seconds = durationSeconds % 60;
-        String message = "【猎聘】共发起 " + resultList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
+        printResult();
+    }
+
+    private static void printResult() {
+        String message = String.format("【智联招聘】投递完成，共投递%d个岗位,用时%s", resultList.size(), formatDuration(startDate, new Date()));
         log.info(message);
         sendMessage(message);
         CHROME_DRIVER.close();
