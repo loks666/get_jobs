@@ -1,6 +1,7 @@
 import boss.Boss;
 import job51.Job51;
 import lagou.Lagou;
+import liepin.Liepin;
 import lombok.extern.slf4j.Slf4j;
 import zhilian.ZhiLian;
 
@@ -25,8 +26,9 @@ public class StartAll {
 
     private static void runAllPlatforms() {
         safeRun(() -> Boss.main(null));
-        safeRun(() -> Job51.main(null));
+        safeRun(() -> Liepin.main(null));
         safeRun(() -> ZhiLian.main(null));
+        safeRun(() -> Job51.main(null));
         safeRun(() -> Lagou.main(null));
     }
 
