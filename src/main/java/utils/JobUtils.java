@@ -49,7 +49,10 @@ public class JobUtils {
      */
     public static String formatDuration(Date startDate, Date endDate) {
         long durationMillis = endDate.getTime() - startDate.getTime();
-        return formatDuration(durationMillis);
+        long seconds = durationMillis % 60;
+        long minutes = (durationMillis / 60) % 60;
+        long hours = durationMillis / 3600; // 直接计算总小时数
+        return String.format("%02d时%02d分%02d秒", hours, minutes, seconds);
     }
 
     /**
