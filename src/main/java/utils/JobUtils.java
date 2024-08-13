@@ -48,13 +48,21 @@ public class JobUtils {
      */
     public static String formatDuration(Date startDate, Date endDate) {
         long durationMillis = endDate.getTime() - startDate.getTime();
+        return formatDuration(durationMillis);
+    }
 
+    /**
+     * 将给定的毫秒时间戳转换为格式化的时间字符串
+     * @param durationMillis 持续时间的时间戳（毫秒）
+     * @return 格式化后的时间字符串，格式为 "HH:mm:ss"
+     */
+    public static String formatDuration(long durationMillis) {
         long seconds = (durationMillis / 1000) % 60;
         long minutes = (durationMillis / (1000 * 60)) % 60;
         long hours = (durationMillis / (1000 * 60 * 60)) % 24;
-
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        return String.format("%d时%d分%d秒", hours, minutes, seconds);
     }
+
 
     public static long getDelayTime() {
         Calendar nextRun = Calendar.getInstance();
