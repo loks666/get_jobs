@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static utils.Bot.sendMessage;
+import static utils.Bot.sendMessageByTime;
 import static utils.Constant.*;
 import static utils.JobUtils.formatDuration;
 import static utils.SeleniumUtil.isCookieValid;
@@ -64,7 +64,7 @@ public class Lagou {
     private static void printResult() {
         String message = String.format("\n拉勾投递完成，共投递%d个岗位，用时%s", jobCount, formatDuration(startDate, new Date()));
         log.info(message);
-        sendMessage(message);
+        sendMessageByTime(message);
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }

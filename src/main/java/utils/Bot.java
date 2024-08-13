@@ -44,24 +44,28 @@ public class Bot {
         }
     }
 
+    public static void sendMessageByTime(String message) {
+        if (!isSend) {
+            return;
+        }
+        // 格式化当前时间
+        String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+        String formattedMessage = String.format("%s %s", currentTime, message);
+        sendMessage(formattedMessage);
+    }
+
     public static void sendMessage(String message) {
         if (!isSend) {
             return;
         }
-
-        // 格式化当前时间
-        String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-        String formattedMessage = String.format("%s %s", currentTime, message);
-
         // 发送HTTP请求
         try {
             String response = Request.post(HOOK_URL)
-                    .bodyString("{\"msgtype\": \"text\", \"text\": {\"content\": \"" + formattedMessage + "\"}}",
+                    .bodyString("{\"msgtype\": \"text\", \"text\": {\"content\": \"" + message + "\"}}",
                             org.apache.hc.core5.http.ContentType.APPLICATION_JSON)
                     .execute()
                     .returnContent()
                     .asString();
-
             log.info("消息推送成功: {}", response);
         } catch (Exception e) {
             log.error("消息推送失败: {}", e.getMessage());
@@ -69,7 +73,7 @@ public class Bot {
     }
 
     public static void main(String[] args) {
-        sendMessage("企业微信推送测试消息...");
+        sendMessageByTime("企业微信推送测试消息...");
     }
 
     /**
