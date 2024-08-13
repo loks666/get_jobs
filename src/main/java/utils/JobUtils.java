@@ -42,8 +42,9 @@ public class JobUtils {
 
     /**
      * 计算并格式化时间差
+     *
      * @param startDate 开始时间
-     * @param endDate 结束时间
+     * @param endDate   结束时间
      * @return 格式化后的时间字符串，格式为 "HH:mm:ss"
      */
     public static String formatDuration(Date startDate, Date endDate) {
@@ -53,6 +54,7 @@ public class JobUtils {
 
     /**
      * 将给定的毫秒时间戳转换为格式化的时间字符串
+     *
      * @param durationMillis 持续时间的时间戳（毫秒）
      * @return 格式化后的时间字符串，格式为 "HH:mm:ss"
      */
@@ -60,7 +62,7 @@ public class JobUtils {
         long seconds = (durationMillis / 1000) % 60;
         long minutes = (durationMillis / (1000 * 60)) % 60;
         long hours = (durationMillis / (1000 * 60 * 60)) % 24;
-        return String.format("%d时%d分%d秒", hours, minutes, seconds);
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
 
