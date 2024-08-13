@@ -11,10 +11,10 @@ import utils.SeleniumUtil;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static utils.Bot.sendMessage;
 import static utils.Constant.*;
+import static utils.JobUtils.formatDuration;
 
 /**
  * 前程无忧自动投递简历
@@ -32,25 +32,23 @@ public class Job51 {
     static String baseUrl = "https://we.51job.com/pc/search?";
     static List<String> returnList = new ArrayList<>();
     static Job51Config config = Job51Config.init();
+    static Date startDate;
 
     public static void main(String[] args) {
         String searchUrl = getSearchUrl();
         SeleniumUtil.initDriver();
-        Date startDate = new Date();
+        startDate = new Date();
         Login();
         config.getKeywords().forEach(keyword -> resume(searchUrl + "&keyword=" + keyword));
-        Date endDate = new Date();
-        long durationMinutes = ((endDate.getTime() - startDate.getTime()) / 1000) / 60;
-        String message = String.format("【51job】共投递%d个简历,用时%d分", returnList.size(), durationMinutes);
+        printResult();
+    }
+
+    private static void printResult() {
+        String message = String.format("【51job】投递完成，共投递%d个简历,用时%s", returnList.size(), formatDuration(startDate, new Date()));
         log.info(message);
         sendMessage(message);
-        try {
-            TimeUnit.SECONDS.sleep(30);
-        } catch (InterruptedException e) {
-            log.error("投完简历休息期间出现异常:", e);
-        } finally {
-            CHROME_DRIVER.quit();
-        }
+        CHROME_DRIVER.close();
+        CHROME_DRIVER.quit();
     }
 
     private static String getSearchUrl() {
@@ -205,6 +203,7 @@ public class Job51 {
             if (verify.contains("验证")) {
                 //关闭弹窗
                 log.error("出现访问验证了！程序退出...");
+                printResult();
                 CHROME_DRIVER.close();
                 CHROME_DRIVER.quit();
             }
