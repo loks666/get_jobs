@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import static utils.Bot.sendMessage;
 import static utils.Constant.CHROME_DRIVER;
 import static utils.Constant.WAIT;
+import static utils.JobUtils.formatDuration;
 
 /**
  * @author loks666
@@ -40,20 +41,21 @@ public class Boss {
     static String cookiePath = "./src/main/java/boss/cookie.json";
     static int noJobPages;
     static int lastSize;
+    static Date startDate;
     static BossConfig config = BossConfig.init();
 
     public static void main(String[] args) {
         loadData(dataPath);
         SeleniumUtil.initDriver();
-        Date start = new Date();
+        startDate = new Date();
         login();
         config.getCityCode().forEach(Boss::postJobByCity);
-        Date end = new Date();
         log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList.stream().map(Object::toString).collect(Collectors.joining("\n")));
-        long durationSeconds = (end.getTime() - start.getTime()) / 1000;
-        long minutes = durationSeconds / 60;
-        long seconds = durationSeconds % 60;
-        String message = "【Boss】共发起 " + returnList.size() + " 个聊天,用时" + minutes + "分" + seconds + "秒";
+        printResult();
+    }
+
+    private static void printResult() {
+        String message = String.format("【Boss】投递完成，共发起%d个聊天,用时%s", returnList.size(), formatDuration(startDate, new Date()));
         log.info(message);
         sendMessage(message);
         saveData(dataPath);

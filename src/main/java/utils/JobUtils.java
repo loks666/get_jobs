@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,5 +41,21 @@ public class JobUtils {
         String key = clazz.getSimpleName().toLowerCase().replaceAll("config", "");
         JsonNode configNode = rootNode.path(key);
         return mapper.treeToValue(configNode, clazz);
+    }
+
+    /**
+     * 计算并格式化时间差
+     * @param startDate 开始时间
+     * @param endDate 结束时间
+     * @return 格式化后的时间字符串，格式为 "HH:mm:ss"
+     */
+    public static String formatDuration(Date startDate, Date endDate) {
+        long durationMillis = endDate.getTime() - startDate.getTime();
+
+        long seconds = (durationMillis / 1000) % 60;
+        long minutes = (durationMillis / (1000 * 60)) % 60;
+        long hours = (durationMillis / (1000 * 60 * 60)) % 24;
+
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 }
