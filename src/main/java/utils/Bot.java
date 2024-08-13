@@ -27,7 +27,8 @@ public class Bot {
         // 使用 Jackson 加载 config.yaml 配置
         try {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-            HashMap<String, Object> config = mapper.readValue(new File("src/main/resources/config.yaml"), new TypeReference<HashMap<String, Object>>() {});
+            HashMap<String, Object> config = mapper.readValue(new File("src/main/resources/config.yaml"), new TypeReference<HashMap<String, Object>>() {
+            });
             log.info("YAML 配置内容: {}", config);
 
             // 获取 bot 配置
@@ -78,6 +79,7 @@ public class Bot {
 
     /**
      * 通用的安全类型转换方法，避免未检查的类型转换警告
+     *
      * @param obj   要转换的对象
      * @param clazz 目标类型的 Class 对象
      * @param <T>   目标类型

@@ -42,7 +42,7 @@ public class SeleniumUtil {
         // 添加扩展插件
         String osName = System.getProperty("os.name").toLowerCase();
         log.info("当前操作系统为【{}】", osName);
-       String osType = getOSType(osName);
+        String osType = getOSType(osName);
         switch (osType) {
             case "windows":
                 options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
