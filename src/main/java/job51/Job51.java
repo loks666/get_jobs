@@ -207,8 +207,7 @@ public class Job51 {
                 //关闭弹窗
                 log.error("出现访问验证了！程序退出...");
                 CHROME_DRIVER.close();
-                CHROME_DRIVER.quit(); // 关闭之前的ChromeCHROME_DRIVER实例
-                System.exit(-2);
+                CHROME_DRIVER.quit();
             }
 
         } catch (Exception ignored) {
