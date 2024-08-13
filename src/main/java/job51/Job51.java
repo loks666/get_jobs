@@ -201,15 +201,13 @@ public class Job51 {
 
     private static void findAnomaly() {
         try {
-            String verify = CHROME_DRIVER.findElement(By.cssSelector("#WAF_NC_WRAPPER > p.waf-nc-title")).getText();
-            String limit = CHROME_DRIVER.findElement(By.xpath("//div[contains(@class, 'van-toast')]")).getText();
-            if (verify.contains("访问验证") || limit.contains("投递太多")) {
+            String verify = CHROME_DRIVER.findElement(By.xpath("//p[@class='waf-nc-title']")).getText();
+            if (verify.contains("验证")) {
                 //关闭弹窗
                 log.error("出现访问验证了！程序退出...");
                 CHROME_DRIVER.close();
                 CHROME_DRIVER.quit();
             }
-
         } catch (Exception ignored) {
             log.info("未出现访问验证，继续运行...");
         }
