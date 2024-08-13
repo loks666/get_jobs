@@ -69,7 +69,7 @@ public class Bot {
     }
 
     public static void main(String[] args) {
-        sendMessage("测试企业微信消息...");
+        sendMessage("企业微信推送测试消息...");
     }
 
     /**
