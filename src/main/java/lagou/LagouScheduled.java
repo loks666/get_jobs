@@ -25,7 +25,7 @@ public class LagouScheduled {
 
     private static void scheduleTask(ScheduledExecutorService scheduler, Runnable task) {
         long delay = getInitialDelay();
-        String msg = "【拉勾】距离下次投递还有" + formatDuration(delay);
+        String msg = "【拉勾】距离下次投递还有：" + formatDuration(delay);
         log.info(msg);
         Bot.sendMessage(msg);
         scheduler.scheduleAtFixedRate(task, delay, TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);

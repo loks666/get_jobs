@@ -55,26 +55,34 @@ public class JobUtils {
     /**
      * 将给定的毫秒时间戳转换为格式化的时间字符串
      *
-     * @param durationMillis 持续时间的时间戳（毫秒）
+     * @param durationSeconds 持续时间的时间戳（毫秒）
      * @return 格式化后的时间字符串，格式为 "HH:mm:ss"
      */
-    public static String formatDuration(long durationMillis) {
-        long seconds = (durationMillis / 1000) % 60;
-        long minutes = (durationMillis / (1000 * 60)) % 60;
-        long hours = (durationMillis / (1000 * 60 * 60)) % 24;
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-    }
+    public static String formatDuration(long durationSeconds) {
+        long seconds = durationSeconds % 60;
+        long minutes = (durationSeconds / 60) % 60;
+        long hours = durationSeconds / 3600; // 直接计算总小时数
 
+        return String.format("%d时%d分%d秒", hours, minutes, seconds);
+    }
 
     public static long getDelayTime() {
         Calendar nextRun = Calendar.getInstance();
+        // 先将时间调整为明天
         nextRun.add(Calendar.DAY_OF_YEAR, 1); // 加一天
-        nextRun.set(Calendar.HOUR_OF_DAY, 8); // 设置时间为8点
+        // 设置时间为8点
+        nextRun.set(Calendar.HOUR_OF_DAY, 8);
         nextRun.set(Calendar.MINUTE, 0);
         nextRun.set(Calendar.SECOND, 0);
         nextRun.set(Calendar.MILLISECOND, 0);
-
         long currentTime = System.currentTimeMillis();
         return (nextRun.getTimeInMillis() - currentTime) / 1000; // 返回秒数
+    }
+
+    public static void main(String[] args) {
+        long delay = getDelayTime();
+        System.out.println(delay);
+        String msg = "【Boss】距离下次投递还有 " + formatDuration(delay);
+        System.out.println(msg);
     }
 }
