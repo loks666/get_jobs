@@ -44,7 +44,7 @@ public class Job51 {
     }
 
     private static void printResult() {
-        String message = String.format("\n【51job】投递完成\n共投递%d个简历\n用时%s", returnList.size(), formatDuration(startDate, new Date()));
+        String message = String.format("\n51job投递完成，共投递%d个简历，用时%s", returnList.size(), formatDuration(startDate, new Date()));
         log.info(message);
         sendMessage(message);
         CHROME_DRIVER.close();
