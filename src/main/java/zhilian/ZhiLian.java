@@ -35,9 +35,12 @@ public class ZhiLian {
         startDate = new Date();
         login();
         config.getKeywords().forEach(keyword -> {
+            if (isLimit) {
+                return;
+            }
             CHROME_DRIVER.get(getSearchUrl(keyword, 1));
             submitJobs(keyword);
-            isLimit = false;
+
         });
         log.info(resultList.isEmpty() ? "未投递新的岗位..." : "新投递公司如下:\n{}", resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
         printResult();
@@ -47,6 +50,8 @@ public class ZhiLian {
         String message = String.format("\n智联招聘投递完成，共投递%d个岗位，用时%s", resultList.size(), formatDuration(startDate, new Date()));
         log.info(message);
         sendMessage(message);
+        CHROME_DRIVER.close();
+        CHROME_DRIVER.quit();
     }
 
     private static String getSearchUrl(String keyword, int page) {
@@ -87,7 +92,7 @@ public class ZhiLian {
             WebElement submit = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='a-job-apply-button']")));
             submit.click();
             if (checkIsLimit()) {
-                return;
+                break;
             }
             SeleniumUtil.sleep(1);
             // 切换到新的标签页
@@ -107,7 +112,7 @@ public class ZhiLian {
                 close.click();
             } catch (Exception e) {
                 if (checkIsLimit()) {
-                    return;
+                    break;
                 }
             }
             try {
@@ -138,8 +143,6 @@ public class ZhiLian {
             WebElement result = CHROME_DRIVER.findElement(By.xpath("//div[@class='a-job-apply-workflow']"));
             if (result.getText().contains("达到上限")) {
                 log.info("今日投递已达上限！");
-                CHROME_DRIVER.close();
-                CHROME_DRIVER.quit();
                 isLimit = true;
                 return true;
             }
