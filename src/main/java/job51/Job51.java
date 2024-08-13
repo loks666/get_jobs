@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static utils.Bot.sendMessage;
+import static utils.Bot.sendMessageByTime;
 import static utils.Constant.*;
 import static utils.JobUtils.formatDuration;
 
@@ -46,7 +46,7 @@ public class Job51 {
     private static void printResult() {
         String message = String.format("\n51job投递完成，共投递%d个简历，用时%s", returnList.size(), formatDuration(startDate, new Date()));
         log.info(message);
-        sendMessage(message);
+        sendMessageByTime(message);
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
