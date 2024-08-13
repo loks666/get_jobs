@@ -39,7 +39,7 @@ public class Liepin {
     }
 
     private static void printResult() {
-        String message = String.format("\n【猎聘】投递完成\n共投递%d个岗位\n用时%s", resultList.size(), formatDuration(startDate, new Date()));
+        String message = String.format("\n猎聘投递完成，共投递%d个岗位，用时%s", resultList.size(), formatDuration(startDate, new Date()));
         log.info(message);
         sendMessage(message);
         CHROME_DRIVER.close();
