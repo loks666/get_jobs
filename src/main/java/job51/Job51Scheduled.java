@@ -1,4 +1,4 @@
-package zhilian;
+package job51;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -9,16 +9,16 @@ import java.util.concurrent.TimeUnit;
 import static utils.JobUtils.getDelayTime;
 
 @Slf4j
-public class ScheduledPost {
+public class Job51Scheduled {
 
     public static void main(String[] args) {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         postJobs();
-        scheduleTask(scheduler, ScheduledPost::postJobs);
+        scheduleTask(scheduler, Job51Scheduled::postJobs);
     }
 
     private static void postJobs() {
-        safeRun(() -> ZhiLian.main(null));
+        safeRun(() -> Job51.main(null));
     }
 
     private static void scheduleTask(ScheduledExecutorService scheduler, Runnable task) {

@@ -1,4 +1,4 @@
-package lagou;
+package liepin;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -9,16 +9,16 @@ import java.util.concurrent.TimeUnit;
 import static utils.JobUtils.getDelayTime;
 
 @Slf4j
-public class ScheduledPost {
+public class LiepinScheduled {
 
     public static void main(String[] args) {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         postJobs();
-        scheduleTask(scheduler, ScheduledPost::postJobs);
+        scheduleTask(scheduler, LiepinScheduled::postJobs);
     }
 
     private static void postJobs() {
-        safeRun(() -> Lagou.main(null));
+        safeRun(() -> Liepin.main(null));
     }
 
     private static void scheduleTask(ScheduledExecutorService scheduler, Runnable task) {
