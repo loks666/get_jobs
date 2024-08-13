@@ -1,4 +1,4 @@
-package boss;
+package lagou;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -9,16 +9,16 @@ import java.util.concurrent.TimeUnit;
 import static utils.JobUtils.getDelayTime;
 
 @Slf4j
-public class ScheduledPost {
+public class LagouScheduled {
 
     public static void main(String[] args) {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         postJobs();
-        scheduleTask(scheduler, ScheduledPost::postJobs);
+        scheduleTask(scheduler, LagouScheduled::postJobs);
     }
 
     private static void postJobs() {
-        safeRun(() -> Boss.main(null));
+        safeRun(() -> Lagou.main(null));
     }
 
     private static void scheduleTask(ScheduledExecutorService scheduler, Runnable task) {
