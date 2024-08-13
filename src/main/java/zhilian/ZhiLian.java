@@ -16,7 +16,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static utils.Bot.sendMessage;
+import static utils.Bot.sendMessageByTime;
 import static utils.Constant.*;
 import static utils.JobUtils.formatDuration;
 
@@ -49,7 +49,7 @@ public class ZhiLian {
     private static void printResult() {
         String message = String.format("\n智联招聘投递完成，共投递%d个岗位，用时%s", resultList.size(), formatDuration(startDate, new Date()));
         log.info(message);
-        sendMessage(message);
+        sendMessageByTime(message);
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }

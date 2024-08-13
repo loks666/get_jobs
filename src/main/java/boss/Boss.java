@@ -18,7 +18,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static utils.Bot.sendMessage;
+import static utils.Bot.sendMessageByTime;
 import static utils.Constant.CHROME_DRIVER;
 import static utils.Constant.WAIT;
 import static utils.JobUtils.formatDuration;
@@ -57,7 +57,7 @@ public class Boss {
     private static void printResult() {
         String message = String.format("\nBoss投递完成，共发起%d个聊天，用时%s", returnList.size(), formatDuration(startDate, new Date()));
         log.info(message);
-        sendMessage(message);
+        sendMessageByTime(message);
         saveData(dataPath);
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();

@@ -1,11 +1,13 @@
 package liepin;
 
 import lombok.extern.slf4j.Slf4j;
+import utils.Bot;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static utils.JobUtils.formatDuration;
 import static utils.JobUtils.getDelayTime;
 
 @Slf4j
@@ -23,6 +25,9 @@ public class LiepinScheduled {
 
     private static void scheduleTask(ScheduledExecutorService scheduler, Runnable task) {
         long delay = getInitialDelay();
+        String msg = "【猎聘】距离下次投递还有" + formatDuration(delay);
+        log.info(msg);
+        Bot.sendMessage(msg);
         scheduler.scheduleAtFixedRate(task, delay, TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
     }
 
