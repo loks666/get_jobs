@@ -11,6 +11,7 @@ import utils.JobUtils;
 import utils.SeleniumUtil;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 import static utils.Bot.sendMessage;
 import static utils.Constant.*;
+import static utils.JobUtils.formatDuration;
 import static utils.SeleniumUtil.isCookieValid;
 
 public class Lagou {
@@ -32,10 +34,12 @@ public class Lagou {
     static int jobCount = 0;
     static String cookiePath = "./src/main/java/lagou/cookie.json";
     static LagouConfig config = LagouConfig.init();
+    static Date startDate;
 
 
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
+        startDate = new Date();
         login();
         CHROME_DRIVER.get(homeUrl);
         homeUrl = "https://www.lagou.com/wn/zhaopin?fromSearch=true";
@@ -54,9 +58,15 @@ public class Lagou {
             }
             currentKeyJobNum = 0;
         });
-        String message = "【拉勾】投递完成,共投递 " + jobCount + " 个岗位！";
-        sendMessage(message);
+        printResult();
+    }
+
+    private static void printResult() {
+        String message = String.format("【智联招聘】投递完成，共投递%d个岗位,用时%s", jobCount, formatDuration(startDate, new Date()));
         log.info(message);
+        sendMessage(message);
+        CHROME_DRIVER.close();
+        CHROME_DRIVER.quit();
     }
 
     private static String getSearchUrl(String keyword) {
