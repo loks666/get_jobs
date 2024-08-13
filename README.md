@@ -251,12 +251,14 @@ cd get_jobs
 
 - 授人以渔: [自定义修改你的代码](https://github.com/loks666/get_jobs/wiki/授人以渔‐自定义修改你的代码)
 - 本项目受此启发:https://github.com/BeammNotFound/get-jobs-51job , 感谢大佬，让我们将爱传递下去~
+- 本项目创建于: 2024年3月7日 21:34:58
 
 ---
 
-## ☕️ 请我喝杯咖啡
+## ☕️ Github Star历史
 
-<img src="src/main/resources/images/aliPay.jpg" alt="支付宝付款码" height="500"> <img src="src/main/resources/images/wechatPay.jpg" alt="微信付款码" height="500">
+[![Stargazers over time](https://starchart.cc/loks666/get_jobs.svg?background=%23ffffff&axis=%23101010&line=%23e86161)](https://starchart.cc/loks666/get_jobs)
+
 
 <!-- LINK GROUP -->
 
