@@ -7,10 +7,7 @@ import lombok.SneakyThrows;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static utils.Constant.UNLIMITED_CODE;
 
@@ -57,5 +54,17 @@ public class JobUtils {
         long hours = (durationMillis / (1000 * 60 * 60)) % 24;
 
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
+
+    public static long getDelayTime() {
+        Calendar nextRun = Calendar.getInstance();
+        nextRun.add(Calendar.DAY_OF_YEAR, 1); // 加一天
+        nextRun.set(Calendar.HOUR_OF_DAY, 8); // 设置时间为8点
+        nextRun.set(Calendar.MINUTE, 0);
+        nextRun.set(Calendar.SECOND, 0);
+        nextRun.set(Calendar.MILLISECOND, 0);
+
+        long currentTime = System.currentTimeMillis();
+        return (nextRun.getTimeInMillis() - currentTime) / 1000; // 返回秒数
     }
 }
