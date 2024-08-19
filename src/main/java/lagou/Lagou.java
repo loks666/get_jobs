@@ -65,6 +65,7 @@ public class Lagou {
         String message = String.format("\n拉勾投递完成，共投递%d个岗位，用时%s", jobCount, formatDuration(startDate, new Date()));
         log.info(message);
         sendMessageByTime(message);
+        jobCount = 0;
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }

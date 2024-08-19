@@ -36,7 +36,7 @@ public class Boss {
     static Set<String> blackCompanies;
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
-    static List<Job> returnList = new ArrayList<>();
+    static List<Job> resultList = new ArrayList<>();
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
     static int noJobPages;
@@ -50,15 +50,16 @@ public class Boss {
         startDate = new Date();
         login();
         config.getCityCode().forEach(Boss::postJobByCity);
-        log.info(returnList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", returnList.stream().map(Object::toString).collect(Collectors.joining("\n")));
+        log.info(resultList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
         printResult();
     }
 
     private static void printResult() {
-        String message = String.format("\nBoss投递完成，共发起%d个聊天，用时%s", returnList.size(), formatDuration(startDate, new Date()));
+        String message = String.format("\nBoss投递完成，共发起%d个聊天，用时%s", resultList.size(), formatDuration(startDate, new Date()));
         log.info(message);
         sendMessageByTime(message);
         saveData(dataPath);
+        resultList.clear();
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
@@ -73,7 +74,7 @@ public class Boss {
             while (true) {
                 log.info("投递【{}】关键词第【{}】页", keyword, page);
                 String url = searchUrl + "&page=" + page;
-                int startSize = returnList.size();
+                int startSize = resultList.size();
                 Integer resultSize = resumeSubmission(url, keyword);
                 if (resultSize == -1) {
                     log.info("今日沟通人数已达上限，请明天再试");
@@ -332,7 +333,7 @@ public class Boss {
                     WebElement cityElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='city']"));
                     String position = positionNameElement.getText() + " " + salaryElement.getText() + " " + cityElement.getText();
                     log.info("投递【{}】公司，【{}】职位，招聘官:【{}】", company == null ? "未知公司: " + job.getHref() : company, position, recruiter);
-                    returnList.add(job);
+                    resultList.add(job);
                     noJobPages = 0;
                 } catch (Exception e) {
                     log.error("发送消息失败:{}", e.getMessage(), e);
@@ -342,7 +343,7 @@ public class Boss {
             CHROME_DRIVER.close();
             CHROME_DRIVER.switchTo().window(tabs.get(0));
         }
-        return returnList.size();
+        return resultList.size();
     }
 
     private static boolean isTargetJob(String keyword, String jobName) {

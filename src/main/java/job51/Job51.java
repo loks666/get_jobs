@@ -30,7 +30,7 @@ public class Job51 {
     static String homeUrl = "https://www.51job.com";
     static String loginUrl = "https://login.51job.com/login.php?lang=c&url=https://www.51job.com/&qrlogin=2";
     static String baseUrl = "https://we.51job.com/pc/search?";
-    static List<String> returnList = new ArrayList<>();
+    static List<String> resultList = new ArrayList<>();
     static Job51Config config = Job51Config.init();
     static Date startDate;
 
@@ -44,9 +44,10 @@ public class Job51 {
     }
 
     private static void printResult() {
-        String message = String.format("\n51job投递完成，共投递%d个简历，用时%s", returnList.size(), formatDuration(startDate, new Date()));
+        String message = String.format("\n51job投递完成，共投递%d个简历，用时%s", resultList.size(), formatDuration(startDate, new Date()));
         log.info(message);
         sendMessageByTime(message);
+        resultList.clear();
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
@@ -152,7 +153,7 @@ public class Job51 {
             executor.executeScript("arguments[0].click();", checkbox);
             String title = titles.get(i).getText();
             String company = companies.get(i).getText();
-            returnList.add(company + " | " + title);
+            resultList.add(company + " | " + title);
             log.info("选中:{} | {} 职位", company, title);
         }
         SeleniumUtil.sleep(1);
