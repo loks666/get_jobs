@@ -256,7 +256,7 @@ public class Boss {
             for (WebElement tagElement : tagElements) {
                 tag.append(tagElement.getText()).append("·");
             }
-            job.setCompanyTag(tag.substring(0, tag.length() - 1)); // 删除最后一个 "·"
+            job.setCompanyTag(tag.substring(0, tag.length() - 1));
             jobs.add(job);
         }
         for (Job job : jobs) {
@@ -275,7 +275,9 @@ public class Boss {
                     return -2;
                 }
             }
-            SeleniumUtil.sleep(1);
+            // 随机等待一段时间
+            int randomNumberInRange = JobUtils.getRandomNumberInRange(3, 20);
+            SeleniumUtil.sleep(randomNumberInRange);
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             if ("立即沟通".equals(btn.getText())) {
                 btn.click();

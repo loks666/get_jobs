@@ -82,6 +82,14 @@ public class JobUtils {
         return (nextRun.getTimeInMillis() - currentTime) / 1000; // 返回秒数
     }
 
+    public static int getRandomNumberInRange(int min, int max) {
+        if (min > max) {
+            throw new IllegalArgumentException("max must be greater than or equal to min");
+        }
+        Random random = new Random();
+        return random.nextInt((max - min) + 1) + min;
+    }
+
     public static void main(String[] args) {
         Date star = new Date();
         SeleniumUtil.sleep(3);
