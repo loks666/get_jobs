@@ -50,6 +50,7 @@ public class ZhiLian {
         String message = String.format("\n智联招聘投递完成，共投递%d个岗位，用时%s", resultList.size(), formatDuration(startDate, new Date()));
         log.info(message);
         sendMessageByTime(message);
+        resultList.clear();
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
