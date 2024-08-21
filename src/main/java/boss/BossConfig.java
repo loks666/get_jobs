@@ -59,6 +59,16 @@ public class BossConfig {
      */
     private List<String> stage;
 
+    /**
+     * 是否开放AI检测
+     */
+    private Boolean enableAI;
+
+    /**
+     * 技术栈描述
+     */
+    private Boolean aiDescribe;
+
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
