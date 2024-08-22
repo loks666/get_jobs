@@ -1,4 +1,4 @@
-package utils;
+package ai;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @Slf4j
-public class AIService {
+public class AiService {
 
     private static final Dotenv dotenv = Dotenv.load();
     private static final String BASE_URL = dotenv.get("BASE_URL") + "/v1/chat/completions";
@@ -49,7 +49,7 @@ public class AIService {
                 .build();
 
         // 发送 HTTP 请求，并获取响应
-        HttpResponse<String> response = null;
+        HttpResponse<String> response;
         try {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
