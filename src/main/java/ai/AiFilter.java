@@ -1,9 +1,9 @@
-package boss;
+package ai;
 
 import lombok.Data;
 
 @Data
-public class AIFilter {
+public class AiFilter {
 
     /**
      * ai检测结果
@@ -15,14 +15,11 @@ public class AIFilter {
      */
     private String message;
 
-    public AIFilter() {
-    }
-
-    public AIFilter(Boolean result) {
+    public AiFilter(Boolean result) {
         this.result = result;
     }
 
-    public AIFilter(Boolean result, String message) {
+    public AiFilter(Boolean result, String message) {
         this.result = result;
         this.message = message;
     }

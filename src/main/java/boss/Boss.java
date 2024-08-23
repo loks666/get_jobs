@@ -1,5 +1,8 @@
 package boss;
 
+import ai.AiService;
+import ai.AiConfig;
+import ai.AiFilter;
 import lombok.SneakyThrows;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -8,7 +11,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import utils.AIService;
 import utils.Job;
 import utils.JobUtils;
 import utils.SeleniumUtil;
@@ -277,13 +279,12 @@ public class Boss {
                 }
             }
             // 随机等待一段时间
-            int randomNumberInRange = JobUtils.getRandomNumberInRange(3, 20);
-            SeleniumUtil.sleep(randomNumberInRange);
+            SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(1, 2));
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
 
             //AI检测岗位是否匹配
             String jd = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
-            AIFilter filterResult = checkJob(keyword, job.getJobName(), jd);
+            AiFilter filterResult = checkJob(keyword, job.getJobName(), jd);
             if ("立即沟通".equals(btn.getText()) && filterResult.getResult()) {
                 btn.click();
                 if (isLimit()) {
@@ -347,10 +348,11 @@ public class Boss {
         return resultList.size();
     }
 
-    private static AIFilter checkJob(String keyword, String jobName, String jd) {
-        String introduce = "我熟练使用Spring Boot、Spring Cloud、Alibaba Cloud及其生态体系，擅长MySQL、Oracle、PostgreSQL等关系型数据库以及MongoDB、Redis等非关系型数据库。熟悉Docker、Kubernetes等容器化技术，掌握WebSocket、Netty等通信协议，拥有即时通讯系统的开发经验。熟练使用MyBatis-Plus、Spring Data、Django ORM等ORM框架，熟练使用Python、Golang开发，具备机器学习、深度学习及大语言模型的开发与部署经验。此外，我熟悉前端开发，涉及Vue、React、Nginx配置及PHP框架应用";
-        String requestMessage = String.format("我目前在找工作，%s,我期望的的岗位方向是：%s,目前我需要投递的岗位名称是:%s,这个岗位的要求是:%s,如果这个岗位和我的期望与经历基本符合，注意是基本符合，那么请帮我写一个给HR打招呼的文本发给我，如果这个岗位和我的期望经历完全不相干，直接返回false给我，注意只要返回我需要的内容即可，不要有其他的语气助词，重点要突出我和岗位的匹配度以及我的优势，我自己写的招呼语是：您好,我有7年工作经验,还有AIGC大模型、Java,Python,Golang和运维的相关经验,希望应聘这个岗位,期待可以与您进一步沟通,谢谢！,你可以参照我自己写的根据岗位情况进行适当调整", introduce, keyword, jobName, jd);        String result = AIService.sendRequest(requestMessage);
-        return result.contains("false") ? new AIFilter(false) : new AIFilter(true, result);
+    private static AiFilter checkJob(String keyword, String jobName, String jd) {
+        AiConfig aiConfig = AiConfig.init();
+        String requestMessage = String.format(aiConfig.getPrompt(), aiConfig.getIntroduce(), keyword, jobName, jd, config.getSayHi());
+        String result = AiService.sendRequest(requestMessage);
+        return result.contains("false") ? new AiFilter(false) : new AiFilter(true, result);
     }
 
     private static boolean isTargetJob(String keyword, String jobName) {
