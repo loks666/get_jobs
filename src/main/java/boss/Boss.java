@@ -172,6 +172,7 @@ public class Boss {
                 element = CHROME_DRIVER.findElement(By.xpath("//div[contains(text(), '滚动加载更多')]"));
             } catch (Exception e) {
                 log.info("没找到滚动条...");
+                break;
             }
 
             if (element != null) {
