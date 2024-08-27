@@ -2,7 +2,7 @@
 <div align="center">
 
 [![Stars](https://img.shields.io/github/stars/loks666/get_jobs?style=flat&label=%F0%9F%8C%9Fstars&labelColor=ff4f4f&color=ff8383)](https://github.com/loks666/get_jobs)
-[![QQ交流群](https://img.shields.io/badge/🐧QQ交流群-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat)](https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij/FNZAHGBT05KmLgLTG/BL&noverify=0&group_code=219885606)
+[![QQ交流群](https://img.shields.io/badge/🐧QQ交流群-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat)](点击链接加入群聊【get jobs新交流群】：http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=yTunpRIuuT428-S2i4khYEb22kZgxrwb&authKey=dWvlSPu2ITw5b0qTzftEOjZ7ZiUM5hM6%2F15OcelBeAyI%2BY7xg%2BGb2%2B9aDYE2I0NA&noverify=0&group_code=109288893)
 [![License](https://img.shields.io/badge/📑licenses-MIT-34D058?labelColor=22863A&style=flat)](https://github.com/loks666/get_jobs/blob/master/LICENSE)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Aloks666/Fget_jobs/0is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues/0closed&labelColor=008B8B&color=00CCCC)](https://github.com/loks666/get_jobs/issues?q=is%3Aissue+is%3Aclosed)
 [![Forks](https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE)](https://github.com/loks666/get_jobs/forks)
@@ -297,7 +297,7 @@ cd get_jobs
 
 <!-- [![][fossa-license-shield]][fossa-license-link] -->
 
-[qq-link]: https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=BV_WjeFlg3s--MePsk0OyBXMWH0tK5DR&authKey=lyaZwh50DkD8wrpM2A9BCXzutG3O4gK0mTwm6ODk9EBij/FNZAHGBT05KmLgLTG/BL&noverify=0&group_code=219885606
+[qq-link]: 点击链接加入群聊【get jobs新交流群】：http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=yTunpRIuuT428-S2i4khYEb22kZgxrwb&authKey=dWvlSPu2ITw5b0qTzftEOjZ7ZiUM5hM6%2F15OcelBeAyI%2BY7xg%2BGb2%2B9aDYE2I0NA&noverify=0&group_code=109288893
 
 [qq-shield-badge]: https://img.shields.io/badge/QQ交流群-get_jobs-0FB5EB?labelColor=235389&logo=tencent-qq&logoColor=white&style=flat
 
