@@ -1,8 +1,8 @@
 package boss;
 
-import ai.AiService;
 import ai.AiConfig;
 import ai.AiFilter;
+import ai.AiService;
 import lombok.SneakyThrows;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -282,11 +282,14 @@ public class Boss {
             // 随机等待一段时间
             SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
+            AiFilter filterResult = null;
+            if (config.getEnableAI()) {
+                //AI检测岗位是否匹配
+                String jd = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
+                filterResult = checkJob(keyword, job.getJobName(), jd);
+            }
 
-            //AI检测岗位是否匹配
-            String jd = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
-            AiFilter filterResult = checkJob(keyword, job.getJobName(), jd);
-            if ("立即沟通".equals(btn.getText()) && filterResult.getResult()) {
+            if ("立即沟通".equals(btn.getText())) {
                 btn.click();
                 if (isLimit()) {
                     SeleniumUtil.sleep(1);
@@ -310,7 +313,7 @@ public class Boss {
                         CHROME_DRIVER.switchTo().window(tabs.get(0));
                         continue;
                     }
-                    input.sendKeys(filterResult.getResult() ? filterResult.getMessage() : config.getSayHi());
+                    input.sendKeys(filterResult != null && filterResult.getResult() ? filterResult.getMessage() : config.getSayHi());
                     WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
                     send.click();
 
