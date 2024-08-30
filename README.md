@@ -19,6 +19,7 @@
 - 💥定时投递，一键投递所有平台，并且再第二天自动定时重新投递
 - 💥支持国内全部招聘平台(Boss直聘、猎聘、拉勾、51job、智联招聘)
 - 💥企业微信消息推送，实时掌控建立投递情况
+- 💥AI代理：https://api.ruyun.fun/ [支持市面上全部大模型，限时折扣1.5]
 - 集中化配置，仅需修改配置文件即可完成自定义筛选
 - 全局日志记录，投递记录可追踪
 - 内置driver驱动(仅win11)，自动判断系统环境适配驱动版本
@@ -87,9 +88,10 @@ cd get_jobs
     - `BASE_URL`：直连或中转链接地址，如果是直连需要开梯子
     - `API_KEY`：调用的API KEY
     - `MODEL`：需要使用的模型名称
-  > 注意：如需梯子或者AI中转的朋友可以联系我，中转价格：2RMB=1美元
-  - AI生成的打招呼语示例  
-  <img src="src/main/resources/images/AiSayHi.png" alt="AI生成的打招呼语示例">
+  > 💥注意！AI代理地址:如云API:https://api.ruyun.fun/
+  ，该网站可自主充值需要的金额，无任何捆绑消费，支持市面上全部大模型，限时折扣1.5人民币兑1美元，仅限前50名注册用户，注册用户达到50名后，代理价格将全部恢复为2人民币兑1美元，过时不候，手快有手慢无，需要的兄弟抓紧了
+    - AI生成的打招呼语示例  
+      <img src="src/main/resources/images/AiSayHi.png" alt="AI生成的打招呼语示例">
 
 
 - ⚙️ **主要的配置文件**（[config.yaml](src/main/resources/config.yaml))
