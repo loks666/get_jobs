@@ -280,7 +280,7 @@ public class Boss {
                 }
             }
             // 随机等待一段时间
-            SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(1, 2));
+            SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             AiFilter filterResult = null;
             if (config.getEnableAI()) {
