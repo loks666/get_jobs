@@ -282,6 +282,30 @@ public class Boss {
             // 随机等待一段时间
             SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
+            WebElement activeTime = null;
+            WebElement bossOnlineTag = null;
+            try {
+                activeTime = CHROME_DRIVER.findElement(By.cssSelector("[class*='boss-active-time']"));
+            } catch (Exception e) {
+                log.info("没有找到Boss的活跃度");
+            }
+            try {
+                bossOnlineTag = CHROME_DRIVER.findElement(By.cssSelector("[class*='boss-online-tag']"));
+            } catch (Exception e) {
+                log.info("没有找到Boss的在线状态");
+            }
+            // 判断Boss是否为半年前活跃
+            if (activeTime != null && activeTime.getText().equals("半年前活跃")) {
+                SeleniumUtil.sleep(1);
+                CHROME_DRIVER.close();
+                CHROME_DRIVER.switchTo().window(tabs.get(0));
+                continue;
+            }else if (bossOnlineTag == null) {
+                SeleniumUtil.sleep(1);
+                CHROME_DRIVER.close();
+                CHROME_DRIVER.switchTo().window(tabs.get(0));
+                continue;
+            }
             AiFilter filterResult = null;
             if (config.getEnableAI()) {
                 //AI检测岗位是否匹配
