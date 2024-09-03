@@ -282,12 +282,34 @@ public class Boss {
             // 随机等待一段时间
             SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
+            WebElement activeTime = null;
+            WebElement bossOnlineTag = null;
+            try {
+                activeTime = CHROME_DRIVER.findElement(By.cssSelector("[class*='boss-active-time']"));
+                bossOnlineTag = CHROME_DRIVER.findElement(By.cssSelector("[class*='boss-online-tag']"));
+            } catch (Exception e) {
+                log.info("没有找到活跃度");
+            }
+            // 判断boss活跃度为半年前活跃则不进行沟通
+            if (activeTime != null && activeTime.getText().equals("半年前活跃")) {
+                SeleniumUtil.sleep(1);
+                CHROME_DRIVER.close();
+                CHROME_DRIVER.switchTo().window(tabs.get(0));
+                continue;
+            }else if (bossOnlineTag != null && bossOnlineTag.getText().equals("在线")) {
+                SeleniumUtil.sleep(1);
+                CHROME_DRIVER.close();
+                CHROME_DRIVER.switchTo().window(tabs.get(0));
+                continue;
+            }
+
             AiFilter filterResult = null;
             if (config.getEnableAI()) {
                 //AI检测岗位是否匹配
                 String jd = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
                 filterResult = checkJob(keyword, job.getJobName(), jd);
             }
+
 
             if ("立即沟通".equals(btn.getText())) {
                 btn.click();
