@@ -20,9 +20,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -198,21 +197,12 @@ public class SeleniumUtil {
         }
     }
 
-    public static List<WebElement> findElements(By by) {
+    public static Optional<WebElement> findElement(String xpath, String message) {
         try {
-            return CHROME_DRIVER.findElements(by);
+            return Optional.of(CHROME_DRIVER.findElement(By.xpath(xpath)));
         } catch (Exception e) {
-            log.error("Could not find element:{}", by, e);
-            return new ArrayList<>();
-        }
-    }
-
-    public static WebElement findElement(By by) {
-        try {
-            return CHROME_DRIVER.findElement(by);
-        } catch (Exception e) {
-            log.error("Could not find element:{}", by, e);
-            return null;
+            log.error(message);
+            return Optional.empty();
         }
     }
 

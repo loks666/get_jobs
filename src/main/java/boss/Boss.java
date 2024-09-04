@@ -87,13 +87,17 @@ public class Boss {
                     log.info("出现异常访问，请手动过验证后再继续投递...");
                     break endSubmission;
                 }
+                if (resultSize == -3) {
+                    log.info("没有岗位了，换个关键词再试试...");
+                    break endSubmission;
+                }
                 if (resultSize == startSize) {
                     noJobPages++;
                     if (noJobPages >= noJobMaxPages) {
                         log.info("【{}】关键词已经连续【{}】页无岗位，结束该关键词的投递...", keyword, noJobPages);
                         break;
                     } else {
-                        log.info("【{}】关键词第【{}】页无岗位,目前已连续【{}】页无新岗位...", keyword, page, noJobPages);
+                        log.info("【{}】第【{}】页无岗位,目前已连续【{}】页无新岗位...", keyword, page, noJobPages);
                     }
                 } else {
                     lastSize = resultSize;
@@ -105,14 +109,7 @@ public class Boss {
     }
 
     private static String getSearchUrl(String cityCode) {
-        return baseUrl +
-                JobUtils.appendParam("city", cityCode) +
-                JobUtils.appendParam("jobType", config.getJobType()) +
-                JobUtils.appendParam("salary", config.getSalary()) +
-                JobUtils.appendListParam("experience", config.getExperience()) +
-                JobUtils.appendListParam("degree", config.getDegree()) +
-                JobUtils.appendListParam("scale", config.getScale()) +
-                JobUtils.appendListParam("stage", config.getStage());
+        return baseUrl + JobUtils.appendParam("city", cityCode) + JobUtils.appendParam("jobType", config.getJobType()) + JobUtils.appendParam("salary", config.getSalary()) + JobUtils.appendListParam("experience", config.getExperience()) + JobUtils.appendListParam("degree", config.getDegree()) + JobUtils.appendListParam("scale", config.getScale()) + JobUtils.appendListParam("stage", config.getStage());
     }
 
     private static void saveData(String path) {
@@ -166,7 +163,7 @@ public class Boss {
                     log.error("寻找黑名单公司异常...");
                 }
             }
-            WebElement element = null;
+            WebElement element;
             try {
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(text(), '滚动加载更多')]")));
                 element = CHROME_DRIVER.findElement(By.xpath("//div[contains(text(), '滚动加载更多')]"));
@@ -198,9 +195,7 @@ public class Boss {
         sb.append("{\n");
         for (Map.Entry<String, Set<String>> entry : data.entrySet()) {
             sb.append("    \"").append(entry.getKey()).append("\": [\n");
-            sb.append(entry.getValue().stream()
-                    .map(s -> "        \"" + s + "\"")
-                    .collect(Collectors.joining(",\n")));
+            sb.append(entry.getValue().stream().map(s -> "        \"" + s + "\"").collect(Collectors.joining(",\n")));
 
             sb.append("\n    ],\n");
         }
@@ -228,7 +223,14 @@ public class Boss {
     @SneakyThrows
     private static Integer resumeSubmission(String url, String keyword) {
         CHROME_DRIVER.get(url + "&query=" + keyword);
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='job-title clearfix']")));
+        try {
+            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='job-title clearfix']")));
+        } catch (Exception e) {
+            Optional<WebElement> jobEmpty = SeleniumUtil.findElement("//div[@class='job-empty-wrapper']", "没有找到\"相关职位搜索不到\"的tag");
+            if (jobEmpty.isEmpty()) {
+                return -3;
+            }
+        }
         List<WebElement> jobCards = CHROME_DRIVER.findElements(By.cssSelector("li.job-card-wrapper"));
         List<Job> jobs = new ArrayList<>();
         for (WebElement jobCard : jobCards) {
@@ -267,28 +269,37 @@ public class Boss {
             // 打开新的标签页并打开链接
             JavascriptExecutor jse = CHROME_DRIVER;
             jse.executeScript("window.open(arguments[0], '_blank')", job.getHref());
-
             // 切换到新的标签页
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
             CHROME_DRIVER.switchTo().window(tabs.get(tabs.size() - 1));
             try {
+                // 等待聊天按钮出现
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
             } catch (Exception e) {
-                WebElement element = SeleniumUtil.findElement(By.xpath("//div[@class='error-content']"));
-                if (element != null && element.getText().contains("异常访问")) {
+                Optional<WebElement> element = SeleniumUtil.findElement("//div[@class='error-content']", "");
+                if (element.isPresent() && element.get().getText().contains("异常访问")) {
                     return -2;
                 }
+            }
+            //过滤不符合期望薪资的岗位
+            if (isSalaryNotExpected()) {
+                closeWindow(tabs);
+                continue;
+            }
+            //过滤不活跃HR
+            if (isDeadHR()) {
+                closeWindow(tabs);
+                continue;
             }
             // 随机等待一段时间
             SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             AiFilter filterResult = null;
             if (config.getEnableAI()) {
-                //AI检测岗位是否匹配
+                // AI检测岗位是否匹配
                 String jd = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
                 filterResult = checkJob(keyword, job.getJobName(), jd);
             }
-
             if ("立即沟通".equals(btn.getText())) {
                 btn.click();
                 if (isLimit()) {
@@ -327,7 +338,6 @@ public class Boss {
                     } catch (Exception e) {
                         WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//p[@class='base-info fl']/span[not(@class)]")));
                         companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[not(@class)]"));
-
                     }
                     String company = null;
                     if (companyElement != null) {
@@ -345,11 +355,121 @@ public class Boss {
                     log.error("发送消息失败:{}", e.getMessage(), e);
                 }
             }
-            SeleniumUtil.sleep(1);
-            CHROME_DRIVER.close();
-            CHROME_DRIVER.switchTo().window(tabs.get(0));
+            closeWindow(tabs);
         }
         return resultList.size();
+    }
+
+    /**
+     * 检查岗位薪资是否符合预期
+     *
+     * @return boolean
+     * true 不符合预期
+     * false 符合预期
+     * 期望的最低薪资如果比岗位最高薪资还小，则不符合（薪资给的太少）
+     * 期望的最高薪资如果比岗位最低薪资还小，则不符合(要求太高满足不了)
+     */
+    private static boolean isSalaryNotExpected() {
+        try {
+            WebElement salaryElement = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[@class='salary']")));
+            String salaryText = salaryElement.getText();
+
+            // 获取期望的薪资范围
+            List<Integer> expectedSalary = config.getExpectedSalary();
+            Integer miniSalary = getMinimumSalary(expectedSalary);
+            Integer maxSalary = getMaximumSalary(expectedSalary);
+
+            // 判断薪资文本是否符合预期格式（包含 "K" 或 "k"）
+            if (isSalaryInExpectedFormat(salaryText)) {
+                salaryText = cleanSalaryText(salaryText); // 去除 "K"、"k" 和 "·" 之后的字符
+                Integer[] jobSalary = parseSalaryRange(salaryText);
+                // 检查薪资范围是否符合预期
+                return isSalaryOutOfRange(jobSalary, miniSalary, maxSalary);
+            } else {
+                return true;
+            }
+        } catch (Exception e) {
+            log.error("岗位薪资获取异常！{}", e.getMessage(), e);
+        }
+        return true;
+    }
+
+    private static Integer getMinimumSalary(List<Integer> expectedSalary) {
+        if (expectedSalary != null && !expectedSalary.isEmpty()) {
+            return expectedSalary.get(0);
+        }
+        return null;
+    }
+
+    private static Integer getMaximumSalary(List<Integer> expectedSalary) {
+        if (expectedSalary != null && expectedSalary.size() > 1) {
+            return expectedSalary.get(1);
+        }
+        return null;
+    }
+
+    private static boolean isSalaryInExpectedFormat(String salaryText) {
+        return salaryText.contains("K") || salaryText.contains("k");
+    }
+
+    private static String cleanSalaryText(String salaryText) {
+        salaryText = salaryText.replace("K", "").replace("k", "");
+        int dotIndex = salaryText.indexOf('·');
+        if (dotIndex != -1) {
+            salaryText = salaryText.substring(0, dotIndex);
+        }
+        return salaryText;
+    }
+
+    private static boolean isSalaryOutOfRange(Integer[] jobSalary, Integer miniSalary, Integer maxSalary) {
+        if (jobSalary == null) {
+            return true;
+        }
+        if (miniSalary == null) {
+            return false;
+        }
+        // 如果职位薪资下限低于期望的最低薪资，返回不符合
+        if (jobSalary[1] < miniSalary) {
+            return true;
+        }
+        // 如果职位薪资上限高于期望的最高薪资，返回不符合
+        return maxSalary != null && jobSalary[0] > maxSalary;
+    }
+
+    private static boolean isDeadHR() {
+        return !isActiveHR();
+    }
+
+    private static boolean isActiveHR() {
+        try {
+            // 尝试获取 HR 的活跃时间
+            String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
+            log.info("HR活跃状态：{}", activeTimeText);
+            // 如果 HR 活跃状态符合预期，则返回 true
+            return activeTimeText.contains("刚刚活跃") || activeTimeText.contains("今日活跃") || Objects.equals("", activeTimeText);
+        } catch (Exception e) {
+            // log.error("没有找到HR的活跃状态, 尝试获取HR在线状态...");
+            // 尝试获取 HR 在线状态
+            return isInactiveByOnlineStatus();
+        }
+    }
+
+    // 获取并判断 HR 在线状态
+    private static boolean isInactiveByOnlineStatus() {
+        try {
+            String onlineStatus = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-online-tag']")).getText();
+            // log.info("HR的在线状态为：{}", onlineStatus);
+            return onlineStatus.contains("在线");
+        } catch (Exception ex) {
+            log.error("HR在线状态也获取失败，该HR已经死了，不会投递该岗位...");
+            return false;
+        }
+    }
+
+    private static void closeWindow(ArrayList<String> tabs) {
+        SeleniumUtil.sleep(1);
+        CHROME_DRIVER.close();
+        CHROME_DRIVER.switchTo().window(tabs.get(0));
     }
 
     private static AiFilter checkJob(String keyword, String jobName, String jd) {
@@ -394,6 +514,16 @@ public class Boss {
         return true;
     }
 
+    private static Integer[] parseSalaryRange(String salaryText) {
+        try {
+            return Arrays.stream(salaryText.split("-")).map(s -> s.replaceAll("[^0-9]", ""))  // 去除非数字字符
+                    .map(Integer::parseInt)               // 转换为Integer
+                    .toArray(Integer[]::new);             // 转换为Integer数组
+        } catch (Exception e) {
+            log.error("薪资解析异常！{}", e.getMessage(), e);
+        }
+        return null;
+    }
 
     private static boolean isLimit() {
         try {
