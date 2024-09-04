@@ -228,7 +228,7 @@ public class Boss {
             WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='job-title clearfix']")));
         } catch (Exception e) {
             Optional<WebElement> jobEmpty = SeleniumUtil.findElement("//div[@class='job-empty-wrapper']", "没有找到\"相关职位搜索不到\"的tag");
-            if (jobEmpty.isEmpty()) {
+            if (jobEmpty.isPresent()) {
                 return -3;
             }
         }
