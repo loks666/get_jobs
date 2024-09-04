@@ -74,7 +74,7 @@ public class JobUtils {
         // 先将时间调整为明天
         nextRun.add(Calendar.DAY_OF_YEAR, 1); // 加一天
         // 设置时间为8点
-        nextRun.set(Calendar.HOUR_OF_DAY, 8);
+        nextRun.set(Calendar.HOUR_OF_DAY, 14);
         nextRun.set(Calendar.MINUTE, 0);
         nextRun.set(Calendar.SECOND, 0);
         nextRun.set(Calendar.MILLISECOND, 0);
