@@ -285,15 +285,17 @@ public class Boss {
             //过滤不符合期望薪资的岗位
             if (isSalaryNotExpected()) {
                 closeWindow(tabs);
+                RandomWait();
                 continue;
             }
             //过滤不活跃HR
             if (isDeadHR()) {
                 closeWindow(tabs);
+                RandomWait();
                 continue;
             }
             // 随机等待一段时间
-            SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
+            RandomWait();
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             AiFilter filterResult = null;
             if (config.getEnableAI()) {
@@ -435,6 +437,10 @@ public class Boss {
         }
         // 如果职位薪资上限高于期望的最高薪资，返回不符合
         return maxSalary != null && jobSalary[0] > maxSalary;
+    }
+
+    private static void RandomWait(){
+        SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
     }
 
     private static boolean isDeadHR() {
