@@ -40,7 +40,7 @@ public class Boss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
-    static List<String> activeStatus = Arrays.asList("刚刚活跃", "今日活跃", "3日内活跃", "本周活跃", "");
+    static List<String> deadStatus = Arrays.asList("半年前活跃");
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
     static int noJobPages;
@@ -439,36 +439,19 @@ public class Boss {
         return maxSalary != null && jobSalary[0] > maxSalary;
     }
 
-    private static void RandomWait(){
+    private static void RandomWait() {
         SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
     }
 
     private static boolean isDeadHR() {
-        return !isActiveHR();
-    }
-
-    private static boolean isActiveHR() {
         try {
             // 尝试获取 HR 的活跃时间
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
             log.info("HR活跃状态：{}", activeTimeText);
             // 如果 HR 活跃状态符合预期，则返回 true
-            return activeStatus.contains(activeTimeText);
+            return deadStatus.contains(activeTimeText);
         } catch (Exception e) {
-            // log.error("没有找到HR的活跃状态, 尝试获取HR在线状态...");
-            // 尝试获取 HR 在线状态
-            return isInactiveByOnlineStatus();
-        }
-    }
-
-    // 获取并判断 HR 在线状态
-    private static boolean isInactiveByOnlineStatus() {
-        try {
-            String onlineStatus = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-online-tag']")).getText();
-            // log.info("HR的在线状态为：{}", onlineStatus);
-            return onlineStatus.contains("在线");
-        } catch (Exception ex) {
-            log.error("HR在线状态也获取失败，该HR已经死了，不会投递该岗位...");
+            log.info("没有找到HR的活跃状态, 默认此岗位将会投递");
             return false;
         }
     }
