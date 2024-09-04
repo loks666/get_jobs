@@ -451,7 +451,7 @@ public class Boss {
             // 如果 HR 活跃状态符合预期，则返回 true
             return deadStatus.contains(activeTimeText);
         } catch (Exception e) {
-            log.info("没有找到HR的活跃状态, 默认此岗位将会投递");
+            log.info("没有找到HR的活跃状态, 默认此岗位将会投递...");
             return false;
         }
     }
