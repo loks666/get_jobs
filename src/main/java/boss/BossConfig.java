@@ -69,6 +69,16 @@ public class BossConfig {
      */
     private Boolean aiDescribe;
 
+    /**
+     * 是否过滤不活跃hr
+     */
+    private Boolean filterDeadHR;
+
+    /**
+     * 目标薪资
+     */
+    private List<Integer> expectedSalary;
+
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
