@@ -40,6 +40,7 @@ public class Boss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
+    static List<String> activeStatus = Arrays.asList("刚刚活跃", "今日活跃", "3日内活跃", "本周活跃", "");
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
     static int noJobPages;
@@ -446,7 +447,7 @@ public class Boss {
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
             log.info("HR活跃状态：{}", activeTimeText);
             // 如果 HR 活跃状态符合预期，则返回 true
-            return activeTimeText.contains("刚刚活跃") || activeTimeText.contains("今日活跃") || Objects.equals("", activeTimeText);
+            return activeStatus.contains(activeTimeText);
         } catch (Exception e) {
             // log.error("没有找到HR的活跃状态, 尝试获取HR在线状态...");
             // 尝试获取 HR 在线状态
