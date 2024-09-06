@@ -1,13 +1,16 @@
 import boss.Boss;
 import job51.Job51;
 import lagou.Lagou;
+import liepin.Liepin;
 import lombok.extern.slf4j.Slf4j;
 import zhilian.ZhiLian;
 
-import java.util.Calendar;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static utils.JobUtils.getDelayTime;
+
 
 @Slf4j
 public class StartAll {
@@ -25,8 +28,9 @@ public class StartAll {
 
     private static void runAllPlatforms() {
         safeRun(() -> Boss.main(null));
-        safeRun(() -> Job51.main(null));
+        safeRun(() -> Liepin.main(null));
         safeRun(() -> ZhiLian.main(null));
+        safeRun(() -> Job51.main(null));
         safeRun(() -> Lagou.main(null));
     }
 
@@ -38,15 +42,7 @@ public class StartAll {
     }
 
     private static long getInitialDelay() {
-        Calendar nextRun = Calendar.getInstance();
-        nextRun.add(Calendar.DAY_OF_YEAR, 1); // 加一天
-        nextRun.set(Calendar.HOUR_OF_DAY, 8); // 设置时间为8点
-        nextRun.set(Calendar.MINUTE, 0);
-        nextRun.set(Calendar.SECOND, 0);
-        nextRun.set(Calendar.MILLISECOND, 0);
-
-        long currentTime = System.currentTimeMillis();
-        return (nextRun.getTimeInMillis() - currentTime) / 1000; // 返回秒数
+        return getDelayTime();
     }
 
     private static void safeRun(Runnable task) {

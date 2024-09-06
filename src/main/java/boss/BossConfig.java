@@ -59,6 +59,26 @@ public class BossConfig {
      */
     private List<String> stage;
 
+    /**
+     * 是否开放AI检测
+     */
+    private Boolean enableAI;
+
+    /**
+     * 技术栈描述
+     */
+    private Boolean aiDescribe;
+
+    /**
+     * 是否过滤不活跃hr
+     */
+    private Boolean filterDeadHR;
+
+    /**
+     * 目标薪资
+     */
+    private List<Integer> expectedSalary;
+
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
