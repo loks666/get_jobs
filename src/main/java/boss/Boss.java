@@ -40,7 +40,7 @@ public class Boss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
-    static List<String> deadStatus = Arrays.asList("半年前活跃");
+    static List<String> deadStatus = List.of("半年前活跃");
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
     static int noJobPages;
@@ -110,7 +110,13 @@ public class Boss {
     }
 
     private static String getSearchUrl(String cityCode) {
-        return baseUrl + JobUtils.appendParam("city", cityCode) + JobUtils.appendParam("jobType", config.getJobType()) + JobUtils.appendParam("salary", config.getSalary()) + JobUtils.appendListParam("experience", config.getExperience()) + JobUtils.appendListParam("degree", config.getDegree()) + JobUtils.appendListParam("scale", config.getScale()) + JobUtils.appendListParam("stage", config.getStage());
+        return baseUrl + JobUtils.appendParam("city", cityCode) +
+                JobUtils.appendParam("jobType", config.getJobType()) +
+                JobUtils.appendParam("salary", config.getSalary()) +
+                JobUtils.appendListParam("experience", config.getExperience()) +
+                JobUtils.appendListParam("degree", config.getDegree()) +
+                JobUtils.appendListParam("scale", config.getScale()) +
+                JobUtils.appendListParam("stage", config.getStage());
     }
 
     private static void saveData(String path) {
@@ -374,13 +380,16 @@ public class Boss {
      */
     private static boolean isSalaryNotExpected() {
         try {
-            WebElement salaryElement = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[@class='salary']")));
-            String salaryText = salaryElement.getText();
-
             // 获取期望的薪资范围
             List<Integer> expectedSalary = config.getExpectedSalary();
+            if (expectedSalary == null || expectedSalary.isEmpty()) {
+                return false;
+            }
             Integer miniSalary = getMinimumSalary(expectedSalary);
             Integer maxSalary = getMaximumSalary(expectedSalary);
+
+            WebElement salaryElement = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[@class='salary']")));
+            String salaryText = salaryElement.getText();
 
             // 判断薪资文本是否符合预期格式（包含 "K" 或 "k"）
             if (isSalaryInExpectedFormat(salaryText)) {
@@ -398,17 +407,11 @@ public class Boss {
     }
 
     private static Integer getMinimumSalary(List<Integer> expectedSalary) {
-        if (expectedSalary != null && !expectedSalary.isEmpty()) {
-            return expectedSalary.get(0);
-        }
-        return null;
+        return expectedSalary != null && !expectedSalary.isEmpty() ? expectedSalary.get(0) : null;
     }
 
     private static Integer getMaximumSalary(List<Integer> expectedSalary) {
-        if (expectedSalary != null && expectedSalary.size() > 1) {
-            return expectedSalary.get(1);
-        }
-        return null;
+        return expectedSalary != null && expectedSalary.size() > 1 ? expectedSalary.get(1) : null;
     }
 
     private static boolean isSalaryInExpectedFormat(String salaryText) {
@@ -444,6 +447,9 @@ public class Boss {
     }
 
     private static boolean isDeadHR() {
+        if (!config.getFilterDeadHR()) {
+            return false;
+        }
         try {
             // 尝试获取 HR 的活跃时间
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
