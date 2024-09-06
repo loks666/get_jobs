@@ -11,9 +11,9 @@ public class BossEnum {
     public enum Experience {
         NULL("不限", "0"),
         STUDENT("在校生", "108"),
-        GRADUATE("应届生", "102"),
+        GRADUATE("应届毕业生", "102"),
         UNLIMITED("经验不限", "101"),
-        LESS_THAN_ONE_YEAR("一年以内", "103"),
+        LESS_THAN_ONE_YEAR("1年以下", "103"),
         ONE_TO_THREE_YEARS("1-3年", "104"),
         THREE_TO_FIVE_YEARS("3-5年", "105"),
         FIVE_TO_TEN_YEARS("5-10年", "106"),
