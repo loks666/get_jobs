@@ -65,11 +65,6 @@ public class BossConfig {
     private Boolean enableAI;
 
     /**
-     * 技术栈描述
-     */
-    private Boolean aiDescribe;
-
-    /**
      * 是否过滤不活跃hr
      */
     private Boolean filterDeadHR;
