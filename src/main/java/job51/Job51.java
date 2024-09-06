@@ -11,9 +11,10 @@ import utils.SeleniumUtil;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
+import static utils.Bot.sendMessageByTime;
 import static utils.Constant.*;
+import static utils.JobUtils.formatDuration;
 
 /**
  * 前程无忧自动投递简历
@@ -29,25 +30,26 @@ public class Job51 {
     static String homeUrl = "https://www.51job.com";
     static String loginUrl = "https://login.51job.com/login.php?lang=c&url=https://www.51job.com/&qrlogin=2";
     static String baseUrl = "https://we.51job.com/pc/search?";
-    static List<String> returnList = new ArrayList<>();
+    static List<String> resultList = new ArrayList<>();
     static Job51Config config = Job51Config.init();
+    static Date startDate;
 
     public static void main(String[] args) {
         String searchUrl = getSearchUrl();
         SeleniumUtil.initDriver();
-        Date sdate = new Date();
+        startDate = new Date();
         Login();
         config.getKeywords().forEach(keyword -> resume(searchUrl + "&keyword=" + keyword));
-        Date edate = new Date();
-        log.info("共投递{}个简历,用时{}分", returnList.size(),
-                ((edate.getTime() - sdate.getTime()) / 1000) / 60);
-        try {
-            TimeUnit.SECONDS.sleep(30);
-        } catch (InterruptedException e) {
-            log.error("投完简历休息期间出现异常:", e);
-        } finally {
-            CHROME_DRIVER.quit();
-        }
+        printResult();
+    }
+
+    private static void printResult() {
+        String message = String.format("\n51job投递完成，共投递%d个简历，用时%s", resultList.size(), formatDuration(startDate, new Date()));
+        log.info(message);
+        sendMessageByTime(message);
+        resultList.clear();
+        CHROME_DRIVER.close();
+        CHROME_DRIVER.quit();
     }
 
     private static String getSearchUrl() {
@@ -125,6 +127,7 @@ public class Job51 {
             postCurrentJob();
         }
     }
+
     public static boolean isNullOrEmpty(String str) {
         return str == null || str.isBlank();
     }
@@ -150,7 +153,7 @@ public class Job51 {
             executor.executeScript("arguments[0].click();", checkbox);
             String title = titles.get(i).getText();
             String company = companies.get(i).getText();
-            returnList.add(company + " | " + title);
+            resultList.add(company + " | " + title);
             log.info("选中:{} | {} 职位", company, title);
         }
         SeleniumUtil.sleep(1);
@@ -197,16 +200,14 @@ public class Job51 {
 
     private static void findAnomaly() {
         try {
-            String verify = CHROME_DRIVER.findElement(By.cssSelector("#WAF_NC_WRAPPER > p.waf-nc-title")).getText();
-            String limit = CHROME_DRIVER.findElement(By.xpath("//div[contains(@class, 'van-toast')]")).getText();
-            if (verify.contains("访问验证") || limit.contains("投递太多")) {
+            String verify = CHROME_DRIVER.findElement(By.xpath("//p[@class='waf-nc-title']")).getText();
+            if (verify.contains("验证")) {
                 //关闭弹窗
                 log.error("出现访问验证了！程序退出...");
+                printResult();
                 CHROME_DRIVER.close();
-                CHROME_DRIVER.quit(); // 关闭之前的ChromeCHROME_DRIVER实例
-                System.exit(-2);
+                CHROME_DRIVER.quit();
             }
-
         } catch (Exception ignored) {
             log.info("未出现访问验证，继续运行...");
         }

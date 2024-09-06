@@ -10,9 +10,12 @@ import utils.JobUtils;
 import utils.SeleniumUtil;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
+import static utils.Bot.sendMessageByTime;
 import static utils.Constant.*;
+import static utils.JobUtils.formatDuration;
 import static utils.SeleniumUtil.isCookieValid;
 
 public class Liepin {
@@ -23,23 +26,27 @@ public class Liepin {
     static List<String> resultList = new ArrayList<>();
     static String baseUrl = "https://www.liepin.com/zhaopin/?";
     static LiepinConfig config = LiepinConfig.init();
-
+    static Date startDate;
 
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
+        startDate = new Date();
         login();
         for (String keyword : config.getKeywords()) {
             submit(keyword);
         }
         printResult();
+    }
+
+    private static void printResult() {
+        String message = String.format("\n猎聘投递完成，共投递%d个岗位，用时%s", resultList.size(), formatDuration(startDate, new Date()));
+        log.info(message);
+        sendMessageByTime(message);
+        resultList.clear();
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
 
-    private static void printResult() {
-        log.info("投递完成,共投递 {} 个岗位！", resultList.size());
-        log.info("今日投递岗位:\n{}", String.join("\n", resultList));
-    }
 
     @SneakyThrows
     private static void submit(String keyword) {

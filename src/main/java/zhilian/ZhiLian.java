@@ -12,32 +12,46 @@ import utils.JobUtils;
 import utils.SeleniumUtil;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import static utils.Bot.sendMessageByTime;
 import static utils.Constant.*;
+import static utils.JobUtils.formatDuration;
 
 public class ZhiLian {
     private static final Logger log = LoggerFactory.getLogger(ZhiLian.class);
-
     static String loginUrl = "https://passport.zhaopin.com/login";
-
     static String homeUrl = "https://sou.zhaopin.com/?";
-
     static boolean isLimit = false;
-
     static int maxPage = 500;
-
     static ZhilianConfig config = ZhilianConfig.init();
-
+    static List<Job> resultList = new ArrayList<>();
+    static Date startDate;
 
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
+        startDate = new Date();
         login();
         config.getKeywords().forEach(keyword -> {
+            if (isLimit) {
+                return;
+            }
             CHROME_DRIVER.get(getSearchUrl(keyword, 1));
             submitJobs(keyword);
-            isLimit = false;
+
         });
+        log.info(resultList.isEmpty() ? "未投递新的岗位..." : "新投递公司如下:\n{}", resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
+        printResult();
+    }
+
+    private static void printResult() {
+        String message = String.format("\n智联招聘投递完成，共投递%d个岗位，用时%s", resultList.size(), formatDuration(startDate, new Date()));
+        log.info(message);
+        sendMessageByTime(message);
+        resultList.clear();
+        CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
     }
 
@@ -185,6 +199,7 @@ public class ZhiLian {
             job.setCompanyName(companyName);
             job.setJobInfo(years + "·" + education);
             log.info("投递【{}】公司【{}】岗位，薪资【{}】，要求【{}·{}】，规模【{}】", companyName, jobName, salary, years, education, companyTag);
+            resultList.add(job);
         });
     }
 
