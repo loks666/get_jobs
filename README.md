@@ -293,7 +293,7 @@ is_send: true #开启企业微信消息推送
 
 <details><summary><h4>📝 License</h4></summary>
 
-[![FOSSA Status](https://app.fossa.com/api/projects/git/Bgithub.com/Floks666/Fget_jobs.svg?type=large)](https://app.fossa.com/projects/git/Bgithub.com/Floks666/Fget_jobs?ref=badge_large)
+[![FOSSA Status](https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs/refs/branch/master/f1c1fbec331aec96694d8ab331fc720bb2aa84b4)](https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs/refs/branch/master/f1c1fbec331aec96694d8ab331fc720bb2aa84b4)
 </details>
 
 --- 
