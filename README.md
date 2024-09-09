@@ -153,10 +153,9 @@ is_send: true #开启企业微信消息推送
 
   > 注意：Boss必须要关闭自动打招呼，设置配置文件的sayHi为你的打招呼语，否则会投递失败  
   > 投递结束后会自动更新黑名单企业，发送过不合适等消息的HR的公司会加入黑名单，不会在投递该公司  
-  > 现在找工作是很难，但也别做舔狗，打工人不是牛马！  
-  - 目标薪资设置：expectedSalary: [ 25,35 ] 
-    - 单位为K，第一个数字为最低薪资，第二个数字为最高薪资，只填一个数字默认为只要求最低薪水，不要求最高薪水
-  
+  > 现在找工作是很难，但也别做舔狗，打工人不是牛马！
+    - 目标薪资设置：expectedSalary: [ 25,35 ]
+        - 单位为K，第一个数字为最低薪资，第二个数字为最高薪资，只填一个数字默认为只要求最低薪水，不要求最高薪水
 
   ```
     data.json //黑名单数据，在投递结束后会查询聊天记录寻找不合适的公司添加进去
@@ -303,16 +302,6 @@ is_send: true #开启企业微信消息推送
 - 本项目创建于: 2024年3月7日 21:34:58
 
 ---
-
-### 本项目黑名单：
-
-- QQ:813851861，昵称：the one day 马永豪，山东枣庄
-
-<div style="display: inline-block;">
-    <img src="src/main/resources/images/myh1.png" alt="myh1" width="200" >
-    <img src="src/main/resources/images/myh2.png" alt="myh2" width="200" >
-    <img src="src/main/resources/images/myh3.png" alt="myh3" width="350" >
-</div>
 
 ### ☕️ Github Star历史
 
