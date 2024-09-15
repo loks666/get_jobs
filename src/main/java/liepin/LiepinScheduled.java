@@ -12,7 +12,7 @@ public class LiepinScheduled {
     }
 
     public static void postJobs() {
-        safeRun(() -> LiepinScheduled.main(null));
+        safeRun(() -> Liepin.main(null));
     }
 
     // 任务执行的安全包装，防止异常
