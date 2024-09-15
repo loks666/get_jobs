@@ -111,8 +111,8 @@ public class JobUtils {
     /**
      * 通用的任务调度方法
      *
-     * @param hour      要设置的小时，0-23之间的整数
-     * @param minute    要设置的分钟，0-59之间的整数
+     * @param hour   要设置的小时，0-23之间的整数
+     * @param minute 要设置的分钟，0-59之间的整数
      */
     public static void scheduleTaskAtTime(String platform, int hour, int minute, Runnable task) {
         long delay = getInitialDelay(hour, minute);  // 计算初始延迟

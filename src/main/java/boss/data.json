@@ -1,15 +1,15 @@
 {
-    "blackCompanies": [
+  "blackCompanies": [
 
-    ],
-    "blackJobs": [
-        "视觉",
-        "设计",
-        "外包",
-        "现场",
-        "驻场"
-    ],
-    "blackRecruiters": [
-        "猎头"
-    ]
+  ],
+  "blackJobs": [
+    "视觉",
+    "设计",
+    "外包",
+    "现场",
+    "驻场"
+  ],
+  "blackRecruiters": [
+    "猎头"
+  ]
 }
