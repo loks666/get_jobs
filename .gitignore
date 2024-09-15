@@ -28,6 +28,8 @@ build/
 ### VS Code ###
 .vscode/
 
+data.json
+
 ### Mac OS ###
 .DS_Store
 cookie.json
