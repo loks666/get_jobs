@@ -13,6 +13,7 @@ public class LiepinEnum {
         SHANGHAI("上海", "020"),
         GUANGZHOU("广州", "050020"),
         SHENZHEN("深圳", "050090"),
+        WUHAN("武汉", "170020"),
         CHENGDU("成都", "280020");
 
         private final String name;
