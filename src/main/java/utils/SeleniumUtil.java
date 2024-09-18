@@ -45,7 +45,7 @@ public class SeleniumUtil {
        String osType = getOSType(osName);
         switch (osType) {
             case "windows":
-                options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
+                options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");//TODO 注意: 这里需要修改为你的chrome的安装路径,不然启动会报错!!! 右键chrome图标右键，选择属性，复制路径
                 System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver.exe");
                 break;
             case "mac":
