@@ -77,7 +77,6 @@ public class ZhiLian {
             }
             // 投递
             WebElement submit = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@class='betch__button']")));
-
             submit.click();
             if (checkIsLimit()) {
                 break;
