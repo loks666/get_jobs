@@ -49,7 +49,7 @@ public class SeleniumUtil {
                 break;
             case "mac":
                 options.setBinary("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
-                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver-mac-arm64/chromedriver");
+                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver");
                 break;
             case "linux":
                 options.setBinary("/usr/bin/google-chrome-stable");
