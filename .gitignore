@@ -34,3 +34,4 @@ src/main/java/boss/data.json
 .DS_Store
 cookie.json
 .env
+chromedriver
