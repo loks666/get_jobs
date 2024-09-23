@@ -90,7 +90,7 @@ public class ZhiLian {
                 continue;
             }
             // 投递
-            WebElement submit = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='a-job-apply-button']")));
+            WebElement submit = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@class='betch__button']")));
             submit.click();
             if (checkIsLimit()) {
                 break;
