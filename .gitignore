@@ -28,7 +28,10 @@ build/
 ### VS Code ###
 .vscode/
 
+src/main/java/boss/data.json
+
 ### Mac OS ###
 .DS_Store
 cookie.json
 .env
+chromedriver
