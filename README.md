@@ -92,7 +92,7 @@ cd get_jobs
     - `API_KEY`：调用的API KEY
     - `MODEL`：需要使用的模型名称
   > 根据测试，boss直聘在每天所有的岗位投递结束后消耗的额度(gpt-4o-mini)大约在0.06美元(6美分)
-  左右，代理除了在本项目中可用，也可使用客户端(https://github.com/knowlimit/ChatGPT-NextWeb)在日常生活中使用，所以不会浪费，充值额度1刀起，随用随充  
+  左右，代理除了在本项目中可用，也可使用客户端(https://github.com/knowlimit/ChatGPT-NextWeb) 在日常生活中使用，所以不会浪费，充值额度1刀起，随用随充  
   > 💥注意！AI代理地址:如云API:https://api.ruyun.fun/
   ，该网站可自主充值需要的金额，无任何捆绑消费，支持市面上全部大模型，2人民币=1美元
     - AI生成的打招呼语示例  
