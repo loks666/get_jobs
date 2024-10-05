@@ -53,7 +53,7 @@ git clone https://github.com/loks666/get_jobs.git
 cd get_jobs
 ```
 
-### 2️⃣ 环境配置:JDK17+、Maven、Chrome、ChromeDriver
+### 2️⃣ 环境配置:JDK21、Maven、Chrome、ChromeDriver
 
 - 目前程序自动判断系统环境，使用对应的chromedriver，并进行浏览器操作
 - 但是你的Chrome版本必须是在[Chrome官网](https://googlechromelabs.github.io/chrome-for-testing)下载的，并且为对应版本(
