@@ -1,8 +1,22 @@
 package boss;
 
-import ai.AiConfig;
-import ai.AiFilter;
-import ai.AiService;
+import static utils.Bot.sendMessageByTime;
+import static utils.Constant.CHROME_DRIVER;
+import static utils.Constant.WAIT;
+import static utils.JobUtils.formatDuration;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -11,20 +25,12 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ai.AiConfig;
+import ai.AiFilter;
+import ai.AiService;
 import utils.Job;
 import utils.JobUtils;
 import utils.SeleniumUtil;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static utils.Bot.sendMessageByTime;
-import static utils.Constant.CHROME_DRIVER;
-import static utils.Constant.WAIT;
-import static utils.JobUtils.formatDuration;
 
 /**
  * @author loks666
@@ -278,7 +284,7 @@ public class Boss {
             jse.executeScript("window.open(arguments[0], '_blank')", job.getHref());
             // 切换到新的标签页
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
-            CHROME_DRIVER.switchTo().window(tabs.get(tabs.size() - 1));
+            CHROME_DRIVER.switchTo().window(tabs.getLast());
             try {
                 // 等待聊天按钮出现
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
@@ -324,18 +330,20 @@ public class Boss {
                         btn.click();
                     } catch (Exception ignore) {
                     }
-                    WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
-                    input.click();
-                    SeleniumUtil.sleep(1);
-                    WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
-                    if ("不匹配".equals(element.getText())) {
-                        CHROME_DRIVER.close();
-                        CHROME_DRIVER.switchTo().window(tabs.get(0));
-                        continue;
+                    for (String sayHi : config.getSayHi()) {
+                        WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
+                        input.click();
+                        SeleniumUtil.sleep(1);
+                        WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
+                        if ("不匹配".equals(element.getText())) {
+                            CHROME_DRIVER.close();
+                            CHROME_DRIVER.switchTo().window(tabs.getFirst());
+                            continue;
+                        }
+                        input.sendKeys(filterResult != null && filterResult.getResult() ? filterResult.getMessage() : sayHi);
+                        WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
+                        send.click();
                     }
-                    input.sendKeys(filterResult != null && filterResult.getResult() ? filterResult.getMessage() : config.getSayHi());
-                    WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
-                    send.click();
 
                     WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='name']"));
                     WebElement recruiterTitleElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='base-title']"));
@@ -407,7 +415,7 @@ public class Boss {
     }
 
     private static Integer getMinimumSalary(List<Integer> expectedSalary) {
-        return expectedSalary != null && !expectedSalary.isEmpty() ? expectedSalary.get(0) : null;
+        return expectedSalary != null && !expectedSalary.isEmpty() ? expectedSalary.getFirst() : null;
     }
 
     private static Integer getMaximumSalary(List<Integer> expectedSalary) {
@@ -465,12 +473,12 @@ public class Boss {
     private static void closeWindow(ArrayList<String> tabs) {
         SeleniumUtil.sleep(1);
         CHROME_DRIVER.close();
-        CHROME_DRIVER.switchTo().window(tabs.get(0));
+        CHROME_DRIVER.switchTo().window(tabs.getFirst());
     }
 
     private static AiFilter checkJob(String keyword, String jobName, String jd) {
         AiConfig aiConfig = AiConfig.init();
-        String requestMessage = String.format(aiConfig.getPrompt(), aiConfig.getIntroduce(), keyword, jobName, jd, config.getSayHi());
+        String requestMessage = String.format(aiConfig.getPrompt(), aiConfig.getIntroduce(), keyword, jobName, jd,  String.join("。", config.getSayHi()));
         String result = AiService.sendRequest(requestMessage);
         return result.contains("false") ? new AiFilter(false) : new AiFilter(true, result);
     }
