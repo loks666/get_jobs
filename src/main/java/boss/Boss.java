@@ -464,7 +464,7 @@ public class Boss {
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
             log.info("HR活跃状态：{}", activeTimeText);
             // 如果 HR 活跃状态符合预期，则返回 true
-            return !deadStatus.contains(activeTimeText);
+            return !activeStatus.contains(activeTimeText);
         } catch (Exception e) {
             log.info("没有找到HR的活跃状态, 默认此岗位将会投递...");
             return false;
