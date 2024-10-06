@@ -1,23 +1,27 @@
 package utils;
 
-import boss.BossScheduled;
+import static utils.Constant.UNLIMITED_CODE;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import boss.BossScheduled;
 import job51.Job51Scheduled;
 import lagou.LagouScheduled;
 import liepin.LiepinScheduled;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import zhilian.ZhilianScheduled;
-
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import static utils.Constant.UNLIMITED_CODE;
 
 @Slf4j
 public class JobUtils {
@@ -31,7 +35,7 @@ public class JobUtils {
 
     public static String appendListParam(String name, List<String> values) {
         return Optional.ofNullable(values)
-                .filter(list -> !list.isEmpty() && !Objects.equals(UNLIMITED_CODE, list.get(0)))
+                .filter(list -> !list.isEmpty() && !Objects.equals(UNLIMITED_CODE, list.getFirst()))
                 .map(list -> "&" + name + "=" + String.join(",", list))
                 .orElse("");
     }
@@ -55,7 +59,7 @@ public class JobUtils {
             case BOSS -> {
                 BossScheduled.postJobs();
                 scheduleTaskAtTime(platformName, 10, 0, BossScheduled::postJobs);
-                scheduleTaskAtTime(platformName, 18, 0, BossScheduled::postJobs);
+                scheduleTaskAtTime(platformName, 15, 0, BossScheduled::postJobs);
             }
             case JOB51 -> {
                 Job51Scheduled.postJobs();

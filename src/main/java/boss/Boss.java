@@ -452,7 +452,7 @@ public class Boss {
     }
 
     private static void RandomWait() {
-        SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(1, 5));
+        SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(1, 3));
     }
 
     private static boolean isDeadHR() {
