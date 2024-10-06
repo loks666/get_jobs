@@ -46,7 +46,8 @@ public class Boss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
-    static List<String> deadStatus = List.of("半年前活跃");
+    static List<String> deadStatus = List.of("半年前活跃", "4月内活跃");
+    static List<String> activeStatus = List.of("刚刚活跃", "今日活跃");
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
     static int noJobPages;
@@ -451,7 +452,7 @@ public class Boss {
     }
 
     private static void RandomWait() {
-        SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 20));
+        SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(1, 5));
     }
 
     private static boolean isDeadHR() {
@@ -463,7 +464,7 @@ public class Boss {
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
             log.info("HR活跃状态：{}", activeTimeText);
             // 如果 HR 活跃状态符合预期，则返回 true
-            return deadStatus.contains(activeTimeText);
+            return !deadStatus.contains(activeTimeText);
         } catch (Exception e) {
             log.info("没有找到HR的活跃状态, 默认此岗位将会投递...");
             return false;
