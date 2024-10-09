@@ -307,6 +307,11 @@ public class Boss {
                 RandomWait();
                 continue;
             }
+            if (isJobNotMatch()) {
+                closeWindow(tabs);
+                RandomWait();
+                continue;
+            }
             // 随机等待一段时间
             RandomWait();
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
@@ -469,6 +474,27 @@ public class Boss {
             log.info("没有找到HR的活跃状态, 默认此岗位将会投递...");
             return false;
         }
+    }
+
+    private static boolean isJobNotMatch() {
+        String text = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
+
+        if (text.contains("25") && !text.contains("26")) {
+            log.info("岗位要求25届，跳过");
+            return true;
+        }
+
+        if (text.contains("985") || text.contains("211")) {
+            log.info("岗位要求92爷，跳过");
+            return true;
+        }
+
+        if (text.contains("安卓") || text.contains("android") || text.contains("Android") || text.contains("客户端")) {
+            log.info("岗位要求安卓，跳过");
+            return true;
+        }
+
+        return false;
     }
 
     private static void closeWindow(ArrayList<String> tabs) {
