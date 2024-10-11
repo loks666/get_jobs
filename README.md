@@ -92,7 +92,8 @@ cd get_jobs
     - `API_KEY`：调用的API KEY
     - `MODEL`：需要使用的模型名称
   > 根据测试，boss直聘在每天所有的岗位投递结束后消耗的额度(gpt-4o-mini)大约在0.06美元(6美分)
-  左右，代理除了在本项目中可用，也可使用客户端(https://github.com/knowlimit/ChatGPT-NextWeb) 在日常生活中使用，所以不会浪费，充值额度1刀起，随用随充  
+  左右，代理除了在本项目中可用，也可使用客户端(https://github.com/knowlimit/ChatGPT-NextWeb)
+  在日常生活中使用，所以不会浪费，充值额度1刀起，随用随充  
   > 💥注意！AI代理地址:如云API:https://api.ruyun.fun/
   ，该网站可自主充值需要的金额，无任何捆绑消费，支持市面上全部大模型，2人民币=1美元
     - AI生成的打招呼语示例  
@@ -291,9 +292,12 @@ is_send: true #开启企业微信消息推送
 
 --- 
 
-- 授人以渔: [自定义修改你的代码](https://github.com/loks666/get_jobs/wiki/授人以渔‐自定义修改你的代码)
-- 本项目受此启发:https://github.com/BeammNotFound/get-jobs-51job , 感谢大佬，让我们将爱传递下去~
-- 本项目创建于: 2024年3月7日 21:34:58
+### 🙅🏻‍♂️ 谨防受骗
+
+- 近日已经有人反馈，有人拿着本项目免费开源的代码，在闲鱼等小红书各处售卖
+- 本项目代码完全开源免费，请勿上当受骗，请大家擦亮眼睛
+  <img src="src/main/resources/images/pianzi1.png" alt="骗子1">
+  <img src="src/main/resources/images/pianzi2.png" alt="骗子2">
 
 ---
 
