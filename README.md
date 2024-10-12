@@ -296,8 +296,6 @@ is_send: true #开启企业微信消息推送
 
 - 近日已经有人反馈，有人拿着本项目免费开源的代码，在闲鱼等小红书各处售卖
 - 本项目代码完全开源免费，请勿上当受骗，请大家擦亮眼睛
-  <img src="src/main/resources/images/pianzi1.png" alt="骗子1">
-  <img src="src/main/resources/images/pianzi2.png" alt="骗子2">
 
 ---
 
