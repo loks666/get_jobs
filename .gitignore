@@ -27,7 +27,7 @@ build/
 !**/src/test/**/build/
 ### VS Code ###
 .vscode/
-
+data.json
 src/main/java/boss/data.json
 
 ### Mac OS ###

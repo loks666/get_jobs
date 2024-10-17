@@ -291,13 +291,13 @@ public class Boss {
             //过滤不符合期望薪资的岗位
             if (isSalaryNotExpected()) {
                 closeWindow(tabs);
-                RandomWait();
+                SeleniumUtil.sleep(1);
                 continue;
             }
             //过滤不活跃HR
             if (isDeadHR()) {
                 closeWindow(tabs);
-                RandomWait();
+                SeleniumUtil.sleep(1);
                 continue;
             }
             // 随机等待一段时间
