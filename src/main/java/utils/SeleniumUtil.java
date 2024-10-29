@@ -27,6 +27,10 @@ import java.util.concurrent.TimeUnit;
 
 import static utils.Constant.*;
 
+/**
+ * @author loks666
+ * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ */
 public class SeleniumUtil {
     private static final Logger log = LoggerFactory.getLogger(SeleniumUtil.class);
 
@@ -40,6 +44,7 @@ public class SeleniumUtil {
         ChromeOptions options = new ChromeOptions();
         // 添加扩展插件
         String osName = System.getProperty("os.name").toLowerCase();
+        KeyUtil.printLog();
         log.info("当前操作系统为【{}】", osName);
         String osType = getOSType(osName);
         switch (osType) {
