@@ -3,6 +3,10 @@ package zhilian;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.Getter;
 
+/**
+ * @author loks666
+ * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ */
 public class ZhilianEnum {
 
     @Getter

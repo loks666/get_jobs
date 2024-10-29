@@ -18,6 +18,10 @@ import static utils.Constant.*;
 import static utils.JobUtils.formatDuration;
 import static utils.SeleniumUtil.isCookieValid;
 
+/**
+ * @author loks666
+ * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ */
 public class Liepin {
     private static final Logger log = LoggerFactory.getLogger(Liepin.class);
     static String homeUrl = "https://www.liepin.com/";
