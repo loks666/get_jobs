@@ -28,6 +28,7 @@ import static utils.JobUtils.formatDuration;
 
 /**
  * @author loks666
+ * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  * Boss直聘自动投递
  */
 public class Boss {
