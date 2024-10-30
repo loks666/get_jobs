@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
@@ -22,8 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static utils.Bot.sendMessageByTime;
-import static utils.Constant.CHROME_DRIVER;
-import static utils.Constant.WAIT;
+import static utils.Constant.*;
 import static utils.JobUtils.formatDuration;
 
 /**
@@ -301,8 +301,7 @@ public class Boss {
                 SeleniumUtil.sleep(1);
                 continue;
             }
-            // 随机等待一段时间
-            RandomWait();
+            simulateWait();
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             AiFilter filterResult = null;
             if (config.getEnableAI()) {
@@ -445,6 +444,17 @@ public class Boss {
 
     private static void RandomWait() {
         SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 20));
+    }
+
+    private static void simulateWait() {
+        ACTIONS.sendKeys(" ").perform();
+        SeleniumUtil.sleep(1);
+        ACTIONS.sendKeys(" ").perform();
+        SeleniumUtil.sleep(1);
+        ACTIONS.sendKeys(" ").perform();
+        SeleniumUtil.sleep(1);
+        ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
+        SeleniumUtil.sleep(1);
     }
 
     private static boolean isDeadHR() {
