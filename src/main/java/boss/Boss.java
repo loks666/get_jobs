@@ -563,6 +563,15 @@ public class Boss {
             String text = CHROME_DRIVER.findElement(By.className("btns")).getText();
             return text != null && text.contains("登录");
         } catch (Exception e) {
+            String text = null;
+            try {
+                text = CHROME_DRIVER.findElement(By.xpath("//h1")).getText();
+            } catch (Exception ex) {
+                log.error("没有出现403访问异常");
+            }
+            if (text != null && text.contains("403")){
+                return true;
+            }
             log.info("cookie有效，已登录...");
             return false;
         }
