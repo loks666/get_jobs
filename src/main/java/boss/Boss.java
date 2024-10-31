@@ -563,14 +563,12 @@ public class Boss {
             String text = CHROME_DRIVER.findElement(By.className("btns")).getText();
             return text != null && text.contains("登录");
         } catch (Exception e) {
-            String text = null;
             try {
-                text = CHROME_DRIVER.findElement(By.xpath("//h1")).getText();
+                CHROME_DRIVER.findElement(By.xpath("//h1")).getText();
+                CHROME_DRIVER.findElement(By.xpath("//a[@ka='403_login']")).click();
+                return true;
             } catch (Exception ex) {
                 log.error("没有出现403访问异常");
-            }
-            if (text != null && text.contains("403")){
-                return true;
             }
             log.info("cookie有效，已登录...");
             return false;
@@ -580,6 +578,15 @@ public class Boss {
     @SneakyThrows
     private static void scanLogin() {
         CHROME_DRIVER.get(homeUrl + "/web/user/?ka=header-login");
+        SeleniumUtil.sleep(3);
+        try {
+            String text = CHROME_DRIVER.findElement(By.xpath("//li[@class='nav-figure']")).getText();
+            if (!Objects.equals(text,"登录")){
+                log.info("已经登录，直接开始投递...");
+                return;
+            }
+        } catch (Exception ignored) {
+        }
         log.info("等待登陆..");
         WebElement app = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='btn-sign-switch ewm-switch']")));
         boolean login = false;
