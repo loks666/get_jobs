@@ -98,7 +98,7 @@ public class AiService {
     public static void main(String[] args) {
         try {
             // 示例：发送请求
-            String content = "Say this is a test!";
+            String content = "你好";
             String response = sendRequest(content);
             System.out.println("AI回复: " + response);
         } catch (Exception e) {
