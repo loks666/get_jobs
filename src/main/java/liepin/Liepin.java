@@ -2,6 +2,7 @@ package liepin;
 
 import lombok.SneakyThrows;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
@@ -60,7 +61,11 @@ public class Liepin {
         List<WebElement> lis = div.findElements(By.tagName("li"));
         setMaxPage(lis);
         for (int i = 0; i < maxPage; i++) {
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("subscribe-card-box")));
+            try {
+                CHROME_DRIVER.findElement(By.xpath("//div[contains(@class, 'subscribe-close-btn')]")).click();
+            } catch (Exception ignored) {
+            }
+            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, 'job-card-pc-container')]")));
             log.info("正在投递【{}】第【{}】页...", keyword, i + 1);
             submitJob();
             log.info("已投递第【{}】页所有的岗位...\n", i + 1);
@@ -94,30 +99,32 @@ public class Liepin {
     }
 
     private static void submitJob() {
-        int count = CHROME_DRIVER.findElements(By.cssSelector("div.job-list-box div[style*='margin-bottom']")).size();
+        // 获取hr数量
+        String getRecruiters = "//div[contains(@class, 'job-card-pc-container')]";
+        int count = CHROME_DRIVER.findElements(By.xpath(getRecruiters)).size();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; i++) {
-            String jobName = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'job-title-box')]")).get(i).getText().replaceAll("\n", " ").replaceAll("【 ", "[").replaceAll(" 】", "]");
-            String companyName = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'company-name')]")).get(i).getText().replaceAll("\n", " ");
-            String salary = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'job-salary')]")).get(i).getText().replaceAll("\n", " ");
+            JavascriptExecutor js = CHROME_DRIVER;
+            js.executeScript("window.scrollBy(0,120);");
+
+            String jobName = CHROME_DRIVER.findElements(By.xpath("//div[contains(@class, 'job-title-box')]")).get(i).getText().replaceAll("\n", " ").replaceAll("【 ", "[").replaceAll(" 】", "]");
+            String companyName = CHROME_DRIVER.findElements(By.xpath("//span[contains(@class, 'company-name')]")).get(i).getText().replaceAll("\n", " ");
+            String salary = CHROME_DRIVER.findElements(By.xpath("//span[contains(@class, 'job-salary')]")).get(i).getText().replaceAll("\n", " ");
             String recruiterName = null;
             WebElement name;
             try {
-                name = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'recruiter-name')]")).get(i);
+                // 获取hr名字
+                List<WebElement> recruiters = CHROME_DRIVER.findElements(By.xpath(getRecruiters));
+//                System.out.println(count);
+//                System.out.println(recruiters.size());
+                name = recruiters.get(i);
                 recruiterName = name.getText();
             } catch (Exception e) {
-                log.error("{}", e.getMessage());
-            }
-            WebElement title;
-            String recruiterTitle = null;
-            try {
-                title = CHROME_DRIVER.findElements(By.xpath("//*[contains(@class, 'recruiter-title')]")).get(i);
-                recruiterTitle = title.getText();
-            } catch (Exception e) {
-                log.info("【{}】招聘人员:【{}】没有职位描述", companyName, recruiterName);
+                log.error(e.getMessage());
             }
             try {
-                name = CHROME_DRIVER.findElements(By.xpath("//div[@class='jsx-1313209507 recruiter-name ellipsis-1']")).get(i);
+                // 移动到hr标签处
+                name = CHROME_DRIVER.findElements(By.xpath("//div[contains(@class, 'job-card-pc-container')]")).get(i);
                 ACTIONS.moveToElement(name).perform();
             } catch (Exception ignore) {
             }
@@ -152,9 +159,9 @@ public class Liepin {
                 close.click();
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, 'recruiter-info-box')]")));
 
-                resultList.add(sb.append("【").append(companyName).append(" ").append(jobName).append(" ").append(salary).append(" ").append(recruiterName).append(" ").append(recruiterTitle).append("】").toString());
+                resultList.add(sb.append("【").append(companyName).append(" ").append(jobName).append(" ").append(salary).append(" ").append(recruiterName).append(" ").append("】").toString());
                 sb.setLength(0);
-                log.info("发起新聊天:【{}】的【{}·{}】岗位, 【{}:{}】", companyName, jobName, salary, recruiterName, recruiterTitle);
+                log.info("发起新聊天:【{}】的【{}·{}】岗位", companyName, jobName, salary);
             }
             ACTIONS.moveByOffset(125, 0).perform();
         }
