@@ -171,7 +171,8 @@ public class ZhiLian {
         } catch (Exception ignore) {
             StackTraceElement element = Thread.currentThread().getStackTrace()[1];
             log.info("setMaxPages@设置最大页数异常！({}:{})", element.getFileName(), element.getLineNumber());
-            CHROME_DRIVER.close();
+            log.info("设置默认最大页数50，如有需要请自行调整...");
+            maxPage = 50;
         }
     }
 
