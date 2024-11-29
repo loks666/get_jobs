@@ -303,13 +303,13 @@ public class Boss {
             }
             simulateWait();
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
-            AiFilter filterResult = null;
-            if (config.getEnableAI()) {
-                // AI检测岗位是否匹配
-                String jd = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
-                filterResult = checkJob(keyword, job.getJobName(), jd);
-            }
             if ("立即沟通".equals(btn.getText())) {
+                AiFilter filterResult = null;
+                if (config.getEnableAI()) {
+                    // AI检测岗位是否匹配
+                    String jd = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
+                    filterResult = checkJob(keyword, job.getJobName(), jd);
+                }
                 btn.click();
                 if (isLimit()) {
                     SeleniumUtil.sleep(1);
