@@ -17,7 +17,8 @@ public class LiepinEnum {
         SHANGHAI("上海", "020"),
         GUANGZHOU("广州", "050020"),
         SHENZHEN("深圳", "050090"),
-        CHENGDU("成都", "280020");
+        CHENGDU("成都", "280020"),
+        TIANJIN("天津", "030");
 
         private final String name;
         private final String code;
