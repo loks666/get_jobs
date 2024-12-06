@@ -27,6 +27,21 @@ public class LiepinConfig {
      */
     private String salary;
 
+    /**
+     * 排除公司名，逗号分割，模糊匹配
+     */
+    private String excludeCompany;
+
+    /**
+     * 包含工作名
+     */
+    private String containsJobName;
+
+    /**
+     * 排除工作名
+     */
+    private String excludeJobName;
+
 
     @SneakyThrows
     public static LiepinConfig init() {
