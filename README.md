@@ -200,6 +200,12 @@ is_send: true #开启企业微信消息推送
 
 ****
 
+### ️ 6️⃣ 批量投递
+
+- win平台下，配置任务计划，执行run_startall.bat脚本即可，时间可以自己设定
+- [StartAll.java](src/main/java/StartAll.java)[BossScheduled.java](src/main/java/boss/BossScheduled.java)
+  脚本可以一键启动所有平台，需要哪些平台可以自行进行修改编辑
+
 ### ✍🏼 例:Boss投递日志
 
 <img src="src/main/resources/images/boss.png" alt="Boss投递日志">
