@@ -97,6 +97,15 @@
                     <target>21</target>
                 </configuration>
             </plugin>
+            <!-- Maven Exec Plugin -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <mainClass>StartAll</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
