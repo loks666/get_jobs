@@ -233,6 +233,7 @@ public class Boss {
         CHROME_DRIVER.get(url + "&query=" + keyword);
         try {
             WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='job-title clearfix']")));
+            SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction());
         } catch (Exception e) {
             Optional<WebElement> jobEmpty = SeleniumUtil.findElement("//div[@class='job-empty-wrapper']", "没有找到\"相关职位搜索不到\"的tag");
             if (jobEmpty.isPresent()) {
@@ -280,6 +281,8 @@ public class Boss {
             // 切换到新的标签页
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
             CHROME_DRIVER.switchTo().window(tabs.get(tabs.size() - 1));
+            // 模拟随机用户行为
+            SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction());
             try {
                 // 等待聊天按钮出现
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
@@ -293,15 +296,18 @@ public class Boss {
             if (isSalaryNotExpected()) {
                 closeWindow(tabs);
                 SeleniumUtil.sleep(1);
+                SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction()); // 加入模拟行为
                 continue;
             }
             //过滤不活跃HR
             if (isDeadHR()) {
                 closeWindow(tabs);
                 SeleniumUtil.sleep(1);
+                SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction());  // 加入模拟行为
                 continue;
             }
             simulateWait();
+            SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction());
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             if ("立即沟通".equals(btn.getText())) {
                 AiFilter filterResult = null;
@@ -325,6 +331,7 @@ public class Boss {
                     } catch (Exception ignore) {
                     }
                     WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
+                    SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction());;
                     input.click();
                     SeleniumUtil.sleep(1);
                     WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
