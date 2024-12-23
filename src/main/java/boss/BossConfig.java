@@ -78,6 +78,11 @@ public class BossConfig {
      */
     private List<Integer> expectedSalary;
 
+    /**
+     * 是否开启虚假用户行为
+     */
+    private Boolean fakeUserAction;
+
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
