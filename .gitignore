@@ -35,3 +35,6 @@ src/main/java/boss/data.json
 cookie.json
 .env
 chromedriver
+
+*.jpg
+*.png
