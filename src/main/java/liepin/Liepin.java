@@ -193,23 +193,55 @@ public class Liepin {
 
     private static void scanLogin() {
         try {
+            // 点击切换登录类型按钮
             SeleniumUtil.click(By.className("switch-login-type-btn-box"));
             log.info("等待扫码..");
             boolean isLoggedIn = false;
 
-            // 一直循环，直到元素出现（用户扫码登录成功）
-            while (!isLoggedIn) {
+            // 记录开始时间
+            long startTime = System.currentTimeMillis();
+            long maxWaitTime = 10 * 60 * 1000; // 10分钟，单位毫秒
+
+            // 主循环，直到登录成功或超时
+            while (true) {
                 try {
-                    isLoggedIn = !CHROME_DRIVER.findElements(By.xpath("//*[@id=\"main-container\"]/div/div[3]/div[2]/div[3]/div[1]/div[1]")).isEmpty();
+                    // 检查是否已登录
+                    String login = CHROME_DRIVER.findElements(By.xpath("//button[@type='button']")).getFirst().getText();
+
+                    if (!login.contains("登录")) {
+                        log.info("用户扫码成功，继续执行...");
+                        break;
+                    }
                 } catch (Exception ignored) {
-                    SeleniumUtil.sleep(1);
+                    try {
+                        String login = CHROME_DRIVER.findElements(By.xpath("//div[@id='header-quick-menu-user-info']")).getFirst().getText();
+                        if (login.contains("你好")){
+                            break;
+                        }
+                    } catch (Exception e) {
+                        log.error("获取登录状态失败！");
+                    }
                 }
+
+                // 检查是否超过最大等待时间
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                if (elapsedTime > maxWaitTime) {
+                    log.error("登录超时，10分钟内未完成扫码登录，程序将退出。");
+                    System.exit(1); // 超时，退出程序
+                }
+                SeleniumUtil.sleep(1);
             }
-            log.info("用户扫码成功，继续执行...");
+
+            // 登录成功后，保存Cookie
+            SeleniumUtil.saveCookie(cookiePath);
+            log.info("登录成功，Cookie已保存。");
+
         } catch (Exception e) {
             log.error("scanLogin() 失败: {}", e.getMessage());
+            System.exit(1); // 出现异常时退出程序
         }
     }
+
 
 
 }
