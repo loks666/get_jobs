@@ -74,6 +74,11 @@ public class BossConfig {
     private Boolean filterDeadHR;
 
     /**
+     * 是否发送图片简历
+     */
+    private Boolean sendImgResume;
+
+    /**
      * 目标薪资
      */
     private List<Integer> expectedSalary;
