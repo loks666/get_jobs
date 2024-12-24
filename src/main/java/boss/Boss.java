@@ -320,7 +320,6 @@ public class Boss {
                     return -1;
                 }
                 try {
-                    SeleniumUtil.sleep(1);
                     try {
                         CHROME_DRIVER.findElement(By.xpath("//textarea[@class='input-area']"));
                         WebElement close = CHROME_DRIVER.findElement(By.xpath("//i[@class='icon-close']"));
@@ -361,6 +360,7 @@ public class Boss {
                     String position = positionNameElement.getText() + " " + salaryElement.getText() + " " + cityElement.getText();
                     company = company == null ? "未知公司: " + job.getHref() : company;
                     Boolean imgResume = sendResume(company);
+                    SeleniumUtil.sleep(2);
                     log.info("投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter, imgResume ? "发送图片简历成功！" : "");
                     resultList.add(job);
                     noJobPages = 0;
