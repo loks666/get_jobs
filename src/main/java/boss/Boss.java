@@ -267,6 +267,7 @@ public class Boss {
             if (isSalaryNotExpected(salary)) {
                 // 过滤薪资
                 log.info("已过滤:【{}】公司【{}】岗位薪资【{}】不符合投递要求", companyName, jobName, salary);
+                noJobPages = 0;
                 continue;
             }
             Job job = new Job();
@@ -558,11 +559,20 @@ public class Boss {
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
             log.info("{}：{}", getCompanyAndHR(), activeTimeText);
             // 如果 HR 活跃状态符合预期，则返回 true
-            return deadStatus.contains(activeTimeText);
+            return containsDeadStatus(activeTimeText, deadStatus);
         } catch (Exception e) {
             log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
             return false;
         }
+    }
+
+    public static boolean containsDeadStatus(String activeTimeText, List<String> deadStatus) {
+        for (String status : deadStatus) {
+            if (activeTimeText.contains(status)) {
+                return true;// 一旦找到包含的值，立即返回 true
+            }
+        }
+        return false;// 如果没有找到，返回 false
     }
 
     private static String getCompanyAndHR() {
