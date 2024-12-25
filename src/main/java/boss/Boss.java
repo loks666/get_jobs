@@ -12,7 +12,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 import utils.Job;
 import utils.JobUtils;
 import utils.SeleniumUtil;
@@ -105,6 +104,10 @@ public class Boss {
                         break;
                     } else {
                         log.info("【{}】第【{}】页无岗位,目前已连续【{}】页无新岗位...", keyword, page, noJobPages);
+                    }
+                    if (page == 50){
+                        log.info("关键词【{}】已投递50页，结束该关键词投递", keyword);
+                        break;
                     }
                 } else {
                     lastSize = resultSize;
