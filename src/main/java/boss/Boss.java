@@ -540,15 +540,17 @@ public class Boss {
     }
 
     private static void simulateWait() {
-        ACTIONS.sendKeys(" ").perform();
-        SeleniumUtil.sleep(1);
-        ACTIONS.sendKeys(" ").perform();
-        SeleniumUtil.sleep(1);
-        ACTIONS.sendKeys(" ").perform();
-        SeleniumUtil.sleep(1);
-        ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
+        for (int i = 0; i < 3; i++) {
+            ACTIONS.sendKeys(" ").perform();
+            SeleniumUtil.sleep(1);
+        }
+        ACTIONS.keyDown(Keys.CONTROL)
+                .sendKeys(Keys.HOME)
+                .keyUp(Keys.CONTROL)
+                .perform();
         SeleniumUtil.sleep(1);
     }
+
 
     private static boolean isDeadHR() {
         if (!config.getFilterDeadHR()) {
