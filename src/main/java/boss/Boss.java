@@ -304,6 +304,7 @@ public class Boss {
             //过滤不活跃HR
             if (isDeadHR()) {
                 closeWindow(tabs);
+                log.info("该HR已过滤");
                 SeleniumUtil.sleep(1);
                 continue;
             }
