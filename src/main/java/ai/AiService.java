@@ -9,10 +9,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.*;
 
 /**
  * @author loks666
@@ -26,9 +28,15 @@ public class AiService {
     private static final String API_KEY = dotenv.get("API_KEY");
     private static final String MODEL = dotenv.get("MODEL");
 
+
     public static String sendRequest(String content) {
-        // 创建 HttpClient 实例
-        HttpClient client = HttpClient.newHttpClient();
+        // 设置超时时间，单位：秒
+        int timeoutInSeconds = 60;  // 你可以修改这个变量来设置超时时间
+
+        // 创建 HttpClient 实例并设置超时
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(timeoutInSeconds))  // 设置连接超时
+                .build();
 
         // 构建 JSON 请求体
         JSONObject requestData = new JSONObject();
@@ -52,13 +60,18 @@ public class AiService {
                 .POST(HttpRequest.BodyPublishers.ofString(requestData.toString()))
                 .build();
 
-        // 发送 HTTP 请求，并获取响应
-        HttpResponse<String> response;
+        // 创建线程池用于执行请求
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Callable<HttpResponse<String>> task = () -> client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // 提交请求并控制超时
+        Future<HttpResponse<String>> future = executor.submit(task);
         try {
-            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            // 使用 future.get 设置超时
+            HttpResponse<String> response = future.get(timeoutInSeconds, TimeUnit.SECONDS);
+
             if (response.statusCode() == 200) {
                 // 解析响应体
-
                 log.info(response.body());
                 JSONObject responseObject = new JSONObject(response.body());
                 String requestId = responseObject.getString("id");
@@ -87,13 +100,18 @@ public class AiService {
                 log.info("请求ID: {}, 创建时间: {}, 模型名: {}, 提示词: {}, 补全: {}, 总用量: {}", requestId, formattedTime, model, promptTokens, completionTokens, totalTokens);
                 return responseContent;
             } else {
-                log.error("AI请求失败！");
+                log.error("AI请求失败！状态码: {}", response.statusCode());
             }
+        } catch (TimeoutException e) {
+            log.error("请求超时！超时设置为 {} 秒", timeoutInSeconds);
         } catch (Exception e) {
-            log.error("AI请求异常！");
+            log.error("AI请求异常！", e);
+        } finally {
+            executor.shutdownNow();  // 关闭线程池
         }
         return "";
     }
+
 
     public static void main(String[] args) {
         try {
