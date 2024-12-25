@@ -12,6 +12,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 import utils.Job;
 import utils.JobUtils;
 import utils.SeleniumUtil;
@@ -336,7 +337,7 @@ public class Boss {
                         CHROME_DRIVER.switchTo().window(tabs.getFirst());
                         continue;
                     }
-                    input.sendKeys(filterResult != null && filterResult.getResult() ? filterResult.getMessage() : config.getSayHi());
+                    input.sendKeys(filterResult != null && filterResult.getResult() && isValidString(filterResult.getMessage()) ? filterResult.getMessage() : config.getSayHi());
                     WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
                     send.click();
                     WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='name']"));
@@ -372,6 +373,10 @@ public class Boss {
             closeWindow(tabs);
         }
         return resultList.size();
+    }
+
+    public static boolean isValidString(String str) {
+        return str != null && !str.isEmpty();
     }
 
     public static Boolean sendResume(String company) {
