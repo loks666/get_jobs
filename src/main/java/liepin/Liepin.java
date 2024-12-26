@@ -194,7 +194,7 @@ public class Liepin {
     private static void scanLogin() {
         try {
             // 点击切换登录类型按钮
-            SeleniumUtil.click(By.className("switch-login-type-btn-box"));
+            SeleniumUtil.click(By.xpath("//div[@class='jsx-263198893 btn-sign-switch']"));
             log.info("等待扫码..");
             boolean isLoggedIn = false;
 
