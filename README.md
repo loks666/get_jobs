@@ -303,6 +303,7 @@ is_send: true #开启企业微信消息推送
   <img src="src/main/resources/images/pian1.png" alt="骗子1">
   <img src="src/main/resources/images/pian2.png" alt="骗子2">
   <img src="src/main/resources/images/pian3.png" alt="骗子3">
+  <img src="src/main/resources/images/pian4.png" alt="骗子4">
 
 ---
 
