@@ -13,7 +13,7 @@ boss:
   expectedSalary: [ 28 ] #期望薪资，单位为K，第一个数字为最低薪资，第二个数字为最高薪资，只填一个数字默认为最低薪水
   filterDeadHR: true # 是否过滤不活跃HR,该选项会过滤半年前活跃的HR
   enableAI: false # 开启AI检测与自动生成打招呼语
-  sendImgResume: true # 是否发送图片简历
+  sendImgResume: false # 是否发送图片简历
 
 job51:
   jobArea: [ "上海" ]  #工作地区：目前只有【北京 成都 上海 广州 深圳】
