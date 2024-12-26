@@ -105,8 +105,9 @@ public class Boss {
                     } else {
                         log.info("【{}】第【{}】页无岗位,目前已连续【{}】页无新岗位...", keyword, page, noJobPages);
                     }
-                    if (page == 50){
-                        log.info("关键词【{}】已投递50页，结束该关键词投递", keyword);
+                    int maxPages = 20;
+                    if (page == maxPages){
+                        log.info("关键词【{}】已投递{}页，结束该关键词投递", keyword,maxPages);
                         break;
                     }
                 } else {
