@@ -1,11 +1,13 @@
 import boss.Boss;
 import job51.Job51;
 import liepin.Liepin;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class StartAll {
 
     public static void main(String[] args) {
@@ -18,39 +20,38 @@ public class StartAll {
         // Define the task for Boss
         Runnable bossTask = () -> {
             try {
-                System.out.println("Running Boss task in thread: " + Thread.currentThread().getName());
+                log.info("正在执行 Boss 任务，线程名称: {}", Thread.currentThread().getName());
                 Boss.main(null);
-                System.out.println("Boss task completed at: " + java.time.LocalDateTime.now());
+                log.info("Boss 任务已完成，完成时间: {}", java.time.LocalDateTime.now());
             } catch (Exception e) {
-                System.err.println("An error occurred in Boss task: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Boss 任务执行过程中发生错误: {}", e.getMessage(), e);
             }
         };
 
         // Define the task for Liepin
         Runnable liepinTask = () -> {
             try {
-                System.out.println("Running Liepin task in thread: " + Thread.currentThread().getName());
+                log.info("正在执行 Liepin 任务，线程名称: {}", Thread.currentThread().getName());
                 Liepin.main(null);
-                System.out.println("Liepin task completed at: " + java.time.LocalDateTime.now());
+                log.info("Liepin 任务已完成，完成时间: {}", java.time.LocalDateTime.now());
             } catch (Exception e) {
-                System.err.println("An error occurred in Liepin task: " + e.getMessage());
+                log.error("Liepin 任务执行过程中发生错误: {}", e.getMessage(), e);
             }
         };
 
         // Define the task for Job51
         Runnable job51Task = () -> {
             try {
-                System.out.println("Running Job51 task in thread: " + Thread.currentThread().getName());
+                log.info("正在执行 Job51 任务，线程名称: {}", Thread.currentThread().getName());
                 Job51.main(null);
-                System.out.println("Job51 task completed at: " + java.time.LocalDateTime.now());
+                log.info("Job51 任务已完成，完成时间: {}", java.time.LocalDateTime.now());
             } catch (Exception e) {
-                System.err.println("An error occurred in Job51 task: " + e.getMessage());
+                log.error("Job51 任务执行过程中发生错误: {}", e.getMessage(), e);
             }
         };
 
         // Schedule Boss task to run every 30 minutes
-        bossScheduler.scheduleAtFixedRate(bossTask, 0, 60, TimeUnit.MINUTES);
+        bossScheduler.scheduleAtFixedRate(bossTask, 0, 30, TimeUnit.MINUTES);
 
         // Schedule Liepin and Job51 tasks to run immediately in separate threads
         liepinJobScheduler.submit(liepinTask);
@@ -58,19 +59,20 @@ public class StartAll {
 
         // Add a shutdown hook to gracefully shut down the schedulers
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("Shutting down schedulers...");
+            log.info("正在关闭调度器...");
             bossScheduler.shutdown();
             liepinJobScheduler.shutdown();
             try {
                 if (!bossScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    System.out.println("Forcefully shutting down Boss scheduler...");
+                    log.warn("强制关闭 Boss 调度器...");
                     bossScheduler.shutdownNow();
                 }
                 if (!liepinJobScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    System.out.println("Forcefully shutting down Liepin/Job51 scheduler...");
+                    log.warn("强制关闭 Liepin/Job51 调度器...");
                     liepinJobScheduler.shutdownNow();
                 }
             } catch (InterruptedException e) {
+                log.error("关闭调度器时发生错误: {}", e.getMessage(), e);
                 bossScheduler.shutdownNow();
                 liepinJobScheduler.shutdownNow();
             }
