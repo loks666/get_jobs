@@ -105,9 +105,9 @@ public class Boss {
                     } else {
                         log.info("【{}】第【{}】页无岗位,目前已连续【{}】页无新岗位...", keyword, page, noJobPages);
                     }
-                    int maxPages = 20;
-                    if (page == maxPages){
-                        log.info("关键词【{}】已投递{}页，结束该关键词投递", keyword,maxPages);
+                    int maxPages = 10;
+                    if (page >= maxPages) {
+                        log.info("关键词【{}】已投递{}页，结束该关键词投递", keyword, maxPages);
                         break;
                     }
                 } else {
@@ -315,6 +315,7 @@ public class Boss {
             simulateWait();
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             if ("立即沟通".equals(btn.getText())) {
+                SeleniumUtil.sleep(10);
                 AiFilter filterResult = null;
                 if (config.getEnableAI()) {
                     // AI检测岗位是否匹配
