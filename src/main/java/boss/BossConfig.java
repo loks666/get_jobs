@@ -19,6 +19,11 @@ public class BossConfig {
     private String sayHi;
 
     /**
+     * 开发者模式
+     */
+    private Boolean debugger;
+
+    /**
      * 搜索关键词列表
      */
     private List<String> keywords;
