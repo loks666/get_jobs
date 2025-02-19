@@ -1,5 +1,6 @@
 package utils;
 
+import boss.BossConfig;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -64,7 +65,12 @@ public class SeleniumUtil {
                 log.info("你这什么破系统，没见过，别跑了!");
                 break;
         }
-        options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
+        BossConfig config = BossConfig.init();
+        if (config.getDebugger()) {
+            options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
+        } else {
+            options.addArguments("--disable-extensions");
+        }
         GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
         if (screens.length > 1) {
             options.addArguments("--window-position=2800,1000"); //将窗口移动到副屏的起始位置
