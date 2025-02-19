@@ -36,7 +36,7 @@ import static utils.JobUtils.formatDuration;
  * Boss直聘自动投递
  */
 public class Boss {
-    static final int noJobMaxPages = 5; // 无岗位最大页数
+    static final int noJobMaxPages = 10; // 无岗位最大页数
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
     static Integer page = 1;
     static String homeUrl = "https://www.zhipin.com";
@@ -80,9 +80,9 @@ public class Boss {
             page = 1;
             noJobPages = 0;
             lastSize = -1;
+            String url = searchUrl + "&page=" + page;
             while (true) {
                 log.info("投递【{}】关键词第【{}】页", keyword, page);
-                String url = searchUrl + "&page=" + page;
                 int startSize = resultList.size();
                 Integer resultSize = resumeSubmission(url, keyword);
                 if (resultSize == -1) {
@@ -114,8 +114,47 @@ public class Boss {
                     lastSize = resultSize;
                     noJobPages = 0;
                 }
+                int pageResult = clickNextPage();
+                if (pageResult == 0) {
+                    log.info("【{}】{}", keyword, "关键词已投递至末页，结束该关键词的投递...");
+                    break;
+                }
                 page++;
             }
+        }
+    }
+
+    public static int clickNextPage() {
+        try {
+            WebElement nextButton = CHROME_DRIVER.findElement(By.xpath("//a//i[@class='ui-icon-arrow-right']"));
+            if (nextButton.isEnabled()) {
+                nextButton.click();
+                return 1;
+            } else {
+                return 0;
+            }
+        } catch (Exception e) {
+            log.error("点击下一页按钮异常！！");
+            // 获取当前页面的 URL
+            String currentUrl = CHROME_DRIVER.getCurrentUrl();
+            // 提取 page 参数并转换为整数
+            String[] urlParts = currentUrl.split("&");
+            int page = 1;  // Default page value
+            for (String part : urlParts) {
+                if (part.startsWith("page=")) {
+                    page = Integer.parseInt(part.split("=")[1]);
+                    break;
+                }
+            }
+            // 如果 page 小于 10，增加 page 值并访问新页面
+            if (page < 10) {
+                page++;  // Increase page number
+                String newUrl = currentUrl.replace("page=" + (page - 1), "page=" + page);  // Replace page=old with page=new
+                CHROME_DRIVER.get(newUrl);  // Navigate to the new page
+            } else {
+                return 0;
+            }
+            return -1;
         }
     }
 
@@ -241,7 +280,7 @@ public class Boss {
     private static Integer resumeSubmission(String url, String keyword) {
         CHROME_DRIVER.get(url + "&query=" + keyword);
         try {
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='job-title clearfix']")));
+            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='job-list-wrapper']")));
         } catch (Exception e) {
             Optional<WebElement> jobEmpty = SeleniumUtil.findElement("//div[@class='job-empty-wrapper']", "没有找到\"相关职位搜索不到\"的tag");
             if (jobEmpty.isPresent()) {
@@ -289,8 +328,9 @@ public class Boss {
             job.setCompanyTag(tag.substring(0, tag.length() - 1));
             jobs.add(job);
         }
+
         for (Job job : jobs) {
-            // 打开新的标签页并打开链接
+            // 打开新的标签页
             JavascriptExecutor jse = CHROME_DRIVER;
             jse.executeScript("window.open(arguments[0], '_blank')", job.getHref());
             // 切换到新的标签页
@@ -351,12 +391,12 @@ public class Boss {
                     WebElement recruiterTitleElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='base-title']"));
                     String recruiter = recruiterNameElement.getText() + " " + recruiterTitleElement.getText();
 
-                    WebElement companyElement;
+                    WebElement companyElement = null;
                     try {
-                        companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[not(@class)]"));
+                        // 通过定位父元素后获取第二个 span 元素，获取公司名
+                        companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[2]"));
                     } catch (Exception e) {
-                        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//p[@class='base-info fl']/span[not(@class)]")));
-                        companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[not(@class)]"));
+                        log.info("获取公司名异常！");
                     }
                     String company = null;
                     if (companyElement != null) {
@@ -370,7 +410,7 @@ public class Boss {
                     company = company == null ? "未知公司: " + job.getHref() : company;
                     Boolean imgResume = sendResume(company);
                     SeleniumUtil.sleep(2);
-                    log.info("投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter, imgResume ? "发送图片简历成功！" : "");
+                    log.info("正在投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter, imgResume ? "发送图片简历成功！" : "");
                     resultList.add(job);
                     noJobPages = 0;
                 } catch (Exception e) {
