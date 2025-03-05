@@ -8,6 +8,14 @@
 [![Forks](https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE)](https://github.com/loks666/get_jobs/forks)
 </div>
 
+### 写在前面
+- [你找不到工作，是因为大环境不好吗？【很重要】](doc.md)
+- 目前该项目存在的问题
+  - 当前招聘市场，有效的软件仅有boss和猎聘
+  - 如果boss出现掉线等问题，1.修改间隔等待时间 2.当天停止投递，第二天接着投，否则可能会封号
+  - 最重要的事情，不要依赖程序投递boss！！！手机上的boss，比本程序网页端靠谱的多，当你手机投的很累，又没有投够100个，请再使用本程序的boss投递！
+  - boss更新频繁，目前已知的问题是，翻页偶尔会失败，目前由于我时间紧张，没时间定位问题，如果有谁自己解决了这个问题，请在群里联系我，我可以给你pr的机会，并将你拉入开发组，本项目为github热门开源项目，同时目前该项目已经申请了Intelli的开源支持计划，加入开发组意味着你可以获得Intelli编辑器官方的免费全家桶永久使用权。所以欢迎联系我
+
 ### 🌴源码地址
 
 - Github(国外访问)：https://github.com/loks666/get_jobs
