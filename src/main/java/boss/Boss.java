@@ -81,7 +81,7 @@ public class Boss {
             int page = 1;
             int noJobPages = 0;
             int lastSize = -1;
-            String url = searchUrl + "&page=" + page + "&query=" + keyword; //第一页加上关键字
+            String url = searchUrl + "&page=" + page + "&query=" + keyword;
             log.info("开始投递第一页，页面url：" + url);
             CHROME_DRIVER.get(url);
 
@@ -91,7 +91,7 @@ public class Boss {
                 if (isJobsPresent(wait)) {
                     log.info("当前页面已找到岗位元素，开始进行投递>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
                     // 进行投递操作
-                    Integer resultSize = resumeSubmission(url, keyword);
+                    Integer resultSize = resumeSubmission(keyword);
                     if (resultSize == -1) {
                         log.info("今日沟通人数已达上限，请明天再试");
                         return;
@@ -128,7 +128,7 @@ public class Boss {
                 }
                 page++;
                 log.info("准备投递下一页，页码>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + page);
-                url = searchUrl + "&page=" + page;
+                url = searchUrl + "&page=" + page + "&query=" + keyword;
                 log.info("加载新页面url>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + url);
                 CHROME_DRIVER.get(url);
                 log.info("等待页面加载完成>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
@@ -293,7 +293,7 @@ public class Boss {
     }
 
     @SneakyThrows
-    private static Integer resumeSubmission(String url, String keyword) {
+    private static Integer resumeSubmission(String keyword) {
 		//禁用resumeSubmission中点击页码
         //CHROME_DRIVER.get(url + "&query=" + keyword);
         //try {
