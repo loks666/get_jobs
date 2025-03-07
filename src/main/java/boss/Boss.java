@@ -81,7 +81,7 @@ public class Boss {
             int page = 1;
             int noJobPages = 0;
             int lastSize = -1;
-            String url = searchUrl + "&page=" + page;
+            String url = searchUrl + "&page=" + page + "&query=" + keyword; //第一页加上关键字
             log.info("开始投递第一页，页面url：" + url);
             CHROME_DRIVER.get(url);
 
