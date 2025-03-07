@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
@@ -15,23 +16,27 @@ import utils.Job;
 import utils.JobUtils;
 import utils.SeleniumUtil;
 
+import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static utils.Bot.sendMessageByTime;
-import static utils.Constant.CHROME_DRIVER;
-import static utils.Constant.WAIT;
+import static utils.Constant.*;
 import static utils.JobUtils.formatDuration;
 
 /**
  * @author loks666
+ * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  * Boss直聘自动投递
  */
 public class Boss {
-    static final int noJobMaxPages = 5; // 无岗位最大页数
+    static final int noJobMaxPages = 10; // 无岗位最大页数
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
     static Integer page = 1;
     static String homeUrl = "https://www.zhipin.com";
@@ -75,9 +80,9 @@ public class Boss {
             page = 1;
             noJobPages = 0;
             lastSize = -1;
+            String url = searchUrl + "&page=" + page;
             while (true) {
                 log.info("投递【{}】关键词第【{}】页", keyword, page);
-                String url = searchUrl + "&page=" + page;
                 int startSize = resultList.size();
                 Integer resultSize = resumeSubmission(url, keyword);
                 if (resultSize == -1) {
@@ -100,12 +105,56 @@ public class Boss {
                     } else {
                         log.info("【{}】第【{}】页无岗位,目前已连续【{}】页无新岗位...", keyword, page, noJobPages);
                     }
+                    int maxPages = 10;
+                    if (page >= maxPages) {
+                        log.info("关键词【{}】已投递{}页，结束该关键词投递", keyword, maxPages);
+                        break;
+                    }
                 } else {
                     lastSize = resultSize;
                     noJobPages = 0;
                 }
+                int pageResult = clickNextPage();
+                if (pageResult == 0) {
+                    log.info("【{}】{}", keyword, "关键词已投递至末页，结束该关键词的投递...");
+                    break;
+                }
                 page++;
             }
+        }
+    }
+
+    public static int clickNextPage() {
+        try {
+            WebElement nextButton = CHROME_DRIVER.findElement(By.xpath("//a//i[@class='ui-icon-arrow-right']"));
+            if (nextButton.isEnabled()) {
+                nextButton.click();
+                return 1;
+            } else {
+                return 0;
+            }
+        } catch (Exception e) {
+            log.error("点击下一页按钮异常！！");
+            // 获取当前页面的 URL
+            String currentUrl = CHROME_DRIVER.getCurrentUrl();
+            // 提取 page 参数并转换为整数
+            String[] urlParts = currentUrl.split("&");
+            int page = 1;  // Default page value
+            for (String part : urlParts) {
+                if (part.startsWith("page=")) {
+                    page = Integer.parseInt(part.split("=")[1]);
+                    break;
+                }
+            }
+            // 如果 page 小于 10，增加 page 值并访问新页面
+            if (page < 10) {
+                page++;  // Increase page number
+                String newUrl = currentUrl.replace("page=" + (page - 1), "page=" + page);  // Replace page=old with page=new
+                CHROME_DRIVER.get(newUrl);  // Navigate to the new page
+            } else {
+                return 0;
+            }
+            return -1;
         }
     }
 
@@ -231,7 +280,7 @@ public class Boss {
     private static Integer resumeSubmission(String url, String keyword) {
         CHROME_DRIVER.get(url + "&query=" + keyword);
         try {
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='job-title clearfix']")));
+            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='job-list-wrapper']")));
         } catch (Exception e) {
             Optional<WebElement> jobEmpty = SeleniumUtil.findElement("//div[@class='job-empty-wrapper']", "没有找到\"相关职位搜索不到\"的tag");
             if (jobEmpty.isPresent()) {
@@ -244,6 +293,7 @@ public class Boss {
             WebElement infoPublic = jobCard.findElement(By.cssSelector("div.info-public"));
             String recruiterText = infoPublic.getText();
             String recruiterName = infoPublic.findElement(By.cssSelector("em")).getText();
+            String salary = jobCard.findElement(By.cssSelector("span.salary")).getText();
             if (blackRecruiters.stream().anyMatch(recruiterName::contains)) {
                 // 排除黑名单招聘人员
                 continue;
@@ -256,6 +306,12 @@ public class Boss {
             String companyName = jobCard.findElement(By.cssSelector("div.company-info h3.company-name")).getText();
             if (blackCompanies.stream().anyMatch(companyName::contains)) {
                 // 排除黑名单公司
+                continue;
+            }
+            if (isSalaryNotExpected(salary)) {
+                // 过滤薪资
+                log.info("已过滤:【{}】公司【{}】岗位薪资【{}】不符合投递要求", companyName, jobName, salary);
+                noJobPages = 0;
                 continue;
             }
             Job job = new Job();
@@ -272,13 +328,14 @@ public class Boss {
             job.setCompanyTag(tag.substring(0, tag.length() - 1));
             jobs.add(job);
         }
+
         for (Job job : jobs) {
-            // 打开新的标签页并打开链接
+            // 打开新的标签页
             JavascriptExecutor jse = CHROME_DRIVER;
             jse.executeScript("window.open(arguments[0], '_blank')", job.getHref());
             // 切换到新的标签页
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
-            CHROME_DRIVER.switchTo().window(tabs.get(tabs.size() - 1));
+            CHROME_DRIVER.switchTo().window(tabs.getLast());
             try {
                 // 等待聊天按钮出现
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
@@ -288,35 +345,29 @@ public class Boss {
                     return -2;
                 }
             }
-            //过滤不符合期望薪资的岗位
-            if (isSalaryNotExpected()) {
-                closeWindow(tabs);
-                RandomWait();
-                continue;
-            }
             //过滤不活跃HR
             if (isDeadHR()) {
                 closeWindow(tabs);
-                RandomWait();
+                log.info("该HR已过滤");
+                SeleniumUtil.sleep(1);
                 continue;
             }
-            // 随机等待一段时间
-            RandomWait();
+            simulateWait();
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
-            AiFilter filterResult = null;
-            if (config.getEnableAI()) {
-                // AI检测岗位是否匹配
-                String jd = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
-                filterResult = checkJob(keyword, job.getJobName(), jd);
-            }
             if ("立即沟通".equals(btn.getText())) {
+                SeleniumUtil.sleep(10);
+                AiFilter filterResult = null;
+                if (config.getEnableAI()) {
+                    // AI检测岗位是否匹配
+                    String jd = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
+                    filterResult = checkJob(keyword, job.getJobName(), jd);
+                }
                 btn.click();
                 if (isLimit()) {
                     SeleniumUtil.sleep(1);
                     return -1;
                 }
                 try {
-                    SeleniumUtil.sleep(1);
                     try {
                         CHROME_DRIVER.findElement(By.xpath("//textarea[@class='input-area']"));
                         WebElement close = CHROME_DRIVER.findElement(By.xpath("//i[@class='icon-close']"));
@@ -326,27 +377,26 @@ public class Boss {
                     }
                     WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
                     input.click();
-                    SeleniumUtil.sleep(1);
                     WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
                     if ("不匹配".equals(element.getText())) {
                         CHROME_DRIVER.close();
-                        CHROME_DRIVER.switchTo().window(tabs.get(0));
+                        CHROME_DRIVER.switchTo().window(tabs.getFirst());
                         continue;
                     }
-                    input.sendKeys(filterResult != null && filterResult.getResult() ? filterResult.getMessage() : config.getSayHi());
+                    input.sendKeys(filterResult != null && filterResult.getResult() && isValidString(filterResult.getMessage()) ? filterResult.getMessage() : config.getSayHi());
                     WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
                     send.click();
-
+                    SeleniumUtil.sleep(3);
                     WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='name']"));
                     WebElement recruiterTitleElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='base-title']"));
                     String recruiter = recruiterNameElement.getText() + " " + recruiterTitleElement.getText();
 
-                    WebElement companyElement;
+                    WebElement companyElement = null;
                     try {
-                        companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[not(@class)]"));
+                        // 通过定位父元素后获取第二个 span 元素，获取公司名
+                        companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[2]"));
                     } catch (Exception e) {
-                        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//p[@class='base-info fl']/span[not(@class)]")));
-                        companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[not(@class)]"));
+                        log.info("获取公司名异常！");
                     }
                     String company = null;
                     if (companyElement != null) {
@@ -357,7 +407,10 @@ public class Boss {
                     WebElement salaryElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='salary']"));
                     WebElement cityElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='city']"));
                     String position = positionNameElement.getText() + " " + salaryElement.getText() + " " + cityElement.getText();
-                    log.info("投递【{}】公司，【{}】职位，招聘官:【{}】", company == null ? "未知公司: " + job.getHref() : company, position, recruiter);
+                    company = company == null ? "未知公司: " + job.getHref() : company;
+                    Boolean imgResume = sendResume(company);
+                    SeleniumUtil.sleep(2);
+                    log.info("正在投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter, imgResume ? "发送图片简历成功！" : "");
                     resultList.add(job);
                     noJobPages = 0;
                 } catch (Exception e) {
@@ -369,6 +422,45 @@ public class Boss {
         return resultList.size();
     }
 
+    public static boolean isValidString(String str) {
+        return str != null && !str.isEmpty();
+    }
+
+    public static Boolean sendResume(String company) {
+        // 如果 config.getSendImgResume() 为 true，再去找图片
+        if (!config.getSendImgResume()) {
+            return false;
+        }
+
+        try {
+            // 从类路径加载 resume.jpg
+            URL resourceUrl = Boss.class.getResource("/resume.jpg");
+            if (resourceUrl == null) {
+                log.error("在类路径下未找到 resume.jpg 文件！");
+                return false;
+            }
+
+            // 将 URL 转为 File 对象
+            File imageFile = new File(resourceUrl.toURI());
+            log.info("简历图片路径：{}", imageFile.getAbsolutePath());
+
+            if (!imageFile.exists()) {
+                log.error("简历图片不存在！: {}", imageFile.getAbsolutePath());
+                return false;
+            }
+
+            // 使用 XPath 定位 <input type="file"> 元素
+            WebElement fileInput = CHROME_DRIVER.findElement(By.xpath("//div[@aria-label='发送图片']//input[@type='file']"));
+
+            // 上传图片
+            fileInput.sendKeys(imageFile.getAbsolutePath());
+            return true;
+        } catch (Exception e) {
+            log.error("发送简历图片时出错：{}", e.getMessage());
+            return false;
+        }
+    }
+
     /**
      * 检查岗位薪资是否符合预期
      *
@@ -378,32 +470,80 @@ public class Boss {
      * 期望的最低薪资如果比岗位最高薪资还小，则不符合（薪资给的太少）
      * 期望的最高薪资如果比岗位最低薪资还小，则不符合(要求太高满足不了)
      */
-    private static boolean isSalaryNotExpected() {
+    private static boolean isSalaryNotExpected(String salary) {
         try {
-            // 获取期望的薪资范围
+            // 1. 如果没有期望薪资范围，直接返回 false，表示“薪资并非不符合预期”
             List<Integer> expectedSalary = config.getExpectedSalary();
-            if (expectedSalary == null || expectedSalary.isEmpty()) {
+            if (!hasExpectedSalary(expectedSalary)) {
                 return false;
             }
-            Integer miniSalary = getMinimumSalary(expectedSalary);
-            Integer maxSalary = getMaximumSalary(expectedSalary);
 
-            WebElement salaryElement = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[@class='salary']")));
-            String salaryText = salaryElement.getText();
+            // 2. 清理薪资文本（比如去掉 "·15薪"）
+            salary = removeYearBonusText(salary);
 
-            // 判断薪资文本是否符合预期格式（包含 "K" 或 "k"）
-            if (isSalaryInExpectedFormat(salaryText)) {
-                salaryText = cleanSalaryText(salaryText); // 去除 "K"、"k" 和 "·" 之后的字符
-                Integer[] jobSalary = parseSalaryRange(salaryText);
-                // 检查薪资范围是否符合预期
-                return isSalaryOutOfRange(jobSalary, miniSalary, maxSalary);
-            } else {
+            // 3. 如果薪资格式不符合预期（如缺少 "K" / "k"），直接返回 true，表示“薪资不符合预期”
+            if (!isSalaryInExpectedFormat(salary)) {
                 return true;
             }
+
+            // 4. 进一步清理薪资文本，比如去除 "K"、"k"、"·" 等
+            salary = cleanSalaryText(salary);
+
+            // 5. 判断是 "月薪" 还是 "日薪"
+            String jobType = detectJobType(salary);
+            salary = removeDayUnitIfNeeded(salary); // 如果是按天，则去除 "元/天"
+
+            // 6. 解析薪资范围并检查是否超出预期
+            Integer[] jobSalaryRange = parseSalaryRange(salary);
+            return isSalaryOutOfRange(jobSalaryRange,
+                    getMinimumSalary(expectedSalary),
+                    getMaximumSalary(expectedSalary),
+                    jobType);
+
         } catch (Exception e) {
             log.error("岗位薪资获取异常！{}", e.getMessage(), e);
+            // 出错时，您可根据业务需求决定返回 true 或 false
+            // 这里假设出错时无法判断，视为不满足预期 => 返回 true
+            return true;
         }
-        return true;
+    }
+
+    /**
+     * 是否存在有效的期望薪资范围
+     */
+    private static boolean hasExpectedSalary(List<Integer> expectedSalary) {
+        return expectedSalary != null && !expectedSalary.isEmpty();
+    }
+
+    /**
+     * 去掉年终奖信息，如 "·15薪"、"·13薪"。
+     */
+    private static String removeYearBonusText(String salary) {
+        if (salary.contains("薪")) {
+            // 使用正则去除 "·任意数字薪"
+            return salary.replaceAll("·\\d+薪", "");
+        }
+        return salary;
+    }
+
+    /**
+     * 判断是否是按天计薪，如发现 "元/天" 则认为是日薪
+     */
+    private static String detectJobType(String salary) {
+        if (salary.contains("元/天")) {
+            return "day";
+        }
+        return "mouth";
+    }
+
+    /**
+     * 如果是日薪，则去除 "元/天"
+     */
+    private static String removeDayUnitIfNeeded(String salary) {
+        if (salary.contains("元/天")) {
+            return salary.replaceAll("元/天", "");
+        }
+        return salary;
     }
 
     private static Integer getMinimumSalary(List<Integer> expectedSalary) {
@@ -427,12 +567,17 @@ public class Boss {
         return salaryText;
     }
 
-    private static boolean isSalaryOutOfRange(Integer[] jobSalary, Integer miniSalary, Integer maxSalary) {
+    private static boolean isSalaryOutOfRange(Integer[] jobSalary, Integer miniSalary, Integer maxSalary, String jobType) {
         if (jobSalary == null) {
             return true;
         }
         if (miniSalary == null) {
             return false;
+        }
+        if (Objects.equals("day", jobType)) {
+            // 期望薪资转为平均每日的工资
+            maxSalary = BigDecimal.valueOf(maxSalary).multiply(BigDecimal.valueOf(1000)).divide(BigDecimal.valueOf(21.75), 0, RoundingMode.HALF_UP).intValue();
+            miniSalary = BigDecimal.valueOf(miniSalary).multiply(BigDecimal.valueOf(1000)).divide(BigDecimal.valueOf(21.75), 0, RoundingMode.HALF_UP).intValue();
         }
         // 如果职位薪资下限低于期望的最低薪资，返回不符合
         if (jobSalary[1] < miniSalary) {
@@ -446,6 +591,19 @@ public class Boss {
         SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 20));
     }
 
+    private static void simulateWait() {
+        for (int i = 0; i < 3; i++) {
+            ACTIONS.sendKeys(" ").perform();
+            SeleniumUtil.sleep(1);
+        }
+        ACTIONS.keyDown(Keys.CONTROL)
+                .sendKeys(Keys.HOME)
+                .keyUp(Keys.CONTROL)
+                .perform();
+        SeleniumUtil.sleep(1);
+    }
+
+
     private static boolean isDeadHR() {
         if (!config.getFilterDeadHR()) {
             return false;
@@ -453,13 +611,26 @@ public class Boss {
         try {
             // 尝试获取 HR 的活跃时间
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
-            log.info("HR活跃状态：{}", activeTimeText);
+            log.info("{}：{}", getCompanyAndHR(), activeTimeText);
             // 如果 HR 活跃状态符合预期，则返回 true
-            return deadStatus.contains(activeTimeText);
+            return containsDeadStatus(activeTimeText, deadStatus);
         } catch (Exception e) {
-            log.info("没有找到HR的活跃状态, 默认此岗位将会投递...");
+            log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
             return false;
         }
+    }
+
+    public static boolean containsDeadStatus(String activeTimeText, List<String> deadStatus) {
+        for (String status : deadStatus) {
+            if (activeTimeText.contains(status)) {
+                return true;// 一旦找到包含的值，立即返回 true
+            }
+        }
+        return false;// 如果没有找到，返回 false
+    }
+
+    private static String getCompanyAndHR() {
+        return CHROME_DRIVER.findElement(By.xpath("//div[@class='boss-info-attr']")).getText().replaceAll("\n", "");
     }
 
     private static void closeWindow(ArrayList<String> tabs) {
@@ -552,6 +723,13 @@ public class Boss {
             String text = CHROME_DRIVER.findElement(By.className("btns")).getText();
             return text != null && text.contains("登录");
         } catch (Exception e) {
+            try {
+                CHROME_DRIVER.findElement(By.xpath("//h1")).getText();
+                CHROME_DRIVER.findElement(By.xpath("//a[@ka='403_login']")).click();
+                return true;
+            } catch (Exception ex) {
+                log.info("没有出现403访问异常");
+            }
             log.info("cookie有效，已登录...");
             return false;
         }
@@ -559,24 +737,95 @@ public class Boss {
 
     @SneakyThrows
     private static void scanLogin() {
+        // 访问登录页面
         CHROME_DRIVER.get(homeUrl + "/web/user/?ka=header-login");
-        log.info("等待登陆..");
-        WebElement app = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='btn-sign-switch ewm-switch']")));
+        SeleniumUtil.sleep(3);
+
+        // 1. 如果已经登录，则直接返回
+        try {
+            String text = CHROME_DRIVER.findElement(By.xpath("//li[@class='nav-figure']")).getText();
+            if (!Objects.equals(text, "登录")) {
+                log.info("已经登录，直接开始投递...");
+                return;
+            }
+        } catch (Exception ignored) {
+        }
+
+        log.info("等待登录...");
+
+        // 2. 定位二维码登录的切换按钮
+        WebElement app = WAIT.until(ExpectedConditions.presenceOfElementLocated(
+                By.xpath("//div[@class='btn-sign-switch ewm-switch']")));
+
+        // 3. 登录逻辑
         boolean login = false;
+
+        // 4. 记录开始时间，用于判断10分钟超时
+        long startTime = System.currentTimeMillis();
+        final long TIMEOUT = 10 * 60 * 1000;  // 10分钟
+
+        // 5. 用于监听用户是否在控制台回车
+        Scanner scanner = new Scanner(System.in);
+
         while (!login) {
+            // 如果已经超过10分钟，退出程序
+            long elapsed = System.currentTimeMillis() - startTime;
+            if (elapsed >= TIMEOUT) {
+                log.error("超过10分钟未完成登录，程序退出...");
+                System.exit(1);
+            }
+
             try {
+                // 尝试点击二维码按钮并等待页面出现已登录的元素
                 app.click();
-                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"header\"]/div[1]/div[1]/a")));
-                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"wrap\"]/div[2]/div[1]/div/div[1]/a[2]")));
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//*[@id=\"header\"]/div[1]/div[1]/a")));
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//*[@id=\"wrap\"]/div[2]/div[1]/div/div[1]/a[2]")));
+
+                // 如果上述元素都能找到，说明登录成功
                 login = true;
                 log.info("登录成功！保存cookie...");
             } catch (Exception e) {
-                log.error("登陆失败，两秒后重试...");
-            } finally {
-                SeleniumUtil.sleep(2);
+                // 登录失败
+                log.error("登录失败，等待用户操作或者 2 秒后重试...");
+
+                // 每次登录失败后，等待2秒，同时检查用户是否按了回车
+                boolean userInput = waitForUserInputOrTimeout(scanner);
+                if (userInput) {
+                    log.info("检测到用户输入，继续尝试登录...");
+                }
             }
         }
+
+        // 登录成功后，保存Cookie
         SeleniumUtil.saveCookie(cookiePath);
+    }
+
+    /**
+     * 在指定的毫秒数内等待用户输入回车；若在等待时间内用户按回车则返回 true，否则返回 false。
+     *
+     * @param scanner 用于读取控制台输入
+     * @return 用户是否在指定时间内按回车
+     */
+    private static boolean waitForUserInputOrTimeout(Scanner scanner) {
+        long end = System.currentTimeMillis() + 2000;
+        while (System.currentTimeMillis() < end) {
+            try {
+                // 判断输入流中是否有可用字节
+                if (System.in.available() > 0) {
+                    // 读取一行（用户输入）
+                    scanner.nextLine();
+                    return true;
+                }
+            } catch (IOException e) {
+                // 读取输入流异常，直接忽略
+            }
+
+            // 小睡一下，避免 CPU 空转
+            SeleniumUtil.sleep(1);
+        }
+        return false;
     }
 
 

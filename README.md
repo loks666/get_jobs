@@ -8,6 +8,14 @@
 [![Forks](https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE)](https://github.com/loks666/get_jobs/forks)
 </div>
 
+### 写在前面
+- [你找不到工作，是因为大环境不好吗？【很重要】](doc.md)
+- 目前该项目存在的问题
+  - 当前招聘市场，有效的软件仅有boss和猎聘
+  - 如果boss出现掉线等问题，1.修改间隔等待时间 2.当天停止投递，第二天接着投，否则可能会封号
+  - 最重要的事情，不要依赖程序投递boss！！！手机上的boss，比本程序网页端靠谱的多，当你手机投的很累，又没有投够100个，请再使用本程序的boss投递！
+  - boss更新频繁，目前已知的问题是，翻页偶尔会失败，目前由于我时间紧张，没时间定位问题，如果有谁自己解决了这个问题，请在群里联系我，我可以给你pr的机会，并将你拉入开发组，本项目为github热门开源项目，同时目前该项目已经申请了Intelli的开源支持计划，加入开发组意味着你可以获得Intelli编辑器官方的免费全家桶永久使用权。所以欢迎联系我
+
 ### 🌴源码地址
 
 - Github(国外访问)：https://github.com/loks666/get_jobs
@@ -15,22 +23,18 @@
 
 ### AI代理购买
 
-- 💥https://api.ruyun.fun/ [**支持市面全部大模型！限时折扣1.5比1！1刀也可充，详情请联系站内客服**]
+- https://api.ruyun.fun/ [**支持市面全部大模型！折扣比例2比1！1刀也可充，详情请联系站内客服**]
 
-### 🌞 特色功能
+## 🌟 特色功能
 
-- 💥AI检测岗位匹配度，并根据岗位JD自动撰写适合岗位的打招呼语(仅Boss)
-- 💥支持国内全部招聘平台(Boss直聘、猎聘、拉勾、51job、智联招聘)
-- 💥定时投递，一键投递所有平台，并且再第二天自动定时重新投递
-- 💥Boos自动过滤 **不活跃HR**、**猎头岗位**、**目标薪资**，可自行在配置文件修改
-- 企业微信消息推送，实时掌控建立投递情况
-- Boss自动更新黑名单企业，避免重复投递
-- 内置driver驱动(仅win11)，自动判断系统环境适配驱动版本
-- 集中化配置，仅需修改配置文件即可完成自定义筛选
-- 超长cookie登录，大部分平台每周仅需扫码一次
-- 内置xpathHelper插件，方便快速定位元素
-- 全局日志记录，投递记录可追踪
-- QQ交流群暗號：get_jobs
+- **💥 AI 智能匹配**：AI检测岗位匹配度，并根据JD自动撰写个性化的打招呼语（仅限 Boss 直聘）。
+- **📷️ 图片简历**：Boos直聘可在发送打招呼语后自动发送图片简历，无须等待HR索要简历，有效提高回复率。
+- **⏰ 定时投递**：一键投递所有平台，可设置定时投递，第二天自动重新投递，省时省力。
+- **🔎 智能过滤**：自动过滤 **不活跃 HR**、**猎头岗位**、**目标薪资**，让你的简历投递更精准。
+- **📢 实时通知**：通过企业微信消息推送，实时掌握简历投递情况，不错过任何机会。
+- **🚫 黑名单功能**：自动更新黑名单企业，避免重复投递不合适的公司，提高投递效率。
+- **🛠️ 易于配置**：集中化配置，只需修改配置文件即可自定义筛选条件，轻松上手。
+- **🔄 持久登录**：支持超长 Cookie 登录，大部分平台每周仅需扫码一次，减少重复操作。
 
 ### 🔞️ 注意事项
 
@@ -53,7 +57,7 @@ git clone https://github.com/loks666/get_jobs.git
 cd get_jobs
 ```
 
-### 2️⃣ 环境配置:JDK17+、Maven、Chrome、ChromeDriver
+### 2️⃣ 环境配置:JDK21、Maven、Chrome、ChromeDriver
 
 - 目前程序自动判断系统环境，使用对应的chromedriver，并进行浏览器操作
 - 但是你的Chrome版本必须是在[Chrome官网](https://googlechromelabs.github.io/chrome-for-testing)下载的，并且为对应版本(
@@ -92,10 +96,10 @@ cd get_jobs
     - `API_KEY`：调用的API KEY
     - `MODEL`：需要使用的模型名称
   > 根据测试，boss直聘在每天所有的岗位投递结束后消耗的额度(gpt-4o-mini)大约在0.06美元(6美分)
-  左右，代理除了在本项目中可用，也可使用客户端(https://github.com/knowlimit/ChatGPT-NextWeb)在日常生活中使用，所以不会浪费，充值额度1刀起，随用随充
-
+  左右，代理除了在本项目中可用，也可使用客户端(https://github.com/knowlimit/ChatGPT-NextWeb)
+  在日常生活中使用，所以不会浪费，充值额度1刀起，随用随充  
   > 💥注意！AI代理地址:如云API:https://api.ruyun.fun/
-  ，该网站可自主充值需要的金额，无任何捆绑消费，支持市面上全部大模型，限时折扣1.5人民币=1美元，仅限前50名注册用户，注册用户达到50名后，代理价格将全部恢复为2人民币=1美元，过时不候，手快有手慢无，需要的兄弟抓紧了
+  ，该网站可自主充值需要的金额，无任何捆绑消费，支持市面上全部大模型，2人民币=1美元
     - AI生成的打招呼语示例  
       <img src="src/main/resources/images/AiSayHi.png" alt="AI生成的打招呼语示例">
 
@@ -150,10 +154,12 @@ is_send: true #开启企业微信消息推送
 ```
 
 - boss直聘([Boss.java](src/main/java/boss/Boss.java))【最推荐！每日仅可发起100次新聊天，活跃度还行，但是每日投递次数太少】
-
   > 注意：Boss必须要关闭自动打招呼，设置配置文件的sayHi为你的打招呼语，否则会投递失败  
   > 投递结束后会自动更新黑名单企业，发送过不合适等消息的HR的公司会加入黑名单，不会在投递该公司  
   > 现在找工作是很难，但也别做舔狗，打工人不是牛马！
+    - 发送图片简历
+  > 在resources文件夹下，将自己的pdf简历转换为resume.jpg，同时配置项sendImgResume为ture，即可自动发送图片简历  
+  > pdf转图片需要wps会员，如果找不到相关工具，可联系群主帮忙转换，5r/次
     - 目标薪资设置：expectedSalary: [ 25,35 ]
         - 单位为K，第一个数字为最低薪资，第二个数字为最高薪资，只填一个数字默认为只要求最低薪水，不要求最高薪水
 
@@ -204,6 +210,12 @@ is_send: true #开启企业微信消息推送
 - 定时投递第一次运行时会立即投递一次，到了第二天设定的时间，会再次投递，时间可以自行在代码中修改
 
 ****
+
+### ️ 6️⃣ 批量投递
+
+- win平台下，配置任务计划，执行run_startall.bat脚本即可，时间可以自己设定
+- [StartAll.java](src/main/java/StartAll.java)[BossScheduled.java](src/main/java/boss/BossScheduled.java)
+  脚本可以一键启动所有平台，需要哪些平台可以自行进行修改编辑
 
 ### ✍🏼 例:Boss投递日志
 
@@ -292,9 +304,14 @@ is_send: true #开启企业微信消息推送
 
 --- 
 
-- 授人以渔: [自定义修改你的代码](https://github.com/loks666/get_jobs/wiki/授人以渔‐自定义修改你的代码)
-- 本项目受此启发:https://github.com/BeammNotFound/get-jobs-51job , 感谢大佬，让我们将爱传递下去~
-- 本项目创建于: 2024年3月7日 21:34:58
+### 🙅🏻‍♂️ 谨防受骗
+
+- 近日已经有人反馈，有人拿着本项目免费开源的代码，在闲鱼等小红书各处售卖
+- 本项目代码完全开源免费，请勿上当受骗，请大家擦亮眼睛
+  <img src="src/main/resources/images/pian1.png" alt="骗子1">
+  <img src="src/main/resources/images/pian2.png" alt="骗子2">
+  <img src="src/main/resources/images/pian3.png" alt="骗子3">
+  <img src="src/main/resources/images/pian4.png" alt="骗子4">
 
 ---
 
