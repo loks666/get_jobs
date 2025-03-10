@@ -1,5 +1,6 @@
 package utils;
 
+import boss.BossConfig;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -27,6 +28,10 @@ import java.util.concurrent.TimeUnit;
 
 import static utils.Constant.*;
 
+/**
+ * @author loks666
+ * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ */
 public class SeleniumUtil {
     private static final Logger log = LoggerFactory.getLogger(SeleniumUtil.class);
 
@@ -40,6 +45,7 @@ public class SeleniumUtil {
         ChromeOptions options = new ChromeOptions();
         // 添加扩展插件
         String osName = System.getProperty("os.name").toLowerCase();
+        KeyUtil.printLog();
         log.info("当前操作系统为【{}】", osName);
         String osType = getOSType(osName);
         switch (osType) {
@@ -49,7 +55,7 @@ public class SeleniumUtil {
                 break;
             case "mac":
                 options.setBinary("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
-                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver-mac-arm64/chromedriver");
+                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver");
                 break;
             case "linux":
                 options.setBinary("/usr/bin/google-chrome-stable");
@@ -59,7 +65,12 @@ public class SeleniumUtil {
                 log.info("你这什么破系统，没见过，别跑了!");
                 break;
         }
-        options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
+        BossConfig config = BossConfig.init();
+        if (config.getDebugger()) {
+            options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
+        } else {
+            options.addArguments("--disable-extensions");
+        }
         GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
         if (screens.length > 1) {
             options.addArguments("--window-position=2800,1000"); //将窗口移动到副屏的起始位置

@@ -2,9 +2,11 @@
 <configuration>
     <property name="log.path" value="./target/logs"/>
     <property name="server.name" value="job"/>
-    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
-    <property name="log.file" value="${log.path}/${server.name}.%d{yyyy-MM-dd}.log"/>
 
+    <!-- 设置日志格式，包含日期、线程、日志级别、类名、方法名、文件和行号 -->
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+<!--    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg (%caller{1})%n"/>-->
+    <property name="log.file" value="${log.path}/${server.name}.%d{yyyy-MM-dd}.log"/>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <charset>UTF-8</charset>

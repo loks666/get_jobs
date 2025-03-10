@@ -6,6 +6,10 @@ import lombok.Getter;
 import java.util.Arrays;
 import java.util.Optional;
 
+/**
+ * @author loks666
+ * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ */
 public class BossEnum {
     @Getter
     public enum Experience {
@@ -48,6 +52,8 @@ public class BossEnum {
         ALL("全国", "100010000"),
         BEIJING("北京", "101010100"),
         SHANGHAI("上海", "101020100"),
+        TIANJIN("天津", "101030100"),
+        HANGZHOU("杭州", "101210100"),
         GUANGZHOU("广州", "101280100"),
         SHENZHEN("深圳", "101280600"),
         CHENGDU("成都", "101270100");

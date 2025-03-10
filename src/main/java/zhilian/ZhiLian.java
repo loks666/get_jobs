@@ -1,9 +1,6 @@
 package zhilian;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +17,10 @@ import static utils.Bot.sendMessageByTime;
 import static utils.Constant.*;
 import static utils.JobUtils.formatDuration;
 
+/**
+ * @author loks666
+ * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ */
 public class ZhiLian {
     private static final Logger log = LoggerFactory.getLogger(ZhiLian.class);
     static String loginUrl = "https://passport.zhaopin.com/login";
@@ -155,32 +156,23 @@ public class ZhiLian {
 
     private static void setMaxPages() {
         try {
-            // 模拟 Ctrl + End
+            // 到底部
             ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.END).keyUp(Keys.CONTROL).perform();
-            while (true) {
-                WebElement button;
-                try {
-                    button = CHROME_DRIVER.findElement(By.xpath("//*[@id=\"positionList-hook\"]/div/div[2]/div[2]/div/a[7]"));
-                } catch (Exception ignore) {
-                    button = CHROME_DRIVER.findElement(By.xpath("//div[@class='soupager']//a[position()=last()]"));
-                }
-                if (button.getAttribute("disabled") != null) {
-                    // 按钮被禁用，退出循环
-                    break;
-                }
-                button.click();
-            }
-            WebElement lastPage = CHROME_DRIVER.findElement(By.xpath("//div[@class='soupager']//a[position()=last()-1]"));
-            if (lastPage != null && lastPage.getText().matches("\\d+")) {
-                maxPage = Integer.parseInt(lastPage.getText());
-                log.info("设置最大页数：{}", maxPage);
-            }
-            // 模拟 Ctrl + Home
-            ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
+            WebElement inputElement = CHROME_DRIVER.findElement(By.className("soupager__pagebox__goinp"));
+            inputElement.clear();
+            inputElement.sendKeys("99999");
+            //使用 JavaScript 获取输入元素的当前值
+            JavascriptExecutor js = CHROME_DRIVER;
+            String modifiedValue = (String) js.executeScript("return arguments[0].value;", inputElement);
+            maxPage = Integer.parseInt(modifiedValue);
+            log.info("设置最大页数：{}", maxPage);
+            WebElement home = CHROME_DRIVER.findElement(By.xpath("//li[@class='listsort__item']"));
+            ACTIONS.moveToElement(home).perform();
         } catch (Exception ignore) {
             StackTraceElement element = Thread.currentThread().getStackTrace()[1];
             log.info("setMaxPages@设置最大页数异常！({}:{})", element.getFileName(), element.getLineNumber());
-            CHROME_DRIVER.close();
+            log.info("设置默认最大页数50，如有需要请自行调整...");
+            maxPage = 50;
         }
     }
 
