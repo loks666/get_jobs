@@ -116,6 +116,7 @@ public class Boss {
                 JobUtils.appendListParam("experience", config.getExperience()) +
                 JobUtils.appendListParam("degree", config.getDegree()) +
                 JobUtils.appendListParam("scale", config.getScale()) +
+                JobUtils.appendListParam("industry", config.getIndustry())+
                 JobUtils.appendListParam("stage", config.getStage());
     }
 
