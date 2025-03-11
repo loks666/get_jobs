@@ -39,7 +39,7 @@
 ### 🔞️ 注意事项
 
 - ❌必须要关闭墙外代理，由于主要针对的国内平台，墙外代理会导致页面加载缓慢
-- 💪🏻如你有“折腾精神”希望自己配置，QQ群内提供免费答疑，如你不想麻烦，可联系群主付费部署
+- 💪🏻如你有“折腾精神”希望自己配置，QQ群内提供免费答疑，如你不想麻烦，可进入群聊查看群公告
 - 📰由于不同系统的页面不一样，导致可能不兼容，文末会给出文档，尽可能让大家能自定义修改
 - 🚩如您不方便访问github，可使用码云镜像(中国大陆)版本：[gitee/getjobs](https://gitee.com/loks666/get_jobs)
 
@@ -238,7 +238,7 @@ is_send: true #开启企业微信消息推送
 - 扫码添加：QQ加群答案为本项目仓库名【get_jobs】
 
 <div style="display: flex;">
-    <img src="src/main/resources/images/qq.jpg" alt="qq群" height="600">
+    <img src="src/main/resources/images/qq.jpg" alt="qq群" height="2280">
 
 </div>
 
@@ -308,6 +308,7 @@ is_send: true #开启企业微信消息推送
 
 - 近日已经有人反馈，有人拿着本项目免费开源的代码，在闲鱼等小红书各处售卖
 - 本项目代码完全开源免费，请勿上当受骗，请大家擦亮眼睛
+- http://yjzd.westpy.cn/
   <img src="src/main/resources/images/pian1.png" alt="骗子1">
   <img src="src/main/resources/images/pian2.png" alt="骗子2">
   <img src="src/main/resources/images/pian3.png" alt="骗子3">
