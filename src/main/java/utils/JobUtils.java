@@ -19,6 +19,10 @@ import java.util.concurrent.TimeUnit;
 
 import static utils.Constant.UNLIMITED_CODE;
 
+/**
+ * @author loks666
+ * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ */
 @Slf4j
 public class JobUtils {
 

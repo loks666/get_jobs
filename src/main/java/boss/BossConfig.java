@@ -7,12 +7,21 @@ import utils.JobUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * @author loks666
+ * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ */
 @Data
 public class BossConfig {
     /**
      * 用于打招呼的语句
      */
     private String sayHi;
+
+    /**
+     * 开发者模式
+     */
+    private Boolean debugger;
 
     /**
      * 搜索关键词列表
@@ -68,6 +77,11 @@ public class BossConfig {
      * 是否过滤不活跃hr
      */
     private Boolean filterDeadHR;
+
+    /**
+     * 是否发送图片简历
+     */
+    private Boolean sendImgResume;
 
     /**
      * 目标薪资
