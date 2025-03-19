@@ -36,7 +36,7 @@ import static utils.JobUtils.formatDuration;
  * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  * Boss直聘自动投递
  */
-public class BossTest {
+public class Boss {
     static final int noJobMaxPages = 10; // 无岗位最大页数
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
     static Integer page = 1;
