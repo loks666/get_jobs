@@ -83,14 +83,14 @@ public class Boss {
             int noJobPages = 0;
             int lastSize = -1;
             String url = searchUrl + "&page=" + page + "&query=" + keyword;
-            log.info("开始投递第一页，页面url：" + url);
+            log.info("开始投递第一页，页面url：{}", url);
             CHROME_DRIVER.get(url);
 
             while (true) {
-                log.info("投递【" + keyword + "】关键词第【" + page + "】页");
+                log.info("投递【{}】关键词第【{}】页", keyword, page);
                 // 检查是否找到岗位元素
                 if (isJobsPresent(wait)) {
-                    log.info("当前页面已找到岗位元素，开始进行投递>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+                    log.info("当前页面已找到岗位，开始进行投递...");
                     // 进行投递操作
                     Integer resultSize = resumeSubmission(keyword);
                     if (resultSize == -1) {
@@ -110,29 +110,29 @@ public class Boss {
                 } else {
                     noJobPages++;
                     if (noJobPages >= noJobMaxPages) {
-                        log.info("【" + keyword + "】关键词已经连续【" + noJobPages + "】页无岗位，结束该关键词的投递...");
+                        log.info("【{}】关键词已经连续【{}】页无岗位，结束该关键词的投递...", keyword, noJobPages);
                         break;
                     } else {
-                        log.info("【" + keyword + "】第【" + page + "】页无岗位,目前已连续【" + noJobPages + "】页无新岗位...");
+                        log.info("【{}】第【{}】页无岗位,目前已连续【{}】页无新岗位...", keyword, page, noJobPages);
                     }
                 }
 
                 if (page >= maxPages) {
-                    log.info("关键词【" + keyword + "】已投递" + maxPages + "页，结束该关键词投递");
+                    log.info("关键词【{}】已投递{}页，结束该关键词投递", keyword, maxPages);
                     break;
                 }
 
                 int pageResult = clickNextPage(page, wait);
                 if (pageResult == 0) {
-                    log.info("【" + keyword + "】关键词已投递至末页，结束该关键词的投递...");
+                    log.info("【{}】关键词已投递至末页，结束该关键词的投递...", keyword);
                     break;
                 }
                 page++;
-                log.info("准备投递下一页，页码>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + page);
+                log.info("准备投递下一页，页码{}", page);
                 url = searchUrl + "&page=" + page + "&query=" + keyword;
-                log.info("加载新页面url>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + url);
+                log.info("加载新页面url{}", url);
                 CHROME_DRIVER.get(url);
-                log.info("等待页面加载完成>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+                log.info("等待页面加载完成");
 
                 // 确保页面加载完成
                 wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='search-job-result']")));
@@ -147,7 +147,7 @@ public class Boss {
             List<WebElement> jobCards = jobList.findElements(By.className("job-card-wrapper"));
             return !jobCards.isEmpty();
         } catch (Exception e) {
-            log.error("未能找到岗位元素,即将跳转下一页>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + e.getMessage());
+            log.error("未能找到岗位元素,即将跳转下一页{}", e.getMessage());
             return false;
         }
     }
@@ -182,6 +182,7 @@ public class Boss {
                 JobUtils.appendListParam("experience", config.getExperience()) +
                 JobUtils.appendListParam("degree", config.getDegree()) +
                 JobUtils.appendListParam("scale", config.getScale()) +
+                JobUtils.appendListParam("industry", config.getIndustry())+
                 JobUtils.appendListParam("stage", config.getStage());
     }
 
@@ -295,16 +296,6 @@ public class Boss {
 
     @SneakyThrows
     private static Integer resumeSubmission(String keyword) {
-        //禁用resumeSubmission中点击页码
-        //CHROME_DRIVER.get(url + "&query=" + keyword);
-        //try {
-        //    WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='job-list-wrapper']")));
-        //} catch (Exception e) {
-        //    Optional<WebElement> jobEmpty = SeleniumUtil.findElement("//div[@class='job-empty-wrapper']", "没有找到\"相关职位搜索不到\"的tag");
-        //    if (jobEmpty.isPresent()) {
-        //        return -3;
-        //    }
-        //}
         List<WebElement> jobCards = CHROME_DRIVER.findElements(By.cssSelector("li.job-card-wrapper"));
         List<Job> jobs = new ArrayList<>();
         for (WebElement jobCard : jobCards) {
@@ -373,7 +364,19 @@ public class Boss {
             simulateWait();
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             if ("立即沟通".equals(btn.getText())) {
-                SeleniumUtil.sleep(10);
+                String waitTime = config.getWaitTime();
+                int sleepTime = 10; // 默认等待10秒
+
+                if (waitTime != null) {
+                    try {
+                        sleepTime = Integer.parseInt(waitTime);
+                    } catch (NumberFormatException e) {
+                        log.error("等待时间转换异常！！");
+                    }
+                }
+
+                SeleniumUtil.sleep(sleepTime);
+
                 AiFilter filterResult = null;
                 if (config.getEnableAI()) {
                     // AI检测岗位是否匹配
@@ -387,7 +390,7 @@ public class Boss {
                 }
                 try {
                     try {
-                        CHROME_DRIVER.findElement(By.xpath("//textarea[@class='input-area']"));
+                        CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-title']"));
                         WebElement close = CHROME_DRIVER.findElement(By.xpath("//i[@class='icon-close']"));
                         close.click();
                         btn.click();
