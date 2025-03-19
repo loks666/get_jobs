@@ -88,6 +88,11 @@ public class BossConfig {
      */
     private List<Integer> expectedSalary;
 
+    /**
+     * 等待时间
+     */
+    private String waitTime;
+
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
