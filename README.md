@@ -7,6 +7,37 @@
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Aloks666/Fget_jobs/0is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues/0closed&labelColor=008B8B&color=00CCCC)](https://github.com/loks666/get_jobs/issues?q=is%3Aissue+is%3Aclosed)
 [![Forks](https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE)](https://github.com/loks666/get_jobs/forks)
 </div>
+<h2 align="center">黑暗无论多么长，光明迟早总是会来的</h2>
+
+### 写在前面
+
+**我知道你心中有煎熬，有焦虑，像一柄长剑悬在头顶，随时可能落下。  
+若黑夜终将黑暗，那你即是黎明。  
+黎明前的黑暗，最冷、最险、最难熬。   
+但断剑重铸之日，便是英雄归来之时。  
+挺过这一刻，纵使刀山火海，又有何惧？**
+
+- [你找不到工作，是因为大环境不好吗？【很重要】](doc.md)
+
+- [许愿墙](https://fcv1y6gslc.feishu.cn/sheets/JS45sElqAhKhawtTzsYcftymnFe)
+    - 如果你有你心仪的工作，请在我这里许下愿望，如果实现了，请记得回来更新状态
+    - 许愿墙为飞书文档，你可以编辑好以后，导出为xlsx文档，然后覆盖本项目中resources文件夹中的"**许愿墙.xlsx**"文档
+    - 接下来，你就可以把xlsx文档，提交到main分支，然后……你就是本项目的开发者之一了。
+    - 你可以在你的简历中加上一条，github，热门开源项目开发者之一。
+    - 但是你需要尽可能的，熟悉本项目的逻辑，去想象某一块功能就是你做的，这样可以更从容，更优雅的"吹牛逼”。
+    - 只要你相信你自己，本项目就会帮你，你要记住，是你自己拯救的你自己。
+
+- 目前该项目存在的问题
+    - 当前招聘市场，有效的软件仅有boss和猎聘
+    - 如果boss出现掉线等问题，1.修改间隔等待时间 2.当天停止投递，第二天接着投，否则可能会封号
+    - 最重要的事情，不要依赖程序投递boss！！！手机上的boss，比本程序网页端靠谱的多，当你手机投的很累，又没有投够100个，请再使用本程序的boss投递！
+    - 本项目为github热门开源项目，同时目前该项目已经申请了Intelli的开源支持计划，加入开发组意味着你可以获得Intelli编辑器官方的免费全家桶永久使用权。所以欢迎联系我
+    - 安卓版本开发中，我有auto.js的资源，我可以无偿分享，只要你对auto.js感兴趣，或者你会，你想学，都可以联系我，以及如果有谁可以开发ios端Appium的能力，也请快速联系我
+    - 本项目开源协议遵循MIT协议，是，你可以商业化，但是！我真的希望你能够帮助更多的人，希望可以团结起来，冲破这片天！
+
+- 本项目目前需要的资源
+    - 内推资源，之前有人找我，但是很忙我忘记处理了，想找他的时候已经找不到了，如果看到，或者你有，也可以联系我。
+    - 简历修改，面试指导，背调跟随，如果你有相关的资源，请联系我。
 
 ### 🌴源码地址
 
@@ -31,14 +62,16 @@
 ### 🔞️ 注意事项
 
 - ❌必须要关闭墙外代理，由于主要针对的国内平台，墙外代理会导致页面加载缓慢
-- 💪🏻如你有“折腾精神”希望自己配置，QQ群内提供免费答疑，如你不想麻烦，可联系群主付费部署
+- 💪🏻如你有“折腾精神”希望自己配置，QQ群内提供免费答疑，如你不想麻烦，可进入群聊查看群公告
 - 📰由于不同系统的页面不一样，导致可能不兼容，文末会给出文档，尽可能让大家能自定义修改
 - 🚩如您不方便访问github，可使用码云镜像(中国大陆)版本：[gitee/getjobs](https://gitee.com/loks666/get_jobs)
 
 > 已经有人在交流群里 **发广告** 等与本项目无关的信息  
 > 如果带着不同目的或者没想清楚就进群的  
 > 一经发现群主会对您的家人及朋友进行亲切(**没有素质**)的问候  
-> 并将您请出群聊，请珍惜交流的机会，谢谢！
+> 并将您请出群聊，请珍惜交流的机会，谢谢！  
+> 我在22年失业玩了命的学AI，如今找到了AI工程师的工作  
+> 救了我的，是曾经那个疯狂努力的自己，我希望你也可以
 
 ## 🚀 如何使用？
 
@@ -91,7 +124,8 @@ cd get_jobs
   左右，代理除了在本项目中可用，也可使用客户端(https://github.com/knowlimit/ChatGPT-NextWeb)
   在日常生活中使用，所以不会浪费，充值额度1刀起，随用随充  
   > 💥注意！AI代理地址:如云API:https://api.ruyun.fun/
-  ，该网站可自主充值需要的金额，无任何捆绑消费，支持市面上全部大模型，2人民币=1美元
+  ，该网站可自主充值需要的金额，无任何捆绑消费，支持市面上全部大模型，2人民币=1美元，base_url默认使用"https://api.ruyun.fun/"
+  即可
     - AI生成的打招呼语示例  
       <img src="src/main/resources/images/AiSayHi.png" alt="AI生成的打招呼语示例">
 
@@ -146,7 +180,7 @@ is_send: true #开启企业微信消息推送
 ```
 
 - boss直聘([Boss.java](src/main/java/boss/Boss.java))【最推荐！每日仅可发起100次新聊天，活跃度还行，但是每日投递次数太少】
-  > 注意：Boss必须要关闭自动打招呼，设置配置文件的sayHi为你的打招呼语，否则会投递失败  
+  > 注意：设置配置文件的sayHi为你的打招呼语，否则会投递失败  
   > 投递结束后会自动更新黑名单企业，发送过不合适等消息的HR的公司会加入黑名单，不会在投递该公司  
   > 现在找工作是很难，但也别做舔狗，打工人不是牛马！
     - 发送图片简历
@@ -230,7 +264,7 @@ is_send: true #开启企业微信消息推送
 - 扫码添加：QQ加群答案为本项目仓库名【get_jobs】
 
 <div style="display: flex;">
-    <img src="src/main/resources/images/qq.jpg" alt="qq群" height="600">
+    <img src="src/main/resources/images/qq.jpg" alt="qq群" height="2280">
 
 </div>
 
@@ -276,12 +310,13 @@ is_send: true #开启企业微信消息推送
 可以查看我们的 [Issues](https://github.com/loks666/get_jobs/issues)
 和 [discussions](https://github.com/loks666/get_jobs/discussions)  
 期待你的大展身手，向我们展示你的奇思妙想。
+我对代码的要求很高，但是你可以使用GPT进行风格化，如果你想进入开发组，不知道应该开发什么，请群内联系我，你需要去观察，到底哪些功能是实际可用的，和大家一起讨论，尝试提交pr，没有谁的成功是一帆风顺的，可能需要很多次调整，但成功的那一刻，就是值得的！
 
 - 提交Pr流程：
     1. fork本项目
-    2. 从master分支新建分支
+    2. 从main分支新建分支
     3. 开发完成后提交pull request到lok666/get_jobs的【dev】分支，注意是dev！！！
-    4. 等待管理员审核验证提交代码无误后，合并到main分支
+    4. 等待管理员审核验证提交代码无误后，合并到main分支，可以提前申请进入开发组。
 
 [![][pr-welcome-shield]][pr-welcome-link]
 
@@ -300,6 +335,8 @@ is_send: true #开启企业微信消息推送
 
 - 近日已经有人反馈，有人拿着本项目免费开源的代码，在闲鱼等小红书各处售卖
 - 本项目代码完全开源免费，请勿上当受骗，请大家擦亮眼睛
+- 这是一个将本项目免费源码的网站，请避雷：http://yjzd.westpy.cn/
+  <img src="src/main/resources/images/骗子网站.png" alt="骗子网站">
   <img src="src/main/resources/images/pian1.png" alt="骗子1">
   <img src="src/main/resources/images/pian2.png" alt="骗子2">
   <img src="src/main/resources/images/pian3.png" alt="骗子3">
