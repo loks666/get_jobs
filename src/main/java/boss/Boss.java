@@ -354,15 +354,41 @@ public class Boss {
                     return -2;
                 }
             }
-            //过滤不活跃HR
-            if (isDeadHR()) {
-                closeWindow(tabs);
-                log.info("该HR已过滤");
+            // 随机等待一段时间
+            SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
+            WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
+            WebElement activeTime = null;
+            WebElement bossOnlineTag = null;
+            try {
+                activeTime = CHROME_DRIVER.findElement(By.cssSelector("[class*='boss-active-time']"));
+            } catch (Exception e) {
+                log.info("没有找到Boss的活跃度");
+            }
+            try {
+                bossOnlineTag = CHROME_DRIVER.findElement(By.cssSelector("[class*='boss-online-tag']"));
+            } catch (Exception e) {
+                log.info("没有找到Boss的在线状态");
+            }
+            if (activeTime != null && activeTime.getText().equals("半年前活跃")) {
                 SeleniumUtil.sleep(1);
+                CHROME_DRIVER.close();
+                CHROME_DRIVER.switchTo().window(tabs.get(0));
+                continue;
+            }else if (bossOnlineTag == null) {
+                SeleniumUtil.sleep(1);
+                CHROME_DRIVER.close();
+                CHROME_DRIVER.switchTo().window(tabs.get(0));
                 continue;
             }
-            simulateWait();
-            WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
+
+            AiFilter filterResult = null;
+            if (config.getEnableAI()) {
+                //AI检测岗位是否匹配
+                String jd = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
+                filterResult = checkJob(keyword, job.getJobName(), jd);
+            }
+
+
             if ("立即沟通".equals(btn.getText())) {
                 String waitTime = config.getWaitTime();
                 int sleepTime = 10; // 默认等待10秒
