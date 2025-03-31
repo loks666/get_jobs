@@ -299,7 +299,17 @@ public class Boss {
     }
 
     @SneakyThrows
-    private static Integer resumeSubmission(String keyword) {
+    private static Integer resumeSubmission(String url, String keyword) {
+        CHROME_DRIVER.get(url + "&query=" + keyword);
+        try {
+            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='job-title clearfix']")));
+            SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction());
+        } catch (Exception e) {
+            Optional<WebElement> jobEmpty = SeleniumUtil.findElement("//div[@class='job-empty-wrapper']", "没有找到\"相关职位搜索不到\"的tag");
+            if (jobEmpty.isPresent()) {
+                return -3;
+            }
+        }
         List<WebElement> jobCards = CHROME_DRIVER.findElements(By.cssSelector("li.job-card-wrapper"));
         List<Job> jobs = new ArrayList<>();
         for (WebElement jobCard : jobCards) {
@@ -348,7 +358,9 @@ public class Boss {
             jse.executeScript("window.open(arguments[0], '_blank')", job.getHref());
             // 切换到新的标签页
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
-            CHROME_DRIVER.switchTo().window(tabs.getLast());
+            CHROME_DRIVER.switchTo().window(tabs.get(tabs.size() - 1));
+            // 模拟随机用户行为
+            SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction());
             try {
                 // 等待聊天按钮出现
                 WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class*='btn btn-startchat']")));
@@ -361,22 +373,19 @@ public class Boss {
             //过滤不符合期望薪资的岗位
             if (isSalaryNotExpected()) {
                 closeWindow(tabs);
-                RandomWait();
+                SeleniumUtil.sleep(1);
+                SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction()); // 加入模拟行为
                 continue;
             }
             //过滤不活跃HR
             if (isDeadHR()) {
                 closeWindow(tabs);
-                RandomWait();
+                SeleniumUtil.sleep(1);
+                SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction());  // 加入模拟行为
                 continue;
             }
-            if (isJobNotMatch()) {
-                closeWindow(tabs);
-                RandomWait();
-                continue;
-            }
-            // 随机等待一段时间
-            SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
+            simulateWait();
+            SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction());
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
             WebElement activeTime = null;
             WebElement bossOnlineTag = null;
@@ -445,19 +454,15 @@ public class Boss {
                         // 元素存在的处理逻辑
                         input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//textarea[@class='input-area']")));
                     }
-                    for (String sayHi : config.getSayHi()) {
-                        WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
-                        input.click();
-                        SeleniumUtil.sleep(1);
-                        WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
-                        if ("不匹配".equals(element.getText())) {
-                            CHROME_DRIVER.close();
-                            CHROME_DRIVER.switchTo().window(tabs.getFirst());
-                            continue;
-                        }
-                        input.sendKeys(filterResult != null && filterResult.getResult() ? filterResult.getMessage() : sayHi);
-                        WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
-                        send.click();
+                    WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
+                    SeleniumUtil.simulateRandomUserBehavior(config.getFakeUserAction());;
+                    input.click();
+                    SeleniumUtil.sleep(1);
+                    WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
+                    if ("不匹配".equals(element.getText())) {
+                        CHROME_DRIVER.close();
+                        CHROME_DRIVER.switchTo().window(tabs.get(0));
+                        continue;
                     }
 
                     }

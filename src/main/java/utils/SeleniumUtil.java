@@ -229,4 +229,10 @@ public class SeleniumUtil {
         return Files.exists(Paths.get(cookiePath));
     }
 
+    public static void simulateRandomUserBehavior(boolean condition){
+        if(condition){
+            RandomUserBehaviorSimulator.simulateRandomUserBehavior();
+        }
+    }
+
 }
