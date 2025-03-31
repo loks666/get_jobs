@@ -88,9 +88,9 @@ public class BossConfig {
     private List<Integer> expectedSalary;
 
     /**
-     * 等待时间
+     * 是否开启虚假用户行为
      */
-    private String waitTime;
+    private Boolean fakeUserAction;
 
     @SneakyThrows
     public static BossConfig init() {
