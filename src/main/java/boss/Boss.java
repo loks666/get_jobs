@@ -1,8 +1,22 @@
 package boss;
 
-import ai.AiConfig;
-import ai.AiFilter;
-import ai.AiService;
+import static utils.Bot.sendMessageByTime;
+import static utils.Constant.CHROME_DRIVER;
+import static utils.Constant.WAIT;
+import static utils.JobUtils.formatDuration;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -13,23 +27,12 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ai.AiConfig;
+import ai.AiFilter;
+import ai.AiService;
 import utils.Job;
 import utils.JobUtils;
 import utils.SeleniumUtil;
-
-import java.io.File;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static utils.Bot.sendMessageByTime;
-import static utils.Constant.*;
-import static utils.JobUtils.formatDuration;
 
 /**
  * @author loks666
@@ -46,7 +49,8 @@ public class Boss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
-    static List<String> deadStatus = List.of("半年前活跃");
+    static List<String> deadStatus = List.of("半年前活跃", "4月内活跃");
+    static List<String> activeStatus = List.of("刚刚活跃", "今日活跃");
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
     static int noJobPages;
@@ -354,6 +358,23 @@ public class Boss {
                     return -2;
                 }
             }
+            //过滤不符合期望薪资的岗位
+            if (isSalaryNotExpected()) {
+                closeWindow(tabs);
+                RandomWait();
+                continue;
+            }
+            //过滤不活跃HR
+            if (isDeadHR()) {
+                closeWindow(tabs);
+                RandomWait();
+                continue;
+            }
+            if (isJobNotMatch()) {
+                closeWindow(tabs);
+                RandomWait();
+                continue;
+            }
             // 随机等待一段时间
             SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 10));
             WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
@@ -424,22 +445,20 @@ public class Boss {
                         // 元素存在的处理逻辑
                         input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//textarea[@class='input-area']")));
                     }
-                    input.click();
-                    WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
-                    if ("不匹配".equals(element.getText())) {
-                        CHROME_DRIVER.close();
-                        CHROME_DRIVER.switchTo().window(tabs.getFirst());
-                        continue;
+                    for (String sayHi : config.getSayHi()) {
+                        WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
+                        input.click();
+                        SeleniumUtil.sleep(1);
+                        WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
+                        if ("不匹配".equals(element.getText())) {
+                            CHROME_DRIVER.close();
+                            CHROME_DRIVER.switchTo().window(tabs.getFirst());
+                            continue;
+                        }
+                        input.sendKeys(filterResult != null && filterResult.getResult() ? filterResult.getMessage() : sayHi);
+                        WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
+                        send.click();
                     }
-                    input.sendKeys(config.getSayHi());
-                    WebElement send;
-                    List<WebElement> element = CHROME_DRIVER.findElements(By.xpath("//div[@class='send-message']"));
-                    if (element.isEmpty()) {
-                        // 元素不存在的处理逻辑
-                        send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
-                    } else {
-                        // 元素存在的处理逻辑
-                        send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='send-message']")));
 
                     }
                     send.click();
@@ -604,7 +623,7 @@ public class Boss {
     }
 
     private static Integer getMinimumSalary(List<Integer> expectedSalary) {
-        return expectedSalary != null && !expectedSalary.isEmpty() ? expectedSalary.get(0) : null;
+        return expectedSalary != null && !expectedSalary.isEmpty() ? expectedSalary.getFirst() : null;
     }
 
     private static Integer getMaximumSalary(List<Integer> expectedSalary) {
@@ -645,7 +664,7 @@ public class Boss {
     }
 
     private static void RandomWait() {
-        SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(3, 20));
+        SeleniumUtil.sleep(JobUtils.getRandomNumberInRange(1, 3));
     }
 
     private static void simulateWait() {
@@ -670,35 +689,43 @@ public class Boss {
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
             log.info("{}：{}", getCompanyAndHR(), activeTimeText);
             // 如果 HR 活跃状态符合预期，则返回 true
-            return containsDeadStatus(activeTimeText, deadStatus);
+            return !activeStatus.contains(activeTimeText);
         } catch (Exception e) {
             log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
             return false;
         }
     }
 
-    public static boolean containsDeadStatus(String activeTimeText, List<String> deadStatus) {
-        for (String status : deadStatus) {
-            if (activeTimeText.contains(status)) {
-                return true;// 一旦找到包含的值，立即返回 true
-            }
-        }
-        return false;// 如果没有找到，返回 false
-    }
+    private static boolean isJobNotMatch() {
+        String text = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']")).getText();
 
-    private static String getCompanyAndHR() {
-        return CHROME_DRIVER.findElement(By.xpath("//div[@class='boss-info-attr']")).getText().replaceAll("\n", "");
+        if (text.contains("25") && !text.contains("26")) {
+            log.info("岗位要求25届，跳过");
+            return true;
+        }
+
+        if (text.contains("985") || text.contains("211")) {
+            log.info("岗位要求92爷，跳过");
+            return true;
+        }
+
+        if (text.contains("安卓") || text.contains("android") || text.contains("Android") || text.contains("客户端")) {
+            log.info("岗位要求安卓，跳过");
+            return true;
+        }
+
+        return false;
     }
 
     private static void closeWindow(ArrayList<String> tabs) {
         SeleniumUtil.sleep(1);
         CHROME_DRIVER.close();
-        CHROME_DRIVER.switchTo().window(tabs.get(0));
+        CHROME_DRIVER.switchTo().window(tabs.getFirst());
     }
 
     private static AiFilter checkJob(String keyword, String jobName, String jd) {
         AiConfig aiConfig = AiConfig.init();
-        String requestMessage = String.format(aiConfig.getPrompt(), aiConfig.getIntroduce(), keyword, jobName, jd, config.getSayHi());
+        String requestMessage = String.format(aiConfig.getPrompt(), aiConfig.getIntroduce(), keyword, jobName, jd,  String.join("。", config.getSayHi()));
         String result = AiService.sendRequest(requestMessage);
         return result.contains("false") ? new AiFilter(false) : new AiFilter(true, result);
     }
