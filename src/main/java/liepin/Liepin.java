@@ -7,12 +7,11 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 import utils.JobUtils;
 import utils.SeleniumUtil;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static utils.Bot.sendMessageByTime;
 import static utils.Constant.*;
@@ -33,10 +32,37 @@ public class Liepin {
     static LiepinConfig config = LiepinConfig.init();
     static Date startDate;
 
+    /**
+     * 排除的公司名
+     */
+    private static final Set<String> EXCLUDE_COMPANY_SET = new HashSet<>();
+
+    /**
+     * 包含的工作名
+     */
+    private static final Set<String> CONTAINS_JOB_NAME = new HashSet<>();
+
+    /**
+     * 排除的工作名
+     */
+    private static final Set<String> EXCLUDE_JOB_NAME = new HashSet<>();
+
     public static void main(String[] args) {
         SeleniumUtil.initDriver();
         startDate = new Date();
         login();
+        String containsJobName;
+        String excludeCompany;
+        String excludeJobName;
+        if (StringUtils.hasLength((excludeCompany = config.getExcludeCompany()))) {
+            EXCLUDE_COMPANY_SET.addAll(List.of(excludeCompany.split(",")));
+        }
+        if (StringUtils.hasLength(containsJobName = config.getContainsJobName())){
+            CONTAINS_JOB_NAME.addAll(List.of(containsJobName.split(",")));
+        }
+        if (StringUtils.hasLength((excludeJobName = config.getExcludeJobName()))){
+            EXCLUDE_JOB_NAME.addAll(List.of(excludeJobName.split(",")));
+        }
         for (String keyword : config.getKeywords()) {
             submit(keyword);
         }
@@ -112,6 +138,18 @@ public class Liepin {
             String salary = CHROME_DRIVER.findElements(By.xpath("//span[contains(@class, 'job-salary')]")).get(i).getText().replaceAll("\n", " ");
             String recruiterName = null;
             WebElement name;
+            if (EXCLUDE_COMPANY_SET.stream().anyMatch(companyName::contains)){
+                log.info("命中已排除公司：{}", companyName);
+                continue;
+            }
+            if (CONTAINS_JOB_NAME.stream().noneMatch(jobName::contains)){
+                log.info("命中未包含的工作名：{}",jobName);
+                continue;
+            }
+            if (EXCLUDE_JOB_NAME.stream().anyMatch(jobName::contains)){
+                log.info("命中排除的工作名: {}",jobName);
+                continue;
+            }
             try {
                 // 获取hr名字
                 List<WebElement> recruiters = CHROME_DRIVER.findElements(By.xpath(getRecruiters));
