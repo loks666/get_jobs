@@ -1,11 +1,10 @@
 package boss;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.SneakyThrows;
 import utils.JobUtils;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author loks666
@@ -16,7 +15,7 @@ public class BossConfig {
     /**
      * 用于打招呼的语句
      */
-    private String sayHi;
+    private List<String> sayHi;
 
     /**
      * 开发者模式
