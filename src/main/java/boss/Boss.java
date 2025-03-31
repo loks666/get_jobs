@@ -389,14 +389,15 @@ public class Boss {
                     return -1;
                 }
                 try {
-                    try {
-                        CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-title']"));
-                        WebElement close = CHROME_DRIVER.findElement(By.xpath("//i[@class='icon-close']"));
-                        close.click();
-                        btn.click();
-                    } catch (Exception ignore) {
+                    WebElement input;
+                    List<WebElement> elements = CHROME_DRIVER.findElements(By.xpath("//textarea[@class='input-area']"));
+                    if (elements.isEmpty()) {
+                        // 元素不存在的处理逻辑
+                        input = WAIT.until(ExpectedConditions.presenceOfElementLocated((By.xpath("//div[@id='chat-input']"))));
+                    } else {
+                        // 元素存在的处理逻辑
+                        input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//textarea[@class='input-area']")));
                     }
-                    WebElement input = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='chat-input']")));
                     input.click();
                     WebElement element = CHROME_DRIVER.findElement(By.xpath("//div[@class='dialog-container']"));
                     if ("不匹配".equals(element.getText())) {
@@ -404,8 +405,17 @@ public class Boss {
                         CHROME_DRIVER.switchTo().window(tabs.getFirst());
                         continue;
                     }
-                    input.sendKeys(filterResult != null && filterResult.getResult() && isValidString(filterResult.getMessage()) ? filterResult.getMessage() : config.getSayHi());
-                    WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
+                    input.sendKeys(config.getSayHi());
+                    WebElement send;
+                    List<WebElement> element = CHROME_DRIVER.findElements(By.xpath("//div[@class='send-message']"));
+                    if (element.isEmpty()) {
+                        // 元素不存在的处理逻辑
+                        send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
+                    } else {
+                        // 元素存在的处理逻辑
+                        send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='send-message']")));
+
+                    }
                     send.click();
                     SeleniumUtil.sleep(3);
                     WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']/div[@class='name-content']/span[@class='name-text']"));
