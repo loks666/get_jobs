@@ -468,7 +468,7 @@ public class Boss {
                     }
                     send.click();
                     SeleniumUtil.sleep(3);
-                    WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']/div[@class='name-content']/span[@class='name-text']"));
+                    WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='name-content']/span[@class='name-text']"));
                     WebElement recruiterTitleElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']/span[@class='base-title']"));
                     String recruiter = recruiterNameElement.getText() + " " + recruiterTitleElement.getText();
 
