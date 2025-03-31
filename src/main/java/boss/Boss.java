@@ -369,6 +369,7 @@ public class Boss {
             } catch (Exception e) {
                 log.info("没有找到Boss的在线状态");
             }
+            // 判断Boss是否为半年前活跃
             if (activeTime != null && activeTime.getText().equals("半年前活跃")) {
                 SeleniumUtil.sleep(1);
                 CHROME_DRIVER.close();
@@ -380,7 +381,6 @@ public class Boss {
                 CHROME_DRIVER.switchTo().window(tabs.get(0));
                 continue;
             }
-
             AiFilter filterResult = null;
             if (config.getEnableAI()) {
                 //AI检测岗位是否匹配
