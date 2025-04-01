@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 
 # 配置选项
 $config = @{
-    LogFile = "merge_prs.log"
+    LogFile = "src/main/resources/merge_prs.log"
     DefaultBranch = "main"
     AutoResolveConflicts = $true
     SkipFailedPRs = $false
