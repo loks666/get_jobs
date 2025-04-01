@@ -29,11 +29,10 @@ build/
 .vscode/
 data.json
 src/main/java/boss/data.json
-
+merge_prs.log
 ### Mac OS ###
 .DS_Store
 cookie.json
 .env
 chromedriver
-
 *.jpg
