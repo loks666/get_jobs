@@ -288,8 +288,7 @@ is_send: true #开启企业微信消息推送
 - 扫码添加：QQ加群答案为本项目仓库名【get_jobs】
 
 <div style="display: flex;">
-    <img src="src/main/resources/images/qq.jpg" alt="qq群" height="2280">
-
+    <img src="src/main/resources/images/qq.jpg" alt="qq群" width="500">
 </div>
 
 > 点击下面的链接可直接加群，微信群由于没有活跃度，所以停止了
