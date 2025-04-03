@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 
 # 配置选项
 $config = @{
-    LogFile = "src/main/resources/merge_prs.log"
+    LogFile = "merge_prs.log"
     DefaultBranch = "main"
     AutoResolveConflicts = $true
     SkipFailedPRs = $false
@@ -65,7 +65,7 @@ Write-Log "Found $($prBranches.Count) PR branches"
 $failedPRs = @()
 foreach ($pr in $prBranches) {
     Write-Log "Processing PR: $pr"
-    
+
     try {
         # 尝试合并
         if ($config.AutoResolveConflicts) {
@@ -73,7 +73,7 @@ foreach ($pr in $prBranches) {
         } else {
             git merge $pr --no-edit
         }
-        
+
         if ($LASTEXITCODE -eq 0) {
             Write-Log "Successfully merged PR: $pr"
         } else {
@@ -82,7 +82,7 @@ foreach ($pr in $prBranches) {
     } catch {
         Write-Log "Error: Failed to merge $pr : $_"
         $failedPRs += $pr
-        
+
         if (-not $config.SkipFailedPRs) {
             Write-Log "Stopping due to SkipFailedPRs being false"
             break
