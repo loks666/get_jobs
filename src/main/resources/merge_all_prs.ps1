@@ -51,8 +51,12 @@ if ($status) {
 $currentBranch = git rev-parse --abbrev-ref HEAD
 Write-Log "Current branch: $currentBranch"
 
-# 获取所有以 "github/pr/" 开头的远程分支
-$prBranches = git branch -r | ForEach-Object { $_.Trim() } | Where-Object { $_ -like "github/pr/*" }
+# 获取所有PR分支
+Write-Log "Fetching all remotes..."
+git fetch --all
+
+# 获取所有远程分支
+$prBranches = git branch -r | ForEach-Object { $_.Trim() } | Where-Object { $_ -match "pull/\d+/head" -or $_ -like "*/pr/*" }
 
 if ($prBranches.Count -eq 0) {
     Write-Log "No PR branches found."
@@ -102,3 +106,7 @@ if ($failedPRs.Count -gt 0) {
 }
 
 Write-Log "`nOperation completed. Log saved to: $($config.LogFile)"
+
+# 推送更改到远程仓库
+Write-Log "Pushing changes to remote repository..."
+git push
