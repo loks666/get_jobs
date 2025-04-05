@@ -1,10 +1,11 @@
 package boss;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.SneakyThrows;
 import utils.JobUtils;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author loks666
@@ -15,7 +16,7 @@ public class BossConfig {
     /**
      * 用于打招呼的语句
      */
-    private List<String> sayHi;
+    private String sayHi;
 
     /**
      * 开发者模式
@@ -88,9 +89,9 @@ public class BossConfig {
     private List<Integer> expectedSalary;
 
     /**
-     * 是否开启虚假用户行为
+     * 等待时间
      */
-    private Boolean fakeUserAction;
+    private String waitTime;
 
     @SneakyThrows
     public static BossConfig init() {
