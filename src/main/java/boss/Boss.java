@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -82,7 +84,11 @@ public class Boss {
             int page = 1;
             int noJobPages = 0;
             int lastSize = -1;
-            String url = searchUrl + "&page=" + page + "&query=" + keyword;
+
+            // 使用 URLEncoder 对关键词进行编码
+            String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+
+            String url = searchUrl + "&page=" + page + "&query=" + encodedKeyword;
             log.info("开始投递第一页，页面url：{}", url);
             CHROME_DRIVER.get(url);
 
@@ -129,7 +135,7 @@ public class Boss {
                 }
                 page++;
                 log.info("准备投递下一页，页码{}", page);
-                url = searchUrl + "&page=" + page + "&query=" + keyword;
+                url = searchUrl + "&page=" + page + "&query=" + encodedKeyword;
                 log.info("加载新页面url{}", url);
                 CHROME_DRIVER.get(url);
                 log.info("等待页面加载完成");
