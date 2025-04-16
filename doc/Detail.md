@@ -1,17 +1,17 @@
 ### 驱动配置
 
-driver目前路径：[src/main/resources/chromedriver.exe](src/main/resources/chromedriver.exe)
+driver目前路径：[src/main/resources/chromedriver.exe](../src/main/resources/chromedriver.exe)
 ，Chrome需要更新到最新版本。  
 如启动报错，则是因为版本升级导致，需要更新版本  
 driver 下载链接：https://googlechromelabs.github.io/chrome-for-testing
 
-<img src="./src/main/resources/images/driver.png" alt="driver下载页面" width="800" />
+<img src="../src/main/resources/images/driver.png" alt="driver下载页面" width="800" />
 
 ### JDK17
 
 下载链接：https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html
 
-<img src="./src/main/resources/images/jdk17.png" alt="jdk17下载页面" width="800" />
+<img src="../src/main/resources/images/jdk17.png" alt="jdk17下载页面" width="800" />
 
 安装好后，请保存自己的安装路径，可以在IDEA内配置Java，无须配置环境变量
 
@@ -70,10 +70,10 @@ Windows 上安装了 Maven，那么你的 Maven 安装目录可能是 `C:\Progra
 
 配置好maven后，IDEA会开始自动下载依赖，等待下载完成且代码没有报红即可运行代码  
 如下图,标记位置为手动刷新：   
-![img.png](src/main/resources/images/maven.png)
+![img.png](../src/main/resources/images/maven.png)
 
 ### 运行代码
 
 运行代码前，需要修改代码中的配置，如投递页数、投递关键词等，详情请参阅[配置说明](README)
 
-![img.png](src/main/resources/images/run.png)
+![img.png](../src/main/resources/images/run.png)
