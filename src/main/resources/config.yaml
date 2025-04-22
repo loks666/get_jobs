@@ -45,3 +45,4 @@ ai:
 
 bot:
   is_send: true #开启企业微信消息推送
+  is_bark_send: true #开启Bark消息推送
