@@ -56,6 +56,7 @@ public class BossEnum {
         HANGZHOU("杭州", "101210100"),
         GUANGZHOU("广州", "101280100"),
         SHENZHEN("深圳", "101280600"),
+        WUHAN("武汉", "101200100"),
         CHENGDU("成都", "101270100");
 
         private final String name;
