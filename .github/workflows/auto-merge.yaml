@@ -1,0 +1,50 @@
+name: Auto Merge WishWall PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+jobs:
+  automerge-wishwall:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 拉取代码
+        uses: actions/checkout@v3
+
+      - name: 📂 获取本次 PR 改动的文件列表
+        id: filecheck
+        run: |
+          echo "📂 正在获取本次 PR 改动的文件列表..."
+          echo "FILES=$(gh pr view ${{ github.event.pull_request.number }} --json files --jq '.files[].path')" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔍 判断是否仅修改了 wishwall 文件
+        id: judge
+        run: |
+          echo "🔍 开始检查是否只改动了 src/main/resources/许愿墙.xlsx ..."
+          if [ "$(echo "$FILES" | wc -l)" = "1" ] && [[ "$FILES" == "src/main/resources/许愿墙.xlsx" ]]; then
+            echo "✅ 仅修改了许愿墙，准备合并 PR"
+            echo "should_merge=true" >> $GITHUB_ENV
+          else
+            echo "❌ 修改了其他文件，不进行自动合并"
+            echo "should_merge=false" >> $GITHUB_ENV
+          fi
+
+      - name: 🤖 自动合并 PR（仅限 wishwall 文件）
+        if: env.should_merge == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log("🤖 正在自动合并 PR... ✅");
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              merge_method: "merge"
+            });
+            console.log("🎉 PR 合并成功！");
