@@ -34,17 +34,6 @@ import static utils.Constant.*;
 public class SeleniumUtil {
     private static final Logger log = LoggerFactory.getLogger(SeleniumUtil.class);
 
-
-    /**
-     *
-     * @param mobile 是否启用h5
-     */
-    public static void initDriver(Boolean mobile) {
-        SeleniumUtil.getChromeDriver(true);
-        SeleniumUtil.getActions();
-        SeleniumUtil.getWait(WAIT_TIME);
-    }
-
     public static void initDriver() {
         SeleniumUtil.getChromeDriver();
         SeleniumUtil.getActions();
@@ -52,10 +41,6 @@ public class SeleniumUtil {
     }
 
     public static void getChromeDriver() {
-        getChromeDriver(false);
-    }
-
-    public static void getChromeDriver(Boolean mobile) {
         ChromeOptions options = new ChromeOptions();
         // 添加扩展插件
         String osName = System.getProperty("os.name").toLowerCase();
@@ -90,24 +75,37 @@ public class SeleniumUtil {
             options.addArguments("--window-position=2800,1000"); //将窗口移动到副屏的起始位置
         }
 //        options.addArguments("--headless"); //使用无头模式
-        if(mobile){
-            // 添加移动设备模拟配置
-            Map<String, Object> mobileEmulation = new HashMap<>();
-            mobileEmulation.put("deviceName", "iPhone X");
-            // 如果需要自定义设备参数，可以使用下面的配置替代deviceName
-            // Map<String, Object> deviceMetrics = new HashMap<>();
-            // deviceMetrics.put("width", 375);
-            // deviceMetrics.put("height", 812);
-            // deviceMetrics.put("pixelRatio", 3.0);
-            // mobileEmulation.put("deviceMetrics", deviceMetrics);
-            // mobileEmulation.put("userAgent", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1");
 
-            options.setExperimentalOption("mobileEmulation", mobileEmulation);
-
-            options.addArguments("--disable-features=ExternalProtocolDialog"); // 禁用弹窗（部分版本有效）
-        }
         CHROME_DRIVER = new ChromeDriver(options);
         CHROME_DRIVER.manage().window().maximize();
+
+        // 创建移动设备Chrome驱动
+        ChromeOptions mobileOptions = new ChromeOptions();
+        addMobileEmulationOptions(mobileOptions);
+        
+        MOBILE_CHROME_DRIVER = new ChromeDriver(mobileOptions);
+        MOBILE_CHROME_DRIVER.manage().window().maximize();
+    }
+
+    /**
+     * 添加移动设备模拟配置到ChromeOptions
+     * @param options ChromeOptions对象
+     */
+    private static void addMobileEmulationOptions(ChromeOptions options) {
+        // 添加移动设备模拟配置
+        Map<String, Object> mobileEmulation = new HashMap<>();
+        mobileEmulation.put("deviceName", "iPhone X");
+        // 如果需要自定义设备参数，可以使用下面的配置替代deviceName
+        // Map<String, Object> deviceMetrics = new HashMap<>();
+        // deviceMetrics.put("width", 375);
+        // deviceMetrics.put("height", 812);
+        // deviceMetrics.put("pixelRatio", 3.0);
+        // mobileEmulation.put("deviceMetrics", deviceMetrics);
+        // mobileEmulation.put("userAgent", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1");
+
+        options.setExperimentalOption("mobileEmulation", mobileEmulation);
+
+        options.addArguments("--disable-features=ExternalProtocolDialog"); // 禁用弹窗（部分版本有效）
     }
 
     private static String getOSType(String osName) {
@@ -169,6 +167,7 @@ public class SeleniumUtil {
     public static void loadCookie(String cookiePath) {
         // 首先清除由于浏览器打开已有的cookies
         CHROME_DRIVER.manage().deleteAllCookies();
+        MOBILE_CHROME_DRIVER.manage().deleteAllCookies();
         // 从文件中读取JSONArray
         JSONArray jsonArray = null;
         try {
@@ -204,6 +203,7 @@ public class SeleniumUtil {
                         .build();
                 try {
                     CHROME_DRIVER.manage().addCookie(cookie);
+                    MOBILE_CHROME_DRIVER.manage().addCookie(cookie);
                 } catch (Exception ignore) {
                 }
             }
@@ -214,10 +214,12 @@ public class SeleniumUtil {
 
     public static void getActions() {
         ACTIONS = new Actions(Constant.CHROME_DRIVER);
+        MOBILE_ACTIONS = new Actions(MOBILE_CHROME_DRIVER);
     }
 
     public static void getWait(long time) {
         WAIT = new WebDriverWait(Constant.CHROME_DRIVER, time);
+        MOBILE_WAIT = new WebDriverWait(MOBILE_CHROME_DRIVER,time);
     }
 
     public static void sleep(int seconds) {
@@ -250,6 +252,24 @@ public class SeleniumUtil {
     public static void click(By by) {
         try {
             CHROME_DRIVER.findElement(by).click();
+        } catch (Exception e) {
+            log.error("click element:{}", by, e);
+        }
+    }
+
+
+    public static Optional<WebElement> mobileFindElement(String xpath, String message) {
+        try {
+            return Optional.of(MOBILE_CHROME_DRIVER.findElement(By.xpath(xpath)));
+        } catch (Exception e) {
+            log.error(message);
+            return Optional.empty();
+        }
+    }
+
+    public static void mobileClick(By by) {
+        try {
+            MOBILE_CHROME_DRIVER.findElement(by).click();
         } catch (Exception e) {
             log.error("click element:{}", by, e);
         }
