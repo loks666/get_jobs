@@ -77,23 +77,15 @@ public class MobileBoss {
     private static void postJobByCity(String cityCode) {
         String searchUrl = getSearchUrl(cityCode);
         log.info("查询url:{}", searchUrl);
-        boolean exec = true;
-        if (exec) {
-            WebDriverWait wait = new WebDriverWait(CHROME_DRIVER, 40);
-            for (String keyword : config.getKeywords()) {
-                int page = 1;
-                int noJobPages = 0;
-                int lastSize = -1;
-                String url = searchUrl + "&page=" + page + "&query=" + keyword;
-                url = searchUrl;
-                log.info("开始投递，页面url：{}", url);
-                CHROME_DRIVER.get(url);
-                boolean debug = true;
-                if (debug && isMobileJobsPresent(wait)) {
-                    JavascriptExecutor js = CHROME_DRIVER;
+        WebDriverWait wait = new WebDriverWait(CHROME_DRIVER, 40);
+        String url = searchUrl;
+        log.info("开始投递，页面url：{}", url);
+        CHROME_DRIVER.get(url);
+        if (isMobileJobsPresent(wait)) {
+            JavascriptExecutor js = CHROME_DRIVER;
 
-                    // TODO: 以下代码无效，如何屏蔽外部应用跳转链接，请自行实现
-                    // 注入 JS：禁用所有 weixin:// 跳转链接
+            // TODO: 以下代码无效，如何屏蔽外部应用跳转链接，请自行实现
+            // 注入 JS：禁用所有 weixin:// 跳转链接
 //                    String script =
 //                            "document.querySelectorAll(\"a[href^='weixin://']\").forEach(function(a) {" +
 //                                    "  a.removeAttribute('href');" +
@@ -102,83 +94,120 @@ public class MobileBoss {
 
 //                js.executeScript(script);
 
-                    int previousCount = 0;
-                    int retry = 0;
-                    // 向下滚动到底部
-                    while (true) {
-                        // 当前页面中 class="item" 的 li 元素数量
-                        List<WebElement> items = CHROME_DRIVER.findElements(By.cssSelector("li.item"));
-                        int currentCount = items.size();
-                        log.info("当前岗位数量:{} ", currentCount);
-                        items.forEach(jobItem -> {
-                            // 获取jobItem下class="btn-chat"的div元素并执行点击操作
-                            try {
-                                // 根据实际HTML结构获取元素
-                                WebElement btnChat = jobItem.findElement(By.className("btn-chat"));
-                                String btnChatText = btnChat.getText();
-                                if (btnChat != null && "立即沟通".equals(btnChatText)) {
-                                    // 获取职位和公司信息用于日志记录
-                                    String jobName = "";
-                                    String companyName = "";
-                                    try {
-                                        // 根据实际HTML结构获取职位名称和公司名称
-                                        jobName = jobItem.findElement(By.className("title-text")).getText();
-                                        companyName = jobItem.findElement(By.className("company")).getText();
-                                    } catch (Exception e) {
-                                        log.error("获取职位或公司信息失败: {}", e.getMessage());
-                                    }
+            int previousCount = 0;
+            int retry = 0;
+            // 向下滚动到底部
+            while (true) {
+                // 当前页面中 class="item" 的 li 元素数量
+                List<WebElement> items = CHROME_DRIVER.findElements(By.cssSelector("li.item"));
+                int currentCount = items.size();
+                log.info("当前岗位数量:{} ", currentCount);
+                for (int itemIndex = 0; itemIndex < items.size(); itemIndex++) {
+                    try {
+                        // 重新获取最新的items列表，避免stale element引用
+                        List<WebElement> freshItems = CHROME_DRIVER.findElements(By.cssSelector("li.item"));
+                        // 确保索引仍在有效范围内
+                        if (itemIndex >= freshItems.size()) {
+                            log.warn("项目索引超出范围，跳过当前项");
+                            continue;
+                        }
 
-                                    // 记录即将点击的岗位信息
-                                    log.info("正在点击【{}】公司的【{}】职位的立即沟通按钮", companyName, jobName);
+                        WebElement jobItem = freshItems.get(itemIndex);
 
-                                    // 获取岗位薪资信息（可选）
-                                    try {
-                                        String salary = jobItem.findElement(By.className("salary")).getText();
-                                        log.info("岗位薪资: {}", salary);
-                                    } catch (Exception e) {
-                                        // 忽略薪资获取失败
-                                    }
-
-                                    // 点击"立即沟通"按钮
-                                    btnChat.click();
-                                    // 点击后等待一段时间避免操作过快
-                                    SeleniumUtil.sleep(10);
-                                    log.info("阻塞等待完成");
-                                }
-                            } catch (Exception e) {
-                                log.error("点击沟通按钮时出错: {}", e.getMessage());
-                            }
-                        });
-
-
-                        // 滚动到底部
-                        js.executeScript("window.scrollTo(0, document.body.scrollHeight);");
+                        // 获取职位和公司信息用于日志记录
+                        String jobName = "";
+                        String companyName = "";
                         try {
-                            Thread.sleep(5000); // 等待数据加载
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
+                            // 根据实际HTML结构获取职位名称和公司名称
+                            jobName = jobItem.findElement(By.className("title-text")).getText();
+                            companyName = jobItem.findElement(By.className("company")).getText();
+                        } catch (Exception e) {
+                            log.error("获取职位或公司信息失败: {}", e.getMessage());
                         }
 
-                        // 检查数量是否变化
-                        if (currentCount == previousCount) {
-                            retry++;
-                            log.info("第{}次下拉重试" + retry);
-                            if (retry >= 2) {
-                                log.info("尝试2次下来后无新增岗位，退出");
-                                break; // 连续两次未加载新数据，认为加载完毕
+                        // 获取岗位薪资信息（可选）
+                        String salary = "";
+                        try {
+                            salary = jobItem.findElement(By.className("salary")).getText();
+                        } catch (Exception e) {
+                            // 忽略薪资获取失败
+                        }
+
+                        // 使用显式等待查找"立即沟通"按钮
+                        WebElement btnChat = null;
+                        for (int retryCount = 0; retryCount < 3; retryCount++) {
+                            try {
+                                // 每次重试时重新获取jobItem元素
+                                if (retryCount > 0) {
+                                    freshItems = CHROME_DRIVER.findElements(By.cssSelector("li.item"));
+                                    if (itemIndex < freshItems.size()) {
+                                        jobItem = freshItems.get(itemIndex);
+                                    } else {
+                                        log.warn("重试时索引超出范围，跳过当前项");
+                                        break;
+                                    }
+                                }
+
+                                btnChat = jobItem.findElement(By.className("btn-chat"));
+                                String btnChatText = btnChat.getText();
+
+                                if ("立即沟通".equals(btnChatText)) {
+                                    // 记录即将点击的岗位信息
+                                    log.info("正在点击【{}】公司的【{}】职位的立即沟通按钮，薪资: {}", companyName, jobName, salary);
+
+                                    // 使用JavaScript执行点击，可以避免某些可见性问题
+                                    try {
+                                        CHROME_DRIVER.executeScript("arguments[0].click();", btnChat);
+                                        // 点击后等待一段时间避免操作过快
+                                        SeleniumUtil.sleep(10);
+                                        log.info("阻塞等待完成");
+                                        break; // 成功点击后跳出重试循环
+                                    } catch (Exception e) {
+                                        log.error("JS点击失败，尝试常规点击: {}", e.getMessage());
+                                        btnChat.click();
+                                        SeleniumUtil.sleep(10);
+                                        log.info("阻塞等待完成");
+                                        break;
+                                    }
+                                } else {
+                                    log.info("按钮文本不是'立即沟通'，跳过");
+                                    break;
+                                }
+                            } catch (org.openqa.selenium.StaleElementReferenceException e) {
+                                log.warn("遇到stale element引用错误，尝试重新获取元素 (重试 {}/3): {}", retryCount + 1, e.getMessage());
+                                if (retryCount == 2) {
+                                    log.error("多次尝试后仍无法点击按钮，跳过当前项");
+                                }
+                                SeleniumUtil.sleep(2); // 短暂等待DOM刷新
+                            } catch (Exception e) {
+                                log.error("查找或点击沟通按钮时出错: {}", e.getMessage());
+                                break;
                             }
-                        } else {
-                            retry = 0; // 重置尝试次数
                         }
-
-                        previousCount = currentCount;
+                    } catch (Exception e) {
+                        log.error("处理列表项时出错: {}", e.getMessage());
                     }
-
-                    log.info("已加载全部岗位，总数量: " + previousCount);
-                    break;
                 }
 
+                // 滚动到底部
+                js.executeScript("window.scrollTo(0, document.body.scrollHeight);");
+                SeleniumUtil.sleep(5); // 等待数据加载
+
+                // 检查数量是否变化
+                if (currentCount == previousCount) {
+                    retry++;
+                    log.info("第{}次下拉重试" + retry);
+                    if (retry >= 2) {
+                        log.info("尝试2次下拉后无新增岗位，退出");
+                        break; // 连续两次未加载新数据，认为加载完毕
+                    }
+                } else {
+                    retry = 0; // 重置尝试次数
+                }
+
+                previousCount = currentCount;
             }
+            log.info("已加载全部岗位，总数量: " + previousCount);
         }
 
     }
