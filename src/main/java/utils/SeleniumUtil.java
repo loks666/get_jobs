@@ -5,6 +5,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Cookie;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -21,9 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static utils.Constant.*;
@@ -35,6 +34,17 @@ import static utils.Constant.*;
 public class SeleniumUtil {
     private static final Logger log = LoggerFactory.getLogger(SeleniumUtil.class);
 
+
+    /**
+     *
+     * @param mobile 是否启用h5
+     */
+    public static void initDriver(Boolean mobile) {
+        SeleniumUtil.getChromeDriver(true);
+        SeleniumUtil.getActions();
+        SeleniumUtil.getWait(WAIT_TIME);
+    }
+
     public static void initDriver() {
         SeleniumUtil.getChromeDriver();
         SeleniumUtil.getActions();
@@ -42,6 +52,10 @@ public class SeleniumUtil {
     }
 
     public static void getChromeDriver() {
+        getChromeDriver(false);
+    }
+
+    public static void getChromeDriver(Boolean mobile) {
         ChromeOptions options = new ChromeOptions();
         // 添加扩展插件
         String osName = System.getProperty("os.name").toLowerCase();
@@ -76,6 +90,22 @@ public class SeleniumUtil {
             options.addArguments("--window-position=2800,1000"); //将窗口移动到副屏的起始位置
         }
 //        options.addArguments("--headless"); //使用无头模式
+        if(mobile){
+            // 添加移动设备模拟配置
+            Map<String, Object> mobileEmulation = new HashMap<>();
+            mobileEmulation.put("deviceName", "iPhone X");
+            // 如果需要自定义设备参数，可以使用下面的配置替代deviceName
+            // Map<String, Object> deviceMetrics = new HashMap<>();
+            // deviceMetrics.put("width", 375);
+            // deviceMetrics.put("height", 812);
+            // deviceMetrics.put("pixelRatio", 3.0);
+            // mobileEmulation.put("deviceMetrics", deviceMetrics);
+            // mobileEmulation.put("userAgent", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1");
+
+            options.setExperimentalOption("mobileEmulation", mobileEmulation);
+
+            options.addArguments("--disable-features=ExternalProtocolDialog"); // 禁用弹窗（部分版本有效）
+        }
         CHROME_DRIVER = new ChromeDriver(options);
         CHROME_DRIVER.manage().window().maximize();
     }

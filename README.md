@@ -124,7 +124,7 @@ cd get_jobs
     - 每个平台的配置转换码都在平台文件夹下的Enum类里，找到相应的代码添加到类中即可
 
 - 📢 企业微信消息推送设置
-    - 把[.env_template](src/main/resources/.env_template)文件重命名为`.env`
+    - 把[.env_template](src/main/resources/.env)文件重命名为`.env`
     - 在企业微信中创建一个群聊，然后添加机器人，获取到机器人URL，复制到`.env`文件中的`HOOK_URL`即可
     - 保持[config.yaml](src/main/resources/config.yaml)文件中`bot.is_send`为true
     - 企业微信推送示例  
