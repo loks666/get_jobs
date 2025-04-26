@@ -51,15 +51,15 @@ public class SeleniumUtil {
         switch (osType) {
             case "windows":
                 options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");//TODO 注意: 这里需要修改为你的chrome的安装路径,不然启动会报错!!! 右键chrome图标右键，选择属性，复制路径
-                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver.exe");
+                System.setProperty("webdriver.chrome.driver", ProjectRootResolver.rootPath+"/src/main/resources/chromedriver.exe");
                 break;
             case "mac":
                 options.setBinary("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
-                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver");
+                System.setProperty("webdriver.chrome.driver", ProjectRootResolver.rootPath+"/src/main/resources/chromedriver");
                 break;
             case "linux":
                 options.setBinary("/usr/bin/google-chrome-stable");
-                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver-linux64/chromedriver");
+                System.setProperty("webdriver.chrome.driver", ProjectRootResolver.rootPath+"/src/main/resources/chromedriver-linux64/chromedriver");
                 break;
             default:
                 log.info("你这什么破系统，没见过，别跑了!");
@@ -67,7 +67,7 @@ public class SeleniumUtil {
         }
         BossConfig config = BossConfig.init();
         if (config.getDebugger()) {
-            options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
+            options.addExtensions(new File(ProjectRootResolver.rootPath+"/src/main/resources/xpathHelper.crx"));
         } else {
             options.addArguments("--disable-extensions");
         }
