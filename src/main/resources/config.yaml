@@ -18,6 +18,7 @@ boss:
   sendImgResume: false # 是否发送图片简历
 mobileboss:
   debugger: false # 开发者模式，默认为false即可
+  sayHi: "您好，我有多年 Java 开发经验，技术栈涵盖 jQuery+Bootstrap、JSP/SSM 到 Vue（Element-UI）、Spring Boot、Spring Cloud，熟悉前后端分离和微服务架构。参与过支付、商城、物流仓储、POS 等系统，具备持续集成及运维能力。独立完成需求、完成系统设计及开发实现，也具备任务拆解与团队协作推进能力。" #必须要关闭boss的自动打招呼
   keywords: [ "Java"  ] # 需要搜索的职位,会依次投递
   cityCode: [ "广州" ] # 只列举了部分,如果没有的需要自己找：目前支持的：全国 北京 上海 杭州 广州 深圳 成都 天津
   experience: [ "5-10年" ] # 工作经验："应届毕业生", "1年以下", "1-3年", "3-5年", "5-10年", "10年以上"
