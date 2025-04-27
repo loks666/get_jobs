@@ -25,13 +25,16 @@ public class Bot {
 
     static {
         // 加载环境变量
-        Dotenv dotenv = Dotenv.load();
+        Dotenv dotenv = Dotenv
+                .configure()
+                .directory(ProjectRootResolver.rootPath+"/src/main/resources")
+                .load();
         HOOK_URL = dotenv.get("HOOK_URL");
 
         // 使用 Jackson 加载 config.yaml 配置
         try {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-            HashMap<String, Object> config = mapper.readValue(new File("src/main/resources/config.yaml"), new TypeReference<HashMap<String, Object>>() {
+            HashMap<String, Object> config = mapper.readValue(new File(ProjectRootResolver.rootPath+"/src/main/resources/config.yaml"), new TypeReference<HashMap<String, Object>>() {
             });
             log.info("YAML 配置内容: {}", config);
 
