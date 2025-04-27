@@ -83,18 +83,20 @@ public class MobileBoss {
     }
 
     private static void postJobByCity(String cityCode) {
-        String searchUrl = getSearchUrl(cityCode);
-        log.info("查询url:{}", searchUrl);
-        WebDriverWait wait = new WebDriverWait(MOBILE_CHROME_DRIVER, 40);
-        String url = searchUrl;
-        log.info("开始投递，页面url：{}", url);
-        MOBILE_CHROME_DRIVER.get(url);
-        // 点击立即沟通，建立chat窗口
-        if (isMobileJobsPresent(wait)) {
-            JavascriptExecutor js = MOBILE_CHROME_DRIVER;
 
-            // TODO: 以下代码无效，如何屏蔽外部应用跳转链接，请自行实现
-            // 注入 JS：禁用所有 weixin:// 跳转链接
+        for (String keyword : config.getKeywords()) {
+            String searchUrl = getSearchUrl(cityCode,keyword);
+            log.info("查询url:{}", searchUrl);
+            WebDriverWait wait = new WebDriverWait(MOBILE_CHROME_DRIVER, 40);
+            String url = searchUrl;
+            log.info("开始投递，页面url：{}", url);
+            MOBILE_CHROME_DRIVER.get(url);
+            // 点击立即沟通，建立chat窗口
+            if (isMobileJobsPresent(wait)) {
+                JavascriptExecutor js = MOBILE_CHROME_DRIVER;
+
+                // TODO: 以下代码无效，如何屏蔽外部应用跳转链接，请自行实现
+                // 注入 JS：禁用所有 weixin:// 跳转链接
 //                    String script =
 //                            "document.querySelectorAll(\"a[href^='weixin://']\").forEach(function(a) {" +
 //                                    "  a.removeAttribute('href');" +
@@ -103,45 +105,46 @@ public class MobileBoss {
 
 //                js.executeScript(script);
 
-            int previousCount = 0;
-            int retry = 0;
-            // 向下滚动到底部
-            while (true) {
-                // 当前页面中 class="item" 的 li 元素数量
-                List<WebElement> items = MOBILE_CHROME_DRIVER.findElements(By.cssSelector("li.item"));
-                int currentCount = items.size();
-                log.info("当前岗位数量:{} ", currentCount);
-                boolean communicate = true;
-                if (!communicate) {
-                    break;
-                }
+                int previousCount = 0;
+                int retry = 0;
+                // 向下滚动到底部
+                while (true) {
+                    // 当前页面中 class="item" 的 li 元素数量
+                    List<WebElement> items = MOBILE_CHROME_DRIVER.findElements(By.cssSelector("li.item"));
+                    int currentCount = items.size();
+                    log.info("当前岗位数量:{} ", currentCount);
+//                    boolean communicate = false;
+//                    if (!communicate) {
+//                        break;
+//                    }
 
-                // 滚动到底部
-                // js.executeScript("window.scrollTo(0, document.body.scrollHeight);");
-                // js.executeScript("window.scrollTo(0, document.documentElement.scrollHeight)");
-                // 滚动到比页面高度更大的值，确保触发加载
-                js.executeScript("window.scrollTo(0, document.documentElement.scrollHeight + 100)");
-                SeleniumUtil.sleep(10); // 等待数据加载
+                    // 滚动到底部
+                    // js.executeScript("window.scrollTo(0, document.body.scrollHeight);");
+                    // js.executeScript("window.scrollTo(0, document.documentElement.scrollHeight)");
+                    // 滚动到比页面高度更大的值，确保触发加载
+                    js.executeScript("window.scrollTo(0, document.documentElement.scrollHeight + 100)");
+                    SeleniumUtil.sleep(10); // 等待数据加载
 
-                // 检查数量是否变化
-                if (currentCount == previousCount) {
-                    retry++;
-                    log.info("第{}次下拉重试" + retry);
-                    if (retry >= 2) {
-                        log.info("尝试2次下拉后无新增岗位，退出");
-                        break; // 连续两次未加载新数据，认为加载完毕
+                    // 检查数量是否变化
+                    if (currentCount == previousCount) {
+                        retry++;
+                        log.info("第{}次下拉重试" + retry);
+                        if (retry >= 2) {
+                            log.info("尝试2次下拉后无新增岗位，退出");
+                            break; // 连续两次未加载新数据，认为加载完毕
+                        }
+                    } else {
+                        retry = 0; // 重置尝试次数
                     }
-                } else {
-                    retry = 0; // 重置尝试次数
+
+                    previousCount = currentCount;
                 }
-
-                previousCount = currentCount;
+                log.info("已加载全部岗位，总数量: " + previousCount);
             }
-            log.info("已加载全部岗位，总数量: " + previousCount);
-        }
 
-        // chat页面进行消息沟通
-        resumeSubmission(config.getKeywords().getFirst());
+            // chat页面进行消息沟通
+            resumeSubmission(config.getKeywords().getFirst());
+        }
 
     }
 
@@ -158,7 +161,7 @@ public class MobileBoss {
     }
 
 
-    private static String getSearchUrl(String cityCode) {
+    private static String getSearchUrl(String cityCode,String keyword) {
         // 经验
         List<String> experience = config.getExperience();
         // 学历
@@ -167,43 +170,58 @@ public class MobileBoss {
         String salary = config.getSalary();
         // 规模
         List<String> scale = config.getScale();
-        // 关键字
-        List<String> keywords = config.getKeywords();
+
+        String searchUrl = baseUrl;
 
         log.info("cityCode:{}", cityCode);
         log.info("experience:{}", experience);
         log.info("degree:{}", degree);
         log.info("salary:{}", salary);
         if (!MobileBossEnum.CityCode.NULL.equals(cityCode)) {
-            baseUrl = baseUrl + "/" + cityCode + "/";
+            searchUrl = searchUrl + "/" + cityCode + "/";
         }
 
-        String experienceStr = experience.stream().findFirst().get();
-        String degreeStr = degree.stream().findFirst().get();
         Set<String> ydeSet = new LinkedHashSet<>();
-        if (!MobileBossEnum.Salary.NULL.equals(salary)) {
-            ydeSet.add(salary);
+        if(!experience.isEmpty()){
+            if (!MobileBossEnum.Salary.NULL.equals(salary)) {
+                ydeSet.add(salary);
+            }
         }
-        if (!MobileBossEnum.Degree.NULL.equals(degreeStr)) {
-            ydeSet.add(degreeStr);
+
+        if(!degree.isEmpty()){
+            String degreeStr = degree.stream().findFirst().get();
+            if (!MobileBossEnum.Degree.NULL.equals(degreeStr)) {
+                ydeSet.add(degreeStr);
+            }
         }
-        if (!MobileBossEnum.Experience.NULL.equals(experienceStr)) {
-            ydeSet.add(experienceStr);
+        if(!experience.isEmpty()){
+            String experienceStr = experience.stream().findFirst().get();
+            if (!MobileBossEnum.Experience.NULL.equals(experienceStr)) {
+                ydeSet.add(experienceStr);
+            }
         }
+
+        if(!scale.isEmpty()){
+            String scaleStr = scale.stream().findFirst().get();
+            if (!MobileBossEnum.Scale.NULL.equals(scaleStr)) {
+                ydeSet.add(scaleStr);
+            }
+        }
+
 
         String yde = ydeSet.stream().collect(Collectors.joining("-"));
         log.info("yde:{}", yde);
         if (StringUtils.hasLength(yde)) {
-            if (!baseUrl.endsWith("/")) {
-                baseUrl = baseUrl + "/" + yde + "/";
+            if (!searchUrl.endsWith("/")) {
+                searchUrl = searchUrl + "/" + yde + "/";
             } else {
-                baseUrl = baseUrl + yde + "/";
+                searchUrl = searchUrl + yde + "/";
             }
         }
 
-        baseUrl = baseUrl + "?query=" + keywords.getFirst();
-        baseUrl = baseUrl + "&ka=sel-salary-" + salary.split("_")[1];
-        return baseUrl;
+        searchUrl = searchUrl + "?query=" + keyword;
+        searchUrl = searchUrl + "&ka=sel-salary-" + salary.split("_")[1];
+        return searchUrl;
     }
 
     private static void saveData(String path) {
@@ -372,7 +390,6 @@ public class MobileBoss {
             job.setCompanyName(companyName);
             // 设置招聘者信息
             job.setRecruiter(recruiterText);
-            log.info("job: {}", job);
             jobs.add(job);
         }
 
@@ -477,7 +494,6 @@ public class MobileBoss {
                     log.error("发送消息失败:{}", e.getMessage(), e);
                 }
             }
-
             closeWindow(tabs);
         }
         return resultList.size();
