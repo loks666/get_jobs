@@ -56,7 +56,8 @@ public class MobileBossEnum {
         GUANGZHOU("广州", "c101280100"),
         SHENZHEN("深圳", "c101280600"),
         WUHAN("武汉", "c101200100"),
-        CHENGDU("成都", "c101270100");
+        CHENGDU("成都", "c101270100"),
+        FOSHAN("佛山","c101280800");
 
         private final String name;
         private final String code;
