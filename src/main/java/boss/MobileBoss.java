@@ -120,7 +120,7 @@ public class MobileBoss {
 
                     // 滚动到底部
                     // js.executeScript("window.scrollTo(0, document.body.scrollHeight);");
-                    // js.executeScript("window.scrollTo(0, document.documentElement.scrollHeight)");
+                    // js.executeScript("window.scrollTo(0, document.documentElement.scrollHeight)")
                     // 滚动到比页面高度更大的值，确保触发加载
                     js.executeScript("window.scrollTo(0, document.documentElement.scrollHeight + 100)");
                     SeleniumUtil.sleep(10); // 等待数据加载
@@ -698,13 +698,7 @@ public class MobileBoss {
             // 如果 HR 活跃状态符合预期，则返回 true
             return containsDeadStatus(activeTimeText, deadStatus);
         } catch (Exception e) {
-            try{
-                log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
-            }catch (Exception e2){
-                log.info(
-                        "无法获取到"
-                );
-            }
+            log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
             return false;
         }
     }
@@ -719,7 +713,12 @@ public class MobileBoss {
     }
 
     private static String getCompanyAndHR() {
-        return CHROME_DRIVER.findElement(By.xpath("//div[@class='boss-info-attr']")).getText().replaceAll("\n", "");
+        try {
+            return CHROME_DRIVER.findElement(By.xpath("//div[@class='boss-info-attr']")).getText().replaceAll("\n", "");
+        } catch (Exception e) {
+            log.info("未能获取公司和HR信息");
+            return "";
+        }
     }
 
     private static void closeWindow(ArrayList<String> tabs) {
