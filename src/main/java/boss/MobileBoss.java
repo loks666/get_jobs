@@ -112,7 +112,6 @@ public class MobileBoss {
                     // 当前页面中 class="item" 的 li 元素数量
                     List<WebElement> items = MOBILE_CHROME_DRIVER.findElements(By.cssSelector("li.item"));
                     int currentCount = items.size();
-                    log.info("当前岗位数量:{} ", currentCount);
 //                    boolean communicate = false;
 //                    if (!communicate) {
 //                        break;
