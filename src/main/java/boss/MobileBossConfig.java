@@ -93,6 +93,8 @@ public class MobileBossConfig {
      */
     private String waitTime;
 
+    private List<String> deadStatus;
+
     @SneakyThrows
     public static MobileBossConfig init() {
         MobileBossConfig config = JobUtils.getConfig(MobileBossConfig.class);

@@ -42,10 +42,9 @@ public class MobileBoss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
-    static List<String> deadStatus = List.of("半年前活跃");
+    static List<String> deadStatus = List.of("2周内活跃","本月活跃","2月内活跃","半年前活跃");
     static String dataPath = ProjectRootResolver.rootPath + "/src/main/java/boss/data.json";
     static String cookiePath = ProjectRootResolver.rootPath + "/src/main/java/boss/cookie.json";
-    static int noJobPages;
     static Date startDate;
     static MobileBossConfig config = MobileBossConfig.init();
 
@@ -76,7 +75,7 @@ public class MobileBoss {
         sendMessageByTime(message);
         saveData(dataPath);
         resultList.clear();
-        if(config.getDebugger()){
+        if(!config.getDebugger()){
             CHROME_DRIVER.close();
             CHROME_DRIVER.quit();
             MOBILE_CHROME_DRIVER.close();
@@ -247,9 +246,9 @@ public class MobileBoss {
             List<WebElement> items = CHROME_DRIVER.findElements(By.xpath("//li[@role='listitem']"));
             for (int i = 0; i < items.size(); i++) {
                 try {
-                    WebElement companyElement = CHROME_DRIVER.findElements(By.xpath("//span[@class='name-box']//span[2]")).get(i);
+                    WebElement companyElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='gray last-msg']/span[@class='name-box']//span[2]")).get(i);
                     String companyName = companyElement.getText();
-                    WebElement messageElement = CHROME_DRIVER.findElements(By.xpath("//span[@class='last-msg-text']")).get(i);
+                    WebElement messageElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='gray last-msg']/span[@class='last-msg-text']")).get(i);
                     String message = messageElement.getText();
                     boolean match = message.contains("不") || message.contains("感谢") || message.contains("但") || message.contains("遗憾") || message.contains("需要本") || message.contains("对不");
                     boolean nomatch = message.contains("不是") || message.contains("不生");
@@ -264,7 +263,7 @@ public class MobileBoss {
                         }
                     }
                 } catch (Exception e) {
-                    log.error("寻找黑名单公司异常...");
+                    log.error("寻找黑名单公司异常...",e);
                 }
             }
             WebElement element;
@@ -700,7 +699,7 @@ public class MobileBoss {
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
             log.info("{}：{}", getCompanyAndHR(), activeTimeText);
             // 如果 HR 活跃状态符合预期，则返回 true
-            return containsDeadStatus(activeTimeText, deadStatus);
+            return containsDeadStatus(activeTimeText, config.getDeadStatus());
         } catch (Exception e) {
             log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
             return false;
