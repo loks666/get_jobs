@@ -440,8 +440,10 @@ public class MobileBoss {
             try{
                 WebElement jobSecText = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']"));
                 job.setJobInfo(jobSecText.getText());
+                WebElement  foldText = CHROME_DRIVER.findElement(By.xpath("//div[@class=' job-sec-text fold-text']"));
+                job.setCompanyInfo(foldText.getText());
             }catch (Exception e){
-                log.info("没有获取到职位描述");
+                log.info("没有获取到职位/公司描述");
             }
 
             //过滤不活跃HR
