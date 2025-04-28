@@ -349,8 +349,6 @@ public class MobileBoss {
                 // 过滤薪资
                 log.info("已过滤:【{}】公司【{}】岗位薪资【{}】不符合投递要求", companyName, jobName, salary);
                 continue;
-            }else {
-                log.info("符合投递薪资要求:{}",salary);
             }
             Job job = new Job();
             // 获取职位链接
