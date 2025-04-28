@@ -366,7 +366,7 @@ cd get_jobs
 2. 从 `main` 分支新建你的个人开发分支
 3. 开发完成后，提交 Pull Request 到 **loks666/get_jobs 的 `dev` 分支**  
    （❗ **注意：不是 main，是 dev！**）
-4. 提交 Commit 时，请在信息前加上一个符合提交内容的 **Emoji 表情** 🎉✨🛠️（自由发挥！）
+4. 提交 Commit 时，请在信息前加上一个符合提交内容的 **Emoji 表情**（[emoji网站](https://www.emojiall.com/zh-hans/all-emojis)）自由发挥！
 5. 等待管理员审核，验证无误后，代码将合并到 `main` 分支
 6. 表现优秀者，可提前申请加入开发组，与我们并肩作战！
 
