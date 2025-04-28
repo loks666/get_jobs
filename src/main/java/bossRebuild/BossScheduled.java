@@ -16,7 +16,7 @@ public class BossScheduled {
     }
 
     public static void postJobs() {
-        safeRun(() -> Boss.main(null));
+        safeRun(() -> BossPC.main(null));
     }
 
     private static void safeRun(Runnable task) {

@@ -19,9 +19,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <selenium.version>4.23.0</selenium.version>
-        <webdrivermanager.version>5.8.0</webdrivermanager.version>
-        <httpclient5.version>5.2.1</httpclient5.version> <!-- 新增属性 -->
     </properties>
 
     <dependencies>
@@ -56,18 +53,10 @@
             <version>1.2.3</version>
         </dependency>
 
-        <!-- Selenium -->
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
-            <version>${selenium.version}</version>
-        </dependency>
-
-        <!-- WebDriverManager -->
-        <dependency>
-            <groupId>io.github.bonigarcia</groupId>
-            <artifactId>webdrivermanager</artifactId>
-            <version>${webdrivermanager.version}</version>
+            <version>3.14.0</version>
         </dependency>
 
         <dependency>
@@ -80,13 +69,7 @@
         <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
             <artifactId>httpclient5-fluent</artifactId>
-            <version>5.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-            <version>${httpclient5.version}</version>
+            <version>5.1</version>
         </dependency>
 
         <!-- dotenv-java 用于加载 .env 文件中的环境变量 -->
