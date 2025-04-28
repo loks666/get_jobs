@@ -1,6 +1,7 @@
 package utils;
 
 import boss.BossConfig;
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -19,6 +20,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration; // 确保已导入
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -42,6 +44,9 @@ public class SeleniumUtil {
     }
 
     public static void getChromeDriver() {
+        // 使用 WebDriverManager 自动配置 ChromeDriver
+        WebDriverManager.chromedriver().setup();
+
         ChromeOptions options = new ChromeOptions();
         // 添加扩展插件
         String osName = System.getProperty("os.name").toLowerCase();
@@ -50,16 +55,13 @@ public class SeleniumUtil {
         String osType = getOSType(osName);
         switch (osType) {
             case "windows":
-                options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");//TODO 注意: 这里需要修改为你的chrome的安装路径,不然启动会报错!!! 右键chrome图标右键，选择属性，复制路径
-                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver.exe");
+                options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe"); // TODO 注意: 这里需要修改为你的chrome的安装路径,不然启动会报错!!! 右键chrome图标右键，选择属性，复制路径
                 break;
             case "mac":
                 options.setBinary("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
-                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver");
                 break;
             case "linux":
                 options.setBinary("/usr/bin/google-chrome-stable");
-                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver-linux64/chromedriver");
                 break;
             default:
                 log.info("你这什么破系统，没见过，别跑了!");
@@ -73,9 +75,9 @@ public class SeleniumUtil {
         }
         GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
         if (screens.length > 1) {
-            options.addArguments("--window-position=2800,1000"); //将窗口移动到副屏的起始位置
+            options.addArguments("--window-position=2800,1000"); // 将窗口移动到副屏的起始位置
         }
-//        options.addArguments("--headless"); //使用无头模式
+        // options.addArguments("--headless"); // 使用无头模式
         CHROME_DRIVER = new ChromeDriver(options);
         CHROME_DRIVER.manage().window().maximize();
     }
@@ -187,7 +189,7 @@ public class SeleniumUtil {
     }
 
     public static void getWait(long time) {
-        WAIT = new WebDriverWait(Constant.CHROME_DRIVER, time);
+        WAIT = new WebDriverWait(Constant.CHROME_DRIVER, Duration.ofSeconds(time)); // 修改为 Duration
     }
 
     public static void sleep(int seconds) {
@@ -229,10 +231,9 @@ public class SeleniumUtil {
         return Files.exists(Paths.get(cookiePath));
     }
 
-    public static void simulateRandomUserBehavior(boolean condition){
-        if(condition){
+    public static void simulateRandomUserBehavior(boolean condition) {
+        if (condition) {
             RandomUserBehaviorSimulator.simulateRandomUserBehavior();
         }
     }
-
 }

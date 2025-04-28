@@ -5,6 +5,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.openqa.selenium.By; // 确保已导入
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,28 +18,28 @@ import static utils.Constant.ACTIONS;
  * @author Summer
  * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  */
-
 public class RandomUserBehaviorSimulator {
     private static final ChromeDriver driver = Constant.CHROME_DRIVER;
     private static final Random random = new Random();
     private static final Logger log = LoggerFactory.getLogger(RandomUserBehaviorSimulator.class);
     private static final String[] randomTexts = {
-        "您好，我对这个岗位很感兴趣！",
-                "请问可以详细介绍一下岗位职责吗？",
-                "工作地点在哪里？",
-                "这个职位的发展前景如何？",
-                "我的简历已经投递，请查收。",
-                "能否提供一下具体的薪资范围？",
-                "我有相关的工作经验，非常符合要求。",
-                "期待与贵公司合作。",
-                "这是一次很棒的求职机会！",
-                "岗位要求中的技能我都具备。",
-                "请问这个职位还在招聘吗？",
-                "非常期待能够加入贵公司。",
-                "我对贵公司的文化非常认可。",
-                "请问这个岗位是否支持远程办公？",
-                "这是我梦寐以求的工作！"
+            "您好，我对这个岗位很感兴趣！",
+            "请问可以详细介绍一下岗位职责吗？",
+            "工作地点在哪里？",
+            "这个职位的发展前景如何？",
+            "我的简历已经投递，请查收。",
+            "能否提供一下具体的薪资范围？",
+            "我有相关的工作经验，非常符合要求。",
+            "期待与贵公司合作。",
+            "这是一次很棒的求职机会！",
+            "岗位要求中的技能我都具备。",
+            "请问这个职位还在招聘吗？",
+            "非常期待能够加入贵公司。",
+            "我对贵公司的文化非常认可。",
+            "请问这个岗位是否支持远程办公？",
+            "这是我梦寐以求的工作！"
     };
+
     /**
      * 模拟随机的用户行为，确保不干扰页面核心自动化行为
      */
@@ -74,7 +75,6 @@ public class RandomUserBehaviorSimulator {
         }
     }
 
-
     /**
      * 随机输入文本
      */
@@ -93,7 +93,7 @@ public class RandomUserBehaviorSimulator {
         // 遍历每个选择器，查找元素
         for (String selector : selectors) {
             try {
-                WebElement element = driver.findElementByCssSelector(selector);
+                WebElement element = driver.findElement(By.cssSelector(selector)); // 修改为 By.cssSelector
                 if (element != null) {
                     inputs.add(element);
                 }
@@ -144,7 +144,6 @@ public class RandomUserBehaviorSimulator {
         // 等待随机的时间
         sleepRandom(1, 1);
     }
-
 
     /**
      * 模拟随机的等待时间

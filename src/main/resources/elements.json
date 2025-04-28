@@ -1,0 +1,199 @@
+{
+  "homePage": {
+    "description": "首页相关元素 (https://www.zhipin.com)",
+    "elements": {
+      "loginButton": {
+        "value": "//*[@id=\"header\"]/div[1]/div[4]/div/a",
+        "description": "登录按钮的 CSS 选择器，用于检测页面是否需要登录"
+      }
+    }
+  },
+  "loginPage": {
+    "description": "登录页面相关元素 (https://www.zhipin.com/web/user/?ka=header-login)",
+    "elements": {
+      "login403": {
+        "value": "//a[@ka='403_login']",
+        "description": "403 登录提示的 XPath，用于检测 403 错误并跳转登录"
+      },
+      "loginHeader": {
+        "value": "//h1",
+        "description": "登录页面标题的 XPath，用于检测是否进入登录页面"
+      },
+      "navFigure": {
+        "value": "//li[@class='nav-figure']",
+        "description": "导航栏用户信息的 XPath，用于检测是否已登录"
+      },
+      "ewmSwitch": {
+        "value": "//*[@id=\"wrap\"]/div/div[2]/div[2]/div[1]",
+        "description": "二维码登录切换按钮的 XPath，用于切换到二维码登录方式"
+      },
+      "headerLogin": {
+        "value": "//*[@id=\"header\"]/div[1]/div[1]/a",
+        "description": "登录成功后头部元素的 XPath，用于确认登录成功"
+      },
+      "loginSuccess": {
+        "value": "//*[@id=\"wrap\"]/div[2]/div[1]/div/div[1]/a[2]",
+        "description": "登录成功后页面元素的 XPath，用于进一步确认登录成功"
+      }
+    }
+  },
+  "jobSearchPage": {
+    "description": "职位搜索页面相关元素 (https://www.zhipin.com/web/geek/job?...)",
+    "elements": {
+      "jobList": {
+        "value": "//*[@id=\"wrap\"]/div[2]/div[3]/div/div/div[1]",
+        "description": "职位列表的 XPath，用于定位搜索结果中的职位列表容器"
+      },
+      "jobCard": {
+        "value": "li.job-card-box",
+        "description": "职位卡片的 CSS 选择器，用于定位单个职位卡片"
+      },
+      "jobInfoPublic": {
+        "value": "div.job-publisher",
+        "description": "职位卡片中招聘者信息的 CSS 选择器，用于获取招聘者信息"
+      },
+      "recruiterName": {
+        "value": "span.job-publisher-name",
+        "description": "招聘者姓名的 CSS 选择器，用于获取招聘者姓名"
+      },
+      "jobSalary": {
+        "value": "span.job-salary",
+        "description": "职位薪资的 CSS 选择器，用于获取职位薪资信息"
+      },
+      "jobName": {
+        "value": "#wrap > div.page-jobs-main > div.job-recommend-result > div > div > div.job-list-container > ul > div.card-area.has-flag.is-seen > div > li > div.job-info > div > a",
+        "description": "职位名称的 CSS 选择器，用于获取职位名称"
+      },
+      "companyName": {
+        "value": "span.boss-name",
+        "description": "公司名称的 CSS 选择器，用于获取公司名称"
+      },
+      "jobArea": {
+        "value": "#wrap > div.page-jobs-main > div.job-recommend-result > div > div > div.job-detail-container > div.job-detail-box > div.job-detail-header",
+        "description": "职位所在区域的 CSS 选择器，用于获取职位所在城市或区域"
+      },
+      "jobTags": {
+        "value": "div.tag-list span",
+        "description": "职位标签的 CSS 选择器，用于获取职位标签（如经验要求、学历要求等）"
+      },
+      "jobHref": {
+        "value": "#wrap > div.page-jobs-main > div.job-recommend-result > div > div > div.job-list-container > ul > div.card-area.has-flag.is-seen > div > li > div.job-info",
+        "description": "职位链接的 CSS 选择器，用于获取职位详情页的 URL"
+      },
+      "nextPage": {
+        "value": "//a//i[@class='ui-icon-arrow-right']",
+        "description": "下一页按钮的 XPath，用于定位“下一页”按钮（当前页面已改为无限滚动，可能不再使用）"
+      },
+      "jobListWrapper": {
+        "value": "//*[@id=\"wrap\"]/div[2]/div[3]/div/div/div[2]/div[1]/div[1]",
+        "description": "职位列表包裹容器的 XPath，用于等待页面加载完成"
+      }
+    }
+  },
+  "jobDetailPage": {
+    "description": "职位详情页面相关元素 (https://www.zhipin.com/job_detail/...)",
+    "elements": {
+      "chatButton": {
+        "value": "[class*='btn btn-startchat']",
+        "description": "聊天按钮的 CSS 选择器，用于定位“立即沟通”按钮"
+      },
+      "jobDescription": {
+        "value": "//div[@class='job-sec-text']",
+        "description": "职位描述的 XPath，用于获取职位详情页中的职位描述文本"
+      },
+      "errorContent": {
+        "value": "//div[@class='error-content']",
+        "description": "异常访问提示的 XPath，用于检测页面是否出现“异常访问”错误"
+      },
+      "activeTime": {
+        "value": "//span[@class='boss-active-time']",
+        "description": "HR 活跃时间的 XPath，用于获取 HR 的活跃状态（如“半年前活跃”）"
+      },
+      "companyAndHR": {
+        "value": "//div[@class='boss-info-attr']",
+        "description": "公司和 HR 信息的 XPath，用于获取公司和 HR 的综合信息"
+      },
+      "chatInput": {
+        "value": "//div[@id='chat-input']",
+        "description": "聊天输入框的 XPath，用于定位聊天输入框"
+      },
+      "sendButton": {
+        "value": "//button[@type='send']",
+        "description": "发送按钮的 XPath，用于定位聊天窗口中的“发送”按钮"
+      },
+      "dialogContainer": {
+        "value": "//div[@class='dialog-container']",
+        "description": "对话容器的 XPath，用于检测对话框状态（如“不匹配”提示）"
+      },
+      "recruiterNameInChat": {
+        "value": "//p[@class='base-info fl']/span[@class='name']",
+        "description": "招聘者姓名的 XPath，用于获取聊天页面中的招聘者姓名"
+      },
+      "recruiterTitle": {
+        "value": "//p[@class='base-info fl']/span[@class='base-title']",
+        "description": "招聘者职位的 XPath，用于获取聊天页面中的招聘者职位"
+      },
+      "companyInChat": {
+        "value": "//p[@class='base-info fl']/span[2]",
+        "description": "公司名称的 XPath，用于获取聊天页面中的公司名称"
+      },
+      "positionName": {
+        "value": "//a[@class='position-content']/span[@class='position-name']",
+        "description": "职位名称的 XPath，用于获取聊天页面中的职位名称"
+      },
+      "positionSalary": {
+        "value": "//a[@class='position-content']/span[@class='salary']",
+        "description": "职位薪资的 XPath，用于获取聊天页面中的职位薪资"
+      },
+      "positionCity": {
+        "value": "//a[@class='position-content']/span[@class='city']",
+        "description": "职位城市的 XPath，用于获取聊天页面中的职位所在城市"
+      },
+      "fileInput": {
+        "value": "//div[@aria-label='发送图片']//input[@type='file']",
+        "description": "文件上传输入框的 XPath，用于定位图片简历上传的输入框"
+      },
+      "inputArea": {
+        "value": "//textarea[@class='input-area']",
+        "description": "聊天输入区域的 XPath，用于检测是否有初始输入区域（用于关闭弹窗）"
+      },
+      "dialogTitle": {
+        "value": "//div[@class='dialog-title']",
+        "description": "对话标题的 XPath，用于检测对话弹窗标题"
+      },
+      "closeIcon": {
+        "value": "//i[@class='icon-close']",
+        "description": "关闭图标的 XPath，用于定位对话弹窗中的关闭按钮"
+      },
+      "dialogCon": {
+        "value": "dialog-con",
+        "description": "对话限制提示的 CSS 选择器，用于检测是否达到沟通上限"
+      }
+    }
+  },
+  "chatPage": {
+    "description": "聊天页面相关元素 (https://www.zhipin.com/web/geek/chat)",
+    "elements": {
+      "chatListItem": {
+        "value": "//li[@role='listitem']",
+        "description": "聊天列表项的 XPath，用于定位聊天页面中的每个聊天记录"
+      },
+      "companyNameInChat": {
+        "value": "//span[@class='name-box']//span[2]",
+        "description": "聊天页面公司名称的 XPath，用于获取聊天记录中的公司名称"
+      },
+      "messageInChat": {
+        "value": "//span[@class='last-msg-text']",
+        "description": "聊天页面消息内容的 XPath，用于获取聊天记录中的最后一条消息"
+      },
+      "scrollLoad": {
+        "value": "//div[contains(text(), '滚动加载更多')]",
+        "description": "滚动加载更多的 XPath，用于定位“滚动加载更多”提示"
+      },
+      "finished": {
+        "value": "//div[@class='finished']",
+        "description": "加载完成提示的 XPath，用于检测是否已加载所有聊天记录（“没有更多了”）"
+      }
+    }
+  }
+}

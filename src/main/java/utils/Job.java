@@ -1,6 +1,7 @@
 package utils;
 
 import lombok.Data;
+import lombok.Setter;
 
 import java.io.Serializable;
 
@@ -9,6 +10,7 @@ import java.io.Serializable;
  * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  */
 @Data
+
 public class Job implements Serializable {
     /**
      * 岗位链接
