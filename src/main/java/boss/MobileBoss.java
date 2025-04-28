@@ -58,15 +58,15 @@ public class MobileBoss {
         config.getCityCode().forEach(MobileBoss::postJobByCity);
         log.info(resultList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
         // 添加优雅的阻塞实现，避免程序自动退出
-//        log.info("程序执行完毕，等待手动终止...");
-//        Object lock = new Object();
-//        synchronized (lock) {
-//            try {
-//                lock.wait();
-//            } catch (InterruptedException e) {
-//                log.info("程序被中断");
-//            }
-//        }
+        log.info("程序执行完毕，等待手动终止...");
+        Object lock = new Object();
+        synchronized (lock) {
+            try {
+                lock.wait();
+            } catch (InterruptedException e) {
+                log.info("程序被中断");
+            }
+        }
         printResult();
     }
 
@@ -95,16 +95,6 @@ public class MobileBoss {
             if (isMobileJobsPresent(wait)) {
                 JavascriptExecutor js = MOBILE_CHROME_DRIVER;
 
-                // TODO: 以下代码无效，如何屏蔽外部应用跳转链接，请自行实现
-                // 注入 JS：禁用所有 weixin:// 跳转链接
-//                    String script =
-//                            "document.querySelectorAll(\"a[href^='weixin://']\").forEach(function(a) {" +
-//                                    "  a.removeAttribute('href');" +
-//                                    "  a.onclick = function(e) { e.preventDefault(); console.log('微信跳转已阻止'); };" +
-//                                    "});";
-
-//                js.executeScript(script);
-
                 int previousCount = 0;
                 int retry = 0;
                 // 向下滚动到底部
@@ -112,10 +102,6 @@ public class MobileBoss {
                     // 当前页面中 class="item" 的 li 元素数量
                     List<WebElement> items = MOBILE_CHROME_DRIVER.findElements(By.cssSelector("li.item"));
                     int currentCount = items.size();
-//                    boolean communicate = false;
-//                    if (!communicate) {
-//                        break;
-//                    }
 
                     // 滚动到底部
                     // js.executeScript("window.scrollTo(0, document.body.scrollHeight);");
@@ -362,8 +348,9 @@ public class MobileBoss {
             if (isSalaryNotExpected(salary)) {
                 // 过滤薪资
                 log.info("已过滤:【{}】公司【{}】岗位薪资【{}】不符合投递要求", companyName, jobName, salary);
-                noJobPages = 0;
                 continue;
+            }else {
+                log.info("符合投递薪资要求:{}",salary);
             }
             Job job = new Job();
             // 获取职位链接
@@ -392,6 +379,7 @@ public class MobileBoss {
             jobs.add(job);
         }
 
+        jobs.clear();
         for (Job job : jobs) {
             // 打开新的标签页
             JavascriptExecutor jse = CHROME_DRIVER;
