@@ -416,10 +416,16 @@ public class MobileBoss {
                 continue;
             }
             simulateWait();
-            WebElement btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
+            WebElement btn = null;
+            try{
+                btn = CHROME_DRIVER.findElement(By.cssSelector("[class*='btn btn-startchat']"));
+            }catch (Exception e){
+                log.info("没有获取到立即沟通按钮");
+            }
+
             // 休息下，请求太频繁了
             SeleniumUtil.sleep(5);
-            if ("立即沟通".equals(btn.getText())) {
+            if (Objects.nonNull(btn)&&"立即沟通".equals(btn.getText())) {
                 String waitTime = config.getWaitTime();
                 int sleepTime = 10; // 默认等待10秒
 
