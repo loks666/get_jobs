@@ -2,14 +2,16 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class StartAll {
 
     public static void main(String[] args) {
-        // 创建一个统一的线程池来执行所有任务
-        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+         // Create a ScheduledExecutorService for Boss
+         ScheduledExecutorService bossScheduler = Executors.newSingleThreadScheduledExecutor();
 
         // 定义Boss任务
         Runnable bossTask = () -> {
@@ -21,6 +23,16 @@ public class StartAll {
                 log.error("Boss 任务执行过程中发生错误: {}", e.getMessage(), e);
             }
         };
+
+        // Schedule Boss task to run every 60 minutes
+        bossScheduler.scheduleAtFixedRate(bossTask, 0, 60, TimeUnit.MINUTES);
+
+
+
+
+        
+        // 创建一个统一的线程池来执行所有任务
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
 
         // 定义Liepin任务
         Runnable liepinTask = () -> {
@@ -53,14 +65,17 @@ public class StartAll {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("正在关闭线程池...");
             executorService.shutdown();
+            bossScheduler.shutdown();
             try {
                 if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
                     log.warn("强制关闭线程池...");
                     executorService.shutdownNow();
+                    bossScheduler.shutdownNow();
                 }
             } catch (InterruptedException e) {
                 log.error("关闭线程池时发生错误: {}", e.getMessage(), e);
                 executorService.shutdownNow();
+                bossScheduler.shutdownNow();
             }
         }));
     }
