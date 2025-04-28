@@ -350,6 +350,11 @@ public class MobileBoss {
                 log.info("已过滤:【{}】公司【{}】岗位薪资【{}】不符合投递要求", companyName, jobName, salary);
                 continue;
             }
+
+            if(jobName.toLowerCase().contains(keyword.toLowerCase())){
+                log.info("已过滤：岗位【{}】名称不包含关键字【{}】",jobName,keyword);
+                continue;
+            }
             Job job = new Job();
             // 获取职位链接
             job.setHref(jobCard.findElement(By.cssSelector("a")).getAttribute("href"));
