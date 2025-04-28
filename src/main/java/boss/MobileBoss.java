@@ -698,7 +698,13 @@ public class MobileBoss {
             // 如果 HR 活跃状态符合预期，则返回 true
             return containsDeadStatus(activeTimeText, deadStatus);
         } catch (Exception e) {
-            log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
+            try{
+                log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
+            }catch (Exception e2){
+                log.info(
+                        "无法获取到"
+                );
+            }
             return false;
         }
     }
