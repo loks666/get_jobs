@@ -501,28 +501,19 @@ public class MobileBoss {
                     WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
                     send.click();
                     SeleniumUtil.sleep(5);
-                    WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']//span[@class='name-text']"));
-                    WebElement recruiterTitleElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']/span[@class='base-title']"));
-                    String recruiter = recruiterNameElement.getText() + " " + recruiterTitleElement.getText();
+                    // 没必要通过聊天窗口再获取了 以名称为例 可能出现 //div[@class='base-info']//span[@class='name-text'] 的情况，boss界面不是固定的结构
+//                    WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']//span[@class='name-text']"));
+//                    WebElement recruiterTitleElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']/span[@class='base-title']"));
+//                    String recruiter = recruiterNameElement.getText() + " " + recruiterTitleElement.getText();
+                    String recruiter = job.getRecruiter();
 
-                    WebElement companyElement = null;
-                    try {
-                        // 获取公司名
-                        companyElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']/span[1]"));
-                    } catch (Exception e) {
-                        log.info("获取公司名异常！{}", e.getMessage());
-                    }
-                    String company = null;
-                    if (companyElement != null) {
-                        company = companyElement.getText();
-                        job.setCompanyName(company);
-                    }
-                    // 对话窗口岗位区块
-                    WebElement positionNameElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='position-name']"));
-                    WebElement salaryElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='salary']"));
-                    WebElement cityElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='city']"));
-                    String position = positionNameElement.getText() + " " + salaryElement.getText() + " " + cityElement.getText();
-                    company = company == null ? "未知公司: " + job.getHref() : company;
+                    String company = job.getCompanyName();
+
+//                    WebElement positionNameElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='position-name']"));
+//                    WebElement salaryElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='salary']"));
+//                    WebElement cityElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='city']"));
+//
+                    String position = job.getJobName() + " " + job.getSalary() + " " + job.getJobArea();
                     Boolean imgResume = sendResume(company);
                     SeleniumUtil.sleep(2);
                     log.info("正在投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter, imgResume ? "发送图片简历成功！" : "");
