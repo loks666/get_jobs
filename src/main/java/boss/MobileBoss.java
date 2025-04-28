@@ -507,10 +507,10 @@ public class MobileBoss {
 
                     WebElement companyElement = null;
                     try {
-                        // 通过定位父元素后获取第二个 span 元素，获取公司名
-                        companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info']/span[0]"));
+                        // 获取公司名
+                        companyElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']/span[0]"));
                     } catch (Exception e) {
-                        log.info("获取公司名异常！");
+                        log.info("获取公司名异常！{}", e.getMessage());
                     }
                     String company = null;
                     if (companyElement != null) {
