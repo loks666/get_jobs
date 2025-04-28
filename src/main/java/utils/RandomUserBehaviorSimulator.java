@@ -5,7 +5,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.openqa.selenium.By; // 确保已导入
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +17,7 @@ import static utils.Constant.ACTIONS;
  * @author Summer
  * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  */
+
 public class RandomUserBehaviorSimulator {
     private static final ChromeDriver driver = Constant.CHROME_DRIVER;
     private static final Random random = new Random();
@@ -39,7 +39,6 @@ public class RandomUserBehaviorSimulator {
             "请问这个岗位是否支持远程办公？",
             "这是我梦寐以求的工作！"
     };
-
     /**
      * 模拟随机的用户行为，确保不干扰页面核心自动化行为
      */
@@ -75,6 +74,7 @@ public class RandomUserBehaviorSimulator {
         }
     }
 
+
     /**
      * 随机输入文本
      */
@@ -93,7 +93,7 @@ public class RandomUserBehaviorSimulator {
         // 遍历每个选择器，查找元素
         for (String selector : selectors) {
             try {
-                WebElement element = driver.findElement(By.cssSelector(selector)); // 修改为 By.cssSelector
+                WebElement element = driver.findElementByCssSelector(selector);
                 if (element != null) {
                     inputs.add(element);
                 }
@@ -144,6 +144,7 @@ public class RandomUserBehaviorSimulator {
         // 等待随机的时间
         sleepRandom(1, 1);
     }
+
 
     /**
      * 模拟随机的等待时间

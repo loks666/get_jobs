@@ -19,4 +19,3 @@ public class KeyUtil {
         System.out.println(EncryptDecryptUtil.decrypt("zGxvj++nOpkryewylR0gxuCA8Bbaj9msK9+4LCSTVlJWvNH2wVccnebDaMwDfipobmugpJ/T5KGYikBPMIiNjg=="));
     }
 }
-

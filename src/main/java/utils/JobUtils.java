@@ -2,7 +2,6 @@ package utils;
 
 import static utils.Constant.UNLIMITED_CODE;
 
-import bossRebuild.BossScheduled;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -18,7 +17,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-//import boss.BossScheduled;
+import boss.BossScheduled;
 import job51.Job51Scheduled;
 import lagou.LagouScheduled;
 import liepin.LiepinScheduled;
