@@ -57,16 +57,6 @@ public class MobileBoss {
         config.getCityCode().forEach(MobileBoss::postJobByCity);
         log.info(resultList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
         printResult();
-        // 添加优雅的阻塞实现，避免程序自动退出
-        log.info("程序执行完毕，等待手动终止...");
-        Object lock = new Object();
-        synchronized (lock) {
-            try {
-                lock.wait();
-            } catch (InterruptedException e) {
-                log.info("程序被中断");
-            }
-        }
     }
 
     private static void printResult() {
