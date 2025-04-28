@@ -508,7 +508,7 @@ public class MobileBoss {
                     WebElement companyElement = null;
                     try {
                         // 获取公司名
-                        companyElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']/span[0]"));
+                        companyElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']/span[1]"));
                     } catch (Exception e) {
                         log.info("获取公司名异常！{}", e.getMessage());
                     }
