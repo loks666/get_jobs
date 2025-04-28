@@ -1,32 +1,29 @@
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class StartAll {
 
     public static void main(String[] args) {
-        // Create a ScheduledExecutorService for Boss
-        ScheduledExecutorService bossScheduler = Executors.newSingleThreadScheduledExecutor();
+        // 创建一个统一的线程池来执行所有任务
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
 
-        // Define the task for Boss
+        // 定义Boss任务
         Runnable bossTask = () -> {
             try {
                 log.info("正在执行 Boss 任务，线程名称: {}", Thread.currentThread().getName());
-                executeTask("boss.Boss");
+                executeTask("boss.MobileBoss");
                 log.info("Boss 任务已完成，完成时间: {}", java.time.LocalDateTime.now());
             } catch (Exception e) {
                 log.error("Boss 任务执行过程中发生错误: {}", e.getMessage(), e);
             }
         };
 
-        // Schedule Boss task to run every 60 minutes
-        bossScheduler.scheduleAtFixedRate(bossTask, 0, 60, TimeUnit.MINUTES);
-
-        // Start Liepin and Job51 tasks in separate processes
-        new Thread(() -> {
+        // 定义Liepin任务
+        Runnable liepinTask = () -> {
             try {
                 log.info("正在执行 Liepin 任务，线程名称: {}", Thread.currentThread().getName());
                 executeTask("liepin.Liepin");
@@ -34,9 +31,10 @@ public class StartAll {
             } catch (Exception e) {
                 log.error("Liepin 任务执行过程中发生错误: {}", e.getMessage(), e);
             }
-        }).start();
+        };
 
-        new Thread(() -> {
+        // 定义Job51任务
+        Runnable job51Task = () -> {
             try {
                 log.info("正在执行 Job51 任务，线程名称: {}", Thread.currentThread().getName());
                 executeTask("job51.Job51");
@@ -44,20 +42,25 @@ public class StartAll {
             } catch (Exception e) {
                 log.error("Job51 任务执行过程中发生错误: {}", e.getMessage(), e);
             }
-        }).start();
+        };
 
-        // Add a shutdown hook to gracefully shut down the scheduler
+        // 提交所有任务到线程池执行
+        executorService.submit(bossTask);
+//        executorService.submit(liepinTask);
+//        executorService.submit(job51Task);
+
+        // 添加关闭钩子，优雅地关闭线程池
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            log.info("正在关闭调度器...");
-            bossScheduler.shutdown();
+            log.info("正在关闭线程池...");
+            executorService.shutdown();
             try {
-                if (!bossScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    log.warn("强制关闭 Boss 调度器...");
-                    bossScheduler.shutdownNow();
+                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                    log.warn("强制关闭线程池...");
+                    executorService.shutdownNow();
                 }
             } catch (InterruptedException e) {
-                log.error("关闭调度器时发生错误: {}", e.getMessage(), e);
-                bossScheduler.shutdownNow();
+                log.error("关闭线程池时发生错误: {}", e.getMessage(), e);
+                executorService.shutdownNow();
             }
         }));
     }
