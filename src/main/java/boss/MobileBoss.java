@@ -57,17 +57,17 @@ public class MobileBoss {
         // 最好先填1个，多个城市的情况不确定会不会有什么问题或者导致请求过于频繁出现风险拦截
         config.getCityCode().forEach(MobileBoss::postJobByCity);
         log.info(resultList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
-        // 添加优雅的阻塞实现，避免程序自动退出
-//        log.info("程序执行完毕，等待手动终止...");
-//        Object lock = new Object();
-//        synchronized (lock) {
-//            try {
-//                lock.wait();
-//            } catch (InterruptedException e) {
-//                log.info("程序被中断");
-//            }
-//        }
         printResult();
+        // 添加优雅的阻塞实现，避免程序自动退出
+        log.info("程序执行完毕，等待手动终止...");
+        Object lock = new Object();
+        synchronized (lock) {
+            try {
+                lock.wait();
+            } catch (InterruptedException e) {
+                log.info("程序被中断");
+            }
+        }
     }
 
     private static void printResult() {
@@ -76,10 +76,12 @@ public class MobileBoss {
         sendMessageByTime(message);
         saveData(dataPath);
         resultList.clear();
-        CHROME_DRIVER.close();
-        CHROME_DRIVER.quit();
-        MOBILE_CHROME_DRIVER.close();
-        MOBILE_CHROME_DRIVER.quit();
+        if(config.getDebugger()){
+            CHROME_DRIVER.close();
+            CHROME_DRIVER.quit();
+            MOBILE_CHROME_DRIVER.close();
+            MOBILE_CHROME_DRIVER.quit();
+        }
     }
 
     private static void postJobByCity(String cityCode) {
@@ -123,6 +125,11 @@ public class MobileBoss {
                     }
 
                     previousCount = currentCount;
+
+                    if(config.getDebugger()){
+                        break;
+                    }
+
                 }
                 log.info("已加载全部岗位，总数量: " + previousCount);
             }
@@ -351,7 +358,7 @@ public class MobileBoss {
                 continue;
             }
 
-            if(jobName.toLowerCase().contains(keyword.toLowerCase())){
+            if(!jobName.toLowerCase().contains(keyword.toLowerCase())){
                 log.info("已过滤：岗位【{}】名称不包含关键字【{}】",jobName,keyword);
                 continue;
             }
@@ -413,9 +420,11 @@ public class MobileBoss {
                 log.info("没有获取到立即沟通按钮");
             }
 
+            boolean debug = config.getDebugger();
+
             // 休息下，请求太频繁了
             SeleniumUtil.sleep(5);
-            if (Objects.nonNull(btn)&&"立即沟通".equals(btn.getText())) {
+            if (!debug&&Objects.nonNull(btn)&&"立即沟通".equals(btn.getText())) {
                 String waitTime = config.getWaitTime();
                 int sleepTime = 10; // 默认等待10秒
 
