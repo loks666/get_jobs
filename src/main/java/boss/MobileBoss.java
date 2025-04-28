@@ -379,7 +379,6 @@ public class MobileBoss {
             jobs.add(job);
         }
 
-        jobs.clear();
         for (Job job : jobs) {
             // 打开新的标签页
             JavascriptExecutor jse = CHROME_DRIVER;
