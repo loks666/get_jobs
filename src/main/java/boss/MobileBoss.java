@@ -246,20 +246,51 @@ public class MobileBoss {
             List<WebElement> items = CHROME_DRIVER.findElements(By.xpath("//li[@role='listitem']"));
             for (int i = 0; i < items.size(); i++) {
                 try {
-                    WebElement companyElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='gray last-msg']/span[@class='name-box']//span[2]")).get(i);
-                    String companyName = companyElement.getText();
+                    WebElement companyElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='title-box']/span[@class='name-box']//span[2]")).get(i);
                     WebElement messageElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='gray last-msg']/span[@class='last-msg-text']")).get(i);
-                    String message = messageElement.getText();
-                    boolean match = message.contains("不") || message.contains("感谢") || message.contains("但") || message.contains("遗憾") || message.contains("需要本") || message.contains("对不");
-                    boolean nomatch = message.contains("不是") || message.contains("不生");
-                    if (match && !nomatch) {
-                        log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
-                        if (blackCompanies.stream().anyMatch(companyName::contains)) {
-                            continue;
+                    
+                    String companyName = null;
+                    String message = null;
+                    int retryCount = 0;
+                    
+                    while (retryCount < 2) {
+                        try {
+                            companyName = companyElement.getText();
+                            message = messageElement.getText();
+                            break; // 成功获取文本，跳出循环
+                        } catch (org.openqa.selenium.StaleElementReferenceException e) {
+                            retryCount++;
+                            if (retryCount >= 2) {
+                                log.info("尝试获取元素文本2次失败，放弃本次获取");
+                                break;
+                            }
+                            log.info("页面元素已变更，正在重试第{}次获取元素文本...", retryCount);
+                            // 重新获取元素
+                            try {
+                                companyElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='title-box']/span[@class='name-box']//span[2]")).get(i);
+                                messageElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='gray last-msg']/span[@class='last-msg-text']")).get(i);
+                                // 等待短暂时间后重试
+                                SeleniumUtil.sleep(1);
+                            } catch (Exception ex) {
+                                log.info("重新获取元素失败，放弃本次获取");
+                                break;
+                            }
                         }
-                        companyName = companyName.replaceAll("\\.{3}", "");
-                        if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
-                            blackCompanies.add(companyName);
+                    }
+                    
+                    // 只有在成功获取文本的情况下才继续处理
+                    if (companyName != null && message != null) {
+                        boolean match = message.contains("不") || message.contains("感谢") || message.contains("但") || message.contains("遗憾") || message.contains("需要本") || message.contains("对不");
+                        boolean nomatch = message.contains("不是") || message.contains("不生");
+                        if (match && !nomatch) {
+                            log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
+                            if (blackCompanies.stream().anyMatch(companyName::contains)) {
+                                continue;
+                            }
+                            companyName = companyName.replaceAll("\\.{3}", "");
+                            if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
+                                blackCompanies.add(companyName);
+                            }
                         }
                     }
                 } catch (Exception e) {
@@ -391,7 +422,9 @@ public class MobileBoss {
         for (Job job : jobs) {
             // 打开新的标签页
             JavascriptExecutor jse = CHROME_DRIVER;
-            jse.executeScript("window.open(arguments[0], '_blank')", job.getHref());
+            // jse.executeScript("window.open(arguments[0], '_blank')", job.getHref());
+            // 使用JavaScript控制焦点，避免了每次打开新页签时浏览器窗口自动切换到前台的问题。
+            jse.executeScript("var newTab = window.open(arguments[0], '_blank'); newTab.blur(); window.focus();", job.getHref());
             // 切换到新的标签页
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
             CHROME_DRIVER.switchTo().window(tabs.getLast());
@@ -498,6 +531,9 @@ public class MobileBoss {
                 }
             }
             closeWindow(tabs);
+            if(debug){
+                break;
+            }
         }
         return resultList.size();
     }
