@@ -56,7 +56,10 @@ public class MobileBoss {
         // 最好先填1个，多个城市的情况不确定会不会有什么问题或者导致请求过于频繁出现风险拦截
         config.getCityCode().forEach(MobileBoss::postJobByCity);
         log.info(resultList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
-        printResult();
+        if(!config.getDebugger()){
+            printResult();
+        }
+
     }
 
     private static void printResult() {
@@ -129,6 +132,12 @@ public class MobileBoss {
 
     }
 
+    /**
+     * 等待岗位列表元素加载完成
+     *
+     * @param wait
+     * @return
+     */
     private static boolean isMobileJobsPresent(WebDriverWait wait) {
         try {
             // 判断页面是否存在岗位的元素
@@ -427,6 +436,14 @@ public class MobileBoss {
                     return -2;
                 }
             }
+
+            try{
+                WebElement jobSecText = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']"));
+                job.setJobInfo(jobSecText.getText());
+            }catch (Exception e){
+                log.info("没有获取到职位描述");
+            }
+
             //过滤不活跃HR
             if (isDeadHR()) {
                 closeWindow(tabs);
@@ -512,7 +529,9 @@ public class MobileBoss {
                     log.error("发送消息失败:{}", e.getMessage(), e);
                 }
             }
-            closeWindow(tabs);
+            if(!debug){
+                closeWindow(tabs);
+            }
             if(debug){
                 break;
             }
