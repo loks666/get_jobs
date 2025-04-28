@@ -57,7 +57,6 @@ public class StartAll {
         };
 
         // 提交所有任务到线程池执行
-        executorService.submit(bossTask);
 //        executorService.submit(liepinTask);
 //        executorService.submit(job51Task);
 
