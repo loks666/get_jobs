@@ -97,6 +97,12 @@ public class MobileBossConfig {
 
     private Integer nextIntervalMinutes;
 
+    /**
+     * 是否使用关键词匹配岗位m名称，岗位名称不包含关键字就过滤
+     *
+     */
+    private Boolean keyFilter;
+
     @SneakyThrows
     public static MobileBossConfig init() {
         MobileBossConfig config = JobUtils.getConfig(MobileBossConfig.class);
