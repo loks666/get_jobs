@@ -387,10 +387,13 @@ public class MobileBoss {
                 continue;
             }
 
-            if(!jobName.toLowerCase().contains(keyword.toLowerCase())){
-                log.info("已过滤：岗位【{}】名称不包含关键字【{}】",jobName,keyword);
-                continue;
+            if(config.getKeyFilter()){
+                if(!jobName.toLowerCase().contains(keyword.toLowerCase())){
+                    log.info("已过滤：岗位【{}】名称不包含关键字【{}】",jobName,keyword);
+                    continue;
+                }
             }
+
             Job job = new Job();
             // 获取职位链接
             job.setHref(jobCard.findElement(By.cssSelector("a")).getAttribute("href"));
