@@ -95,6 +95,8 @@ public class MobileBossConfig {
 
     private List<String> deadStatus;
 
+    private Integer nextIntervalMinutes;
+
     @SneakyThrows
     public static MobileBossConfig init() {
         MobileBossConfig config = JobUtils.getConfig(MobileBossConfig.class);
