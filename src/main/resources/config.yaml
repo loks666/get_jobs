@@ -32,7 +32,7 @@ mobileboss:
   sendImgResume: true # 是否发送图片简历
   deadStatus: ["2周内活跃","本月活跃","2月内活跃","半年前活跃"] # 过滤掉HR状态
   nextIntervalMinutes: 20
-  keyFilter: true # 是否使用关键词匹配岗位m名称，岗位名称不包含关键字就过滤
+  keyFilter: true # 是否使用关键词匹配岗位名称，true岗位名称不包含完整关键字就会过滤，false则不过滤直接使用boss搜索结果
   ### 以下几个参数移动端查岗暂不支持
   jobType: "不限" #求职类型："全职", "兼职"
   industry: [ "不限" ] # 公司行业，只能选三个，相关代码枚举的部分，如果需要其他的需要自己找
