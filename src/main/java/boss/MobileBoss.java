@@ -127,7 +127,7 @@ public class MobileBoss {
             }
 
             // chat页面进行消息沟通
-            resumeSubmission(config.getKeywords().getFirst());
+            resumeSubmission(keyword);
         }
 
     }
