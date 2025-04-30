@@ -40,9 +40,7 @@ import static utils.JobUtils.formatDuration;
  * Boss直聘自动投递
  */
 public class Boss {
-    static final int noJobMaxPages = 10; // 无岗位最大页数
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
-    static Integer page = 1;
     static String homeUrl = "https://www.zhipin.com";
     static String baseUrl = "https://www.zhipin.com/web/geek/job?";
     static Set<String> blackCompanies;
@@ -52,11 +50,8 @@ public class Boss {
     static List<String> deadStatus = List.of("半年前活跃");
     static String dataPath = "./src/main/java/boss/data.json";
     static String cookiePath = "./src/main/java/boss/cookie.json";
-    static int noJobPages;
-    static int lastSize;
     static Date startDate;
     static BossConfig config = BossConfig.init();
-    static int maxPages = 10;
 
     public static void main(String[] args) {
         loadData(dataPath);
@@ -82,67 +77,48 @@ public class Boss {
         String searchUrl = getSearchUrl(cityCode);
         WebDriverWait wait = new WebDriverWait(CHROME_DRIVER, 40);
         for (String keyword : config.getKeywords()) {
-            int page = 1;
-            int noJobPages = 0;
-            int lastSize = -1;
-
             // 使用 URLEncoder 对关键词进行编码
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
 
-            String url = searchUrl + "&page=" + page + "&query=" + encodedKeyword;
-            log.info("开始投递第一页，页面url：{}", url);
+            String url = searchUrl + "&query=" + encodedKeyword;
+            log.info("查询岗位链接:{}", url);
             CHROME_DRIVER.get(url);
-
             while (true) {
-                log.info("投递【{}】关键词第【{}】页", keyword, page);
-                // 检查是否找到岗位元素
-                if (isJobsPresent(wait)) {
-                    log.info("当前页面已找到岗位，开始进行投递...");
-                    // 进行投递操作
-                    Integer resultSize = resumeSubmission(keyword);
-                    if (resultSize == -1) {
-                        log.info("今日沟通人数已达上限，请明天再试");
-                        return;
-                    }
-                    if (resultSize == -2) {
-                        log.info("出现异常访问，请手动过验证后再继续投递...");
-                        return;
-                    }
-                    if (resultSize == -3) {
-                        log.info("没有岗位了，换个关键词再试试...");
-                        return;
-                    }
-
-                    noJobPages = 0;
-                } else {
-                    noJobPages++;
-                    if (noJobPages >= noJobMaxPages) {
-                        log.info("【{}】关键词已经连续【{}】页无岗位，结束该关键词的投递...", keyword, noJobPages);
-                        break;
-                    } else {
-                        log.info("【{}】第【{}】页无岗位,目前已连续【{}】页无新岗位...", keyword, page, noJobPages);
-                    }
-                }
-
-                if (page >= maxPages) {
-                    log.info("关键词【{}】已投递{}页，结束该关键词投递", keyword, maxPages);
-                    break;
-                }
-
-                int pageResult = clickNextPage(page, wait);
-                if (pageResult == 0) {
-                    log.info("【{}】关键词已投递至末页，结束该关键词的投递...", keyword);
-                    break;
-                }
-                page++;
-                log.info("准备投递下一页，页码{}", page);
-                url = searchUrl + "&page=" + page + "&query=" + encodedKeyword;
-                log.info("加载新页面url{}", url);
-                CHROME_DRIVER.get(url);
                 log.info("等待页面加载完成");
 
                 // 确保页面加载完成
-                wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='search-job-result']")));
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='job-list-container']")));
+                
+                // 尝试滚动页面加载更多数据
+                try {
+                    JavascriptExecutor js = CHROME_DRIVER;
+                    // 滚动到页面底部
+                    js.executeScript("window.scrollTo(0, document.body.scrollHeight)");
+                    // 等待新内容加载
+                    SeleniumUtil.sleep(5);
+                    
+                    // 检查是否到底部了（是否有"没有更多了"的提示）
+                    try {
+                        WebElement bottomElement = CHROME_DRIVER.findElement(By.xpath("//div[contains(text(), '没有更多了') or contains(@class, 'job-list-empty')]"));
+                        if (bottomElement != null && bottomElement.isDisplayed()) {
+                            log.info("已滚动到底部，没有更多数据");
+                            break;
+                        }
+                    } catch (Exception e) {
+                        // 未找到底部元素，继续滚动
+                    }
+                    
+                    // 加载一定数量的岗位后可以选择跳出循环
+                    List<WebElement> jobCards = CHROME_DRIVER.findElements(By.className("job-card-box"));
+                    for (WebElement jobCard : jobCards) {
+                        
+                    }
+                    
+                    log.info("继续滚动加载更多岗位");
+                } catch (Exception e) {
+                    log.error("滚动加载数据异常: {}", e.getMessage());
+                    break;
+                }
             }
         }
     }
@@ -154,33 +130,12 @@ public class Boss {
             List<WebElement> jobCards = jobList.findElements(By.className("job-card-wrapper"));
             return !jobCards.isEmpty();
         } catch (Exception e) {
-            log.error("未能找到岗位元素,即将跳转下一页{}", e.getMessage());
+            log.error("加载岗位区块失败:{}", e.getMessage());
             return false;
         }
     }
 
-    private static int clickNextPage(int currentPage, WebDriverWait wait) {
-        try {
-            WebElement nextButton = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a//i[@class='ui-icon-arrow-right']")));
-            if (nextButton.isEnabled()) {
-                nextButton.click();
-                wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='job-list-wrapper']")));
-                return 1;
-            } else {
-                return 0;
-            }
-        } catch (Exception e) {
-            log.error("点击下一页按钮异常>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", e);
-            String currentUrl = CHROME_DRIVER.getCurrentUrl();
-            log.debug("当前页面url>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + currentUrl);
-            int nextPage = currentPage + 1;
-            String newUrl = currentUrl.replaceAll("page=" + currentPage, "page=" + nextPage).replaceAll("&query=[^&]*", "");
-            log.debug("新的页面url>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + newUrl);
-            CHROME_DRIVER.get(newUrl);
-            wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='job-list-wrapper']")));
-            return -1;
-        }
-    }
+
 
     private static String getSearchUrl(String cityCode) {
         return baseUrl + JobUtils.appendParam("city", cityCode) +
@@ -327,7 +282,6 @@ public class Boss {
             if (isSalaryNotExpected(salary)) {
                 // 过滤薪资
                 log.info("已过滤:【{}】公司【{}】岗位薪资【{}】不符合投递要求", companyName, jobName, salary);
-                noJobPages = 0;
                 continue;
             }
             Job job = new Job();
@@ -440,7 +394,6 @@ public class Boss {
                     SeleniumUtil.sleep(2);
                     log.info("正在投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter, imgResume ? "发送图片简历成功！" : "");
                     resultList.add(job);
-                    noJobPages = 0;
                 } catch (Exception e) {
                     log.error("发送消息失败:{}", e.getMessage(), e);
                 }
@@ -500,7 +453,7 @@ public class Boss {
      */
     private static boolean isSalaryNotExpected(String salary) {
         try {
-            // 1. 如果没有期望薪资范围，直接返回 false，表示“薪资并非不符合预期”
+            // 1. 如果没有期望薪资范围，直接返回 false，表示"薪资并非不符合预期"
             List<Integer> expectedSalary = config.getExpectedSalary();
             if (!hasExpectedSalary(expectedSalary)) {
                 return false;
@@ -509,7 +462,7 @@ public class Boss {
             // 2. 清理薪资文本（比如去掉 "·15薪"）
             salary = removeYearBonusText(salary);
 
-            // 3. 如果薪资格式不符合预期（如缺少 "K" / "k"），直接返回 true，表示“薪资不符合预期”
+            // 3. 如果薪资格式不符合预期（如缺少 "K" / "k"），直接返回 true，表示"薪资不符合预期"
             if (!isSalaryInExpectedFormat(salary)) {
                 return true;
             }
