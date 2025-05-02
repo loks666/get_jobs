@@ -574,7 +574,7 @@ public class Boss {
                                 filterResult != null && filterResult.getResult()
                                         && isValidString(filterResult.getMessage())
                                                 ? filterResult.getMessage()
-                                                : config.getSayHi());
+                                                : config.getSayHi().replaceAll("\\r|\\n", ""));
 
                         Optional<WebElement> sendBtn = BossElementFinder
                                 .waitForElementClickable(BossElementLocators.SEND_BUTTON);
