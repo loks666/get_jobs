@@ -26,6 +26,7 @@ import java.math.RoundingMode;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,6 @@ public class MobileBoss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
-    static List<String> deadStatus = List.of("2周内活跃","本月活跃","2月内活跃","半年前活跃");
     static String dataPath = ProjectRootResolver.rootPath + "/src/main/java/boss/data.json";
     static String cookiePath = ProjectRootResolver.rootPath + "/src/main/java/boss/cookie.json";
     static Date startDate;
@@ -50,7 +50,7 @@ public class MobileBoss {
 
     public static void main(String[] args) {
         loadData(dataPath);
-        SeleniumUtil.initDriver();
+        SeleniumUtil.initDriver(true);
         startDate = new Date();
         login();
         // 最好先填1个，多个城市的情况不确定会不会有什么问题或者导致请求过于频繁出现风险拦截
@@ -81,7 +81,8 @@ public class MobileBoss {
         for (String keyword : config.getKeywords()) {
             String searchUrl = getSearchUrl(cityCode,keyword);
             log.info("查询url:{}", searchUrl);
-            WebDriverWait wait = new WebDriverWait(MOBILE_CHROME_DRIVER, 40);
+//            WebDriverWait wait = new WebDriverWait(MOBILE_CHROME_DRIVER, 40);
+            WebDriverWait wait = new WebDriverWait(MOBILE_CHROME_DRIVER, Duration.ofSeconds(40));
             String url = searchUrl;
             log.info("开始投递，页面url：{}", url);
             MOBILE_CHROME_DRIVER.get(url);
