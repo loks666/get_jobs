@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import utils.JobUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +33,11 @@ public class BossConfig {
      * 城市编码
      */
     private List<String> cityCode;
+
+    /**
+     * 自定义城市编码映射
+     */
+    private Map<String, String> customCityCode;
 
     /**
      * 行业列表
@@ -104,7 +110,18 @@ public class BossConfig {
         // 转换薪资范围
         config.setSalary(BossEnum.Salary.forValue(config.getSalary()).getCode());
         // 转换城市编码
-        config.setCityCode(config.getCityCode().stream().map(value -> BossEnum.CityCode.forValue(value).getCode()).collect(Collectors.toList()));
+//        config.setCityCode(config.getCityCode().stream().map(value -> BossEnum.CityCode.forValue(value).getCode()).collect(Collectors.toList()));
+        List<String> convertedCityCodes = config.getCityCode().stream()
+                .map(city -> {
+                    // 优先从自定义映射中获取
+                    if (config.getCustomCityCode() != null && config.getCustomCityCode().containsKey(city)) {
+                        return config.getCustomCityCode().get(city);
+                    }
+                    // 否则从枚举中获取
+                    return MobileBossEnum.CityCode.forValue(city).getCode();
+                })
+                .collect(Collectors.toList());
+        config.setCityCode(convertedCityCodes);
         // 转换工作经验要求
         config.setExperience(config.getExperience().stream().map(value -> BossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
         // 转换学历要求
