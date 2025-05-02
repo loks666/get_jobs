@@ -93,6 +93,8 @@ public class BossConfig {
      */
     private String waitTime;
 
+    private List<String> deadStatus;
+
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
