@@ -118,7 +118,7 @@ public class BossConfig {
                         return config.getCustomCityCode().get(city);
                     }
                     // 否则从枚举中获取
-                    return MobileBossEnum.CityCode.forValue(city).getCode();
+                    return BossEnum.CityCode.forValue(city).getCode();
                 })
                 .collect(Collectors.toList());
         config.setCityCode(convertedCityCodes);
