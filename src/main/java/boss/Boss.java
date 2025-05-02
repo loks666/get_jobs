@@ -51,7 +51,6 @@ public class Boss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
-    static List<String> deadStatus = List.of("半年前活跃");
     static String dataPath = ProjectRootResolver.rootPath + "/src/main/java/boss/data.json";
     static String cookiePath = ProjectRootResolver.rootPath + "/src/main/java/boss/cookie.json";
     static Date startDate;
@@ -579,10 +578,6 @@ public class Boss {
 
                     String company = job.getCompanyName();
 
-//                    WebElement positionNameElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='position-name']"));
-//                    WebElement salaryElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='salary']"));
-//                    WebElement cityElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='city']"));
-//
                     String position = job.getJobName() + " " + job.getSalary() + " " + job.getJobArea();
                     Boolean imgResume = sendResume(company);
                     SeleniumUtil.sleep(2);
@@ -796,7 +791,7 @@ public class Boss {
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
             log.info("{}：{}", getCompanyAndHR(), activeTimeText);
             // 如果 HR 活跃状态符合预期，则返回 true
-            return containsDeadStatus(activeTimeText, deadStatus);
+            return containsDeadStatus(activeTimeText, config.getDeadStatus());
         } catch (Exception e) {
             log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
             return false;

@@ -1,6 +1,6 @@
 # 带[ ]括号的，就是多选，不带的就是单选,所有选项的 开对应true，关对应false，自行根据需要调整
 boss:
-  debugger: true # 开发者模式，默认为false即可
+  debugger: false # 开发者模式，默认为false即可
   sayHi: "您好,我有8年工作经验,还有AIGC大模型、Java,Python,Golang和运维的相关经验,希望应聘这个岗位,期待可以与您进一步沟通,谢谢！" #必须要关闭boss的自动打招呼
   keywords: [ "Java"  ] # 需要搜索的职位,会依次投递
   industry: [ "不限" ] # 公司行业，只能选三个，相关代码枚举的部分，如果需要其他的需要自己找
@@ -15,10 +15,11 @@ boss:
   waitTime: 10 #每投递一个岗位，等待几秒
   filterDeadHR: true # 是否过滤不活跃HR,该选项会过滤半年前活跃的HR
   enableAI: false # 开启AI检测与自动生成打招呼语
-  sendImgResume: false # 是否发送图片简历
+  sendImgResume: true # 是否发送图片简历
+  deadStatus: ["2周内活跃","本月活跃","2月内活跃","半年前活跃"] # 过滤掉HR状态
 mobileboss:
   debugger: false # 开发者模式，默认为false即可
-  sayHi: ""
+  sayHi: "您好,我有8年工作经验,还有AIGC大模型、Java,Python,Golang和运维的相关经验,希望应聘这个岗位,期待可以与您进一步沟通,谢谢！" #必须要关闭boss的自动打招呼
   keywords: [ "Java" ] # 需要搜索的职位,会依次投递
   cityCode: [ "广州" ] # 只列举了部分,如果没有的需要自己找：目前支持的：全国 北京 上海 杭州 广州 深圳 成都 天津
   customCityCode: 
