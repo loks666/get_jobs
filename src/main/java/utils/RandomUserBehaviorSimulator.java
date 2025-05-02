@@ -1,5 +1,6 @@
 package utils;
 
+import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -63,7 +64,8 @@ public class RandomUserBehaviorSimulator {
             // 增加滚动幅度，范围为 -500 到 +500 像素
             int scrollAmount = random.nextInt(1001) - 500; // 随机滚动 -500 到 +500 像素
             String script = String.format("window.scrollBy(0, %d);", scrollAmount);
-            driver.executeScript(script);
+//            driver.executeScript(script);
+            driver.executeScript(String.format("window.scrollBy(0,%d)", scrollAmount));
 
             try {
                 TimeUnit.MILLISECONDS.sleep(random.nextInt(300) + 100); // 随机延迟 100 到 400 毫秒
@@ -93,7 +95,8 @@ public class RandomUserBehaviorSimulator {
         // 遍历每个选择器，查找元素
         for (String selector : selectors) {
             try {
-                WebElement element = driver.findElementByCssSelector(selector);
+//                WebElement element = driver.findElementByCssSelector(selector);
+                WebElement element = driver.findElement(By.cssSelector(selector));
                 if (element != null) {
                     inputs.add(element);
                 }
