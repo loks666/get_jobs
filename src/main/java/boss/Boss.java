@@ -110,7 +110,7 @@ public class Boss {
 
                     while (unchangedCount < 2) {
                         // 获取所有岗位卡片
-                        List<ElementHandle> jobCards = page.querySelectorAll("ul.rec-job-list li.job-card-box");
+                        List<ElementHandle> jobCards = page.querySelectorAll(JOB_LIST_SELECTOR);
                         currentJobCount = jobCards.size();
 
                         System.out.println("当前已加载岗位数量: " + currentJobCount);
@@ -164,7 +164,6 @@ public class Boss {
     @Deprecated
     private static void postJobByCity(String cityCode) {
         String searchUrl = getSearchUrl(cityCode);
-        // WebDriverWait wait = new WebDriverWait(CHROME_DRIVER, 40);
         WebDriverWait wait = new WebDriverWait(CHROME_DRIVER, Duration.ofSeconds(40));
         for (String keyword : config.getKeywords()) {
             // 使用 URLEncoder 对关键词进行编码
@@ -265,20 +264,20 @@ public class Boss {
         boolean shouldBreak = false;
         while (!shouldBreak) {
             try {
-                WebElement bottom = CHROME_DRIVER.findElement(By.xpath("//div[@class='finished']"));
+                WebElement bottom = CHROME_DRIVER.findElement(By.xpath(FINISHED_TEXT));
                 if ("没有更多了".equals(bottom.getText())) {
                     shouldBreak = true;
                 }
             } catch (Exception ignore) {
             }
-            List<WebElement> items = CHROME_DRIVER.findElements(By.xpath("//li[@role='listitem']"));
+            List<WebElement> items = CHROME_DRIVER.findElements(By.xpath(CHAT_LIST_ITEM));
             for (int i = 0; i < items.size(); i++) {
                 try {
                     WebElement companyElement = CHROME_DRIVER
-                            .findElements(By.xpath("//div[@class='title-box']/span[@class='name-box']//span[2]"))
+                            .findElements(By.xpath(COMPANY_NAME_IN_CHAT))
                             .get(i);
                     WebElement messageElement = CHROME_DRIVER
-                            .findElements(By.xpath("//div[@class='gray last-msg']/span[@class='last-msg-text']"))
+                            .findElements(By.xpath(LAST_MESSAGE))
                             .get(i);
 
                     String companyName = null;
@@ -301,11 +300,11 @@ public class Boss {
                             try {
                                 companyElement = CHROME_DRIVER
                                         .findElements(
-                                                By.xpath("//div[@class='title-box']/span[@class='name-box']//span[2]"))
+                                                By.xpath(COMPANY_NAME_IN_CHAT))
                                         .get(i);
                                 messageElement = CHROME_DRIVER
                                         .findElements(
-                                                By.xpath("//div[@class='gray last-msg']/span[@class='last-msg-text']"))
+                                                By.xpath(LAST_MESSAGE))
                                         .get(i);
                                 // 等待短暂时间后重试
                                 SeleniumUtil.sleep(1);
@@ -338,8 +337,8 @@ public class Boss {
             }
             WebElement element;
             try {
-                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(text(), '滚动加载更多')]")));
-                element = CHROME_DRIVER.findElement(By.xpath("//div[contains(text(), '滚动加载更多')]"));
+                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath(SCROLL_LOAD_MORE)));
+                element = CHROME_DRIVER.findElement(By.xpath(SCROLL_LOAD_MORE));
             } catch (Exception e) {
                 log.info("没找到滚动条...");
                 break;
@@ -904,7 +903,7 @@ public class Boss {
     private static boolean isLimit() {
         try {
             SeleniumUtil.sleep(1);
-            String text = CHROME_DRIVER.findElement(By.className("dialog-con")).getText();
+            String text = CHROME_DRIVER.findElement(By.className(DIALOG_CON.substring(1))).getText();
             return text.contains("已达上限");
         } catch (Exception e) {
             return false;
@@ -940,14 +939,14 @@ public class Boss {
 
     private static boolean isLoginRequired() {
         try {
-            Optional<WebElement> buttonElement = BossElementFinder.findElement("//div[@class='btns']");
+            Optional<WebElement> buttonElement = BossElementFinder.findElement(LOGIN_BTNS);
             if (buttonElement.isPresent() && buttonElement.get().getText().contains("登录")) {
                 return true;
             }
         } catch (Exception e) {
             try {
-                BossElementFinder.findElement("//h1");
-                BossElementFinder.findElement("//a[@ka='403_login']").ifPresent(WebElement::click);
+                BossElementFinder.findElement(PAGE_HEADER);
+                BossElementFinder.findElement(ERROR_PAGE_LOGIN).ifPresent(WebElement::click);
                 return true;
             } catch (Exception ex) {
                 log.info("没有出现403访问异常");
