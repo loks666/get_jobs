@@ -8,6 +8,10 @@ import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.devtools.DevTools;
+import org.openqa.selenium.devtools.v135.network.Network;
+import org.openqa.selenium.devtools.v135.network.model.Headers;
+import org.openqa.selenium.devtools.v135.page.Page;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
@@ -19,6 +23,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -33,13 +38,23 @@ import static utils.Constant.*;
 public class SeleniumUtil {
     private static final Logger log = LoggerFactory.getLogger(SeleniumUtil.class);
 
+    public static void initDriver(boolean mobile) {
+        SeleniumUtil.getChromeDriver(mobile);
+        SeleniumUtil.getActions();
+        SeleniumUtil.getWait(WAIT_TIME);
+    }
+
     public static void initDriver() {
         SeleniumUtil.getChromeDriver();
         SeleniumUtil.getActions();
         SeleniumUtil.getWait(WAIT_TIME);
     }
 
-    public static void getChromeDriver() {
+    public static void getChromeDriver(){
+        getChromeDriver(false);
+    }
+
+    public static void getChromeDriver(Boolean mobile) {
         ChromeOptions options = new ChromeOptions();
         // 添加扩展插件
         String osName = System.getProperty("os.name").toLowerCase();
@@ -75,15 +90,26 @@ public class SeleniumUtil {
         }
 //        options.addArguments("--headless"); //使用无头模式
 
+        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+        options.setExperimentalOption("useAutomationExtension", false); // 禁用默认扩展
+        options.addArguments("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36");
+
+
+
+
         CHROME_DRIVER = new ChromeDriver(options);
         CHROME_DRIVER.manage().window().maximize();
+
 
         // 创建移动设备Chrome驱动
         ChromeOptions mobileOptions = new ChromeOptions();
         addMobileEmulationOptions(mobileOptions);
-        
-        MOBILE_CHROME_DRIVER = new ChromeDriver(mobileOptions);
-        MOBILE_CHROME_DRIVER.manage().window().maximize();
+
+        if(mobile){
+            MOBILE_CHROME_DRIVER = new ChromeDriver(mobileOptions);
+            MOBILE_CHROME_DRIVER.manage().window().maximize();
+        }
+
     }
 
     /**
@@ -166,7 +192,9 @@ public class SeleniumUtil {
     public static void loadCookie(String cookiePath) {
         // 首先清除由于浏览器打开已有的cookies
         CHROME_DRIVER.manage().deleteAllCookies();
-        MOBILE_CHROME_DRIVER.manage().deleteAllCookies();
+        if(Objects.nonNull(MOBILE_CHROME_DRIVER)){
+            MOBILE_CHROME_DRIVER.manage().deleteAllCookies();
+        }
         // 从文件中读取JSONArray
         JSONArray jsonArray = null;
         try {
@@ -202,7 +230,9 @@ public class SeleniumUtil {
                         .build();
                 try {
                     CHROME_DRIVER.manage().addCookie(cookie);
-                    MOBILE_CHROME_DRIVER.manage().addCookie(cookie);
+                    if(Objects.nonNull(MOBILE_CHROME_DRIVER)){
+                        MOBILE_CHROME_DRIVER.manage().addCookie(cookie);
+                    }
                 } catch (Exception ignore) {
                 }
             }
@@ -213,12 +243,16 @@ public class SeleniumUtil {
 
     public static void getActions() {
         ACTIONS = new Actions(Constant.CHROME_DRIVER);
-        MOBILE_ACTIONS = new Actions(MOBILE_CHROME_DRIVER);
+        if(Objects.nonNull(MOBILE_CHROME_DRIVER)){
+            MOBILE_ACTIONS = new Actions(MOBILE_CHROME_DRIVER);
+        }
     }
 
     public static void getWait(long time) {
-        WAIT = new WebDriverWait(Constant.CHROME_DRIVER, time);
-        MOBILE_WAIT = new WebDriverWait(MOBILE_CHROME_DRIVER,time);
+        WAIT = new WebDriverWait(Constant.CHROME_DRIVER, Duration.ofSeconds(time));
+        if(Objects.nonNull(MOBILE_CHROME_DRIVER)){
+            MOBILE_WAIT = new WebDriverWait(MOBILE_CHROME_DRIVER,Duration.ofSeconds(time));
+        }
     }
 
     public static void sleep(int seconds) {
@@ -256,24 +290,6 @@ public class SeleniumUtil {
         }
     }
 
-
-    public static Optional<WebElement> mobileFindElement(String xpath, String message) {
-        try {
-            return Optional.of(MOBILE_CHROME_DRIVER.findElement(By.xpath(xpath)));
-        } catch (Exception e) {
-            log.error(message);
-            return Optional.empty();
-        }
-    }
-
-    public static void mobileClick(By by) {
-        try {
-            MOBILE_CHROME_DRIVER.findElement(by).click();
-        } catch (Exception e) {
-            log.error("click element:{}", by, e);
-        }
-    }
-
     public static boolean isCookieValid(String cookiePath) {
         return Files.exists(Paths.get(cookiePath));
     }
@@ -283,5 +299,53 @@ public class SeleniumUtil {
             RandomUserBehaviorSimulator.simulateRandomUserBehavior();
         }
     }
+
+
+    /**
+     * 注入反自动化检测的脚本，隐藏 webdriver、语言、插件等特征字段。
+     * 必须在 driver.get(url) 之前调用。
+     */
+    public static void injectStealthJs(DevTools devTools) {
+        String script = """
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            delete cdc_adoQpoasnfa76pfcZLmcfl_Array;
+            delete cdc_adoQpoasnfa76pfcZLmcfl_JSON;
+            delete cdc_adoQpoasnfa76pfcZLmcfl_Object;
+            delete cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+            delete cdc_adoQpoasnfa76pfcZLmcfl_Proxy;
+            delete cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+            delete cdc_adoQpoasnfa76pfcZLmcfl_Window;
+            window.navigator.chrome = { runtime: {} };
+            Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh']});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3]});
+        """;
+
+        devTools.send(Page.addScriptToEvaluateOnNewDocument(
+                script,
+                Optional.empty(),
+                Optional.of(false),
+                Optional.of(true)
+        ));
+    }
+
+    /**
+     * 设置标准防指纹伪装请求头（适配 Chrome 135，macOS 平台）
+     */
+    public static void setDefaultHeaders(DevTools devTools) {
+        Map<String, Object> headersMap = new HashMap<>();
+//        headersMap.put("sec-ch-ua", "\"Google Chrome\";v=\"135\", \"Chromium\";v=\"135\", \"Not;A=Brand\";v=\"99\"");
+        headersMap.put("sec-ch-ua", "\"Google Chrome\";v=\"135\", \"Not-A.Brand\";v=\"8\", \"Chromium\";v=\"135\"");
+        headersMap.put("sec-ch-ua-mobile", "?0");
+        headersMap.put("sec-ch-ua-platform", "\"macOS\"");
+        headersMap.put("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36");
+        headersMap.put("accept-language", "zh-CN,zh;q=0.9");
+        headersMap.put("referer", "https://www.zhipin.com/");
+
+        devTools.send(Network.enable(Optional.empty(), Optional.empty(), Optional.empty()));
+        devTools.send(Network.setExtraHTTPHeaders(new Headers(headersMap)));
+    }
+
+
+
 
 }
