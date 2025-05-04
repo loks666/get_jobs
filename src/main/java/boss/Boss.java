@@ -702,7 +702,7 @@ public class Boss {
                     jobType);
 
         } catch (Exception e) {
-            log.error("岗位薪资获取异常！{}", e.getMessage(), e);
+            log.error("岗位薪资获取异常！薪资文本【{}】,异常信息【{}】",salary, e.getMessage(), e);
             // 出错时，您可根据业务需求决定返回 true 或 false
             // 这里假设出错时无法判断，视为不满足预期 => 返回 true
             return true;
