@@ -23,7 +23,7 @@ public class StartAll {
         Runnable bossTask = () -> {
             try {
                 log.info("正在执行 Boss 任务，线程名称: {}", Thread.currentThread().getName());
-                executeTask("boss.MobileBoss");
+                executeTask("boss.Boss");
                 log.info("Boss 任务已完成，完成时间: {}", java.time.LocalDateTime.now());
             } catch (Exception e) {
                 log.error("Boss 任务执行过程中发生错误: {}", e.getMessage(), e);
