@@ -26,6 +26,7 @@ import java.math.RoundingMode;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,32 +43,23 @@ public class MobileBoss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
-    static List<String> deadStatus = List.of("半年前活跃");
     static String dataPath = ProjectRootResolver.rootPath + "/src/main/java/boss/data.json";
     static String cookiePath = ProjectRootResolver.rootPath + "/src/main/java/boss/cookie.json";
-    static int noJobPages;
     static Date startDate;
     static MobileBossConfig config = MobileBossConfig.init();
 
     public static void main(String[] args) {
         loadData(dataPath);
-        SeleniumUtil.initDriver();
+        SeleniumUtil.initDriver(true);
         startDate = new Date();
         login();
         // 最好先填1个，多个城市的情况不确定会不会有什么问题或者导致请求过于频繁出现风险拦截
         config.getCityCode().forEach(MobileBoss::postJobByCity);
         log.info(resultList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}", resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
-        // 添加优雅的阻塞实现，避免程序自动退出
-//        log.info("程序执行完毕，等待手动终止...");
-//        Object lock = new Object();
-//        synchronized (lock) {
-//            try {
-//                lock.wait();
-//            } catch (InterruptedException e) {
-//                log.info("程序被中断");
-//            }
-//        }
-        printResult();
+        if(!config.getDebugger()){
+            printResult();
+        }
+
     }
 
     private static void printResult() {
@@ -76,10 +68,12 @@ public class MobileBoss {
         sendMessageByTime(message);
         saveData(dataPath);
         resultList.clear();
-        CHROME_DRIVER.close();
-        CHROME_DRIVER.quit();
-        MOBILE_CHROME_DRIVER.close();
-        MOBILE_CHROME_DRIVER.quit();
+        if(!config.getDebugger()){
+            CHROME_DRIVER.close();
+            CHROME_DRIVER.quit();
+            MOBILE_CHROME_DRIVER.close();
+            MOBILE_CHROME_DRIVER.quit();
+        }
     }
 
     private static void postJobByCity(String cityCode) {
@@ -87,7 +81,8 @@ public class MobileBoss {
         for (String keyword : config.getKeywords()) {
             String searchUrl = getSearchUrl(cityCode,keyword);
             log.info("查询url:{}", searchUrl);
-            WebDriverWait wait = new WebDriverWait(MOBILE_CHROME_DRIVER, 40);
+//            WebDriverWait wait = new WebDriverWait(MOBILE_CHROME_DRIVER, 40);
+            WebDriverWait wait = new WebDriverWait(MOBILE_CHROME_DRIVER, Duration.ofSeconds(40));
             String url = searchUrl;
             log.info("开始投递，页面url：{}", url);
             MOBILE_CHROME_DRIVER.get(url);
@@ -123,16 +118,27 @@ public class MobileBoss {
                     }
 
                     previousCount = currentCount;
+
+                    if(config.getDebugger()){
+                        break;
+                    }
+
                 }
                 log.info("已加载全部岗位，总数量: " + previousCount);
             }
 
             // chat页面进行消息沟通
-            resumeSubmission(config.getKeywords().getFirst());
+            resumeSubmission(keyword);
         }
 
     }
 
+    /**
+     * 等待岗位列表元素加载完成
+     *
+     * @param wait
+     * @return
+     */
     private static boolean isMobileJobsPresent(WebDriverWait wait) {
         try {
             // 判断页面是否存在岗位的元素
@@ -240,24 +246,55 @@ public class MobileBoss {
             List<WebElement> items = CHROME_DRIVER.findElements(By.xpath("//li[@role='listitem']"));
             for (int i = 0; i < items.size(); i++) {
                 try {
-                    WebElement companyElement = CHROME_DRIVER.findElements(By.xpath("//span[@class='name-box']//span[2]")).get(i);
-                    String companyName = companyElement.getText();
-                    WebElement messageElement = CHROME_DRIVER.findElements(By.xpath("//span[@class='last-msg-text']")).get(i);
-                    String message = messageElement.getText();
-                    boolean match = message.contains("不") || message.contains("感谢") || message.contains("但") || message.contains("遗憾") || message.contains("需要本") || message.contains("对不");
-                    boolean nomatch = message.contains("不是") || message.contains("不生");
-                    if (match && !nomatch) {
-                        log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
-                        if (blackCompanies.stream().anyMatch(companyName::contains)) {
-                            continue;
+                    WebElement companyElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='title-box']/span[@class='name-box']//span[2]")).get(i);
+                    WebElement messageElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='gray last-msg']/span[@class='last-msg-text']")).get(i);
+                    
+                    String companyName = null;
+                    String message = null;
+                    int retryCount = 0;
+                    
+                    while (retryCount < 2) {
+                        try {
+                            companyName = companyElement.getText();
+                            message = messageElement.getText();
+                            break; // 成功获取文本，跳出循环
+                        } catch (org.openqa.selenium.StaleElementReferenceException e) {
+                            retryCount++;
+                            if (retryCount >= 2) {
+                                log.info("尝试获取元素文本2次失败，放弃本次获取");
+                                break;
+                            }
+                            log.info("页面元素已变更，正在重试第{}次获取元素文本...", retryCount);
+                            // 重新获取元素
+                            try {
+                                companyElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='title-box']/span[@class='name-box']//span[2]")).get(i);
+                                messageElement = CHROME_DRIVER.findElements(By.xpath("//div[@class='gray last-msg']/span[@class='last-msg-text']")).get(i);
+                                // 等待短暂时间后重试
+                                SeleniumUtil.sleep(1);
+                            } catch (Exception ex) {
+                                log.info("重新获取元素失败，放弃本次获取");
+                                break;
+                            }
                         }
-                        companyName = companyName.replaceAll("\\.{3}", "");
-                        if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
-                            blackCompanies.add(companyName);
+                    }
+                    
+                    // 只有在成功获取文本的情况下才继续处理
+                    if (companyName != null && message != null) {
+                        boolean match = message.contains("不") || message.contains("感谢") || message.contains("但") || message.contains("遗憾") || message.contains("需要本") || message.contains("对不");
+                        boolean nomatch = message.contains("不是") || message.contains("不生");
+                        if (match && !nomatch) {
+                            log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
+                            if (blackCompanies.stream().anyMatch(companyName::contains)) {
+                                continue;
+                            }
+                            companyName = companyName.replaceAll("\\.{3}", "");
+                            if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
+                                blackCompanies.add(companyName);
+                            }
                         }
                     }
                 } catch (Exception e) {
-                    log.error("寻找黑名单公司异常...");
+                    log.error("寻找黑名单公司异常...",e);
                 }
             }
             WebElement element;
@@ -350,6 +387,14 @@ public class MobileBoss {
                 log.info("已过滤:【{}】公司【{}】岗位薪资【{}】不符合投递要求", companyName, jobName, salary);
                 continue;
             }
+
+            if(config.getKeyFilter()){
+                if(!jobName.toLowerCase().contains(keyword.toLowerCase())){
+                    log.info("已过滤：岗位【{}】名称不包含关键字【{}】",jobName,keyword);
+                    continue;
+                }
+            }
+
             Job job = new Job();
             // 获取职位链接
             job.setHref(jobCard.findElement(By.cssSelector("a")).getAttribute("href"));
@@ -380,7 +425,9 @@ public class MobileBoss {
         for (Job job : jobs) {
             // 打开新的标签页
             JavascriptExecutor jse = CHROME_DRIVER;
-            jse.executeScript("window.open(arguments[0], '_blank')", job.getHref());
+            // jse.executeScript("window.open(arguments[0], '_blank')", job.getHref());
+            // 使用JavaScript控制焦点，避免了每次打开新页签时浏览器窗口自动切换到前台的问题。
+            jse.executeScript("var newTab = window.open(arguments[0], '_blank'); newTab.blur(); window.focus();", job.getHref());
             // 切换到新的标签页
             ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
             CHROME_DRIVER.switchTo().window(tabs.getLast());
@@ -393,6 +440,16 @@ public class MobileBoss {
                     return -2;
                 }
             }
+
+            try{
+                WebElement jobSecText = CHROME_DRIVER.findElement(By.xpath("//div[@class='job-sec-text']"));
+                job.setJobInfo(jobSecText.getText());
+                WebElement  foldText = CHROME_DRIVER.findElement(By.xpath("//div[@class=' job-sec-text fold-text']"));
+                job.setCompanyInfo(foldText.getText());
+            }catch (Exception e){
+                log.info("没有获取到职位/公司描述");
+            }
+
             //过滤不活跃HR
             if (isDeadHR()) {
                 closeWindow(tabs);
@@ -408,9 +465,11 @@ public class MobileBoss {
                 log.info("没有获取到立即沟通按钮");
             }
 
+            boolean debug = config.getDebugger();
+
             // 休息下，请求太频繁了
             SeleniumUtil.sleep(5);
-            if (Objects.nonNull(btn)&&"立即沟通".equals(btn.getText())) {
+            if (!debug&&Objects.nonNull(btn)&&"立即沟通".equals(btn.getText())) {
                 String waitTime = config.getWaitTime();
                 int sleepTime = 10; // 默认等待10秒
 
@@ -455,27 +514,19 @@ public class MobileBoss {
                     WebElement send = WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@type='send']")));
                     send.click();
                     SeleniumUtil.sleep(5);
-                    WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='name']"));
-                    WebElement recruiterTitleElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[@class='base-title']"));
-                    String recruiter = recruiterNameElement.getText() + " " + recruiterTitleElement.getText();
+                    // 没必要通过聊天窗口再获取了 以名称为例 可能出现 //div[@class='base-info']//span[@class='name-text'] 的情况，boss界面不是固定的结构
+//                    WebElement recruiterNameElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']//span[@class='name-text']"));
+//                    WebElement recruiterTitleElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='base-info']/span[@class='base-title']"));
+//                    String recruiter = recruiterNameElement.getText() + " " + recruiterTitleElement.getText();
+                    String recruiter = job.getRecruiter();
 
-                    WebElement companyElement = null;
-                    try {
-                        // 通过定位父元素后获取第二个 span 元素，获取公司名
-                        companyElement = CHROME_DRIVER.findElement(By.xpath("//p[@class='base-info fl']/span[1]"));
-                    } catch (Exception e) {
-                        log.info("获取公司名异常！");
-                    }
-                    String company = null;
-                    if (companyElement != null) {
-                        company = companyElement.getText();
-                        job.setCompanyName(company);
-                    }
-                    WebElement positionNameElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='position-name']"));
-                    WebElement salaryElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='salary']"));
-                    WebElement cityElement = CHROME_DRIVER.findElement(By.xpath("//a[@class='position-content']/span[@class='city']"));
-                    String position = positionNameElement.getText() + " " + salaryElement.getText() + " " + cityElement.getText();
-                    company = company == null ? "未知公司: " + job.getHref() : company;
+                    String company = job.getCompanyName();
+
+//                    WebElement positionNameElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='position-name']"));
+//                    WebElement salaryElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='salary']"));
+//                    WebElement cityElement = CHROME_DRIVER.findElement(By.xpath("//div[@class='position-main']//span[@class='city']"));
+//
+                    String position = job.getJobName() + " " + job.getSalary() + " " + job.getJobArea();
                     Boolean imgResume = sendResume(company);
                     SeleniumUtil.sleep(2);
                     log.info("正在投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter, imgResume ? "发送图片简历成功！" : "");
@@ -484,7 +535,12 @@ public class MobileBoss {
                     log.error("发送消息失败:{}", e.getMessage(), e);
                 }
             }
-            closeWindow(tabs);
+            if(!debug){
+                closeWindow(tabs);
+            }
+            if(debug){
+                break;
+            }
         }
         return resultList.size();
     }
@@ -686,7 +742,7 @@ public class MobileBoss {
             String activeTimeText = CHROME_DRIVER.findElement(By.xpath("//span[@class='boss-active-time']")).getText();
             log.info("{}：{}", getCompanyAndHR(), activeTimeText);
             // 如果 HR 活跃状态符合预期，则返回 true
-            return containsDeadStatus(activeTimeText, deadStatus);
+            return containsDeadStatus(activeTimeText, config.getDeadStatus());
         } catch (Exception e) {
             log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
             return false;

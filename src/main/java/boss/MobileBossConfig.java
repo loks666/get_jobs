@@ -5,6 +5,8 @@ import lombok.SneakyThrows;
 import utils.JobUtils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +34,11 @@ public class MobileBossConfig {
      * 城市编码
      */
     private List<String> cityCode;
+    
+    /**
+     * 自定义城市编码映射
+     */
+    private Map<String, String> customCityCode;
 
     /**
      * 行业列表
@@ -93,14 +100,36 @@ public class MobileBossConfig {
      */
     private String waitTime;
 
+    private List<String> deadStatus;
+
+    private Integer nextIntervalMinutes;
+
+    /**
+     * 是否使用关键词匹配岗位m名称，岗位名称不包含关键字就过滤
+     *
+     */
+    private Boolean keyFilter;
+
     @SneakyThrows
     public static MobileBossConfig init() {
         MobileBossConfig config = JobUtils.getConfig(MobileBossConfig.class);
 
         // 转换薪资范围
         config.setSalary(MobileBossEnum.Salary.forValue(config.getSalary()).getCode());
-        // 转换城市编码
-        config.setCityCode(config.getCityCode().stream().map(value -> MobileBossEnum.CityCode.forValue(value).getCode()).collect(Collectors.toList()));
+        
+        // 处理城市编码
+        List<String> convertedCityCodes = config.getCityCode().stream()
+            .map(city -> {
+                // 优先从自定义映射中获取
+                if (config.getCustomCityCode() != null && config.getCustomCityCode().containsKey(city)) {
+                    return config.getCustomCityCode().get(city);
+                } 
+                // 否则从枚举中获取
+                return MobileBossEnum.CityCode.forValue(city).getCode();
+            })
+            .collect(Collectors.toList());
+        config.setCityCode(convertedCityCodes);
+        
         // 转换工作经验要求
         config.setExperience(config.getExperience().stream().map(value -> MobileBossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
         // 转换学历要求
