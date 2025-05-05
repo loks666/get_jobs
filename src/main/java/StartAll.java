@@ -1,3 +1,4 @@
+import boss.MobileBossConfig;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ExecutorService;
@@ -12,6 +13,7 @@ public class StartAll {
     // 存储所有子进程的引用
     private static final List<Process> childProcesses = new ArrayList<>();
 
+    private static final MobileBossConfig  mobileBossConfig = MobileBossConfig.init();
     public static void main(String[] args) {
 
          // Create a ScheduledExecutorService for Boss
@@ -21,7 +23,7 @@ public class StartAll {
         Runnable bossTask = () -> {
             try {
                 log.info("正在执行 Boss 任务，线程名称: {}", Thread.currentThread().getName());
-                executeTask("boss.MobileBoss");
+                executeTask("boss.Boss");
                 log.info("Boss 任务已完成，完成时间: {}", java.time.LocalDateTime.now());
             } catch (Exception e) {
                 log.error("Boss 任务执行过程中发生错误: {}", e.getMessage(), e);
@@ -29,7 +31,7 @@ public class StartAll {
         };
 
         // Schedule Boss task to run every 60 minutes
-        bossScheduler.scheduleAtFixedRate(bossTask, 0, 60, TimeUnit.MINUTES);
+        bossScheduler.scheduleAtFixedRate(bossTask, 0, mobileBossConfig.getNextIntervalMinutes(), TimeUnit.MINUTES);
 
 
 
