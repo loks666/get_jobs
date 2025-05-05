@@ -57,6 +57,41 @@ public class Boss {
     static Date startDate;
     static BossConfig config = BossConfig.init();
 
+    static {
+        try {
+            // 检查dataPath文件是否存在，不存在则创建
+            File dataFile = new File(dataPath);
+            if (!dataFile.exists()) {
+                // 确保父目录存在
+                if (!dataFile.getParentFile().exists()) {
+                    dataFile.getParentFile().mkdirs();
+                }
+                // 创建文件并写入初始JSON结构
+                Map<String, Set<String>> initialData = new HashMap<>();
+                initialData.put("blackCompanies", new HashSet<>());
+                initialData.put("blackRecruiters", new HashSet<>());
+                initialData.put("blackJobs", new HashSet<>());
+                String initialJson = customJsonFormat(initialData);
+                Files.write(Paths.get(dataPath), initialJson.getBytes());
+                log.info("创建数据文件: {}", dataPath);
+            }
+
+            // 检查cookiePath文件是否存在，不存在则创建
+            File cookieFile = new File(cookiePath);
+            if (!cookieFile.exists()) {
+                // 确保父目录存在
+                if (!cookieFile.getParentFile().exists()) {
+                    cookieFile.getParentFile().mkdirs();
+                }
+                // 创建空的cookie文件
+                Files.write(Paths.get(cookiePath), "[]".getBytes());
+                log.info("创建cookie文件: {}", cookiePath);
+            }
+        } catch (IOException e) {
+            log.error("创建文件时发生异常: {}", e.getMessage());
+        }
+    }
+
     public static void main(String[] args) {
         loadData(dataPath);
         // 暂时使用 PlayWright 获取岗位，后续直接复用原来逻辑，后期优化全面替换 selenium，全部改为PlayWright
@@ -495,7 +530,7 @@ public class Boss {
                         .findElement(BossElementLocators.RECRUITER_INFO);
                 if (recruiterElement.isPresent()) {
                     String recruiterName = recruiterElement.get().getText();
-                    job.setRecruiter(recruiterName);
+                    job.setRecruiter(recruiterName.replaceAll("\\r|\\n", ""));
                     if (blackRecruiters.stream().anyMatch(recruiterName::contains)) {
                         // 排除黑名单招聘人员
                         BossPageOperations.closeCurrentTabAndSwitchTo(tabs, 0);
@@ -702,7 +737,7 @@ public class Boss {
                     jobType);
 
         } catch (Exception e) {
-            log.error("岗位薪资获取异常！薪资文本【{}】,异常信息【{}】",salary, e.getMessage(), e);
+            log.error("岗位薪资获取异常！薪资文本【{}】,异常信息【{}】", salary, e.getMessage(), e);
             // 出错时，您可根据业务需求决定返回 true 或 false
             // 这里假设出错时无法判断，视为不满足预期 => 返回 true
             return true;
