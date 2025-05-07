@@ -4,7 +4,7 @@
 [![Stars](https://img.shields.io/github/stars/loks666/get_jobs?style=flat&label=%F0%9F%8C%9Fstars&labelColor=ff4f4f&color=ff8383)](https://github.com/loks666/get_jobs)
 [![QQ交流群](https://img.shields.io/badge/🐧QQ交流群-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat)][qq-link]
 [![License](https://img.shields.io/badge/📑licenses-MIT-34D058?labelColor=22863A&style=flat)](https://github.com/loks666/get_jobs/blob/master/LICENSE)
-[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Aloks666/Fget_jobs/0is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues/0closed&labelColor=008B8B&color=00CCCC)](https://github.com/loks666/get_jobs/issues?q=is%3Aissue+is%3Aclosed)
+![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Aloks666/get_jobs+is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues%20closed&labelColor=008B8B&color=00CCCC)
 [![Forks](https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE)](https://github.com/loks666/get_jobs/forks)
 
 </div>
@@ -16,49 +16,46 @@
 若黑夜终将黑暗，那你即是黎明。  
 黎明前的黑暗，最冷、最险、最难熬。  
 但断剑重铸之日，便是英雄归来之时。  
-挺过这一刻，纵使刀山火海，又有何惧？**  
+挺过这一刻，纵使刀山火海，又有何惧？**
 
 - [如何使用本程序寻找程序兼职岗位?](doc/part_job.md)
 - [你找不到工作，是因为大环境不好吗？【很重要】](doc/doc.md)
 - [少侠，请立即开始，你精彩的人生吧！【源自L站】](doc/just_do_it.md)
 - [许愿墙](https://fcv1y6gslc.feishu.cn/sheets/JS45sElqAhKhawtTzsYcftymnFe)
 
-    - 如果你有你心仪的工作，请在我这里许下愿望，如果实现了，请记得回来更新状态
-    - 许愿墙为飞书文档，你可以编辑好以后，导出为xlsx文档，然后覆盖本项目中resources文件夹中的"**许愿墙.xlsx**"文档
-    - 接下来，你就可以把xlsx文档，提交到main分支，然后……你就是本项目的开发者之一了。
-    - 你可以在你的简历中加上一条，Github，热门开源项目开发者之一。
-    - 但是你需要尽可能的，熟悉本项目的逻辑，去想象某一块功能就是你做的，这样可以更从容，更优雅的"吹牛逼”。
-    - 只要你相信你自己，本项目就会帮你，你要记住，是你自己拯救的你自己。
+  - 如果你有你心仪的工作，请在我这里许下愿望，如果实现了，请记得回来更新状态
+  - 许愿墙为飞书文档，你可以编辑好以后，导出为xlsx文档，然后覆盖本项目中resources文件夹中的"**许愿墙.xlsx**"文档
+  - 接下来，你就可以把xlsx文档，提交到main分支，然后……你就是本项目的开发者之一了。
+  - 你可以在你的简历中加上一条，Github，热门开源项目开发者之一。
+  - 但是你需要尽可能的，熟悉本项目的逻辑，去想象某一块功能就是你做的，这样可以更从容，更优雅的"吹牛逼”。
+  - 只要你相信你自己，本项目就会帮你，你要记住，是你自己拯救的你自己。
 
 > 目前提交pr除了许愿墙pr，会停止所有未经沟通作者沟通过的pr，请知悉，很多的人水平，真的菜的令人发指，请见谅。
 
 > 需要注意的是，提交pr的commit:请固定使用"✨I can do it！“，然后提交pr即可，剩下的，我全都搞定啦！
 
 - 📌 **目前该项目存在的问题**
-    - 当前招聘市场，有效的软件仅有 Boss 和 猎聘。
-    - 如果 Boss 出现掉线等问题，请注意两点：
-        1. 修改间隔等待时间；
-        2. 当天停止投递，第二天接着投，否则可能会封号。
-    - **最重要的事情：不要依赖程序投递 Boss！！！**手机上的 Boss，比本程序网页端靠谱得多。当你手机投的很累，又没有投够 100
-      个，请再使用本程序的 Boss 投递！
-    - 本项目为 GitHub 热门开源项目，目前已申请 Intelli 的开源支持计划。加入开发组意味着你可以获得 Intelli 编辑器官方的*
-      *免费全家桶永久使用权**，欢迎联系我！
-    - 安卓版本开发中，我有 Auto.js 的资源，我可以无偿分享：只要你对 Auto.js 感兴趣，或者你会、你想学，都可以联系我。如果有谁能开发
-      iOS 端 Appium，也请**尽快联系我**。
-    - 本项目遵循 MIT 协议。
-      是的，你可以商业化，但是——**我真的希望你能帮助更多人，团结起来，冲破这片天！**
+  - 当前招聘市场，有效的软件仅有 Boss 和 猎聘。
+  - 如果 Boss 出现掉线等问题，请注意两点：
+    1. 修改间隔等待时间；
+    2. 当天停止投递，第二天接着投，否则可能会封号。
+  - **最重要的事情：不要依赖程序投递 Boss！！！**   
+    手机上的 Boss，比本程序网页端靠谱得多。当你手机投的很累，又没有投够 100 个，请再使用本程序的 Boss 投递！
+  - 本项目为 GitHub 热门开源项目，目前已申请 Intelli 的开源支持计划。加入开发组意味着你可以获得 Intelli 编辑器官方的**免费全家桶永久使用权**，欢迎联系我！
+  - 安卓版本开发中，我有 Auto.js 的资源，我可以无偿分享：只要你对 Auto.js 感兴趣，或者你会、你想学，都可以联系我。如果有谁能开发 iOS 端 Appium，也请**尽快联系我**。
+  - 本项目遵循 MIT 协议。是的，你可以商业化，但是——**真心希望你能帮助更多人，团结起来，冲破这片天！**
 
 ---
 
 - 🚀 **本项目资源**
-    - **内推链接**：[飞书文档](https://fcv1y6gslc.feishu.cn/sheets/N3wAsfBqhhEWNDtI29AcD7GAnV9?from=from_copylink)
-    - **简历修改、面试指导、背调跟随、全套服务流程**：如你需要，都可联系。
+  - **内推链接**：[飞书文档](https://fcv1y6gslc.feishu.cn/sheets/N3wAsfBqhhEWNDtI29AcD7GAnV9?from=from_copylink)
+  - **简历修改、面试指导、背调跟随、全套服务流程**：如你需要，都可联系。
 
 ---
 
 - 🧠 **最后的心法**
-    - 我需要你做的，就是**认真准备每一个面试**，去**争取每一个 offer**，去实现你的愿望、目标、梦想。
-    - 而不是怕这怕那，去抱怨这个抱怨那个，找借口，逃避，放弃。
+  - 我需要你做的，就是**认真准备每一个面试**，去**争取每一个 offer**，去实现你的愿望、目标、梦想。
+  - 而不是怕这怕那，去抱怨这个抱怨那个，找借口，逃避，放弃。
 
 > 💥 **“怕输，你就不配赢！”**
 
@@ -118,35 +115,33 @@ cd get_jobs
 
 - 🔩 通用配置
 
-    - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
-    - **Constant.WAIT_TIME**：超时等待时间，单位秒，用于等待页面加载
-    - **cookie登录**: 扫码后会自动保存**cookie.json**文件在代码运行目录下，换号直接删除**cookie.json**即可
-    - 每个平台的配置转换码都在平台文件夹下的Enum类里，找到相应的代码添加到类中即可
+  - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
+  - **Constant.WAIT_TIME**：超时等待时间，单位秒，用于等待页面加载
+  - **cookie登录**: 扫码后会自动保存**cookie.json**文件在代码运行目录下，换号直接删除**cookie.json**即可
+  - 每个平台的配置转换码都在平台文件夹下的Enum类里，找到相应的代码添加到类中即可
 - 📢 企业微信消息推送设置
 
-    - 把[.env_template](src/main/resources/.env_template)文件重命名为 `.env`
-    - 在企业微信中创建一个群聊，然后添加机器人，获取到机器人URL，复制到 `.env`文件中的 `HOOK_URL`即可
-    - 保持[config.yaml](src/main/resources/config.yaml)文件中 `bot.is_send`为true
-    - 企业微信推送示例
-      `<img src="src/main/resources/images/companyWechat.png" alt="企业微信推送示例">`
+  - 把[.env_template](src/main/resources/.env_template)文件重命名为 `.env`
+  - 在企业微信中创建一个群聊，然后添加机器人，获取到机器人URL，复制到 `.env`文件中的 `HOOK_URL`即可
+  - 保持[config.yaml](src/main/resources/config.yaml)文件中 `bot.is_send`为true
+  - 企业微信推送示例
+    `<img src="src/main/resources/images/companyWechat.png" alt="企业微信推送示例">`
 
   > 完成以上配置，在每个平台投递结束简历后，便会在企业微信的群聊内，推送岗位的投递情况，无须改动其他代码
 
->
-
 - 🤖 AI配置
 
-    - `.env`配制如下：
-      ```
-      HOOK_URL=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your_key_here
-      BASE_URL=https://api.openai.com
-      API_KEY=sk-xxx
-      MODEL=gpt-4o-mini
-      ```
-    - `HOOK_URL`：企业微信机器人推送的链接
-    - `BASE_URL`：直连或中转链接地址，如果是直连需要开梯子
-    - `API_KEY`：调用的API KEY
-    - `MODEL`：需要使用的模型名称
+  - `.env`配制如下：
+    ```
+    HOOK_URL=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your_key_here
+    BASE_URL=https://api.openai.com
+    API_KEY=sk-xxx
+    MODEL=gpt-4o-mini
+    ```
+  - `HOOK_URL`：企业微信机器人推送的链接
+  - `BASE_URL`：直连或中转链接地址，如果是直连需要开梯子
+  - `API_KEY`：调用的API KEY
+  - `MODEL`：需要使用的模型名称
 
   > 根据测试，boss直聘在每天所有的岗位投递结束后消耗的额度(gpt-4o-mini)大约在0.06美元(6美分)
   > 左右，代理除了在本项目中可用，也可使用客户端(https://github.com/knowlimit/ChatGPT-NextWeb)
@@ -157,8 +152,9 @@ cd get_jobs
   > 即可
   >
 
-    - AI生成的打招呼语示例
-      `<img src="src/main/resources/images/AiSayHi.png" alt="AI生成的打招呼语示例">`
+  - AI生成的打招呼语示例
+    `<img src="src/main/resources/images/AiSayHi.png" alt="AI生成的打招呼语示例">`  
+  
 - ⚙️ **主要的配置文件**（[config.yaml](src/main/resources/config.yaml))
 
   ```
@@ -215,14 +211,14 @@ cd get_jobs
   > 现在找工作是很难，但也别做舔狗，打工人不是牛马！
   >
 
-    - 发送图片简历
+  - 发送图片简历
 
   > 在resources文件夹下，将自己的pdf简历转换为resume.jpg，同时配置项sendImgResume为ture，即可自动发送图片简历
   > pdf转图片需要wps会员，如果找不到相关工具，可联系群主帮忙转换，5r/次
   >
 
-    - 目标薪资设置：expectedSalary: [ 25,35 ]
-        - 单位为K，第一个数字为最低薪资，第二个数字为最高薪资，只填一个数字默认为只要求最低薪水，不要求最高薪水
+  - 目标薪资设置：expectedSalary: [ 25,35 ]
+    - 单位为K，第一个数字为最低薪资，第二个数字为最高薪资，只填一个数字默认为只要求最低薪水，不要求最高薪水
 
   ```
     data.json //黑名单数据，在投递结束后会查询聊天记录寻找不合适的公司添加进去
@@ -315,8 +311,8 @@ cd get_jobs
 > 本项目文档已相对完善，如有运行仍有问题，请添加QQ群联系群主或在群内沟通
 
 - 请注意：
-    1. 本项目不支持服务器部署，无须尝试，如招聘网站发现访问者为服务器IP，不会返回任何网站数据。
-    2. 在开发与部署过程有任何问题都可在群内沟通，但群内的同学没有义务必须要解决您的问题，请保持礼貌提问的态度。
+  1. 本项目不支持服务器部署，无须尝试，如招聘网站发现访问者为服务器IP，不会返回任何网站数据。
+  2. 在开发与部署过程有任何问题都可在群内沟通，但群内的同学没有义务必须要解决您的问题，请保持礼貌提问的态度。
 
 > 注：本项目为免费开源项目，非Saas类出售商品，不会考虑任何兼容的设备以及他人的需求，如多位同学有相同的需求可以提出issue，具有一定需求性会考虑开发，其他的问题有能力就自己修改，否则请联系群主，非诚勿扰。
 
@@ -325,20 +321,20 @@ cd get_jobs
 ## 📑 更新日志
 
 - 2024-04-15 01:52:18
-    1. 新增config.yaml,目前仅需修改配置文件即可，已全平台支持
-    2. cookie有效期延长，保持至少一周（拉勾平台除外）【安慰剂】
+  1. 新增config.yaml,目前仅需修改配置文件即可，已全平台支持
+  2. cookie有效期延长，保持至少一周（拉勾平台除外）【安慰剂】
 - 2024-04-28 15:20:06
-    1. boos：自动更新黑名单公司
+  1. boos：自动更新黑名单公司
 - 2024-06-06 01:49:38
-    1. boos：若公司名小于2个字或4个字母则不会添加进黑名单
-    2. 添加linux系统支持。
+  1. boos：若公司名小于2个字或4个字母则不会添加进黑名单
+  2. 添加linux系统支持。
 - 2024-06-06 17:41:20
-    1. boss支持多城市投递。
+  1. boss支持多城市投递。
 - 2024-08-11 18:39:56
-    1. 修复智联，猎聘等不能投递的问题。
-    2. 添加定时投递功能
+  1. 修复智联，猎聘等不能投递的问题。
+  2. 添加定时投递功能
 - 2024-08-12 22:56:20
-    1. 添加企业微信消息推送功能
+  1. 添加企业微信消息推送功能
 
 ---
 
