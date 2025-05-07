@@ -40,9 +40,9 @@ import static utils.SeleniumUtil.*;
 
 /**
  * @author loks666
- *         项目链接: <a href=
- *         "https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
- *         Boss直聘自动投递
+ * 项目链接: <a href=
+ * "https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ * Boss直聘自动投递
  */
 public class Boss {
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
@@ -117,6 +117,7 @@ public class Boss {
         if (!config.getDebugger()) {
             CHROME_DRIVER.close();
             CHROME_DRIVER.quit();
+            PlaywrightUtil.close();
         }
     }
 
@@ -608,8 +609,8 @@ public class Boss {
                         input.get().sendKeys(
                                 filterResult != null && filterResult.getResult()
                                         && isValidString(filterResult.getMessage())
-                                                ? filterResult.getMessage()
-                                                : config.getSayHi().replaceAll("\\r|\\n", ""));
+                                        ? filterResult.getMessage()
+                                        : config.getSayHi().replaceAll("\\r|\\n", ""));
 
                         Optional<WebElement> sendBtn = BossElementFinder
                                 .waitForElementClickable(BossElementLocators.SEND_BUTTON);
@@ -701,10 +702,10 @@ public class Boss {
      * 检查岗位薪资是否符合预期
      *
      * @return boolean
-     *         true 不符合预期
-     *         false 符合预期
-     *         期望的最低薪资如果比岗位最高薪资还小，则不符合（薪资给的太少）
-     *         期望的最高薪资如果比岗位最低薪资还小，则不符合(要求太高满足不了)
+     * true 不符合预期
+     * false 符合预期
+     * 期望的最低薪资如果比岗位最高薪资还小，则不符合（薪资给的太少）
+     * 期望的最高薪资如果比岗位最低薪资还小，则不符合(要求太高满足不了)
      */
     private static boolean isSalaryNotExpected(String salary) {
         try {
@@ -804,7 +805,7 @@ public class Boss {
     }
 
     private static boolean isSalaryOutOfRange(Integer[] jobSalary, Integer miniSalary, Integer maxSalary,
-            String jobType) {
+                                              String jobType) {
         if (jobSalary == null) {
             return true;
         }
@@ -891,7 +892,7 @@ public class Boss {
 
     private static boolean isTargetJob(String keyword, String jobName) {
         boolean keywordIsAI = false;
-        for (String target : new String[] { "大模型", "AI" }) {
+        for (String target : new String[]{"大模型", "AI"}) {
             if (keyword.contains(target)) {
                 keywordIsAI = true;
                 break;
@@ -899,7 +900,7 @@ public class Boss {
         }
 
         boolean jobIsDesign = false;
-        for (String designOrVision : new String[] { "设计", "视觉", "产品", "运营" }) {
+        for (String designOrVision : new String[]{"设计", "视觉", "产品", "运营"}) {
             if (jobName.contains(designOrVision)) {
                 jobIsDesign = true;
                 break;
@@ -907,7 +908,7 @@ public class Boss {
         }
 
         boolean jobIsAI = false;
-        for (String target : new String[] { "AI", "人工智能", "大模型", "生成" }) {
+        for (String target : new String[]{"AI", "人工智能", "大模型", "生成"}) {
             if (jobName.contains(target)) {
                 jobIsAI = true;
                 break;
@@ -954,17 +955,6 @@ public class Boss {
             SeleniumUtil.loadCookie(cookiePath);
             CHROME_DRIVER.navigate().refresh();
             SeleniumUtil.sleep(2);
-
-            DevTools devTools = CHROME_DRIVER.getDevTools();
-            devTools.createSession();
-            // 注入脚本：隐藏 navigator.webdriver
-            devTools.send(
-                    Page.addScriptToEvaluateOnNewDocument(
-                            "Object.defineProperty(navigator, 'injected', {get: () => 123})",
-                            Optional.empty(), // worldName（可空）
-                            Optional.of(false), // includeCommandLineAPI
-                            Optional.of(true) // runImmediately
-                    ));
         }
         if (isLoginRequired()) {
             log.error("cookie失效，尝试扫码登录...");
@@ -1038,20 +1028,30 @@ public class Boss {
             try {
                 // 尝试点击二维码按钮并等待页面出现已登录的元素
                 scanButton.get().click();
-                BossElementFinder.waitForElementVisible(LOGIN_SUCCESS_HEADER, 2);
-                BossElementFinder.waitForElementVisible(LOGIN_SUCCESS_INDICATOR, 2);
-
+                Optional<WebElement> loginSuccessHeader = BossElementFinder.waitForElementVisible(LOGIN_SUCCESS_HEADER, 2);
+//                BossElementFinder.waitForElementVisible(LOGIN_SUCCESS_INDICATOR, 2);
                 // 如果上述元素都能找到，说明登录成功
-                login = true;
-                log.info("登录成功！保存cookie...");
-            } catch (Exception e) {
-                // 登录失败
-                log.error("登录失败，等待用户操作或者 2 秒后重试...");
+                if (loginSuccessHeader.isPresent()) {
+                    login = true;
+                    log.info("登录成功！保存cookie...");
+                } else {
+                    // 登录失败
+                    log.error("登录失败，等待用户操作或者 2 秒后重试...");
 
-                // 每次登录失败后，等待2秒，同时检查用户是否按了回车
-                boolean userInput = waitForUserInputOrTimeout(scanner);
-                if (userInput) {
-                    log.info("检测到用户输入，继续尝试登录...");
+                    // 每次登录失败后，等待2秒，同时检查用户是否按了回车
+                    boolean userInput = waitForUserInputOrTimeout(scanner);
+                    if (userInput) {
+                        log.info("检测到用户输入，继续尝试登录...");
+                    }
+
+                }
+
+            } catch (Exception e) {
+                //  scanButton.get().click(); 可能已经登录成功，没有这个扫码登录按钮
+                Optional<WebElement> loginSuccessHeader = BossElementFinder.waitForElementVisible(LOGIN_SUCCESS_HEADER, 2);
+                if(loginSuccessHeader.isPresent()){
+                    login = true;
+                    log.info("登录成功！保存cookie...");
                 }
             }
         }
