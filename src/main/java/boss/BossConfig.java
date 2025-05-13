@@ -107,6 +107,8 @@ public class BossConfig {
      */
     private Boolean keyFilter;
 
+    private Boolean recommendJobs;
+
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
