@@ -19,7 +19,8 @@ boss:
   filterDeadHR: true # 是否过滤不活跃HR,该选项会过滤半年前活跃的HR
   enableAI: false # 开启AI检测与自动生成打招呼语
   sendImgResume: true # 是否发送图片简历
-  deadStatus: ["2周内活跃","本月活跃","2月内活跃","半年前活跃"] # 过滤掉HR状态
+  deadStatus: ["2周内活跃","本月活跃","3月内活跃","2月内活跃","半年前活跃"] # 过滤掉HR状态
+  keyFilter: true # 是否使用关键词匹配岗位名称，true岗位名称不包含完整关键字就会过滤，false则不过滤直接使用boss搜索结果
 mobileboss:
   debugger: false # 开发者模式，默认为false即可
   sayHi: "您好,我有8年工作经验,还有AIGC大模型、Java,Python,Golang和运维的相关经验,希望应聘这个岗位,期待可以与您进一步沟通,谢谢！" #必须要关闭boss的自动打招呼
@@ -37,7 +38,7 @@ mobileboss:
   filterDeadHR: true # 是否过滤不活跃HR,该选项会过滤半年前活跃的HR
   enableAI: false # 开启AI检测与自动生成打招呼语
   sendImgResume: true # 是否发送图片简历
-  deadStatus: ["2周内活跃","本月活跃","2月内活跃","半年前活跃"] # 过滤掉HR状态
+  deadStatus: ["2周内活跃","本月活跃","3月内活跃","2月内活跃","半年前活跃"] # 过滤掉HR状态
   nextIntervalMinutes: 50
   keyFilter: true # 是否使用关键词匹配岗位名称，true岗位名称不包含完整关键字就会过滤，false则不过滤直接使用boss搜索结果
   ### 以下几个参数移动端查岗暂不支持
