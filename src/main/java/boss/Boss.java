@@ -1214,7 +1214,6 @@ public class Boss {
             Locator activeTimeElement = page.locator(HR_ACTIVE_TIME);
             activeTimeElement = activeTimeElement.nth(0);
             String outerHtml = activeTimeElement.first().evaluate("el => el.outerHTML").toString();
-            System.out.println(outerHtml);
 
 
             if (activeTimeElement.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
