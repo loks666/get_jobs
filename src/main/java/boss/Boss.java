@@ -117,6 +117,91 @@ public class Boss {
         }
     }
 
+    /**
+     * 临时补充，用于刷默认配置的推荐岗位
+     */
+    private static void getRecommendJobs() {
+        Page page = PlaywrightUtil.getPageObject();
+        PlaywrightUtil.loadCookies(cookiePath);
+        page.navigate("https://www.zhipin.com/web/geek/jobs");
+
+        // 等待页面加载
+        page.waitForLoadState();
+
+        try {
+            // 等待元素出现，最多等待10秒
+            page.waitForSelector("a.expect-item", new Page.WaitForSelectorOptions().setTimeout(10000));
+
+            // 获取a标签且class是expect-item active的元素
+            ElementHandle activeElement = page.querySelector("a.expect-item");
+
+            if (activeElement != null) {
+                log.info("找到'expect-item active'元素，准备点击");
+                // 点击该元素
+                activeElement.click();
+                // 点击后等待页面响应
+                page.waitForLoadState();
+                log.info("已点击'expect-item active'元素");
+
+
+                if (isJobsPresent()) {
+                    // 尝试滚动页面加载更多数据
+                    try {
+                        // 获取岗位列表并下拉加载更多
+                        log.info("开始获取岗位信息...");
+
+                        // 记录下拉前后的岗位数量
+                        int previousJobCount = 0;
+                        int currentJobCount = 0;
+                        int unchangedCount = 0;
+
+                        while (unchangedCount < 2) {
+                            // 获取所有岗位卡片
+                            List<ElementHandle> jobCards = page.querySelectorAll(JOB_LIST_SELECTOR);
+                            currentJobCount = jobCards.size();
+
+                            log.info("当前已加载岗位数量:{} ", currentJobCount);
+
+                            // 判断是否有新增岗位
+                            if (currentJobCount > previousJobCount) {
+                                previousJobCount = currentJobCount;
+                                unchangedCount = 0;
+
+                                // 滚动到页面底部加载更多
+                                PlaywrightUtil.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+                                log.info("下拉页面加载更多...");
+
+                                // 等待新内容加载
+                                page.waitForTimeout(2000);
+                            } else {
+                                unchangedCount++;
+                                if (unchangedCount < 2) {
+                                    System.out.println("下拉后岗位数量未增加，再次尝试...");
+                                    // 再次尝试滚动
+                                    page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+                                    page.waitForTimeout(2000);
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+
+                        log.info("已获取所有可加载岗位，共计: " + currentJobCount + " 个");
+
+                        log.info("继续滚动加载更多岗位");
+                    } catch (Exception e) {
+                        log.error("滚动加载数据异常: {}", e.getMessage());
+                    }
+                }
+            } else {
+                log.error("未找到class为'expect-item active'的a标签元素");
+            }
+        } catch (Exception e) {
+            log.error("寻找或点击'expect-item active'元素时出错: {}", e.getMessage());
+        }
+
+    }
+
     private static void postJobByCityByPlaywright(String cityCode) {
         String searchUrl = getSearchUrl(cityCode);
         for (String keyword : config.getKeywords()) {
@@ -125,7 +210,7 @@ public class Boss {
 
             String url = searchUrl + "&query=" + encodedKeyword;
             log.info("查询岗位链接:{}", url);
-            com.microsoft.playwright.Page page = PlaywrightUtil.getPageObject();
+            Page page = PlaywrightUtil.getPageObject();
             PlaywrightUtil.loadCookies(cookiePath);
             page.navigate(url);
 
@@ -145,7 +230,7 @@ public class Boss {
                         List<ElementHandle> jobCards = page.querySelectorAll(JOB_LIST_SELECTOR);
                         currentJobCount = jobCards.size();
 
-                        System.out.println("当前已加载岗位数量: " + currentJobCount);
+                        log.info("当前已加载岗位数量:{} ", currentJobCount);
 
                         // 判断是否有新增岗位
                         if (currentJobCount > previousJobCount) {
@@ -237,12 +322,12 @@ public class Boss {
 
             Locator items = page.locator(CHAT_LIST_ITEM);
             int itemCount = items.count();
-            
+
             for (int i = 0; i < itemCount; i++) {
                 try {
                     Locator companyElements = page.locator(COMPANY_NAME_IN_CHAT);
                     Locator messageElements = page.locator(LAST_MESSAGE);
-                    
+
                     String companyName = null;
                     String message = null;
                     int retryCount = 0;
@@ -289,7 +374,7 @@ public class Boss {
                     log.error("寻找黑名单公司异常...", e);
                 }
             }
-            
+
             try {
                 // 尝试找到加载更多的元素
                 Locator loadMoreElement = page.locator(SCROLL_LOAD_MORE);
@@ -346,7 +431,7 @@ public class Boss {
     @SneakyThrows
     private static Integer resumeSubmission(String keyword) {
         // 查找所有job卡片元素
-        com.microsoft.playwright.Page page = PlaywrightUtil.getPageObject();
+        Page page = PlaywrightUtil.getPageObject();
         // 使用page.locator方法获取所有匹配的元素
         Locator jobLocators = BossElementFinder.getPlaywrightLocator(page, BossElementLocators.JOB_CARD_BOX);
         // 获取元素总数
@@ -369,7 +454,6 @@ public class Boss {
                 }
 
 
-
                 Job job = new Job();
                 job.setHref(jobCard.locator(BossElementLocators.JOB_NAME).getAttribute("href"));
                 job.setCompanyName(companyName);
@@ -388,9 +472,9 @@ public class Boss {
                     job.setCompanyTag("");
                 }
 
-                if(config.getKeyFilter()){
-                    if(!jobName.toLowerCase().contains(keyword.toLowerCase())){
-                        log.info("已过滤：岗位【{}】名称不包含关键字【{}】",jobName,keyword);
+                if (config.getKeyFilter()) {
+                    if (!jobName.toLowerCase().contains(keyword.toLowerCase())) {
+                        log.info("已过滤：岗位【{}】名称不包含关键字【{}】", jobName, keyword);
                         continue;
                     }
                 }
@@ -400,6 +484,9 @@ public class Boss {
                 log.debug("处理岗位卡片失败: {}", e.getMessage());
             }
         }
+
+        // 获取推荐岗位
+//        getRecommendJobs();
 
         for (Job job : jobs) {
             // 使用Playwright在新标签页中打开链接
@@ -433,7 +520,7 @@ public class Boss {
                 continue;
             }
 
-            try{
+            try {
                 // 获取职位描述标签
                 Locator tagElements = jobPage.locator(JOB_KEYWORD_LIST);
                 int tagCount = tagElements.count();
@@ -442,13 +529,13 @@ public class Boss {
                     tag.append(tagElements.nth(j).textContent()).append("·");
                 }
                 job.setJobKeywordTag(tag.toString());
-            }catch (Exception e){
+            } catch (Exception e) {
                 log.info("获取职位描述标签失败:{}", e.getMessage());
             }
 
-            if(config.getKeyFilter()){
-                if(!job.getJobKeywordTag().toLowerCase().contains(keyword.toLowerCase())){
-                    log.info("已过滤：岗位【{}】描述不包含关键字【{}】",job.getJobName(),keyword);
+            if (config.getKeyFilter()) {
+                if (!job.getJobKeywordTag().toLowerCase().contains(keyword.toLowerCase())) {
+                    log.info("已过滤：岗位【{}】描述不包含关键字【{}】", job.getJobName(), keyword);
                     jobPage.close();
                     continue;
                 }
@@ -597,7 +684,7 @@ public class Boss {
                                             Locator imageSendBtn = jobPage.locator(".image-uploader-btn");
                                             if (imageSendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(2000))) {
                                                 // 发送简历图片
-                                                if(!debug){
+                                                if (!debug) {
                                                     imageSendBtn.click();
                                                     imgResume = true;
                                                 }
