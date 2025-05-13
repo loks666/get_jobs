@@ -34,12 +34,15 @@ public class BossElementLocators {
     public static final String TAG_LIST = "ul.tag-list li";
 
     // 职位详情页元素
-    public static final String CHAT_BUTTON = "[class*='btn btn-startchat']";
+    public static final String CHAT_BUTTON = "a.btn.btn-startchat";
     public static final String ERROR_CONTENT = "//div[@class='error-content']";
     public static final String JOB_DETAIL_SALARY = "//div[@class='info-primary']//span[@class='salary']";
     public static final String RECRUITER_INFO = "//div[@class='boss-info-attr']";
     public static final String HR_ACTIVE_TIME = "//span[@class='boss-active-time']";
     public static final String JOB_DESCRIPTION = "//div[@class='job-sec-text']";
+    public static final String JOB_KEYWORD_LIST = "ul.job-keyword-list li";
+
+
 
     // 聊天相关元素
     public static final String DIALOG_TITLE = "//div[@class='dialog-title']";
