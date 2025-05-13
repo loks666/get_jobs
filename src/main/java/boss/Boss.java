@@ -5,16 +5,12 @@ import ai.AiFilter;
 import ai.AiService;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 import lombok.SneakyThrows;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.devtools.DevTools;
-import org.openqa.selenium.devtools.v135.page.Page;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.*;
@@ -28,15 +24,14 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static boss.BossElementLocators.*;
 import static utils.Bot.sendMessageByTime;
-import static utils.Constant.*;
+import static utils.Constant.ACTIONS;
+import static utils.Constant.CHROME_DRIVER;
 import static utils.JobUtils.formatDuration;
-import static utils.SeleniumUtil.*;
 
 /**
  * @author loks666
@@ -56,6 +51,8 @@ public class Boss {
     static String cookiePath = ProjectRootResolver.rootPath + "/src/main/java/boss/cookie.json";
     static Date startDate;
     static BossConfig config = BossConfig.init();
+    // 默认推荐岗位集合
+    static List<Job> recommendJobs = new ArrayList<>();
 
     static {
         try {
@@ -95,7 +92,7 @@ public class Boss {
     public static void main(String[] args) {
         loadData(dataPath);
         // 暂时使用 PlayWright 获取岗位，后续直接复用原来逻辑，后期优化全面替换 selenium，全部改为PlayWright
-        SeleniumUtil.initDriver();
+//        SeleniumUtil.initDriver();
         PlaywrightUtil.init();
         startDate = new Date();
         login();
@@ -121,6 +118,137 @@ public class Boss {
         }
     }
 
+    /**
+     * 临时补充，用于刷默认配置的推荐岗位
+     */
+    private static void getRecommendJobs() {
+        Page page = PlaywrightUtil.getPageObject();
+        PlaywrightUtil.loadCookies(cookiePath);
+        page.navigate("https://www.zhipin.com/web/geek/jobs");
+
+        // 等待页面加载
+        page.waitForLoadState();
+
+        try {
+            // 等待元素出现，最多等待10秒
+            page.waitForSelector("a.expect-item", new Page.WaitForSelectorOptions().setTimeout(10000));
+
+            // 获取a标签且class是expect-item的元素
+            ElementHandle activeElement = page.querySelector("a.expect-item");
+
+            if (activeElement != null) {
+                log.info("找到'expect-item'元素，准备点击");
+                // 点击该元素
+                activeElement.click();
+                // 点击后等待页面响应
+                page.waitForLoadState();
+                log.info("已点击'expect-item'元素");
+
+
+                if (isJobsPresent()) {
+                    // 尝试滚动页面加载更多数据
+                    try {
+                        // 获取岗位列表并下拉加载更多
+                        log.info("开始获取推荐岗位信息...");
+
+                        // 记录下拉前后的岗位数量
+                        int previousJobCount = 0;
+                        int currentJobCount = 0;
+                        int unchangedCount = 0;
+
+                        while (unchangedCount < 2) {
+                            // 获取所有岗位卡片
+                            List<ElementHandle> jobCards = page.querySelectorAll(JOB_LIST_SELECTOR);
+                            currentJobCount = jobCards.size();
+
+                            log.info("当前已加载岗位数量:{} ", currentJobCount);
+
+                            // 判断是否有新增岗位
+                            if (currentJobCount > previousJobCount) {
+                                previousJobCount = currentJobCount;
+                                unchangedCount = 0;
+
+                                // 滚动到页面底部加载更多
+                                PlaywrightUtil.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+                                log.info("下拉页面加载更多...");
+
+                                // 等待新内容加载
+                                page.waitForTimeout(2000);
+                            } else {
+                                unchangedCount++;
+                                if (unchangedCount < 2) {
+                                    System.out.println("下拉后岗位数量未增加，再次尝试...");
+                                    // 再次尝试滚动
+                                    page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+                                    page.waitForTimeout(2000);
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+
+                        log.info("已获取所有可加载推荐岗位，共计: " + currentJobCount + " 个");
+
+
+                        // 使用page.locator方法获取所有匹配的元素
+                        Locator jobLocators = BossElementFinder.getPlaywrightLocator(page, BossElementLocators.JOB_CARD_BOX);
+                        // 获取元素总数
+                        int count = jobLocators.count();
+
+                        List<Job> jobs = new ArrayList<>();
+                        // 遍历所有找到的job卡片
+                        for (int i = 0; i < count; i++) {
+                            try {
+                                Locator jobCard = jobLocators.nth(i);
+                                String jobName = jobCard.locator(BossElementLocators.JOB_NAME).textContent();
+                                if (blackJobs.stream().anyMatch(jobName::contains)) {
+                                    // 排除黑名单岗位
+                                    continue;
+                                }
+                                String companyName = jobCard.locator(BossElementLocators.COMPANY_NAME).textContent();
+                                if (blackCompanies.stream().anyMatch(companyName::contains)) {
+                                    // 排除黑名单公司
+                                    continue;
+                                }
+
+
+                                Job job = new Job();
+                                job.setHref(jobCard.locator(BossElementLocators.JOB_NAME).getAttribute("href"));
+                                job.setCompanyName(companyName);
+                                job.setJobName(jobName);
+                                job.setJobArea(jobCard.locator(BossElementLocators.JOB_AREA).textContent());
+                                // 获取标签列表
+                                Locator tagElements = jobCard.locator(BossElementLocators.TAG_LIST);
+                                int tagCount = tagElements.count();
+                                StringBuilder tag = new StringBuilder();
+                                for (int j = 0; j < tagCount; j++) {
+                                    tag.append(tagElements.nth(j).textContent()).append("·");
+                                }
+                                if (tag.length() > 0) {
+                                    job.setCompanyTag(tag.substring(0, tag.length() - 1));
+                                } else {
+                                    job.setCompanyTag("");
+                                }
+
+                                recommendJobs.add(job);
+                            } catch (Exception e) {
+                                log.debug("处理岗位卡片失败: {}", e.getMessage());
+                            }
+                        }
+
+                    } catch (Exception e) {
+                        log.error("滚动加载数据异常: {}", e.getMessage());
+                    }
+                }
+            } else {
+                log.error("未找到class为'expect-item'的a标签元素");
+            }
+        } catch (Exception e) {
+            log.error("寻找或点击'expect-item'元素时出错: {}", e.getMessage());
+        }
+
+    }
+
     private static void postJobByCityByPlaywright(String cityCode) {
         String searchUrl = getSearchUrl(cityCode);
         for (String keyword : config.getKeywords()) {
@@ -129,7 +257,7 @@ public class Boss {
 
             String url = searchUrl + "&query=" + encodedKeyword;
             log.info("查询岗位链接:{}", url);
-            com.microsoft.playwright.Page page = PlaywrightUtil.getPageObject();
+            Page page = PlaywrightUtil.getPageObject();
             PlaywrightUtil.loadCookies(cookiePath);
             page.navigate(url);
 
@@ -149,7 +277,7 @@ public class Boss {
                         List<ElementHandle> jobCards = page.querySelectorAll(JOB_LIST_SELECTOR);
                         currentJobCount = jobCards.size();
 
-                        System.out.println("当前已加载岗位数量: " + currentJobCount);
+                        log.info("当前已加载岗位数量:{} ", currentJobCount);
 
                         // 判断是否有新增岗位
                         if (currentJobCount > previousJobCount) {
@@ -185,74 +313,6 @@ public class Boss {
             }
 
             resumeSubmission(keyword);
-        }
-    }
-
-    /**
-     * selenium 默认暴露 navigator.webdriver，boss security-check.html
-     * 页面在DOM加载后立即运行一系列检测脚本
-     * 可能 在<head> 里就执行JS
-     * 页面有多个连续重定向或iframe跳转
-     * 注入的js没赶上运行时机，无法隐藏 navigator.webdriver 属性
-     *
-     * @param cityCode
-     */
-    @Deprecated
-    private static void postJobByCity(String cityCode) {
-        String searchUrl = getSearchUrl(cityCode);
-        WebDriverWait wait = new WebDriverWait(CHROME_DRIVER, Duration.ofSeconds(40));
-        for (String keyword : config.getKeywords()) {
-            // 使用 URLEncoder 对关键词进行编码
-            String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
-
-            String url = searchUrl + "&query=" + encodedKeyword;
-            log.info("查询岗位链接:{}", url);
-
-            DevTools devTools = CHROME_DRIVER.getDevTools();
-            devTools.createSession();
-            setDefaultHeaders(devTools);
-            injectStealthJs(devTools);
-
-            CHROME_DRIVER.get(url);
-            while (true) {
-                log.info("等待页面加载完成");
-
-                // 确保页面加载完成
-                wait.until(
-                        ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='job-list-container']")));
-
-                // 尝试滚动页面加载更多数据
-                try {
-                    JavascriptExecutor js = CHROME_DRIVER;
-                    // 滚动到页面底部
-                    // js.executeScript("window.scrollTo(0, document.body.scrollHeight)");
-                    // 等待新内容加载
-                    SeleniumUtil.sleep(5);
-
-                    // 检查是否到底部了（是否有"没有更多了"的提示）
-                    try {
-                        WebElement bottomElement = CHROME_DRIVER.findElement(
-                                By.xpath("//div[contains(text(), '没有更多了') or contains(@class, 'job-list-empty')]"));
-                        if (bottomElement != null && bottomElement.isDisplayed()) {
-                            log.info("已滚动到底部，没有更多数据");
-                            break;
-                        }
-                    } catch (Exception e) {
-                        // 未找到底部元素，继续滚动
-                    }
-
-                    // 加载一定数量的岗位后可以选择跳出循环
-                    List<WebElement> jobCards = CHROME_DRIVER.findElements(By.className("job-card-box"));
-                    for (WebElement jobCard : jobCards) {
-
-                    }
-
-                    log.info("继续滚动加载更多岗位");
-                } catch (Exception e) {
-                    log.error("滚动加载数据异常: {}", e.getMessage());
-                    break;
-                }
-            }
         }
     }
 
@@ -293,28 +353,27 @@ public class Boss {
     }
 
     private static void updateListData() {
-        CHROME_DRIVER.get("https://www.zhipin.com/web/geek/chat");
-        SeleniumUtil.getWait(3);
+        com.microsoft.playwright.Page page = PlaywrightUtil.getPageObject();
+        page.navigate("https://www.zhipin.com/web/geek/chat");
+        PlaywrightUtil.sleep(3);
 
-        JavascriptExecutor js = CHROME_DRIVER;
         boolean shouldBreak = false;
         while (!shouldBreak) {
             try {
-                WebElement bottom = CHROME_DRIVER.findElement(By.xpath(FINISHED_TEXT));
-                if ("没有更多了".equals(bottom.getText())) {
+                Locator bottomElement = page.locator(FINISHED_TEXT);
+                if (bottomElement.isVisible() && "没有更多了".equals(bottomElement.textContent())) {
                     shouldBreak = true;
                 }
             } catch (Exception ignore) {
             }
-            List<WebElement> items = CHROME_DRIVER.findElements(By.xpath(CHAT_LIST_ITEM));
-            for (int i = 0; i < items.size(); i++) {
+
+            Locator items = page.locator(CHAT_LIST_ITEM);
+            int itemCount = items.count();
+
+            for (int i = 0; i < itemCount; i++) {
                 try {
-                    WebElement companyElement = CHROME_DRIVER
-                            .findElements(By.xpath(COMPANY_NAME_IN_CHAT))
-                            .get(i);
-                    WebElement messageElement = CHROME_DRIVER
-                            .findElements(By.xpath(LAST_MESSAGE))
-                            .get(i);
+                    Locator companyElements = page.locator(COMPANY_NAME_IN_CHAT);
+                    Locator messageElements = page.locator(LAST_MESSAGE);
 
                     String companyName = null;
                     String message = null;
@@ -322,32 +381,23 @@ public class Boss {
 
                     while (retryCount < 2) {
                         try {
-                            companyName = companyElement.getText();
-                            message = messageElement.getText();
-                            break; // 成功获取文本，跳出循环
-                        } catch (org.openqa.selenium.StaleElementReferenceException e) {
+                            if (i < companyElements.count() && i < messageElements.count()) {
+                                companyName = companyElements.nth(i).textContent();
+                                message = messageElements.nth(i).textContent();
+                                break; // 成功获取文本，跳出循环
+                            } else {
+                                log.info("元素索引超出范围");
+                                break;
+                            }
+                        } catch (Exception e) {
                             retryCount++;
                             if (retryCount >= 2) {
                                 log.info("尝试获取元素文本2次失败，放弃本次获取");
                                 break;
                             }
                             log.info("页面元素已变更，正在重试第{}次获取元素文本...", retryCount);
-                            // 重新获取元素
-                            try {
-                                companyElement = CHROME_DRIVER
-                                        .findElements(
-                                                By.xpath(COMPANY_NAME_IN_CHAT))
-                                        .get(i);
-                                messageElement = CHROME_DRIVER
-                                        .findElements(
-                                                By.xpath(LAST_MESSAGE))
-                                        .get(i);
-                                // 等待短暂时间后重试
-                                SeleniumUtil.sleep(1);
-                            } catch (Exception ex) {
-                                log.info("重新获取元素失败，放弃本次获取");
-                                break;
-                            }
+                            // 等待短暂时间后重试
+                            PlaywrightUtil.sleep(1);
                         }
                     }
 
@@ -371,27 +421,22 @@ public class Boss {
                     log.error("寻找黑名单公司异常...", e);
                 }
             }
-            WebElement element;
+
             try {
-                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath(SCROLL_LOAD_MORE)));
-                element = CHROME_DRIVER.findElement(By.xpath(SCROLL_LOAD_MORE));
+                // 尝试找到加载更多的元素
+                Locator loadMoreElement = page.locator(SCROLL_LOAD_MORE);
+                if (loadMoreElement.isVisible()) {
+                    // 滚动到加载更多元素
+                    loadMoreElement.scrollIntoViewIfNeeded();
+                    PlaywrightUtil.sleep(1);
+                } else {
+                    // 如果找不到特定元素，尝试滚动到页面底部
+                    page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+                    PlaywrightUtil.sleep(1);
+                }
             } catch (Exception e) {
                 log.info("没找到滚动条...");
                 break;
-            }
-
-            if (element != null) {
-                try {
-                    js.executeScript("arguments[0].scrollIntoView();", element);
-                } catch (Exception e) {
-                    log.error("滚动到元素出错", e);
-                }
-            } else {
-                try {
-                    js.executeScript("window.scrollTo(0, document.body.scrollHeight);");
-                } catch (Exception e) {
-                    log.error("滚动到页面底部出错", e);
-                }
             }
         }
         log.info("黑名单公司数量：{}", blackCompanies.size());
@@ -433,7 +478,7 @@ public class Boss {
     @SneakyThrows
     private static Integer resumeSubmission(String keyword) {
         // 查找所有job卡片元素
-        com.microsoft.playwright.Page page = PlaywrightUtil.getPageObject();
+        Page page = PlaywrightUtil.getPageObject();
         // 使用page.locator方法获取所有匹配的元素
         Locator jobLocators = BossElementFinder.getPlaywrightLocator(page, BossElementLocators.JOB_CARD_BOX);
         // 获取元素总数
@@ -455,6 +500,7 @@ public class Boss {
                     continue;
                 }
 
+
                 Job job = new Job();
                 job.setHref(jobCard.locator(BossElementLocators.JOB_NAME).getAttribute("href"));
                 job.setCompanyName(companyName);
@@ -472,52 +518,343 @@ public class Boss {
                 } else {
                     job.setCompanyTag("");
                 }
+
+                if (config.getKeyFilter()) {
+                    if (!jobName.toLowerCase().contains(keyword.toLowerCase())) {
+                        log.info("已过滤：岗位【{}】名称不包含关键字【{}】", jobName, keyword);
+                        continue;
+                    }
+                }
+
                 jobs.add(job);
             } catch (Exception e) {
                 log.debug("处理岗位卡片失败: {}", e.getMessage());
             }
         }
 
+        // 第一次循环的时候投递推荐岗位
+        if (recommendJobs.isEmpty()&&config.getRecommendJobs()) {
+            getRecommendJobs();
+
+            for (Job job : recommendJobs) {
+                // 使用Playwright在新标签页中打开链接
+                com.microsoft.playwright.Page jobPage = PlaywrightUtil.getPageObject().context().newPage();
+                jobPage.navigate(homeUrl + job.getHref());
+
+                try {
+                    // 等待聊天按钮出现
+                    Locator chatButton = jobPage.locator(BossElementLocators.CHAT_BUTTON);
+                    if (!chatButton.nth(0).isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                        Locator errorElement = jobPage.locator(BossElementLocators.ERROR_CONTENT);
+                        if (errorElement.isVisible() && errorElement.textContent().contains("异常访问")) {
+                            jobPage.close();
+                            return -2;
+                        }
+                    }
+                } catch (Exception e) {
+                    if (config.getDebugger()) {
+                        e.printStackTrace();
+                    }
+                    log.error("无法加载岗位详情页: {}", e.getMessage());
+                    jobPage.close();
+                    continue;
+                }
+
+                // 过滤不活跃HR
+                if (isDeadHR(jobPage)) {
+                    jobPage.close();
+                    log.info("该HR已过滤");
+                    PlaywrightUtil.sleep(1);
+                    continue;
+                }
+
+                try {
+                    // 获取职位描述标签
+                    Locator tagElements = jobPage.locator(JOB_KEYWORD_LIST);
+                    int tagCount = tagElements.count();
+                    StringBuilder tag = new StringBuilder();
+                    for (int j = 0; j < tagCount; j++) {
+                        tag.append(tagElements.nth(j).textContent()).append("·");
+                    }
+                    job.setJobKeywordTag(tag.toString());
+                } catch (Exception e) {
+                    log.info("获取职位描述标签失败:{}", e.getMessage());
+                }
+
+                // 推荐岗位 职位名称/职位描述关键字其中一个必须匹配一个岗位关键词才投递
+                List<String> keywords = config.getKeywords();
+                String jobName = job.getJobName();
+                String jobKeywordTag = job.getJobKeywordTag();
+                
+                // 检查jobKeywordTag或jobName是否包含关键字列表中的任意一个
+                boolean containsKeyword = false;
+                if (keywords != null && !keywords.isEmpty()) {
+                    // 检查jobName
+                    if (isValidString(jobName)) {
+                        for (String keywordItem : keywords) {
+                            if (jobName.contains(keywordItem)) {
+                                containsKeyword = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 如果jobName不包含关键字，检查jobKeywordTag
+                    if (!containsKeyword && isValidString(jobKeywordTag)) {
+                        for (String keywordItem : keywords) {
+                            if (jobKeywordTag.contains(keywordItem)) {
+                                containsKeyword = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // 如果不包含任何关键字，则跳过此职位
+                if (!containsKeyword && !keywords.isEmpty()) {
+                    log.info("已过滤:【{}】公司【{}】岗位不包含任何关键字", job.getCompanyName(), jobName);
+                    jobPage.close();
+                    continue;
+                }
+
+                // 获取薪资
+                try {
+                    Locator salaryElement = jobPage.locator(BossElementLocators.JOB_DETAIL_SALARY);
+                    if (salaryElement.isVisible()) {
+                        String salaryText = salaryElement.textContent();
+                        job.setSalary(salaryText);
+                        if (isSalaryNotExpected(salaryText)) {
+                            // 过滤薪资
+                            log.info("已过滤:【{}】公司【{}】岗位薪资【{}】不符合投递要求", job.getCompanyName(), job.getJobName(), salaryText);
+                            jobPage.close();
+                            continue;
+                        }
+                    }
+                } catch (Exception ignore) {
+                    log.info("获取岗位薪资失败:{}", ignore.getMessage());
+                }
+
+                // 获取招聘人员信息
+                try {
+                    Locator recruiterElement = jobPage.locator(BossElementLocators.RECRUITER_INFO);
+                    if (recruiterElement.isVisible()) {
+                        String recruiterName = recruiterElement.textContent();
+                        job.setRecruiter(recruiterName.replaceAll("\\r|\\n", ""));
+                        if (blackRecruiters.stream().anyMatch(recruiterName::contains)) {
+                            // 排除黑名单招聘人员
+                            jobPage.close();
+                            continue;
+                        }
+                    }
+                } catch (Exception ignore) {
+                    log.info("获取招聘人员信息失败:{}", ignore.getMessage());
+                }
+
+                // 模拟用户浏览行为
+                jobPage.evaluate("window.scrollBy(0, 300)");
+                PlaywrightUtil.sleep(1);
+                jobPage.evaluate("window.scrollBy(0, 300)");
+                PlaywrightUtil.sleep(1);
+                jobPage.evaluate("window.scrollTo(0, 0)");
+                PlaywrightUtil.sleep(1);
+
+                Locator chatBtn = jobPage.locator(BossElementLocators.CHAT_BUTTON);
+                chatBtn = chatBtn.nth(0);
+                boolean debug = config.getDebugger();
+
+                // 每次点击沟通前都休眠5秒 减少调用频率
+                PlaywrightUtil.sleep(5);
+
+                if (chatBtn.isVisible() && "立即沟通".equals(chatBtn.textContent().replaceAll("\\s+", ""))) {
+                    String waitTime = config.getWaitTime();
+                    int sleepTime = 10; // 默认等待10秒
+
+                    if (waitTime != null) {
+                        try {
+                            sleepTime = Integer.parseInt(waitTime);
+                        } catch (NumberFormatException e) {
+                            log.error("等待时间转换异常！！");
+                        }
+                    }
+
+                    PlaywrightUtil.sleep(sleepTime);
+
+                    AiFilter filterResult = null;
+                    if (config.getEnableAI()) {
+                        // AI检测岗位是否匹配
+                        Locator jdElement = jobPage.locator(BossElementLocators.JOB_DESCRIPTION);
+                        if (jdElement.isVisible()) {
+                            String jd = jdElement.textContent();
+                            filterResult = checkJob(keyword, job.getJobName(), jd);
+                        }
+                    }
+
+                    chatBtn.click();
+
+                    if (isLimit()) {
+                        PlaywrightUtil.sleep(1);
+                        jobPage.close();
+                        return -1;
+                    }
+
+                    // 沟通对话框
+                    try {
+                        // 不知道是什么情况下可能出现的弹框，执行关闭处理
+                        try {
+                            Locator dialogTitle = jobPage.locator(BossElementLocators.DIALOG_TITLE);
+                            if (dialogTitle.nth(0).isVisible()) {
+                                Locator closeBtn = jobPage.locator(BossElementLocators.DIALOG_CLOSE);
+                                if (closeBtn.nth(0).isVisible()) {
+                                    closeBtn.nth(0).click();
+                                    chatBtn.nth(0).click();
+                                }
+                            }
+                        } catch (Exception ignore) {
+                        }
+
+                        // 对话文本录入框
+                        Locator input = jobPage.locator(BossElementLocators.CHAT_INPUT);
+                        input = input.nth(0);
+                        if (input.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                            input.click();
+                            Locator dialogElement = jobPage.locator(BossElementLocators.DIALOG_CONTAINER);
+                            dialogElement = dialogElement.nth(0);
+                            if (dialogElement.isVisible() && "不匹配".equals(dialogElement.textContent())) {
+                                jobPage.close();
+                                continue;
+                            }
+
+                            input.fill(
+                                    filterResult != null && filterResult.getResult()
+                                            && isValidString(filterResult.getMessage())
+                                            ? filterResult.getMessage()
+                                            : config.getSayHi().replaceAll("\\r|\\n", ""));
+
+                            Locator sendBtn = jobPage.locator(BossElementLocators.SEND_BUTTON);
+                            sendBtn = sendBtn.nth(0);
+                            if (sendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                                if (!debug) {
+                                    // 点击发送打招呼内容
+                                    sendBtn.click();
+                                }
+                                PlaywrightUtil.sleep(5);
+
+                                String recruiter = job.getRecruiter();
+                                String company = job.getCompanyName();
+                                String position = job.getJobName() + " " + job.getSalary() + " " + job.getJobArea();
+
+                                // 发送简历图片
+                                Boolean imgResume = false;
+                                if (config.getSendImgResume()) {
+                                    try {
+                                        // 从类路径加载 resume.jpg
+                                        URL resourceUrl = Boss.class.getResource("/resume.jpg");
+                                        if (resourceUrl != null) {
+                                            File imageFile = new File(resourceUrl.toURI());
+                                            // 使用Playwright上传文件
+                                            Locator fileInput = jobPage.locator(BossElementLocators.IMAGE_UPLOAD);
+                                            if (fileInput.isVisible()) {
+                                                fileInput.setInputFiles(new java.nio.file.Path[]{java.nio.file.Paths.get(imageFile.getPath())});
+                                                // 等待发送按钮并点击
+                                                Locator imageSendBtn = jobPage.locator(".image-uploader-btn");
+                                                if (imageSendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(2000))) {
+                                                    // 发送简历图片
+                                                    if (!debug) {
+                                                        imageSendBtn.click();
+                                                        imgResume = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        log.error("获取简历图片路径失败: {}", e.getMessage());
+                                    }
+                                }
+
+                                PlaywrightUtil.sleep(2);
+                                log.info("正在投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter,
+                                        imgResume ? "发送图片简历成功！" : "");
+                                resultList.add(job);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.error("发送消息失败:{}", e.getMessage(), e);
+                    }
+                }
+
+                if (!debug) {
+                    jobPage.close();
+                }
+                if (debug) {
+                    break;
+                }
+            }
+        }
+
         for (Job job : jobs) {
-            // 打开新的标签页
-            ArrayList<String> tabs = BossPageOperations.openLinkInNewTab(job.getHref());
+            // 使用Playwright在新标签页中打开链接
+            com.microsoft.playwright.Page jobPage = PlaywrightUtil.getPageObject().context().newPage();
+            jobPage.navigate(homeUrl + job.getHref());
 
             try {
                 // 等待聊天按钮出现
-                Optional<WebElement> chatButton = BossElementFinder
-                        .waitForElementVisible(BossElementLocators.CHAT_BUTTON);
-                if (chatButton.isEmpty()) {
-                    Optional<WebElement> errorElement = BossElementFinder
-                            .findElement(BossElementLocators.ERROR_CONTENT);
-                    if (errorElement.isPresent() && errorElement.get().getText().contains("异常访问")) {
+                Locator chatButton = jobPage.locator(BossElementLocators.CHAT_BUTTON);
+                if (!chatButton.nth(0).isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                    Locator errorElement = jobPage.locator(BossElementLocators.ERROR_CONTENT);
+                    if (errorElement.isVisible() && errorElement.textContent().contains("异常访问")) {
+                        jobPage.close();
                         return -2;
                     }
                 }
             } catch (Exception e) {
+                if (config.getDebugger()) {
+                    e.printStackTrace();
+                }
                 log.error("无法加载岗位详情页: {}", e.getMessage());
-                BossPageOperations.closeCurrentTabAndSwitchTo(tabs, 0);
+                jobPage.close();
                 continue;
             }
 
             // 过滤不活跃HR
-            if (isDeadHR()) {
-                BossPageOperations.closeCurrentTabAndSwitchTo(tabs, 0);
+            if (isDeadHR(jobPage)) {
+                jobPage.close();
                 log.info("该HR已过滤");
-                SeleniumUtil.sleep(1);
+                PlaywrightUtil.sleep(1);
                 continue;
             }
 
+            try {
+                // 获取职位描述标签
+                Locator tagElements = jobPage.locator(JOB_KEYWORD_LIST);
+                int tagCount = tagElements.count();
+                StringBuilder tag = new StringBuilder();
+                for (int j = 0; j < tagCount; j++) {
+                    tag.append(tagElements.nth(j).textContent()).append("·");
+                }
+                job.setJobKeywordTag(tag.toString());
+            } catch (Exception e) {
+                log.info("获取职位描述标签失败:{}", e.getMessage());
+            }
+
+            if (config.getKeyFilter()) {
+                if (!job.getJobKeywordTag().toLowerCase().contains(keyword.toLowerCase())) {
+                    log.info("已过滤：岗位【{}】描述不包含关键字【{}】", job.getJobName(), keyword);
+                    jobPage.close();
+                    continue;
+                }
+            }
+
+
             // 获取薪资
             try {
-                Optional<WebElement> salaryElement = BossElementFinder
-                        .findElement(BossElementLocators.JOB_DETAIL_SALARY);
-                if (salaryElement.isPresent()) {
-                    String salaryText = salaryElement.get().getText();
+                Locator salaryElement = jobPage.locator(BossElementLocators.JOB_DETAIL_SALARY);
+                if (salaryElement.isVisible()) {
+                    String salaryText = salaryElement.textContent();
                     job.setSalary(salaryText);
                     if (isSalaryNotExpected(salaryText)) {
                         // 过滤薪资
                         log.info("已过滤:【{}】公司【{}】岗位薪资【{}】不符合投递要求", job.getCompanyName(), job.getJobName(), salaryText);
-                        BossPageOperations.closeCurrentTabAndSwitchTo(tabs, 0);
+                        jobPage.close();
                         continue;
                     }
                 }
@@ -527,14 +864,13 @@ public class Boss {
 
             // 获取招聘人员信息
             try {
-                Optional<WebElement> recruiterElement = BossElementFinder
-                        .findElement(BossElementLocators.RECRUITER_INFO);
-                if (recruiterElement.isPresent()) {
-                    String recruiterName = recruiterElement.get().getText();
+                Locator recruiterElement = jobPage.locator(BossElementLocators.RECRUITER_INFO);
+                if (recruiterElement.isVisible()) {
+                    String recruiterName = recruiterElement.textContent();
                     job.setRecruiter(recruiterName.replaceAll("\\r|\\n", ""));
                     if (blackRecruiters.stream().anyMatch(recruiterName::contains)) {
                         // 排除黑名单招聘人员
-                        BossPageOperations.closeCurrentTabAndSwitchTo(tabs, 0);
+                        jobPage.close();
                         continue;
                     }
                 }
@@ -542,14 +878,22 @@ public class Boss {
                 log.info("获取招聘人员信息失败:{}", ignore.getMessage());
             }
 
-            BossPageOperations.simulateUserBrowsing();
-            Optional<WebElement> chatBtn = BossElementFinder.findElement(BossElementLocators.CHAT_BUTTON);
+            // 模拟用户浏览行为
+            jobPage.evaluate("window.scrollBy(0, 300)");
+            PlaywrightUtil.sleep(1);
+            jobPage.evaluate("window.scrollBy(0, 300)");
+            PlaywrightUtil.sleep(1);
+            jobPage.evaluate("window.scrollTo(0, 0)");
+            PlaywrightUtil.sleep(1);
 
+            Locator chatBtn = jobPage.locator(BossElementLocators.CHAT_BUTTON);
+            chatBtn = chatBtn.nth(0);
             boolean debug = config.getDebugger();
 
-            // 休息下，请求太频繁了
-            SeleniumUtil.sleep(5);
-            if (!debug && chatBtn.isPresent() && "立即沟通".equals(chatBtn.get().getText())) {
+            // 每次点击沟通前都休眠5秒 减少调用频率
+            PlaywrightUtil.sleep(5);
+
+            if (chatBtn.isVisible() && "立即沟通".equals(chatBtn.textContent().replaceAll("\\s+", ""))) {
                 String waitTime = config.getWaitTime();
                 int sleepTime = 10; // 默认等待10秒
 
@@ -561,62 +905,67 @@ public class Boss {
                     }
                 }
 
-                SeleniumUtil.sleep(sleepTime);
+                PlaywrightUtil.sleep(sleepTime);
 
                 AiFilter filterResult = null;
                 if (config.getEnableAI()) {
                     // AI检测岗位是否匹配
-                    Optional<WebElement> jdElement = BossElementFinder.findElement(BossElementLocators.JOB_DESCRIPTION);
-                    if (jdElement.isPresent()) {
-                        String jd = jdElement.get().getText();
+                    Locator jdElement = jobPage.locator(BossElementLocators.JOB_DESCRIPTION);
+                    if (jdElement.isVisible()) {
+                        String jd = jdElement.textContent();
                         filterResult = checkJob(keyword, job.getJobName(), jd);
                     }
                 }
 
-                chatBtn.get().click();
+                chatBtn.click();
 
                 if (isLimit()) {
-                    SeleniumUtil.sleep(1);
+                    PlaywrightUtil.sleep(1);
+                    jobPage.close();
                     return -1;
                 }
 
+                // 沟通对话框
                 try {
+                    // 不知道是什么情况下可能出现的弹框，执行关闭处理
                     try {
-                        Optional<WebElement> dialogTitle = BossElementFinder
-                                .findElement(BossElementLocators.DIALOG_TITLE);
-                        if (dialogTitle.isPresent()) {
-                            Optional<WebElement> closeBtn = BossElementFinder
-                                    .findElement(BossElementLocators.DIALOG_CLOSE);
-                            if (closeBtn.isPresent()) {
-                                closeBtn.get().click();
-                                chatBtn.get().click();
+                        Locator dialogTitle = jobPage.locator(BossElementLocators.DIALOG_TITLE);
+                        if (dialogTitle.nth(0).isVisible()) {
+                            Locator closeBtn = jobPage.locator(BossElementLocators.DIALOG_CLOSE);
+                            if (closeBtn.nth(0).isVisible()) {
+                                closeBtn.nth(0).click();
+                                chatBtn.nth(0).click();
                             }
                         }
                     } catch (Exception ignore) {
                     }
 
-                    Optional<WebElement> input = BossElementFinder
-                            .waitForElementVisible(BossElementLocators.CHAT_INPUT);
-                    if (input.isPresent()) {
-                        input.get().click();
-                        Optional<WebElement> dialogElement = BossElementFinder
-                                .findElement(BossElementLocators.DIALOG_CONTAINER);
-                        if (dialogElement.isPresent() && "不匹配".equals(dialogElement.get().getText())) {
-                            BossPageOperations.closeCurrentTabAndSwitchTo(tabs, 0);
+                    // 对话文本录入框
+                    Locator input = jobPage.locator(BossElementLocators.CHAT_INPUT);
+                    input = input.nth(0);
+                    if (input.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                        input.click();
+                        Locator dialogElement = jobPage.locator(BossElementLocators.DIALOG_CONTAINER);
+                        dialogElement = dialogElement.nth(0);
+                        if (dialogElement.isVisible() && "不匹配".equals(dialogElement.textContent())) {
+                            jobPage.close();
                             continue;
                         }
 
-                        input.get().sendKeys(
+                        input.fill(
                                 filterResult != null && filterResult.getResult()
                                         && isValidString(filterResult.getMessage())
                                         ? filterResult.getMessage()
                                         : config.getSayHi().replaceAll("\\r|\\n", ""));
 
-                        Optional<WebElement> sendBtn = BossElementFinder
-                                .waitForElementClickable(BossElementLocators.SEND_BUTTON);
-                        if (sendBtn.isPresent()) {
-                            sendBtn.get().click();
-                            SeleniumUtil.sleep(5);
+                        Locator sendBtn = jobPage.locator(BossElementLocators.SEND_BUTTON);
+                        sendBtn = sendBtn.nth(0);
+                        if (sendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                            if (!debug) {
+                                // 点击发送打招呼内容
+                                sendBtn.click();
+                            }
+                            PlaywrightUtil.sleep(5);
 
                             String recruiter = job.getRecruiter();
                             String company = job.getCompanyName();
@@ -630,14 +979,27 @@ public class Boss {
                                     URL resourceUrl = Boss.class.getResource("/resume.jpg");
                                     if (resourceUrl != null) {
                                         File imageFile = new File(resourceUrl.toURI());
-                                        imgResume = BossPageOperations.sendResumeImage(imageFile.getAbsolutePath());
+                                        // 使用Playwright上传文件
+                                        Locator fileInput = jobPage.locator(BossElementLocators.IMAGE_UPLOAD);
+                                        if (fileInput.isVisible()) {
+                                            fileInput.setInputFiles(new java.nio.file.Path[]{java.nio.file.Paths.get(imageFile.getPath())});
+                                            // 等待发送按钮并点击
+                                            Locator imageSendBtn = jobPage.locator(".image-uploader-btn");
+                                            if (imageSendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(2000))) {
+                                                // 发送简历图片
+                                                if (!debug) {
+                                                    imageSendBtn.click();
+                                                    imgResume = true;
+                                                }
+                                            }
+                                        }
                                     }
                                 } catch (Exception e) {
                                     log.error("获取简历图片路径失败: {}", e.getMessage());
                                 }
                             }
 
-                            SeleniumUtil.sleep(2);
+                            PlaywrightUtil.sleep(2);
                             log.info("正在投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter,
                                     imgResume ? "发送图片简历成功！" : "");
                             resultList.add(job);
@@ -649,7 +1011,7 @@ public class Boss {
             }
 
             if (!debug) {
-                BossPageOperations.closeCurrentTabAndSwitchTo(tabs, 0);
+                jobPage.close();
             }
             if (debug) {
                 break;
@@ -843,21 +1205,25 @@ public class Boss {
         SeleniumUtil.sleep(1);
     }
 
-    private static boolean isDeadHR() {
+    private static boolean isDeadHR(Page page) {
         if (!config.getFilterDeadHR()) {
             return false;
         }
         try {
             // 尝试获取 HR 的活跃时间
-            Optional<WebElement> activeTimeElement = BossElementFinder.findElement(HR_ACTIVE_TIME);
-            if (activeTimeElement.isPresent()) {
-                String activeTimeText = activeTimeElement.get().getText();
-                log.info("{}：{}", getCompanyAndHR(), activeTimeText);
+            Locator activeTimeElement = page.locator(HR_ACTIVE_TIME);
+            activeTimeElement = activeTimeElement.nth(0);
+            String outerHtml = activeTimeElement.first().evaluate("el => el.outerHTML").toString();
+
+
+            if (activeTimeElement.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                String activeTimeText = activeTimeElement.textContent();
+                log.info("{}：{}", getCompanyAndHR(page), activeTimeText);
                 // 如果 HR 活跃状态符合预期，则返回 true
                 return containsDeadStatus(activeTimeText, config.getDeadStatus());
             }
         } catch (Exception e) {
-            log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR());
+            log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR(page));
         }
         return false;
     }
@@ -871,9 +1237,17 @@ public class Boss {
         return false;// 如果没有找到，返回 false
     }
 
-    private static String getCompanyAndHR() {
-        Optional<WebElement> element = BossElementFinder.findElement(RECRUITER_INFO);
-        return element.map(webElement -> webElement.getText().replaceAll("\n", "")).orElse("未知公司和HR");
+    private static String getCompanyAndHR(Page page) {
+        try {
+            Locator element = page.locator(RECRUITER_INFO);
+            element = element.nth(0);
+            if (element.isVisible(new Locator.IsVisibleOptions().setTimeout(2000))) {
+                return element.textContent().replaceAll("\n", "");
+            }
+        } catch (Exception e) {
+            log.debug("获取公司和HR信息失败: {}", e.getMessage());
+        }
+        return "未知公司和HR";
     }
 
     private static void closeWindow(ArrayList<String> tabs) {
@@ -938,9 +1312,14 @@ public class Boss {
 
     private static boolean isLimit() {
         try {
-            SeleniumUtil.sleep(1);
-            String text = CHROME_DRIVER.findElement(By.className(DIALOG_CON.substring(1))).getText();
-            return text.contains("已达上限");
+            PlaywrightUtil.sleep(1);
+            com.microsoft.playwright.Page page = PlaywrightUtil.getPageObject();
+            Locator dialogElement = page.locator(DIALOG_CON);
+            if (dialogElement.isVisible(new Locator.IsVisibleOptions().setTimeout(2000))) {
+                String text = dialogElement.textContent();
+                return text.contains("已达上限");
+            }
+            return false;
         } catch (Exception e) {
             return false;
         }
@@ -950,48 +1329,79 @@ public class Boss {
     private static void login() {
         log.info("打开Boss直聘网站中...");
 
-        CHROME_DRIVER.get(homeUrl);
-        if (SeleniumUtil.isCookieValid(cookiePath)) {
-            SeleniumUtil.loadCookie(cookiePath);
-            CHROME_DRIVER.navigate().refresh();
-            SeleniumUtil.sleep(2);
+        // 使用Playwright打开网站
+        Page page = PlaywrightUtil.getPageObject();
+        page.navigate(homeUrl);
+
+        // 检查并加载Cookie
+        if (isCookieValid(cookiePath)) {
+            PlaywrightUtil.loadCookies(cookiePath);
+            page.reload();
+            PlaywrightUtil.sleep(2);
         }
+
+        // 检查是否需要登录
         if (isLoginRequired()) {
             log.error("cookie失效，尝试扫码登录...");
             scanLogin();
         }
     }
 
+    // 检查cookie是否有效的方法，替换SeleniumUtil的实现
+    private static boolean isCookieValid(String cookiePath) {
+        try {
+            String cookieContent = new String(Files.readAllBytes(Paths.get(cookiePath)));
+            return cookieContent != null && !cookieContent.equals("[]") && cookieContent.contains("name");
+        } catch (Exception e) {
+            log.error("读取cookie文件失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
     private static boolean isLoginRequired() {
         try {
-            Optional<WebElement> buttonElement = BossElementFinder.findElement(LOGIN_BTNS);
-            if (buttonElement.isPresent() && buttonElement.get().getText().contains("登录")) {
+            Page page = PlaywrightUtil.getPageObject();
+
+            // 检查是否有登录按钮
+            Locator loginButton = page.locator(BossElementLocators.LOGIN_BTNS);
+            if (loginButton.isVisible() && loginButton.textContent().contains("登录")) {
                 return true;
             }
-        } catch (Exception e) {
+
+            // 检查是否有错误页面
             try {
-                BossElementFinder.findElement(PAGE_HEADER);
-                BossElementFinder.findElement(ERROR_PAGE_LOGIN).ifPresent(WebElement::click);
-                return true;
+                Locator pageHeader = page.locator(BossElementLocators.PAGE_HEADER);
+                if (pageHeader.isVisible()) {
+                    Locator errorPageLogin = page.locator(BossElementLocators.ERROR_PAGE_LOGIN);
+                    if (errorPageLogin.isVisible()) {
+                        errorPageLogin.click();
+                        return true;
+                    }
+                }
             } catch (Exception ex) {
                 log.info("没有出现403访问异常");
             }
+
             log.info("cookie有效，已登录...");
             return false;
+        } catch (Exception e) {
+            log.error("检查登录状态出错: {}", e.getMessage());
+            return true; // 遇到错误，默认需要登录
         }
-        return false;
     }
 
     @SneakyThrows
     private static void scanLogin() {
+        // 使用Playwright进行登录操作
+        Page page = PlaywrightUtil.getPageObject();
         // 访问登录页面
-        CHROME_DRIVER.get(homeUrl + "/web/user/?ka=header-login");
-        SeleniumUtil.sleep(3);
+        page.navigate(homeUrl + "/web/user/?ka=header-login");
+        PlaywrightUtil.sleep(3);
 
         // 1. 如果已经登录，则直接返回
         try {
-            Optional<WebElement> element = BossElementFinder.findElement(LOGIN_BTN);
-            if (element.isPresent() && !Objects.equals(element.get().getText(), "登录")) {
+            Locator loginBtn = page.locator(BossElementLocators.LOGIN_BTN);
+            if (loginBtn.isVisible() && !loginBtn.textContent().equals("登录")) {
                 log.info("已经登录，直接开始投递...");
                 return;
             }
@@ -1001,8 +1411,9 @@ public class Boss {
         log.info("等待登录...");
 
         // 2. 定位二维码登录的切换按钮
-        Optional<WebElement> scanButton = BossElementFinder.waitForElementClickable(LOGIN_SCAN_SWITCH, 30);
-        if (scanButton.isEmpty()) {
+        Locator scanButton = page.locator(BossElementLocators.LOGIN_SCAN_SWITCH);
+        boolean scanButtonVisible = scanButton.isVisible(new Locator.IsVisibleOptions().setTimeout(30000));
+        if (!scanButtonVisible) {
             log.error("未找到二维码登录按钮，登录失败");
             return;
         }
@@ -1027,11 +1438,13 @@ public class Boss {
 
             try {
                 // 尝试点击二维码按钮并等待页面出现已登录的元素
-                scanButton.get().click();
-                Optional<WebElement> loginSuccessHeader = BossElementFinder.waitForElementVisible(LOGIN_SUCCESS_HEADER, 2);
-//                BossElementFinder.waitForElementVisible(LOGIN_SUCCESS_INDICATOR, 2);
-                // 如果上述元素都能找到，说明登录成功
-                if (loginSuccessHeader.isPresent()) {
+                scanButton.click();
+                // 等待登录成功标志
+                boolean loginSuccess = page.locator(BossElementLocators.LOGIN_SUCCESS_HEADER)
+                        .isVisible(new Locator.IsVisibleOptions().setTimeout(2000));
+
+                // 如果找到登录成功元素，说明登录成功
+                if (loginSuccess) {
                     login = true;
                     log.info("登录成功！保存cookie...");
                 } else {
@@ -1043,13 +1456,12 @@ public class Boss {
                     if (userInput) {
                         log.info("检测到用户输入，继续尝试登录...");
                     }
-
                 }
-
             } catch (Exception e) {
-                //  scanButton.get().click(); 可能已经登录成功，没有这个扫码登录按钮
-                Optional<WebElement> loginSuccessHeader = BossElementFinder.waitForElementVisible(LOGIN_SUCCESS_HEADER, 2);
-                if(loginSuccessHeader.isPresent()){
+                // scanButton.click() 可能已经登录成功，没有这个扫码登录按钮
+                boolean loginSuccess = page.locator(BossElementLocators.LOGIN_SUCCESS_HEADER)
+                        .isVisible(new Locator.IsVisibleOptions().setTimeout(2000));
+                if (loginSuccess) {
                     login = true;
                     log.info("登录成功！保存cookie...");
                 }
@@ -1057,7 +1469,7 @@ public class Boss {
         }
 
         // 登录成功后，保存Cookie
-        SeleniumUtil.saveCookie(cookiePath);
+        PlaywrightUtil.saveCookies(cookiePath);
     }
 
     /**
