@@ -9,10 +9,8 @@ import com.microsoft.playwright.Page;
 import lombok.SneakyThrows;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.*;
@@ -31,7 +29,8 @@ import java.util.stream.Collectors;
 
 import static boss.BossElementLocators.*;
 import static utils.Bot.sendMessageByTime;
-import static utils.Constant.*;
+import static utils.Constant.ACTIONS;
+import static utils.Constant.CHROME_DRIVER;
 import static utils.JobUtils.formatDuration;
 
 /**
@@ -52,6 +51,8 @@ public class Boss {
     static String cookiePath = ProjectRootResolver.rootPath + "/src/main/java/boss/cookie.json";
     static Date startDate;
     static BossConfig config = BossConfig.init();
+    // 默认推荐岗位集合
+    static List<Job> recommendJobs = new ArrayList<>();
 
     static {
         try {
@@ -132,23 +133,23 @@ public class Boss {
             // 等待元素出现，最多等待10秒
             page.waitForSelector("a.expect-item", new Page.WaitForSelectorOptions().setTimeout(10000));
 
-            // 获取a标签且class是expect-item active的元素
+            // 获取a标签且class是expect-item的元素
             ElementHandle activeElement = page.querySelector("a.expect-item");
 
             if (activeElement != null) {
-                log.info("找到'expect-item active'元素，准备点击");
+                log.info("找到'expect-item'元素，准备点击");
                 // 点击该元素
                 activeElement.click();
                 // 点击后等待页面响应
                 page.waitForLoadState();
-                log.info("已点击'expect-item active'元素");
+                log.info("已点击'expect-item'元素");
 
 
                 if (isJobsPresent()) {
                     // 尝试滚动页面加载更多数据
                     try {
                         // 获取岗位列表并下拉加载更多
-                        log.info("开始获取岗位信息...");
+                        log.info("开始获取推荐岗位信息...");
 
                         // 记录下拉前后的岗位数量
                         int previousJobCount = 0;
@@ -186,18 +187,64 @@ public class Boss {
                             }
                         }
 
-                        log.info("已获取所有可加载岗位，共计: " + currentJobCount + " 个");
+                        log.info("已获取所有可加载推荐岗位，共计: " + currentJobCount + " 个");
 
-                        log.info("继续滚动加载更多岗位");
+
+                        // 使用page.locator方法获取所有匹配的元素
+                        Locator jobLocators = BossElementFinder.getPlaywrightLocator(page, BossElementLocators.JOB_CARD_BOX);
+                        // 获取元素总数
+                        int count = jobLocators.count();
+
+                        List<Job> jobs = new ArrayList<>();
+                        // 遍历所有找到的job卡片
+                        for (int i = 0; i < count; i++) {
+                            try {
+                                Locator jobCard = jobLocators.nth(i);
+                                String jobName = jobCard.locator(BossElementLocators.JOB_NAME).textContent();
+                                if (blackJobs.stream().anyMatch(jobName::contains)) {
+                                    // 排除黑名单岗位
+                                    continue;
+                                }
+                                String companyName = jobCard.locator(BossElementLocators.COMPANY_NAME).textContent();
+                                if (blackCompanies.stream().anyMatch(companyName::contains)) {
+                                    // 排除黑名单公司
+                                    continue;
+                                }
+
+
+                                Job job = new Job();
+                                job.setHref(jobCard.locator(BossElementLocators.JOB_NAME).getAttribute("href"));
+                                job.setCompanyName(companyName);
+                                job.setJobName(jobName);
+                                job.setJobArea(jobCard.locator(BossElementLocators.JOB_AREA).textContent());
+                                // 获取标签列表
+                                Locator tagElements = jobCard.locator(BossElementLocators.TAG_LIST);
+                                int tagCount = tagElements.count();
+                                StringBuilder tag = new StringBuilder();
+                                for (int j = 0; j < tagCount; j++) {
+                                    tag.append(tagElements.nth(j).textContent()).append("·");
+                                }
+                                if (tag.length() > 0) {
+                                    job.setCompanyTag(tag.substring(0, tag.length() - 1));
+                                } else {
+                                    job.setCompanyTag("");
+                                }
+
+                                recommendJobs.add(job);
+                            } catch (Exception e) {
+                                log.debug("处理岗位卡片失败: {}", e.getMessage());
+                            }
+                        }
+
                     } catch (Exception e) {
                         log.error("滚动加载数据异常: {}", e.getMessage());
                     }
                 }
             } else {
-                log.error("未找到class为'expect-item active'的a标签元素");
+                log.error("未找到class为'expect-item'的a标签元素");
             }
         } catch (Exception e) {
-            log.error("寻找或点击'expect-item active'元素时出错: {}", e.getMessage());
+            log.error("寻找或点击'expect-item'元素时出错: {}", e.getMessage());
         }
 
     }
@@ -485,8 +532,264 @@ public class Boss {
             }
         }
 
-        // 获取推荐岗位
-//        getRecommendJobs();
+        // 第一次循环的时候投递推荐岗位
+        if (recommendJobs.isEmpty()&&config.getRecommendJobs()) {
+            getRecommendJobs();
+
+            for (Job job : recommendJobs) {
+                // 使用Playwright在新标签页中打开链接
+                com.microsoft.playwright.Page jobPage = PlaywrightUtil.getPageObject().context().newPage();
+                jobPage.navigate(homeUrl + job.getHref());
+
+                try {
+                    // 等待聊天按钮出现
+                    Locator chatButton = jobPage.locator(BossElementLocators.CHAT_BUTTON);
+                    if (!chatButton.nth(0).isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                        Locator errorElement = jobPage.locator(BossElementLocators.ERROR_CONTENT);
+                        if (errorElement.isVisible() && errorElement.textContent().contains("异常访问")) {
+                            jobPage.close();
+                            return -2;
+                        }
+                    }
+                } catch (Exception e) {
+                    if (config.getDebugger()) {
+                        e.printStackTrace();
+                    }
+                    log.error("无法加载岗位详情页: {}", e.getMessage());
+                    jobPage.close();
+                    continue;
+                }
+
+                // 过滤不活跃HR
+                if (isDeadHR(jobPage)) {
+                    jobPage.close();
+                    log.info("该HR已过滤");
+                    PlaywrightUtil.sleep(1);
+                    continue;
+                }
+
+                try {
+                    // 获取职位描述标签
+                    Locator tagElements = jobPage.locator(JOB_KEYWORD_LIST);
+                    int tagCount = tagElements.count();
+                    StringBuilder tag = new StringBuilder();
+                    for (int j = 0; j < tagCount; j++) {
+                        tag.append(tagElements.nth(j).textContent()).append("·");
+                    }
+                    job.setJobKeywordTag(tag.toString());
+                } catch (Exception e) {
+                    log.info("获取职位描述标签失败:{}", e.getMessage());
+                }
+
+                // 推荐岗位 职位名称/职位描述关键字其中一个必须匹配一个岗位关键词才投递
+                List<String> keywords = config.getKeywords();
+                String jobName = job.getJobName();
+                String jobKeywordTag = job.getJobKeywordTag();
+                
+                // 检查jobKeywordTag或jobName是否包含关键字列表中的任意一个
+                boolean containsKeyword = false;
+                if (keywords != null && !keywords.isEmpty()) {
+                    // 检查jobName
+                    if (isValidString(jobName)) {
+                        for (String keywordItem : keywords) {
+                            if (jobName.contains(keywordItem)) {
+                                containsKeyword = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 如果jobName不包含关键字，检查jobKeywordTag
+                    if (!containsKeyword && isValidString(jobKeywordTag)) {
+                        for (String keywordItem : keywords) {
+                            if (jobKeywordTag.contains(keywordItem)) {
+                                containsKeyword = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // 如果不包含任何关键字，则跳过此职位
+                if (!containsKeyword && !keywords.isEmpty()) {
+                    log.info("已过滤:【{}】公司【{}】岗位不包含任何关键字", job.getCompanyName(), jobName);
+                    jobPage.close();
+                    continue;
+                }
+
+                // 获取薪资
+                try {
+                    Locator salaryElement = jobPage.locator(BossElementLocators.JOB_DETAIL_SALARY);
+                    if (salaryElement.isVisible()) {
+                        String salaryText = salaryElement.textContent();
+                        job.setSalary(salaryText);
+                        if (isSalaryNotExpected(salaryText)) {
+                            // 过滤薪资
+                            log.info("已过滤:【{}】公司【{}】岗位薪资【{}】不符合投递要求", job.getCompanyName(), job.getJobName(), salaryText);
+                            jobPage.close();
+                            continue;
+                        }
+                    }
+                } catch (Exception ignore) {
+                    log.info("获取岗位薪资失败:{}", ignore.getMessage());
+                }
+
+                // 获取招聘人员信息
+                try {
+                    Locator recruiterElement = jobPage.locator(BossElementLocators.RECRUITER_INFO);
+                    if (recruiterElement.isVisible()) {
+                        String recruiterName = recruiterElement.textContent();
+                        job.setRecruiter(recruiterName.replaceAll("\\r|\\n", ""));
+                        if (blackRecruiters.stream().anyMatch(recruiterName::contains)) {
+                            // 排除黑名单招聘人员
+                            jobPage.close();
+                            continue;
+                        }
+                    }
+                } catch (Exception ignore) {
+                    log.info("获取招聘人员信息失败:{}", ignore.getMessage());
+                }
+
+                // 模拟用户浏览行为
+                jobPage.evaluate("window.scrollBy(0, 300)");
+                PlaywrightUtil.sleep(1);
+                jobPage.evaluate("window.scrollBy(0, 300)");
+                PlaywrightUtil.sleep(1);
+                jobPage.evaluate("window.scrollTo(0, 0)");
+                PlaywrightUtil.sleep(1);
+
+                Locator chatBtn = jobPage.locator(BossElementLocators.CHAT_BUTTON);
+                chatBtn = chatBtn.nth(0);
+                boolean debug = config.getDebugger();
+
+                // 每次点击沟通前都休眠5秒 减少调用频率
+                PlaywrightUtil.sleep(5);
+
+                if (chatBtn.isVisible() && "立即沟通".equals(chatBtn.textContent().replaceAll("\\s+", ""))) {
+                    String waitTime = config.getWaitTime();
+                    int sleepTime = 10; // 默认等待10秒
+
+                    if (waitTime != null) {
+                        try {
+                            sleepTime = Integer.parseInt(waitTime);
+                        } catch (NumberFormatException e) {
+                            log.error("等待时间转换异常！！");
+                        }
+                    }
+
+                    PlaywrightUtil.sleep(sleepTime);
+
+                    AiFilter filterResult = null;
+                    if (config.getEnableAI()) {
+                        // AI检测岗位是否匹配
+                        Locator jdElement = jobPage.locator(BossElementLocators.JOB_DESCRIPTION);
+                        if (jdElement.isVisible()) {
+                            String jd = jdElement.textContent();
+                            filterResult = checkJob(keyword, job.getJobName(), jd);
+                        }
+                    }
+
+                    chatBtn.click();
+
+                    if (isLimit()) {
+                        PlaywrightUtil.sleep(1);
+                        jobPage.close();
+                        return -1;
+                    }
+
+                    // 沟通对话框
+                    try {
+                        // 不知道是什么情况下可能出现的弹框，执行关闭处理
+                        try {
+                            Locator dialogTitle = jobPage.locator(BossElementLocators.DIALOG_TITLE);
+                            if (dialogTitle.nth(0).isVisible()) {
+                                Locator closeBtn = jobPage.locator(BossElementLocators.DIALOG_CLOSE);
+                                if (closeBtn.nth(0).isVisible()) {
+                                    closeBtn.nth(0).click();
+                                    chatBtn.nth(0).click();
+                                }
+                            }
+                        } catch (Exception ignore) {
+                        }
+
+                        // 对话文本录入框
+                        Locator input = jobPage.locator(BossElementLocators.CHAT_INPUT);
+                        input = input.nth(0);
+                        if (input.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                            input.click();
+                            Locator dialogElement = jobPage.locator(BossElementLocators.DIALOG_CONTAINER);
+                            dialogElement = dialogElement.nth(0);
+                            if (dialogElement.isVisible() && "不匹配".equals(dialogElement.textContent())) {
+                                jobPage.close();
+                                continue;
+                            }
+
+                            input.fill(
+                                    filterResult != null && filterResult.getResult()
+                                            && isValidString(filterResult.getMessage())
+                                            ? filterResult.getMessage()
+                                            : config.getSayHi().replaceAll("\\r|\\n", ""));
+
+                            Locator sendBtn = jobPage.locator(BossElementLocators.SEND_BUTTON);
+                            sendBtn = sendBtn.nth(0);
+                            if (sendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                                if (!debug) {
+                                    // 点击发送打招呼内容
+                                    sendBtn.click();
+                                }
+                                PlaywrightUtil.sleep(5);
+
+                                String recruiter = job.getRecruiter();
+                                String company = job.getCompanyName();
+                                String position = job.getJobName() + " " + job.getSalary() + " " + job.getJobArea();
+
+                                // 发送简历图片
+                                Boolean imgResume = false;
+                                if (config.getSendImgResume()) {
+                                    try {
+                                        // 从类路径加载 resume.jpg
+                                        URL resourceUrl = Boss.class.getResource("/resume.jpg");
+                                        if (resourceUrl != null) {
+                                            File imageFile = new File(resourceUrl.toURI());
+                                            // 使用Playwright上传文件
+                                            Locator fileInput = jobPage.locator(BossElementLocators.IMAGE_UPLOAD);
+                                            if (fileInput.isVisible()) {
+                                                fileInput.setInputFiles(new java.nio.file.Path[]{java.nio.file.Paths.get(imageFile.getPath())});
+                                                // 等待发送按钮并点击
+                                                Locator imageSendBtn = jobPage.locator(".image-uploader-btn");
+                                                if (imageSendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(2000))) {
+                                                    // 发送简历图片
+                                                    if (!debug) {
+                                                        imageSendBtn.click();
+                                                        imgResume = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        log.error("获取简历图片路径失败: {}", e.getMessage());
+                                    }
+                                }
+
+                                PlaywrightUtil.sleep(2);
+                                log.info("正在投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter,
+                                        imgResume ? "发送图片简历成功！" : "");
+                                resultList.add(job);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.error("发送消息失败:{}", e.getMessage(), e);
+                    }
+                }
+
+                if (!debug) {
+                    jobPage.close();
+                }
+                if (debug) {
+                    break;
+                }
+            }
+        }
 
         for (Job job : jobs) {
             // 使用Playwright在新标签页中打开链接
