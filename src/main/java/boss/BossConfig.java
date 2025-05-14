@@ -101,6 +101,14 @@ public class BossConfig {
 
     private List<String> deadStatus;
 
+    /**
+     * 是否使用关键词匹配岗位m名称，岗位名称不包含关键字就过滤
+     *
+     */
+    private Boolean keyFilter;
+
+    private Boolean recommendJobs;
+
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);

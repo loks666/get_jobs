@@ -41,6 +41,11 @@ public class Job implements Serializable {
     private String companyTag;
 
     /**
+     * 职位描述标签
+     */
+    private String jobKeywordTag;
+
+    /**
      * HR名称
      */
     private String recruiter;

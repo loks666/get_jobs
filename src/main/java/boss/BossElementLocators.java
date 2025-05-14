@@ -8,7 +8,7 @@ public class BossElementLocators {
     // 主页相关元素
     public static final String LOGIN_BTN = "//li[@class='nav-figure']";
     public static final String LOGIN_SCAN_SWITCH = "//div[@class='btn-sign-switch ewm-switch']";
-    public static final String LOGIN_SUCCESS_HEADER = "//*[@id=\"header\"]/div[1]/div[1]/a";
+    public static final String LOGIN_SUCCESS_HEADER = "//*[@id=\"header\"]/div[1]/div[@class='user-nav']/ul/li[@class='nav-figure']";
     public static final String LOGIN_SUCCESS_INDICATOR = "//*[@id=\"wrap\"]/div[2]/div[1]/div/div[1]/a[2]";
 
     /**
@@ -34,12 +34,15 @@ public class BossElementLocators {
     public static final String TAG_LIST = "ul.tag-list li";
 
     // 职位详情页元素
-    public static final String CHAT_BUTTON = "[class*='btn btn-startchat']";
+    public static final String CHAT_BUTTON = "a.btn.btn-startchat";
     public static final String ERROR_CONTENT = "//div[@class='error-content']";
     public static final String JOB_DETAIL_SALARY = "//div[@class='info-primary']//span[@class='salary']";
     public static final String RECRUITER_INFO = "//div[@class='boss-info-attr']";
     public static final String HR_ACTIVE_TIME = "//span[@class='boss-active-time']";
     public static final String JOB_DESCRIPTION = "//div[@class='job-sec-text']";
+    public static final String JOB_KEYWORD_LIST = "ul.job-keyword-list li";
+
+
 
     // 聊天相关元素
     public static final String DIALOG_TITLE = "//div[@class='dialog-title']";
