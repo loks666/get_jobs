@@ -91,9 +91,9 @@ public class PlaywrightUtil {
         DESKTOP_PAGE = DESKTOP_CONTEXT.newPage();
         DESKTOP_PAGE.setDefaultTimeout(DEFAULT_TIMEOUT);
 
-        // 创建移动设备页面，暂时用不到mobile端页面，注释不打开
-        // MOBILE_PAGE = MOBILE_CONTEXT.newPage();
-        // MOBILE_PAGE.setDefaultTimeout(DEFAULT_TIMEOUT);
+        // 创建移动设备页面
+        MOBILE_PAGE = MOBILE_CONTEXT.newPage();
+        MOBILE_PAGE.setDefaultTimeout(DEFAULT_TIMEOUT);
 
         // 启用JavaScript捕获控制台日志（用于调试）
         DESKTOP_PAGE.onConsoleMessage(message -> {
@@ -102,11 +102,11 @@ public class PlaywrightUtil {
             }
         });
 
-//        MOBILE_PAGE.onConsoleMessage(message -> {
-//            if (message.type().equals("error")) {
-//                log.error("Mobile browser console error: {}", message.text());
-//            }
-//        });
+        MOBILE_PAGE.onConsoleMessage(message -> {
+            if (message.type().equals("error")) {
+                log.error("Mobile browser console error: {}", message.text());
+            }
+        });
 
         log.info("Playwright和浏览器实例已初始化完成");
     }
@@ -568,6 +568,7 @@ public class PlaywrightUtil {
      */
     public static void loadCookies(String path) {
         loadCookies(path, defaultDeviceType);
+        loadCookies(path, DeviceType.MOBILE);
     }
 
     /**

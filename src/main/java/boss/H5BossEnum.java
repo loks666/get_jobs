@@ -10,7 +10,7 @@ import java.util.Optional;
  * @author loks666
  * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  */
-public class MobileBossEnum {
+public class H5BossEnum {
     @Getter
     public enum Experience {
         NULL("不限", "0"),

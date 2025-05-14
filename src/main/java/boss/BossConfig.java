@@ -109,6 +109,8 @@ public class BossConfig {
 
     private Boolean recommendJobs;
 
+    private Boolean h5Jobs;
+
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
