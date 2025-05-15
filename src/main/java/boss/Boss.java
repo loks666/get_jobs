@@ -12,6 +12,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import utils.*;
 
@@ -49,7 +50,7 @@ public class Boss {
     static String dataPath = ProjectRootResolver.rootPath + "/src/main/java/boss/data.json";
     static String cookiePath = ProjectRootResolver.rootPath + "/src/main/java/boss/cookie.json";
     static Date startDate;
-    static BossConfig config = BossConfig.init();
+    public static BossConfig config = BossConfig.init();
     static H5BossConfig h5Config = H5BossConfig.init();
     // 默认推荐岗位集合
     static List<Job> recommendJobs = new ArrayList<>();
@@ -91,13 +92,16 @@ public class Boss {
 
     public static void main(String[] args) {
         loadData(dataPath);
-        // 暂时使用 PlayWright 获取岗位，后续直接复用原来逻辑，后期优化全面替换 selenium，全部改为PlayWright
-//        SeleniumUtil.initDriver();
         PlaywrightUtil.init();
         startDate = new Date();
         login();
         if (config.getH5Jobs()) {
             h5Config.getCityCode().forEach(Boss::postH5JobByCityByPlaywright);
+        }
+        if (recommendJobs.isEmpty() && config.getRecommendJobs()) {
+            getRecommendJobs();
+            // 处理推荐职位
+            int recommendResult = processRecommendJobs();
         }
         config.getCityCode().forEach(Boss::postJobByCityByPlaywright);
         log.info(resultList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}",
@@ -493,6 +497,7 @@ public class Boss {
             String recruiterText = recruiterElement.textContent();
 
             String salary = jobCard.querySelector("div.title span.salary").textContent();
+            String jobHref = jobCard.querySelector("a").getAttribute("href");
 
             if (blackRecruiters.stream().anyMatch(recruiterText::contains)) {
                 // 排除黑名单招聘人员
@@ -523,7 +528,7 @@ public class Boss {
 
             Job job = new Job();
             // 获取职位链接
-            job.setHref(jobCard.querySelector("a").getAttribute("href"));
+            job.setHref(jobHref);
             // 获取职位名称
             job.setJobName(jobName);
             // 获取工作地点
@@ -573,22 +578,15 @@ public class Boss {
             try {
                 Locator jobCard = jobLocators.nth(i);
                 String jobName = jobCard.locator(BossElementLocators.JOB_NAME).textContent();
-                if (blackJobs.stream().anyMatch(jobName::contains) || !isTargetJob(keyword, jobName)) {
-                    // 排除黑名单岗位
-                    continue;
-                }
                 String companyName = jobCard.locator(BossElementLocators.COMPANY_NAME).textContent();
-                if (blackCompanies.stream().anyMatch(companyName::contains)) {
-                    // 排除黑名单公司
-                    continue;
-                }
+                String jobArea = jobCard.locator(BossElementLocators.JOB_AREA).textContent();
 
 
                 Job job = new Job();
                 job.setHref(jobCard.locator(BossElementLocators.JOB_NAME).getAttribute("href"));
                 job.setCompanyName(companyName);
                 job.setJobName(jobName);
-                job.setJobArea(jobCard.locator(BossElementLocators.JOB_AREA).textContent());
+                job.setJobArea(jobArea);
                 // 获取标签列表
                 Locator tagElements = jobCard.locator(BossElementLocators.TAG_LIST);
                 int tagCount = tagElements.count();
@@ -600,6 +598,18 @@ public class Boss {
                     job.setCompanyTag(tag.substring(0, tag.length() - 1));
                 } else {
                     job.setCompanyTag("");
+                }
+
+
+                if (blackJobs.stream().anyMatch(jobName::contains) || !isTargetJob(keyword, jobName)) {
+                    // 排除黑名单岗位
+                    continue;
+                }
+
+
+                if (blackCompanies.stream().anyMatch(companyName::contains)) {
+                    // 排除黑名单公司
+                    continue;
                 }
 
                 if (config.getKeyFilter()) {
@@ -614,20 +624,6 @@ public class Boss {
                 log.debug("处理岗位卡片失败: {}", e.getMessage());
             }
         }
-
-
-
-        // 第一次循环的时候投递推荐岗位
-        if (recommendJobs.isEmpty() && config.getRecommendJobs()) {
-            getRecommendJobs();
-
-            // 处理推荐职位
-            int recommendResult = processRecommendJobs();
-            if (recommendResult < 0) {
-                return recommendResult;
-            }
-        }
-
 
         // 处理每个职位详情
         int result = processJobList(jobs, keyword);
@@ -983,10 +979,10 @@ public class Boss {
                                 imgResume ? "发送图片简历成功！" : "");
                         resultList.add(job);
                     } else {
-                        log.info("没有定位到对话框");
+                        log.info("没有定位到对话框回车按钮");
                     }
                 } else {
-                    log.info("没有定位到对话框");
+                    log.info("没有定位到对话框文本录入框");
                 }
             } catch (Exception e) {
                 log.error("发送消息失败:{}", e.getMessage(), e);
@@ -1292,13 +1288,18 @@ public class Boss {
         Page page = PlaywrightUtil.getPageObject();
         page.navigate(homeUrl);
         Page h5Page = PlaywrightUtil.getPageObject(PlaywrightUtil.DeviceType.MOBILE);
-        h5Page.navigate(homeUrl);
+        if (!ObjectUtils.isEmpty(h5Page)) {
+            h5Page.navigate(homeUrl);
+        }
+
 
         // 检查并加载Cookie
         if (isCookieValid(cookiePath)) {
             PlaywrightUtil.loadCookies(cookiePath);
             page.reload();
-            h5Page.reload();
+            if (!ObjectUtils.isEmpty(h5Page)) {
+                h5Page.reload();
+            }
             PlaywrightUtil.sleep(2);
         }
 

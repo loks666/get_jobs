@@ -1,5 +1,6 @@
 package utils;
 
+import boss.Boss;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.LoadState;
@@ -91,10 +92,6 @@ public class PlaywrightUtil {
         DESKTOP_PAGE = DESKTOP_CONTEXT.newPage();
         DESKTOP_PAGE.setDefaultTimeout(DEFAULT_TIMEOUT);
 
-        // 创建移动设备页面
-        MOBILE_PAGE = MOBILE_CONTEXT.newPage();
-        MOBILE_PAGE.setDefaultTimeout(DEFAULT_TIMEOUT);
-
         // 启用JavaScript捕获控制台日志（用于调试）
         DESKTOP_PAGE.onConsoleMessage(message -> {
             if (message.type().equals("error")) {
@@ -102,11 +99,18 @@ public class PlaywrightUtil {
             }
         });
 
-        MOBILE_PAGE.onConsoleMessage(message -> {
-            if (message.type().equals("error")) {
-                log.error("Mobile browser console error: {}", message.text());
-            }
-        });
+        // 需要启动h5岗位查询投递的时候才使用
+        if(Boss.config.getH5Jobs()){
+            // 创建移动设备页面
+            MOBILE_PAGE = MOBILE_CONTEXT.newPage();
+            MOBILE_PAGE.setDefaultTimeout(DEFAULT_TIMEOUT);
+
+            MOBILE_PAGE.onConsoleMessage(message -> {
+                if (message.type().equals("error")) {
+                    log.error("Mobile browser console error: {}", message.text());
+                }
+            });
+        }
 
         log.info("Playwright和浏览器实例已初始化完成");
     }
