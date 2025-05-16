@@ -1184,7 +1184,7 @@ public class Boss {
                 return containsDeadStatus(activeTimeText, config.getDeadStatus());
             }
         } catch (Exception e) {
-            log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR(page));
+            log.info("没有找到【{}】的活跃状态, 默认此岗位将会投递...", getCompanyAndHR(page).replaceAll("\\s+", ""));
         }
         return false;
     }
