@@ -918,7 +918,7 @@ public class Boss {
                 // 对话文本录入框
                 Locator input = jobPage.locator(BossElementLocators.CHAT_INPUT);
                 input = input.nth(0);
-                if (input.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
+                if (input.isVisible(new Locator.IsVisibleOptions().setTimeout(10000))) {
                     input.click();
                     Locator dialogElement = jobPage.locator(BossElementLocators.DIALOG_CONTAINER);
                     dialogElement = dialogElement.nth(0);
@@ -982,6 +982,7 @@ public class Boss {
                         log.info("没有定位到对话框回车按钮");
                     }
                 } else {
+                    // 可能加载超过5秒，现已改为10秒
                     log.info("没有定位到对话框文本录入框");
                 }
             } catch (Exception e) {
@@ -1179,7 +1180,7 @@ public class Boss {
 
             if (activeTimeElement.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
                 String activeTimeText = activeTimeElement.textContent();
-                log.info("{}：{}", getCompanyAndHR(page), activeTimeText);
+                log.info("{}：{}", getCompanyAndHR(page).replaceAll("\\s+", ""), activeTimeText);
                 // 如果 HR 活跃状态符合预期，则返回 true
                 return containsDeadStatus(activeTimeText, config.getDeadStatus());
             }
