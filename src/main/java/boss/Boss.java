@@ -6,6 +6,8 @@ import ai.AiService;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.PlaywrightException;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import lombok.SneakyThrows;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -747,9 +749,8 @@ public class Boss {
         for (Job job : jobs) {
             // 使用Playwright在新标签页中打开链接
             Page jobPage = PlaywrightUtil.getPageObject().context().newPage();
-            jobPage.navigate(homeUrl + job.getHref());
-
             try {
+                jobPage.navigate(homeUrl + job.getHref());
                 // 等待聊天按钮出现
                 Locator chatButton = jobPage.locator(BossElementLocators.CHAT_BUTTON);
                 if (!chatButton.nth(0).isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
@@ -918,6 +919,18 @@ public class Boss {
                 // 对话文本录入框
                 Locator input = jobPage.locator(BossElementLocators.CHAT_INPUT);
                 input = input.nth(0);
+
+                // 使用 new Locator.IsVisibleOptions().setTimeout(10000) 似乎存在某些情况返回不可见，但是在else种确又可以返回true
+                try {
+                    input.waitFor(new Locator.WaitForOptions()
+                            .setState(WaitForSelectorState.VISIBLE)
+                            .setTimeout(10000));
+                    log.info("✅ input 可见了");
+                } catch (PlaywrightException e) {
+                    log.info("❌ 10秒内 input 没变可见");
+                    log.info("实际状态: " + input.isVisible());
+                }
+
                 if (input.isVisible(new Locator.IsVisibleOptions().setTimeout(10000))) {
                     input.click();
                     Locator dialogElement = jobPage.locator(BossElementLocators.DIALOG_CONTAINER);
@@ -983,9 +996,11 @@ public class Boss {
                     }
                 } else {
                     // 可能加载超过5秒，现已改为10秒
-                    log.info("没有定位到对话框文本录入框");
+                    log.info("没有定位到对话框文本录入框,  input.isVisible() : {}", input.isVisible());
                 }
             } catch (Exception e) {
+                e.printStackTrace();
+                log.info("发送消息失败:{}", e.getMessage());
                 log.error("发送消息失败:{}", e.getMessage(), e);
             }
         }
