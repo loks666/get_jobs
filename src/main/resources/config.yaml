@@ -1,7 +1,10 @@
 # 带[ ]括号的，就是多选，不带的就是单选,所有选项的 开对应true，关对应false，自行根据需要调整
 boss:
   debugger: false # 开发者模式，默认为false即可
-  sayHi: "您好,我有8年工作经验,还有AIGC大模型、Java,Python,Golang和运维的相关经验,希望应聘这个岗位,期待可以与您进一步沟通,谢谢！" #必须要关闭boss的自动打招呼
+  sayHi: | #必须要关闭boss的自动打招呼
+    您好，我具备多年 Java Web 开发经验，完整经历从 JSP/Servlet 到 SSM（Spring + Spring MVC + MyBatis），再到 Spring Boot / Spring Cloud 微服务架构的演进过程，熟悉系统拆分、服务治理、配置中心、链路追踪等核心组件；掌握 Redis、Kafka、Nacos、Docker、Jenkins 等中间件与持续集成运维工具，具备微服务系统的全流程开发与交付能力。
+    前端方面，经历了从传统 HTML/CSS/JavaScript 开发，到 jQuery、Bootstrap 样式框架、ExtJS 富客户端框架，再到现代 Vue + Element-UI 的组件化开发模式，熟悉前后端分离架构与 RESTful API 调用，能够独立完成页面交互、组件封装及联调工作。
+    参与过支付、商城、物流仓储、订单中心等系统，具备持续集成及运维能力。独立完成需求、完成系统设计及开发实现，也具备任务拆解与团队协作推进能力。
   keywords: [ "Java"  ] # 需要搜索的职位,会依次投递
   industry: [ "不限" ] # 公司行业，只能选三个，相关代码枚举的部分，如果需要其他的需要自己找
   cityCode: [ "广州" ] # 只列举了部分,如果没有的需要自己找：目前支持的：全国 北京 上海 杭州 广州 深圳 成都 天津
@@ -22,9 +25,8 @@ boss:
   deadStatus: ["2周内活跃","本月活跃","3月内活跃","2月内活跃","半年前活跃"] # 过滤掉HR状态
   keyFilter: true # 是否使用关键词匹配岗位名称，true岗位名称不包含完整关键字就会过滤，false则不过滤直接使用boss搜索结果
   recommendJobs: false # 新功能，投递boss推荐岗位列表，岗位名称或岗位描述关键字任意一个信息必须包含keywords中的任意一个关键词
-  h5Jobs: false
+  h5Jobs: false # 新功能 是否使用h5页面查询岗位投递
 h5boss:
-  sayHi: "您好,我有8年工作经验,还有AIGC大模型、Java,Python,Golang和运维的相关经验,希望应聘这个岗位,期待可以与您进一步沟通,谢谢！" #必须要关闭boss的自动打招呼
   keywords: [ "Java" ] # 需要搜索的职位,会依次投递
   cityCode: [ "广州" ] # 只列举了部分,如果没有的需要自己找：目前支持的：全国 北京 上海 杭州 广州 深圳 成都 天津
   customCityCode: 
