@@ -26,6 +26,11 @@ boss:
   keyFilter: true # 是否使用关键词匹配岗位名称，true岗位名称不包含完整关键字就会过滤，false则不过滤直接使用boss搜索结果
   recommendJobs: false # 新功能，投递boss推荐岗位列表，岗位名称或岗位描述关键字任意一个信息必须包含keywords中的任意一个关键词
   h5Jobs: false # 新功能 是否使用h5页面查询岗位投递
+  checkStateOwned: true # 是否判定企业为国企（非国企不投递）
+  vipKey: zhangk # vip密钥（找管理员获取）
+  apiDomain: https://9793-120-85-103-52.ngrok-free.app # 接口域名地址
+  
+
 h5boss:
   keywords: [ "Java" ] # 需要搜索的职位,会依次投递
   cityCode: [ "广州" ] # 只列举了部分,如果没有的需要自己找：目前支持的：全国 北京 上海 杭州 广州 深圳 成都 天津

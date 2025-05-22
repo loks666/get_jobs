@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import static boss.BossElementLocators.*;
 import static utils.Bot.sendMessageByTime;
 import static utils.Constant.CHROME_DRIVER;
+import static utils.HttpUtils.OBJECT_MAPPER;
 import static utils.JobUtils.formatDuration;
 
 /**
@@ -97,6 +98,7 @@ public class Boss {
         PlaywrightUtil.init();
         startDate = new Date();
         login();
+        config.getCityCode().forEach(Boss::postJobByCityByPlaywright);
         if (config.getH5Jobs()) {
             h5Config.getCityCode().forEach(Boss::postH5JobByCityByPlaywright);
         }
@@ -105,7 +107,6 @@ public class Boss {
             // 处理推荐职位
             int recommendResult = processRecommendJobs();
         }
-        config.getCityCode().forEach(Boss::postJobByCityByPlaywright);
         log.info(resultList.isEmpty() ? "未发起新的聊天..." : "新发起聊天公司如下:\n{}",
                 resultList.stream().map(Object::toString).collect(Collectors.joining("\n")));
         if (!config.getDebugger()) {
@@ -621,6 +622,29 @@ public class Boss {
                     }
                 }
 
+                if(config.getCheckStateOwned()){
+                    try {
+                        String platform = "deepseek";
+                        String baseUrl = config.getApiDomain(); // 请根据实际环境修改服务地址
+                        String url = String.format("%s/pure-admin-service/gpt/isStateOwnedEnterprise/%s?companyName=%s",
+                                baseUrl, platform, java.net.URLEncoder.encode(companyName, "UTF-8"));
+                        
+                        String response = HttpUtils.get(url);
+                        StateOwnedResponse stateOwnedResponse = OBJECT_MAPPER.readValue(response, StateOwnedResponse.class);
+                        
+                        if (stateOwnedResponse.isSuccess() && stateOwnedResponse.getData()) {
+                            log.info("公司 {} 是国有企业", companyName);
+                            // 在此处添加你的业务逻辑
+                        } else {
+                            log.info("公司 {} 不是国有企业", companyName);
+                            // 在此处添加你的业务逻辑
+                            continue;
+                        }
+                    } catch (Exception e) {
+                        log.error("检查公司: {}是否为国企时发生错误: {}",companyName,e.getMessage(), e);
+                    }
+                }
+
                 jobs.add(job);
             } catch (Exception e) {
                 log.debug("处理岗位卡片失败: {}", e.getMessage());
@@ -999,7 +1023,6 @@ public class Boss {
                     log.info("没有定位到对话框文本录入框,  input.isVisible() : {}", input.isVisible());
                 }
             } catch (Exception e) {
-                e.printStackTrace();
                 log.info("发送消息失败:{}", e.getMessage());
                 log.error("发送消息失败:{}", e.getMessage(), e);
             }
@@ -1610,4 +1633,28 @@ public class Boss {
         }
     }
 
+
+    // 添加响应实体类
+    static class StateOwnedResponse {
+        private boolean success;
+        private boolean data;
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+
+        public boolean getData() {
+            return data;
+        }
+
+        public void setData(boolean data) {
+            this.data = data;
+        }
+    }
+
 }
+

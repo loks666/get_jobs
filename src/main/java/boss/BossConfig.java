@@ -111,6 +111,21 @@ public class BossConfig {
 
     private Boolean h5Jobs;
 
+    /**
+     * 是否判定国企
+     */
+    private Boolean checkStateOwned;
+
+    /**
+     * VIP密钥
+     */
+    private String vipKey;
+
+    /**
+     * 接口域名地址
+     */
+    private String apiDomain;
+
     @SneakyThrows
     public static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
