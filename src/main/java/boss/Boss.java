@@ -1012,7 +1012,7 @@ public class Boss {
                         }
 
                         PlaywrightUtil.sleep(2);
-                        log.info("正在投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter,
+                        log.info("正在投递【{}】公司，【{}】职位，招聘官:【{}】{}", company, position, recruiter.replaceAll("\\r|\\n", ""),
                                 imgResume ? "发送图片简历成功！" : "");
                         resultList.add(job);
                     } else {
