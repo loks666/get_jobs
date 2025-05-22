@@ -58,6 +58,8 @@ public class Boss {
     // 默认推荐岗位集合
     static List<Job> recommendJobs = new ArrayList<>();
 
+    static Set<String> jobHrefSet = new HashSet<>();
+
     static {
         try {
             // 检查dataPath文件是否存在，不存在则创建
@@ -219,9 +221,17 @@ public class Boss {
                                     continue;
                                 }
 
+                                String href = jobCard.locator(BossElementLocators.JOB_NAME).getAttribute("href");
+                                if(jobHrefSet.contains(href)){
+                                    log.info("已存在该岗位链接，跳过：" + href);
+                                    continue;
+                                }else {
+                                    jobHrefSet.add(href);
+                                }
+
 
                                 Job job = new Job();
-                                job.setHref(jobCard.locator(BossElementLocators.JOB_NAME).getAttribute("href"));
+                                job.setHref(href);
                                 job.setCompanyName(companyName);
                                 job.setJobName(jobName);
                                 job.setJobArea(jobCard.locator(BossElementLocators.JOB_AREA).textContent());
@@ -527,6 +537,13 @@ public class Boss {
                     log.info("已过滤：岗位【{}】名称不包含关键字【{}】", jobName, keyword);
                     continue;
                 }
+            }
+
+            if(jobHrefSet.contains(jobHref)){
+                log.info("已存在该岗位链接，跳过：" + jobHref);
+                continue;
+            }else {
+                jobHrefSet.add(jobHref);
             }
 
             Job job = new Job();
