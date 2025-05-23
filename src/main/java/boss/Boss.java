@@ -96,6 +96,13 @@ public class Boss {
     }
 
     public static void main(String[] args) {
+        // 启动配置界面
+        if (args == null || args.length == 0) {
+            BossConfigApplication.launch();
+            return;
+        }
+        
+        // 配置界面点击确认后的逻辑
         loadData(dataPath);
         PlaywrightUtil.init();
         startDate = new Date();
