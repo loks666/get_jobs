@@ -1,19 +1,17 @@
-import boss.MobileBossConfig;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 public class StartAll {
     // 存储所有子进程的引用
     private static final List<Process> childProcesses = new ArrayList<>();
 
-    private static final MobileBossConfig  mobileBossConfig = MobileBossConfig.init();
     public static void main(String[] args) {
 
          // Create a ScheduledExecutorService for Boss
@@ -31,12 +29,9 @@ public class StartAll {
         };
 
         // Schedule Boss task to run every 60 minutes
-        bossScheduler.scheduleAtFixedRate(bossTask, 0, mobileBossConfig.getNextIntervalMinutes(), TimeUnit.MINUTES);
+        bossScheduler.scheduleAtFixedRate(bossTask, 0, 60, TimeUnit.MINUTES);
 
 
-
-
-        
         // 创建一个统一的线程池来执行所有任务
         ExecutorService executorService = Executors.newFixedThreadPool(2);
 
