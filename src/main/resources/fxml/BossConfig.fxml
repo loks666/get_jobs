@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<HBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="boss.BossConfigController"
+      spacing="20"
+      stylesheets="@../css/modern-style.css"
+      style="-fx-padding: 20; -fx-background-color: white;">
+    
+    <ScrollPane fitToWidth="true" HBox.hgrow="ALWAYS">
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+            
+            <!-- 基本设置区域 -->
+            <TitledPane text="基本设置" expanded="true">
+                <VBox spacing="10">
+                    <!-- 关键词 -->
+                    <VBox spacing="5">
+                        <Label text="搜索关键词：">
+                            <tooltip>
+                                <Tooltip text="输入职位搜索关键词，多个关键词请用英文逗号分隔，例如：Java,Spring,后端" />
+                            </tooltip>
+                        </Label>
+                        <TextField fx:id="keywordsField" promptText="多个关键词用逗号分隔" />
+                    </VBox>
+                    
+                    <!-- 行业 -->
+                    <VBox spacing="5">
+                        <Label text="公司行业：">
+                            <tooltip>
+                                <Tooltip text="选择目标公司所属行业，可多选，例如：互联网,金融,教育" />
+                            </tooltip>
+                        </Label>
+                        <TextField fx:id="industryField" promptText="多个行业用逗号分隔" />
+                    </VBox>
+                    
+                    <!-- 城市代码 -->
+                    <VBox spacing="5">
+                        <Label text="城市：">
+                            <tooltip>
+                                <Tooltip text="输入期望工作的城市，多个城市用逗号分隔，例如：北京,上海,广州" />
+                            </tooltip>
+                        </Label>
+                        <TextField fx:id="cityCodeField" promptText="多个城市用逗号分隔" />
+                    </VBox>
+                    
+                    <GridPane hgap="10" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                        </columnConstraints>
+                        
+                        <!-- 工作经验 -->
+                        <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label text="工作经验：">
+                                <tooltip>
+                                    <Tooltip text="选择您的工作年限区间" />
+                                </tooltip>
+                            </Label>
+                            <ComboBox fx:id="experienceComboBox" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <!-- 求职类型 -->
+                        <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <Label text="求职类型：">
+                                <tooltip>
+                                    <Tooltip text="选择期望的工作性质，如全职、兼职等" />
+                                </tooltip>
+                            </Label>
+                            <ComboBox fx:id="jobTypeComboBox" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <!-- 薪资范围 -->
+                        <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                            <Label text="薪资范围：">
+                                <tooltip>
+                                    <Tooltip text="选择期望的月薪范围" />
+                                </tooltip>
+                            </Label>
+                            <ComboBox fx:id="salaryComboBox" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <!-- 学历要求 -->
+                        <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                            <Label text="学历要求：">
+                                <tooltip>
+                                    <Tooltip text="选择您的最高学历" />
+                                </tooltip>
+                            </Label>
+                            <ComboBox fx:id="degreeComboBox" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <!-- 公司规模 -->
+                        <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                            <Label text="公司规模：">
+                                <tooltip>
+                                    <Tooltip text="选择期望的公司人员规模" />
+                                </tooltip>
+                            </Label>
+                            <ComboBox fx:id="scaleComboBox" maxWidth="Infinity" />
+                        </VBox>
+                        
+                        <!-- 融资阶段 -->
+                        <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                            <Label text="融资阶段：">
+                                <tooltip>
+                                    <Tooltip text="选择期望公司的融资阶段，如未融资、A轮、B轮等" />
+                                </tooltip>
+                            </Label>
+                            <ComboBox fx:id="stageComboBox" maxWidth="Infinity" />
+                        </VBox>
+                    </GridPane>
+                    
+                    <!-- 期望薪资 -->
+                    <VBox spacing="5">
+                        <Label text="期望薪资：">
+                            <tooltip>
+                                <Tooltip text="输入期望的薪资范围（单位：K）" />
+                            </tooltip>
+                        </Label>
+                        <HBox spacing="10">
+                            <TextField fx:id="minSalaryField" promptText="最低薪资(K)" prefWidth="100" />
+                            <Label text="-" />
+                            <TextField fx:id="maxSalaryField" promptText="最高薪资(K)" prefWidth="100" />
+                        </HBox>
+                    </VBox>
+                    
+                    <!-- 等待时间 -->
+                    <VBox spacing="5">
+                        <Label text="等待时间(秒)：">
+                            <tooltip>
+                                <Tooltip text="设置每次操作之间的等待时间，建议设置在10-30秒之间，避免操作过于频繁" />
+                            </tooltip>
+                        </Label>
+                        <TextField fx:id="waitTimeField" />
+                    </VBox>
+                    
+                    <!-- 打招呼内容 -->
+                    <VBox spacing="5">
+                        <Label text="打招呼内容：">
+                            <tooltip>
+                                <Tooltip text="设置与HR打招呼时的自动发送内容，建议个性化定制，增加回复率" />
+                            </tooltip>
+                        </Label>
+                        <TextArea fx:id="sayHiTextArea" wrapText="true" prefRowCount="4" />
+                    </VBox>
+                </VBox>
+            </TitledPane>
+            
+            <!-- 功能开关区域 -->
+            <TitledPane text="功能开关" expanded="false">
+                <VBox spacing="10">
+                    <GridPane hgap="20" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                        </columnConstraints>
+                        
+                        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label text="调试模式：">
+                                <tooltip>
+                                    <Tooltip text="开启后将显示详细的运行日志，方便排查问题" />
+                                </tooltip>
+                            </Label>
+                            <CheckBox fx:id="debuggerCheckBox" />
+                        </HBox>
+                        
+                        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <Label text="过滤不活跃HR：">
+                                <tooltip>
+                                    <Tooltip text="开启后将自动过滤最近未活跃的HR，提高沟通效率" />
+                                </tooltip>
+                            </Label>
+                            <CheckBox fx:id="filterDeadHRCheckBox" />
+                        </HBox>
+                        
+                        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                            <Label text="启用AI检测：">
+                                <tooltip>
+                                    <Tooltip text="开启后将使用AI智能分析职位描述，提供更精准的投递建议" />
+                                </tooltip>
+                            </Label>
+                            <CheckBox fx:id="enableAICheckBox" />
+                        </HBox>
+                        
+                        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                            <Label text="发送图片简历：">
+                                <tooltip>
+                                    <Tooltip text="开启后将自动发送图片版简历，提高简历查看率" />
+                                </tooltip>
+                            </Label>
+                            <CheckBox fx:id="sendImgResumeCheckBox" />
+                        </HBox>
+                        
+                        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                            <Label text="关键词匹配：">
+                                <tooltip>
+                                    <Tooltip text="开启后将根据设定的关键词智能匹配职位要求" />
+                                </tooltip>
+                            </Label>
+                            <CheckBox fx:id="keyFilterCheckBox" />
+                        </HBox>
+                        
+                        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                            <Label text="推荐岗位：">
+                                <tooltip>
+                                    <Tooltip text="开启后将自动接收系统推荐的相关职位" />
+                                </tooltip>
+                            </Label>
+                            <CheckBox fx:id="recommendJobsCheckBox" />
+                        </HBox>
+                        
+                        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.rowIndex="3">
+                            <Label text="H5岗位：">
+                                <tooltip>
+                                    <Tooltip text="开启后将包含H5端发布的职位" />
+                                </tooltip>
+                            </Label>
+                            <CheckBox fx:id="h5JobsCheckBox" />
+                        </HBox>
+                        
+                        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                            <Label text="国企检查：">
+                                <tooltip>
+                                    <Tooltip text="开启后将自动识别并标记国有企业职位" />
+                                </tooltip>
+                            </Label>
+                            <CheckBox fx:id="checkStateOwnedCheckBox" />
+                        </HBox>
+                    </GridPane>
+                </VBox>
+            </TitledPane>
+            
+            <!-- 自定义配置区域 -->
+            <TitledPane text="自定义配置" expanded="false">
+                <VBox spacing="10">
+                    <!-- VIP密钥 -->
+                    <VBox spacing="5">
+                        <Label text="VIP密钥：">
+                            <tooltip>
+                                <Tooltip text="输入VIP授权密钥，用于解锁高级功能" />
+                            </tooltip>
+                        </Label>
+                        <TextField fx:id="vipKeyField" />
+                    </VBox>
+                    
+                    <!-- API域名 -->
+                    <VBox spacing="5">
+                        <Label text="API域名：">
+                            <tooltip>
+                                <Tooltip text="设置API服务器地址，一般无需修改" />
+                            </tooltip>
+                        </Label>
+                        <TextField fx:id="apiDomainField" />
+                    </VBox>
+                    
+                    <!-- 补充城市代码 -->
+                    <VBox spacing="5">
+                        <Label text="补充城市代码：">
+                            <tooltip>
+                                <Tooltip text="添加自定义的城市代码映射关系" />
+                            </tooltip>
+                        </Label>
+                        <VBox fx:id="customCityCodeContainer" spacing="5" style="-fx-border-color: #ddd; -fx-border-radius: 4; -fx-padding: 5;">
+                            <Label text="格式：城市名 - 城市代码" style="-fx-text-fill: #666;" />
+                        </VBox>
+                    </VBox>
+
+                    <!-- HR状态配置 -->
+                    <VBox spacing="5">
+                        <Label text="HR状态配置：">
+                            <tooltip>
+                                <Tooltip text="配置HR活跃度判断规则" />
+                            </tooltip>
+                        </Label>
+                        <VBox fx:id="deadStatusContainer" spacing="5" style="-fx-border-color: #ddd; -fx-border-radius: 4; -fx-padding: 5;">
+                            <Label text="可添加或删除HR状态" style="-fx-text-fill: #666;" />
+                        </VBox>
+                    </VBox>
+                </VBox>
+            </TitledPane>
+            
+            <!-- 保存按钮 -->
+            <Button text="保存并开始" onAction="#handleSaveAndStart" 
+                    style="-fx-background-color: #4CAF50; -fx-text-fill: white;"
+                    maxWidth="Infinity">
+                <tooltip>
+                    <Tooltip text="保存当前配置并开始执行自动投递任务" />
+                </tooltip>
+            </Button>
+                    
+        </VBox>
+    </ScrollPane>
+    
+    <!-- 日志控制台 -->
+    <VBox spacing="10" HBox.hgrow="ALWAYS">
+        <Label text="运行日志">
+            <tooltip>
+                <Tooltip text="显示程序运行时的详细日志信息" />
+            </tooltip>
+        </Label>
+        <TextArea fx:id="logTextArea" 
+                  wrapText="true" 
+                  editable="false" 
+                  VBox.vgrow="ALWAYS"
+                  style="-fx-font-family: monospace;" />
+    </VBox>
+    
+</HBox> 
