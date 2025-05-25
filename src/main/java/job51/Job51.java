@@ -1,19 +1,17 @@
 package job51;
 
+import com.microsoft.playwright.*;
 import lombok.SneakyThrows;
-import org.openqa.selenium.*;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.JobUtils;
-import utils.SeleniumUtil;
+import utils.PlaywrightUtil;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import static utils.Bot.sendMessageByTime;
-import static utils.Constant.*;
 import static utils.JobUtils.formatDuration;
 
 /**
@@ -36,7 +34,7 @@ public class Job51 {
 
     public static void main(String[] args) {
         String searchUrl = getSearchUrl();
-        SeleniumUtil.initDriver();
+        PlaywrightUtil.init();
         startDate = new Date();
         Login();
         config.getKeywords().forEach(keyword -> resume(searchUrl + "&keyword=" + keyword));
@@ -48,8 +46,7 @@ public class Job51 {
         log.info(message);
         sendMessageByTime(message);
         resultList.clear();
-        CHROME_DRIVER.close();
-        CHROME_DRIVER.quit();
+        PlaywrightUtil.close();
     }
 
     private static String getSearchUrl() {
@@ -59,11 +56,11 @@ public class Job51 {
     }
 
     private static void Login() {
-        CHROME_DRIVER.get(homeUrl);
-        if (SeleniumUtil.isCookieValid(cookiePath)) {
-            SeleniumUtil.loadCookie(cookiePath);
-            CHROME_DRIVER.navigate().refresh();
-            SeleniumUtil.sleep(1);
+        PlaywrightUtil.navigate(homeUrl);
+        if (isCookieValid(cookiePath)) {
+            PlaywrightUtil.loadCookies(cookiePath);
+            PlaywrightUtil.getPageObject().reload();
+            PlaywrightUtil.sleep(1);
         }
         if (isLoginRequired()) {
             log.error("cookie失效，尝试扫码登录...");
@@ -73,7 +70,8 @@ public class Job51 {
 
     private static boolean isLoginRequired() {
         try {
-            String text = CHROME_DRIVER.findElement(By.xpath("//p[@class=\"tit\"]")).getText();
+            Locator titleElement = PlaywrightUtil.findElement("//p[@class=\"tit\"]");
+            String text = titleElement.textContent();
             return text != null && text.contains("登录");
         } catch (Exception e) {
             log.info("cookie有效，已登录...");
@@ -83,45 +81,45 @@ public class Job51 {
 
     @SneakyThrows
     private static void resume(String url) {
-        CHROME_DRIVER.get(url);
-        SeleniumUtil.sleep(1);
+        PlaywrightUtil.navigate(url);
+        PlaywrightUtil.sleep(1);
 
         // 再次判断是否登录
-        WebElement login = WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//a[contains(@class, 'uname')]")));
-        if (login != null && isNotNullOrEmpty(login.getText()) && login.getText().contains("登录")) {
+        Locator login = PlaywrightUtil.waitForElement("//a[contains(@class, 'uname')]");
+        if (login != null && isNotNullOrEmpty(login.textContent()) && login.textContent().contains("登录")) {
             login.click();
-            WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//i[contains(@class, 'passIcon')]"))).click();
+            PlaywrightUtil.waitForElement("//i[contains(@class, 'passIcon')]").click();
             log.info("请扫码登录...");
-            WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[contains(@class, 'joblist')]")));
-            SeleniumUtil.saveCookie(cookiePath);
+            PlaywrightUtil.waitForElement("//div[contains(@class, 'joblist')]");
+            PlaywrightUtil.saveCookies(cookiePath);
         }
 
         //由于51更新，每投递一页之前，停止10秒
-        SeleniumUtil.sleep(10);
+        PlaywrightUtil.sleep(10);
 
         int i = 0;
         try {
-            CHROME_DRIVER.findElements(By.className("ss")).get(i).click();
+            PlaywrightUtil.findElement(".ss").nth(i).click();
         } catch (Exception e) {
             findAnomaly();
         }
         for (int j = page; j <= maxPage; j++) {
             while (true) {
                 try {
-                    WebElement mytxt = WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.id("jump_page")));
-                    SeleniumUtil.sleep(5);
+                    Locator mytxt = PlaywrightUtil.waitForElement("#jump_page");
+                    PlaywrightUtil.sleep(5);
                     mytxt.click();
                     mytxt.clear();
-                    mytxt.sendKeys(String.valueOf(j));
-                    WAIT.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage"))).click();
-                    ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
+                    mytxt.fill(String.valueOf(j));
+                    PlaywrightUtil.waitForElement("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage").click();
+                    PlaywrightUtil.getPageObject().keyboard().press("Control+Home");
                     log.info("第 {} 页", j);
                     break;
                 } catch (Exception e) {
                     log.error("mytxt.clear()可能异常...");
-                    SeleniumUtil.sleep(1);
+                    PlaywrightUtil.sleep(1);
                     findAnomaly();
-                    CHROME_DRIVER.navigate().refresh();
+                    PlaywrightUtil.getPageObject().reload();
                 }
             }
             postCurrentJob();
@@ -139,74 +137,78 @@ public class Job51 {
 
     @SneakyThrows
     private static void postCurrentJob() {
-        SeleniumUtil.sleep(1);
+        PlaywrightUtil.sleep(1);
         // 选择所有岗位，批量投递
-        List<WebElement> checkboxes = CHROME_DRIVER.findElements(By.cssSelector("div.ick"));
-        if (checkboxes.isEmpty()) {
+        Locator checkboxes = PlaywrightUtil.findElement("div.ick");
+        int checkboxCount = checkboxes.count();
+        if (checkboxCount == 0) {
             return;
         }
-        List<WebElement> titles = CHROME_DRIVER.findElements(By.cssSelector("[class*='jname text-cut']"));
-        List<WebElement> companies = CHROME_DRIVER.findElements(By.cssSelector("[class*='cname text-cut']"));
-        JavascriptExecutor executor = CHROME_DRIVER;
-        for (int i = 0; i < checkboxes.size(); i++) {
-            WebElement checkbox = checkboxes.get(i);
-            executor.executeScript("arguments[0].click();", checkbox);
-            String title = titles.get(i).getText();
-            String company = companies.get(i).getText();
+        Locator titles = PlaywrightUtil.findElement("[class*='jname text-cut']");
+        Locator companies = PlaywrightUtil.findElement("[class*='cname text-cut']");
+        
+        for (int i = 0; i < checkboxCount; i++) {
+            Locator checkbox = checkboxes.nth(i);
+            checkbox.click();
+            String title = titles.nth(i).textContent();
+            String company = companies.nth(i).textContent();
             resultList.add(company + " | " + title);
             log.info("选中:{} | {} 职位", company, title);
         }
-        SeleniumUtil.sleep(1);
-        ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
+        PlaywrightUtil.sleep(1);
+        PlaywrightUtil.getPageObject().keyboard().press("Control+Home");
+        
         boolean success = false;
         while (!success) {
             try {
                 // 查询按钮是否存在
-                WebElement parent = CHROME_DRIVER.findElement(By.cssSelector("div.tabs_in"));
-                List<WebElement> button = parent.findElements(By.cssSelector("button.p_but"));
+                Locator parent = PlaywrightUtil.findElement("div.tabs_in");
+                Locator buttons = parent.locator("button.p_but");
                 // 如果按钮存在，则点击
-                if (button != null && !button.isEmpty()) {
-                    SeleniumUtil.sleep(1);
-                    button.get(1).click();
+                if (buttons.count() > 1) {
+                    PlaywrightUtil.sleep(1);
+                    buttons.nth(1).click();
                     success = true;
                 }
-            } catch (ElementClickInterceptedException e) {
+            } catch (Exception e) {
                 log.error("失败，1s后重试..");
-                SeleniumUtil.sleep(1);
+                PlaywrightUtil.sleep(1);
             }
         }
 
         try {
-            SeleniumUtil.sleep(3);
-            String text = CHROME_DRIVER.findElement(By.xpath("//div[@class='successContent']")).getText();
+            PlaywrightUtil.sleep(3);
+            Locator successContent = PlaywrightUtil.findElement("//div[@class='successContent']");
+            String text = successContent.textContent();
             if (text.contains("快来扫码下载~")) {
                 //关闭弹窗
-                CHROME_DRIVER.findElement(By.cssSelector("[class*='van-icon van-icon-cross van-popup__close-icon van-popup__close-icon--top-right']")).click();
+                PlaywrightUtil.findElement("[class*='van-icon van-icon-cross van-popup__close-icon van-popup__close-icon--top-right']").click();
             }
         } catch (Exception ignored) {
             log.info("未找到投递成功弹窗！可能为单独投递申请弹窗！");
         }
+        
         String particularly = null;
         try {
-            particularly = CHROME_DRIVER.findElement(By.xpath("//div[@class='el-dialog__body']/span")).getText();
+            particularly = PlaywrightUtil.findElement("//div[@class='el-dialog__body']/span").textContent();
         } catch (Exception ignored) {
         }
         if (particularly != null && particularly.contains("需要到企业招聘平台单独申请")) {
             //关闭弹窗
-            CHROME_DRIVER.findElement(By.cssSelector("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div:nth-child(2) > div:nth-child(2) > div > div.el-dialog__header > button > i")).click();
+            PlaywrightUtil.findElement("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div:nth-child(2) > div:nth-child(2) > div > div.el-dialog__header > button > i").click();
             log.info("关闭单独投递申请弹窗成功！");
         }
     }
 
     private static void findAnomaly() {
         try {
-            String verify = CHROME_DRIVER.findElement(By.xpath("//p[@class='waf-nc-title']")).getText();
-            if (verify.contains("验证")) {
+            Locator verify = PlaywrightUtil.findElement("//p[@class='waf-nc-title']");
+            String verifyText = verify.textContent();
+            if (verifyText.contains("验证")) {
                 //关闭弹窗
                 log.error("出现访问验证了！程序退出...");
                 printResult();
-                CHROME_DRIVER.close();
-                CHROME_DRIVER.quit();
+                PlaywrightUtil.close();
             }
         } catch (Exception ignored) {
             log.info("未出现访问验证，继续运行...");
@@ -215,9 +217,19 @@ public class Job51 {
 
     private static void scanLogin() {
         log.info("等待扫码登陆..");
-        CHROME_DRIVER.get(loginUrl);
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("hasresume")));
-        SeleniumUtil.saveCookie(cookiePath);
+        PlaywrightUtil.navigate(loginUrl);
+        PlaywrightUtil.waitForElement("#hasresume");
+        PlaywrightUtil.saveCookies(cookiePath);
+    }
+
+    private static boolean isCookieValid(String cookiePath) {
+        try {
+            String cookieContent = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(cookiePath)));
+            return cookieContent != null && !cookieContent.equals("[]") && cookieContent.contains("name");
+        } catch (Exception e) {
+            log.error("读取cookie文件失败: {}", e.getMessage());
+            return false;
+        }
     }
 
 }

@@ -1,22 +1,17 @@
 package liepin;
 
+import com.microsoft.playwright.*;
 import lombok.SneakyThrows;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import utils.JobUtils;
-import utils.SeleniumUtil;
+import utils.PlaywrightUtil;
 
 import java.util.*;
 
 import static utils.Bot.sendMessageByTime;
-import static utils.Constant.*;
 import static utils.JobUtils.formatDuration;
-import static utils.SeleniumUtil.isCookieValid;
 
 /**
  * @author loks666
@@ -48,7 +43,7 @@ public class Liepin {
     private static final Set<String> EXCLUDE_JOB_NAME = new HashSet<>();
 
     public static void main(String[] args) {
-        SeleniumUtil.initDriver();
+        PlaywrightUtil.init();
         startDate = new Date();
         login();
         String containsJobName;
@@ -74,29 +69,28 @@ public class Liepin {
         log.info(message);
         sendMessageByTime(message);
         resultList.clear();
-        CHROME_DRIVER.close();
-        CHROME_DRIVER.quit();
+        PlaywrightUtil.close();
     }
 
 
     @SneakyThrows
     private static void submit(String keyword) {
-        CHROME_DRIVER.get(getSearchUrl() + "&key=" + keyword);
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("list-pagination-box")));
-        WebElement div = CHROME_DRIVER.findElement(By.className("list-pagination-box"));
-        List<WebElement> lis = div.findElements(By.tagName("li"));
+        PlaywrightUtil.navigate(getSearchUrl() + "&key=" + keyword);
+        PlaywrightUtil.waitForElement(".list-pagination-box");
+        Locator div = PlaywrightUtil.findElement(".list-pagination-box");
+        List<Locator> lis = div.locator("li").all();
         setMaxPage(lis);
         for (int i = 0; i < maxPage; i++) {
             try {
-                CHROME_DRIVER.findElement(By.xpath("//div[contains(@class, 'subscribe-close-btn')]")).click();
+                PlaywrightUtil.findElement("//div[contains(@class, 'subscribe-close-btn')]").click();
             } catch (Exception ignored) {
             }
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, 'job-card-pc-container')]")));
+            PlaywrightUtil.waitForElement("//div[contains(@class, 'job-card-pc-container')]");
             log.info("正在投递【{}】第【{}】页...", keyword, i + 1);
             submitJob();
             log.info("已投递第【{}】页所有的岗位...\n", i + 1);
-            div = CHROME_DRIVER.findElement(By.className("list-pagination-box"));
-            WebElement nextPage = div.findElement(By.xpath(".//li[@title='Next Page']"));
+            div = PlaywrightUtil.findElement(".list-pagination-box");
+            Locator nextPage = div.locator(".//li[@title='Next Page']");
             if (nextPage.getAttribute("disabled") == null) {
                 nextPage.click();
             } else {
@@ -114,9 +108,9 @@ public class Liepin {
     }
 
 
-    private static void setMaxPage(List<WebElement> lis) {
+    private static void setMaxPage(List<Locator> lis) {
         try {
-            int page = Integer.parseInt(lis.get(lis.size() - 2).getText());
+            int page = Integer.parseInt(lis.get(lis.size() - 2).textContent());
             if (page > 1) {
                 maxPage = page;
             }
@@ -127,17 +121,23 @@ public class Liepin {
     private static void submitJob() {
         // 获取hr数量
         String getRecruiters = "//div[contains(@class, 'job-card-pc-container')]";
-        int count = CHROME_DRIVER.findElements(By.xpath(getRecruiters)).size();
+        Locator recruitersLocator = PlaywrightUtil.findElement(getRecruiters);
+        int count = recruitersLocator.count();
         StringBuilder sb = new StringBuilder();
+        Page page = PlaywrightUtil.getPageObject();
+        
         for (int i = 0; i < count; i++) {
-            JavascriptExecutor js = CHROME_DRIVER;
-            js.executeScript("window.scrollBy(0,120);");
+            page.evaluate("window.scrollBy(0,120);");
 
-            String jobName = CHROME_DRIVER.findElements(By.xpath("//div[contains(@class, 'job-title-box')]")).get(i).getText().replaceAll("\n", " ").replaceAll("【 ", "[").replaceAll(" 】", "]");
-            String companyName = CHROME_DRIVER.findElements(By.xpath("//span[contains(@class, 'company-name')]")).get(i).getText().replaceAll("\n", " ");
-            String salary = CHROME_DRIVER.findElements(By.xpath("//span[contains(@class, 'job-salary')]")).get(i).getText().replaceAll("\n", " ");
+            Locator jobTitleBoxes = PlaywrightUtil.findElement("//div[contains(@class, 'job-title-box')]");
+            Locator companyNames = PlaywrightUtil.findElement("//span[contains(@class, 'company-name')]");
+            Locator jobSalaries = PlaywrightUtil.findElement("//span[contains(@class, 'job-salary')]");
+            
+            String jobName = jobTitleBoxes.nth(i).textContent().replaceAll("\n", " ").replaceAll("【 ", "[").replaceAll(" 】", "]");
+            String companyName = companyNames.nth(i).textContent().replaceAll("\n", " ");
+            String salary = jobSalaries.nth(i).textContent().replaceAll("\n", " ");
             String recruiterName = null;
-            WebElement name;
+            
             if (EXCLUDE_COMPANY_SET.stream().anyMatch(companyName::contains)){
                 log.info("命中已排除公司：{}", companyName);
                 continue;
@@ -152,34 +152,32 @@ public class Liepin {
             }
             try {
                 // 获取hr名字
-                List<WebElement> recruiters = CHROME_DRIVER.findElements(By.xpath(getRecruiters));
-//                System.out.println(count);
-//                System.out.println(recruiters.size());
-                name = recruiters.get(i);
-                recruiterName = name.getText();
+                Locator recruiters = PlaywrightUtil.findElement(getRecruiters);
+                Locator name = recruiters.nth(i);
+                recruiterName = name.textContent();
             } catch (Exception e) {
                 log.error(e.getMessage());
             }
             try {
                 // 移动到hr标签处
-                name = CHROME_DRIVER.findElements(By.xpath("//div[contains(@class, 'job-card-pc-container')]")).get(i);
-                ACTIONS.moveToElement(name).perform();
+                Locator name = PlaywrightUtil.findElement("//div[contains(@class, 'job-card-pc-container')]").nth(i);
+                name.hover();
             } catch (Exception ignore) {
             }
-            WebElement button;
+            Locator button;
             try {
-                button = CHROME_DRIVER.findElement(By.xpath("//button[@class='ant-btn ant-btn-primary ant-btn-round']"));
+                button = PlaywrightUtil.findElement("//button[@class='ant-btn ant-btn-primary ant-btn-round']");
             } catch (Exception e) {
                 //嵌套一个异常，用来获取对应按钮
                 try {
-                    button = CHROME_DRIVER.findElement(By.xpath("//button[@Class='ant-btn ant-btn-round ant-btn-primary']"));
+                    button = PlaywrightUtil.findElement("//button[@Class='ant-btn ant-btn-round ant-btn-primary']");
                 } catch (Exception e1) {
                     continue;
                 }
             }
             String text;
             try {
-                text = button.getText();
+                text = button.textContent();
             } catch (Exception ignore) {
                 text = "";
             }
@@ -188,51 +186,53 @@ public class Liepin {
                     button.click();
                 } catch (Exception ignore) {
                 }
-                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("__im_basic__header-wrap")));
-                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//textarea[contains(@class, '__im_basic__textarea')]")));
-                WebElement input = CHROME_DRIVER.findElement(By.xpath("//textarea[contains(@class, '__im_basic__textarea')]"));
+                PlaywrightUtil.waitForElement(".__im_basic__header-wrap");
+                PlaywrightUtil.waitForElement("//textarea[contains(@class, '__im_basic__textarea')]");
+                Locator input = PlaywrightUtil.findElement("//textarea[contains(@class, '__im_basic__textarea')]");
                 input.click();
-                SeleniumUtil.sleep(1);
-                WebElement close = CHROME_DRIVER.findElement(By.cssSelector("div.__im_basic__contacts-title svg"));
+                PlaywrightUtil.sleep(1);
+                Locator close = PlaywrightUtil.findElement("div.__im_basic__contacts-title svg");
                 close.click();
-                WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, 'recruiter-info-box')]")));
+                PlaywrightUtil.waitForElement("//div[contains(@class, 'recruiter-info-box')]");
 
                 resultList.add(sb.append("【").append(companyName).append(" ").append(jobName).append(" ").append(salary).append(" ").append(recruiterName).append(" ").append("】").toString());
                 sb.setLength(0);
                 log.info("发起新聊天:【{}】的【{}·{}】岗位", companyName, jobName, salary);
             }
-            ACTIONS.moveByOffset(125, 0).perform();
+            // 移动鼠标偏移，避免hover效果
+            Mouse mouse = page.mouse();
+            mouse.move(125, 0);
         }
     }
 
     @SneakyThrows
     private static void login() {
         log.info("正在打开猎聘网站...");
-        CHROME_DRIVER.get(homeUrl);
+        PlaywrightUtil.navigate(homeUrl);
         log.info("猎聘正在登录...");
         if (isCookieValid(cookiePath)) {
-            SeleniumUtil.loadCookie(cookiePath);
-            CHROME_DRIVER.navigate().refresh();
+            PlaywrightUtil.loadCookies(cookiePath);
+            PlaywrightUtil.getPageObject().reload();
         }
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("header-logo-box")));
+        PlaywrightUtil.waitForElement("#header-logo-box");
         if (isLoginRequired()) {
             log.info("cookie失效，尝试扫码登录...");
             scanLogin();
-            SeleniumUtil.saveCookie(cookiePath);
+            PlaywrightUtil.saveCookies(cookiePath);
         } else {
             log.info("cookie有效，准备投递...");
         }
     }
 
     private static boolean isLoginRequired() {
-        String currentUrl = CHROME_DRIVER.getCurrentUrl();
+        String currentUrl = PlaywrightUtil.getUrl();
         return !currentUrl.contains("c.liepin.com");
     }
 
     private static void scanLogin() {
         try {
             // 点击切换登录类型按钮
-            SeleniumUtil.click(By.xpath("//div[@class='jsx-263198893 btn-sign-switch']"));
+            PlaywrightUtil.click("//div[@class='jsx-263198893 btn-sign-switch']");
             log.info("等待扫码..");
             boolean isLoggedIn = false;
 
@@ -244,7 +244,8 @@ public class Liepin {
             while (true) {
                 try {
                     // 检查是否已登录
-                    String login = CHROME_DRIVER.findElements(By.xpath("//button[@type='button']")).getFirst().getText();
+                    Locator loginButtons = PlaywrightUtil.findElement("//button[@type='button']");
+                    String login = loginButtons.first().textContent();
 
                     if (!login.contains("登录")) {
                         log.info("用户扫码成功，继续执行...");
@@ -252,7 +253,8 @@ public class Liepin {
                     }
                 } catch (Exception ignored) {
                     try {
-                        String login = CHROME_DRIVER.findElements(By.xpath("//div[@id='header-quick-menu-user-info']")).getFirst().getText();
+                        Locator userInfo = PlaywrightUtil.findElement("//div[@id='header-quick-menu-user-info']");
+                        String login = userInfo.first().textContent();
                         if (login.contains("你好")){
                             break;
                         }
@@ -267,11 +269,11 @@ public class Liepin {
                     log.error("登录超时，10分钟内未完成扫码登录，程序将退出。");
                     System.exit(1); // 超时，退出程序
                 }
-                SeleniumUtil.sleep(1);
+                PlaywrightUtil.sleep(1);
             }
 
             // 登录成功后，保存Cookie
-            SeleniumUtil.saveCookie(cookiePath);
+            PlaywrightUtil.saveCookies(cookiePath);
             log.info("登录成功，Cookie已保存。");
 
         } catch (Exception e) {
@@ -280,6 +282,15 @@ public class Liepin {
         }
     }
 
+    private static boolean isCookieValid(String cookiePath) {
+        try {
+            String cookieContent = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(cookiePath)));
+            return cookieContent != null && !cookieContent.equals("[]") && cookieContent.contains("name");
+        } catch (Exception e) {
+            log.error("读取cookie文件失败: {}", e.getMessage());
+            return false;
+        }
+    }
 
 
 }

@@ -162,10 +162,4 @@ public class JobUtils {
         return random.nextInt((max - min) + 1) + min;
     }
 
-    public static void main(String[] args) {
-        Date star = new Date();
-        SeleniumUtil.sleep(3);
-        String a = formatDuration(star, new Date());
-        System.out.println(a);
-    }
 }

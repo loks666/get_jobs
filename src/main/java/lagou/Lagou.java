@@ -1,14 +1,12 @@
 package lagou;
 
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.KeyboardModifier;
 import lombok.SneakyThrows;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.JobUtils;
-import utils.SeleniumUtil;
+import utils.PlaywrightUtil;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,9 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static utils.Bot.sendMessageByTime;
-import static utils.Constant.*;
 import static utils.JobUtils.formatDuration;
-import static utils.SeleniumUtil.isCookieValid;
 
 /**
  * @author loks666
@@ -42,20 +38,20 @@ public class Lagou {
 
 
     public static void main(String[] args) {
-        SeleniumUtil.initDriver();
+        PlaywrightUtil.init();
         startDate = new Date();
         login();
-        CHROME_DRIVER.get(homeUrl);
+        PlaywrightUtil.navigate(homeUrl);
         homeUrl = "https://www.lagou.com/wn/zhaopin?fromSearch=true";
         config.getKeywords().forEach(keyword -> {
             String searchUrl = getSearchUrl(keyword);
-            CHROME_DRIVER.get(searchUrl);
+            PlaywrightUtil.navigate(searchUrl);
             setMaxPage();
             for (int i = page; i <= maxPage || currentKeyJobNum > oneKeyMaxJob; i++) {
                 submit();
                 try {
                     getWindow();
-                    CHROME_DRIVER.findElements(By.className("lg-pagination-item-link")).get(1).click();
+                    PlaywrightUtil.findElement(".lg-pagination-item-link").nth(1).click();
                 } catch (Exception e) {
                     break;
                 }
@@ -70,8 +66,7 @@ public class Lagou {
         log.info(message);
         sendMessageByTime(message);
         jobCount = 0;
-        CHROME_DRIVER.close();
-        CHROME_DRIVER.quit();
+        PlaywrightUtil.close();
     }
 
     private static String getSearchUrl(String keyword) {
@@ -88,37 +83,38 @@ public class Lagou {
      */
     private static void setMaxPage() {
         // 模拟 Ctrl + End
-        ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.END).keyUp(Keys.CONTROL).perform();
-        WebElement secondLastLi = CHROME_DRIVER.findElement(By.xpath("(//ul[@class='lg-pagination']/li)[last()-1]"));
-        if (secondLastLi != null && secondLastLi.getText().matches("\\d+")) {
-            maxPage = Integer.parseInt(secondLastLi.getText());
+        PlaywrightUtil.getPageObject().keyboard().press("Control+End");
+        Locator secondLastLi = PlaywrightUtil.findElement("(//ul[@class='lg-pagination']/li)[last()-1]");
+        if (secondLastLi != null && secondLastLi.textContent().matches("\\d+")) {
+            maxPage = Integer.parseInt(secondLastLi.textContent());
         }
         // 模拟 Ctrl + Home
-        ACTIONS.keyDown(Keys.CONTROL).sendKeys(Keys.HOME).keyUp(Keys.CONTROL).perform();
+        PlaywrightUtil.getPageObject().keyboard().press("Control+Home");
     }
 
     @SneakyThrows
     private static void submit() {
         // 获取所有的元素
-        List<WebElement> elements = null;
+        Locator elements = null;
         try {
-            ACTIONS.sendKeys(Keys.HOME).perform();
-            SeleniumUtil.sleep(1);
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("openWinPostion")));
-            elements = CHROME_DRIVER.findElements(By.id("openWinPostion"));
+            PlaywrightUtil.getPageObject().keyboard().press("Home");
+            PlaywrightUtil.sleep(1);
+            PlaywrightUtil.waitForElement("#openWinPostion");
+            elements = PlaywrightUtil.findElement("#openWinPostion");
 
         } catch (Exception ignore) {
         }
         if (elements != null) {
-            for (int i = 0; i < elements.size() || currentKeyJobNum > oneKeyMaxJob; i++) {
-                WebElement element = null;
+            int elementCount = elements.count();
+            for (int i = 0; i < elementCount || currentKeyJobNum > oneKeyMaxJob; i++) {
+                Locator element = null;
                 try {
-                    element = elements.get(i);
+                    element = elements.nth(i);
                 } catch (Exception e) {
-                    log.error("获取岗位列表中某个岗位失败，岗位列表数量：{},获取第【{}】个元素失败", i + 1, elements.size());
+                    log.error("获取岗位列表中某个岗位失败，岗位列表数量：{},获取第【{}】个元素失败", i + 1, elementCount);
                 }
                 try {
-                    ACTIONS.moveToElement(element).perform();
+                    element.hover();
                 } catch (Exception e) {
                     getWindow();
                 }
@@ -128,25 +124,25 @@ public class Lagou {
                 TimeUnit.SECONDS.sleep(1);
                 getWindow();
                 String jobName;
-                WebElement submit;
+                Locator submit;
                 try {
-                    jobName = CHROME_DRIVER.findElement(By.className("header__HY1Cm")).getText();
+                    jobName = PlaywrightUtil.findElement(".header__HY1Cm").textContent();
                 } catch (Exception e) {
                     try {
-                        jobName = CHROME_DRIVER.findElement(By.className("position-head-wrap-position-name")).getText();
+                        jobName = PlaywrightUtil.findElement(".position-head-wrap-position-name").textContent();
                     } catch (Exception ex) {
-                        SeleniumUtil.sleep(10);
+                        PlaywrightUtil.sleep(10);
                         continue;
                     }
 
                 }
                 if (!(jobName != null && !jobName.isEmpty() && !jobName.contains("销"))) {
-                    CHROME_DRIVER.close();
+                    closeTab();
                     getWindow();
                     continue;
                 }
-                submit = CHROME_DRIVER.findElement(By.className("resume-deliver"));
-                if ("投简历".equals(submit.getText())) {
+                submit = PlaywrightUtil.findElement(".resume-deliver");
+                if ("投简历".equals(submit.textContent())) {
                     String jobTitle = null;
                     String companyName = null;
                     String jobInfo = null;
@@ -154,27 +150,27 @@ public class Lagou {
                     String salary = null;
                     String weal = null;
                     try {
-                        jobTitle = CHROME_DRIVER.findElement(By.cssSelector("span.name__36WTQ")).getText();
-                        companyName = CHROME_DRIVER.findElement(By.cssSelector("span.company")).getText();
-                        jobInfo = CHROME_DRIVER.findElements(By.cssSelector("h3.position-tags span"))
+                        jobTitle = PlaywrightUtil.findElement("span.name__36WTQ").textContent();
+                        companyName = PlaywrightUtil.findElement("span.company").textContent();
+                        jobInfo = PlaywrightUtil.findElement("h3.position-tags span").all()
                                 .stream()
-                                .map(WebElement::getText)
+                                .map(Locator::textContent)
                                 .collect(Collectors.joining("/"));
-                        companyInfo = CHROME_DRIVER.findElement(By.cssSelector("div.header__HY1Cm")).getText();
-                        salary = CHROME_DRIVER.findElement(By.cssSelector("span.salary__22Kt_")).getText();
-                        weal = CHROME_DRIVER.findElement(By.cssSelector("li.labels")).getText();
+                        companyInfo = PlaywrightUtil.findElement("div.header__HY1Cm").textContent();
+                        salary = PlaywrightUtil.findElement("span.salary__22Kt_").textContent();
+                        weal = PlaywrightUtil.findElement("li.labels").textContent();
                     } catch (Exception e) {
                         log.error("获取职位信息失败", e);
                         try {
-                            jobTitle = CHROME_DRIVER.findElement(By.cssSelector("span.position-head-wrap-position-name")).getText();
-                            companyName = CHROME_DRIVER.findElement(By.cssSelector("span.company")).getText();
-                            List<WebElement> jobInfoElements = CHROME_DRIVER.findElements(By.cssSelector("h3.position-tags span:not(.tag-point)"));
+                            jobTitle = PlaywrightUtil.findElement("span.position-head-wrap-position-name").textContent();
+                            companyName = PlaywrightUtil.findElement("span.company").textContent();
+                            List<Locator> jobInfoElements = PlaywrightUtil.findElement("h3.position-tags span:not(.tag-point)").all();
                             jobInfo = jobInfoElements.stream()
-                                    .map(WebElement::getText)
+                                    .map(Locator::textContent)
                                     .collect(Collectors.joining("/"));
-                            companyInfo = CHROME_DRIVER.findElement(By.cssSelector("span.company")).getText();
-                            salary = CHROME_DRIVER.findElement(By.cssSelector("span.salary")).getText();
-                            weal = CHROME_DRIVER.findElement(By.cssSelector("dd.job-advantage p")).getText();
+                            companyInfo = PlaywrightUtil.findElement("span.company").textContent();
+                            salary = PlaywrightUtil.findElement("span.salary").textContent();
+                            weal = PlaywrightUtil.findElement("dd.job-advantage p").textContent();
                         } catch (Exception ex) {
                             log.error("第二次获取职位信息失败，放弃了！", ex);
                         }
@@ -186,16 +182,16 @@ public class Lagou {
                     submit.click();
                     TimeUnit.SECONDS.sleep(2);
                     try {
-                        WebElement send = CHROME_DRIVER.findElement(By.cssSelector("body > div:nth-child(45) > div > div.lg-design-modal-wrap.position-modal > div > div.lg-design-modal-content > div.lg-design-modal-footer > button.lg-design-btn.lg-design-btn-default"));
-                        if ("确认投递".equals(send.getText())) {
+                        Locator send = PlaywrightUtil.findElement("body > div:nth-child(45) > div > div.lg-design-modal-wrap.position-modal > div > div.lg-design-modal-content > div.lg-design-modal-footer > button.lg-design-btn.lg-design-btn-default");
+                        if ("确认投递".equals(send.textContent())) {
                             send.click();
                         }
                     } catch (Exception e) {
                         log.error("没有【确认投递】的弹窗，继续！");
                     }
                     try {
-                        WebElement confirm = CHROME_DRIVER.findElement(By.cssSelector("button.lg-design-btn.lg-design-btn-primary span"));
-                        String buttonText = confirm.getText();
+                        Locator confirm = PlaywrightUtil.findElement("button.lg-design-btn.lg-design-btn-primary span");
+                        String buttonText = confirm.textContent();
                         if ("我知道了".equals(buttonText)) {
                             confirm.click();
                         } else {
@@ -205,144 +201,121 @@ public class Lagou {
                         log.error("第一次点击【我知道了】按钮失败...重试xpath点击...");
                         TimeUnit.SECONDS.sleep(1);
                         try {
-                            CHROME_DRIVER.findElement(By.xpath("/html/body/div[7]/div/div[2]/div/div[2]/div[2]/button[2]")).click();
+                            PlaywrightUtil.findElement("/html/body/div[7]/div/div[2]/div/div[2]/div[2]/button[2]").click();
                         } catch (Exception ex) {
                             log.error("第二次点击【我知道了】按钮失败...放弃了！", ex);
                             TimeUnit.SECONDS.sleep(10);
-                            CHROME_DRIVER.navigate().refresh();
+                            PlaywrightUtil.getPageObject().reload();
                         }
                     }
                     try {
                         TimeUnit.SECONDS.sleep(2);
-                        CHROME_DRIVER.findElement(By.cssSelector("#__next > div:nth-child(3) > div > div > div.feedback_job__3EnWp > div.feedback_job_title__2y8Bj > div.feedback_job_deliver__3UIB5.feedback_job_active__3bbLa")).click();
+                        PlaywrightUtil.findElement("#__next > div:nth-child(3) > div > div > div.feedback_job__3EnWp > div.feedback_job_title__2y8Bj > div.feedback_job_deliver__3UIB5.feedback_job_active__3bbLa").click();
                     } catch (Exception e) {
                         log.error("这个岗位没有推荐职位...");
                         TimeUnit.SECONDS.sleep(1);
                     }
-                } else if ("立即沟通".equals(submit.getText())) {
+                } else if ("立即沟通".equals(submit.textContent())) {
                     submit.click();
                     try {
-                        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"modalConIm\"]"))).click();
+                        PlaywrightUtil.waitForElement("//*[@id=\"modalConIm\"]").click();
                     } catch (Exception e) {
                         submit.click();
-                        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"modalConIm\"]"))).click();
+                        PlaywrightUtil.waitForElement("//*[@id=\"modalConIm\"]").click();
                     }
                 } else {
                     log.info("这个岗位没有投简历按钮...一秒后关闭标签页面！");
                     TimeUnit.SECONDS.sleep(1);
                 }
-                CHROME_DRIVER.close();
+                closeTab();
                 getWindow();
             }
         }
     }
 
+    private static void closeTab() {
+        Page page = PlaywrightUtil.getPageObject();
+        BrowserContext context = page.context();
+        List<Page> pages = context.pages();
+        if (pages.size() > 1) {
+            pages.get(pages.size() - 1).close();
+        }
+    }
+
     private static void getWindow() {
         try {
-            ArrayList<String> tabs = new ArrayList<>(CHROME_DRIVER.getWindowHandles());
-            if (tabs.size() > 1) {
-                CHROME_DRIVER.switchTo().window(tabs.get(1));
-            } else {
-                CHROME_DRIVER.switchTo().window(tabs.get(0));
+            Page page = PlaywrightUtil.getPageObject();
+            BrowserContext context = page.context();
+            List<Page> pages = context.pages();
+            if (pages.size() > 1) {
+                pages.get(pages.size() - 1).bringToFront();
             }
         } catch (Exception ignore) {
         }
     }
 
-    private static int tryClick(WebElement element, int i) {
-        boolean isClicked = false;
-        int maxRetryCount = 5;
-        int retryCount = 0;
-
+    private static int tryClick(Locator element, int i) {
         try {
+            // Ctrl+Click 在新标签页打开
+            Page page = PlaywrightUtil.getPageObject();
+            page.keyboard().down("Control");
             element.click();
-            isClicked = true;
+            page.keyboard().up("Control");
+            return 0;
         } catch (Exception e) {
             try {
-                CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i).click();
-                isClicked = true;
+                PlaywrightUtil.findElement("#openWinPostion").nth(i).click(new Locator.ClickOptions().setModifiers(List.of(KeyboardModifier.CONTROL)));
+                return 0;
             } catch (Exception ex) {
                 log.info(ex.getMessage());
+                return -1;
             }
         }
-        return 0;
-
-        /*
-         while (!isClicked && retryCount < maxRetryCount) {
-         try {
-         element.click();
-         isClicked = true;
-         } catch (Exception e) {
-         retryCount++;
-         log.error("element.click() 点击失败，正在尝试重新点击...(正在尝试：第 {} 次)", retryCount);
-         TimeUnit.SECONDS.sleep(5);
-
-         try {
-         CHROME_DRIVER.findElements(By.id("openWinPostion")).get(i).click();
-         isClicked = true;
-         } catch (Exception ex) {
-         log.error(" get(i).click() 重试失败，尝试使用Actions点击...(正在尝试：第 {} 次)", retryCount);
-         TimeUnit.SECONDS.sleep(5);
-         try {
-         ACTIONS.keyDown(Keys.CONTROL).click(element).keyUp(Keys.CONTROL).build().perform();
-         isClicked = true;
-         } catch (Exception exc) {
-         log.error("使用Actions点击也失败，等待10秒后再次尝试...(正在尝试：第 {} 次)", retryCount);
-         TimeUnit.SECONDS.sleep(10);
-         }
-         }
-         }
-         }
-         if (!isClicked) {
-         log.error("已尝试 {} 次，已达最大重试次数，少侠请重新来过！", maxRetryCount);
-         log.info("已投递 {} 次，正在退出...", jobCount);
-         CHROME_DRIVER.quit();
-         return -1;
-         } else {
-         return 0;
-         }
-         */
     }
 
     @SneakyThrows
     private static void newTab(int index) {
-        String windowHandle = CHROME_DRIVER.getWindowHandle();
-        String company = CHROME_DRIVER.findElement(By.cssSelector(".company-name__2-SjF a")).getText();
+        Page currentPage = PlaywrightUtil.getPageObject();
+        String company = PlaywrightUtil.findElement(".company-name__2-SjF a").textContent();
+        String jobTitle = PlaywrightUtil.findElement(".p-top__1F7CL a").textContent();
+        
+        // Ctrl+Click 在新标签页打开
+        currentPage.keyboard().down("Control");
+        PlaywrightUtil.findElement("#openWinPostion").nth(index).click();
+        currentPage.keyboard().up("Control");
+        
+        // 等待新页面加载
+        BrowserContext context = currentPage.context();
+        List<Page> pages = context.pages();
+        Page newPage = pages.get(pages.size() - 1);
+        newPage.bringToFront();
+        
+        newPage.waitForSelector(".resume-deliver");
 
-        String jobTitle = CHROME_DRIVER.findElement(By.cssSelector(".p-top__1F7CL a")).getText();
-        CHROME_DRIVER.findElements(By.id("openWinPostion")).get(index).click();
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("resume-deliver")));
-
-        Set<String> windowHandles = CHROME_DRIVER.getWindowHandles();
-        windowHandles.remove(windowHandle);
-        String newWindowHandle = windowHandles.iterator().next();
-        CHROME_DRIVER.switchTo().window(newWindowHandle);
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.className("resume-deliver")));
-
-        if (!"已投递".equals(CHROME_DRIVER.findElements(By.className("resume-deliver")).get(0).getText())) {
-            CHROME_DRIVER.findElements(By.className("resume-deliver")).get(0).click();
+        if (!"已投递".equals(newPage.locator(".resume-deliver").first().textContent())) {
+            newPage.locator(".resume-deliver").first().click();
             TimeUnit.SECONDS.sleep(1);
-            WAIT.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("button.lg-design-btn.lg-design-btn-primary"))).click();
+            newPage.waitForSelector("button.lg-design-btn.lg-design-btn-primary").click();
             log.info("投递【{}】公司: 【{}】岗位", company, jobTitle);
         }
-        CHROME_DRIVER.close();
-        CHROME_DRIVER.switchTo().window(windowHandle);
+        newPage.close();
+        currentPage.bringToFront();
     }
 
     @SneakyThrows
     private static void login() {
         log.info("正在打开拉勾...");
-        CHROME_DRIVER.get("https://www.lagou.com");
+        PlaywrightUtil.navigate("https://www.lagou.com");
         log.info("拉勾正在登录...");
         if (isCookieValid(cookiePath)) {
-            SeleniumUtil.loadCookie(cookiePath);
-            CHROME_DRIVER.navigate().refresh();
+            PlaywrightUtil.loadCookies(cookiePath);
+            PlaywrightUtil.getPageObject().reload();
         }
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("search_button")));
+        PlaywrightUtil.waitForElement("#search_button");
         if (isLoginRequired()) {
             log.info("cookie失效，尝试扫码登录...");
             scanLogin();
-            SeleniumUtil.saveCookie(cookiePath);
+            PlaywrightUtil.saveCookies(cookiePath);
         } else {
             log.info("cookie有效，准备投递...");
         }
@@ -350,8 +323,8 @@ public class Lagou {
 
     private static boolean isLoginRequired() {
         try {
-            WebElement header = CHROME_DRIVER.findElement(By.id("lg_tbar"));
-            return header.getText().contains("登录");
+            Locator header = PlaywrightUtil.findElement("#lg_tbar");
+            return header.textContent().contains("登录");
         } catch (Exception e) {
             return true;
         }
@@ -359,13 +332,23 @@ public class Lagou {
 
     private static void scanLogin() {
         try {
-            CHROME_DRIVER.get(wechatUrl);
+            PlaywrightUtil.navigate(wechatUrl);
             log.info("等待扫码..");
-            WAIT.until(ExpectedConditions.elementToBeClickable(By.id("search_button")));
+            PlaywrightUtil.waitForElement("#search_button", 300000); // 等待5分钟
         } catch (Exception e) {
-            CHROME_DRIVER.navigate().refresh();
+            PlaywrightUtil.getPageObject().reload();
         }
 
+    }
+
+    private static boolean isCookieValid(String cookiePath) {
+        try {
+            String cookieContent = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(cookiePath)));
+            return cookieContent != null && !cookieContent.equals("[]") && cookieContent.contains("name");
+        } catch (Exception e) {
+            log.error("读取cookie文件失败: {}", e.getMessage());
+            return false;
+        }
     }
 
 

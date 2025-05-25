@@ -10,8 +10,6 @@ import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import lombok.SneakyThrows;
 import org.json.JSONObject;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ObjectUtils;
@@ -32,7 +30,6 @@ import java.util.stream.Collectors;
 
 import static boss.BossElementLocators.*;
 import static utils.Bot.sendMessageByTime;
-import static utils.Constant.CHROME_DRIVER;
 import static utils.HttpUtils.OBJECT_MAPPER;
 import static utils.JobUtils.formatDuration;
 
@@ -107,10 +104,10 @@ public class Boss {
         PlaywrightUtil.init();
         startDate = new Date();
         login();
-        config.getCityCode().forEach(Boss::postJobByCityByPlaywright);
-        if (config.getH5Jobs()) {
-            h5Config.getCityCode().forEach(Boss::postH5JobByCityByPlaywright);
-        }
+//        config.getCityCode().forEach(Boss::postJobByCityByPlaywright);
+//        if (config.getH5Jobs()) {
+//            h5Config.getCityCode().forEach(Boss::postH5JobByCityByPlaywright);
+//        }
         if (recommendJobs.isEmpty() && config.getRecommendJobs()) {
             getRecommendJobs();
             // 处理推荐职位
@@ -629,12 +626,14 @@ public class Boss {
 
 
                 if (blackJobs.stream().anyMatch(jobName::contains) || !isTargetJob(keyword, jobName)) {
+                    log.info("排除黑名单岗位:【{}】公司【{}】岗位名称【{}】不符合投递要求", companyName, jobName, jobName);
                     // 排除黑名单岗位
                     continue;
                 }
 
 
                 if (blackCompanies.stream().anyMatch(companyName::contains)) {
+                    log.info("排除黑名单公司：【{}】公司名称【{}】不符合投递要求", companyName, companyName);
                     // 排除黑名单公司
                     continue;
                 }
@@ -772,10 +771,15 @@ public class Boss {
                 continue;
             }
 
-            // 处理职位详情页
-            int result = processJobDetail(jobPage, job, null);
-            if (result < 0) {
-                return result;
+            try{
+                // 处理职位详情页
+                int result = processJobDetail(jobPage, job, null);
+                if (result < 0) {
+                    return result;
+                }
+
+            }catch (Exception e){
+                log.error("处理职位详情页失败: {}", e.getMessage());
             }
 
             if (config.getDebugger()) {
@@ -917,6 +921,7 @@ public class Boss {
         // 每次点击沟通前都休眠5秒 减少调用频率
         PlaywrightUtil.sleep(5);
 
+        log.info("开始点击立即沟通");
         if (chatBtn.isVisible() && "立即沟通".equals(chatBtn.textContent().replaceAll("\\s+", ""))) {
             String waitTime = config.getWaitTime();
             int sleepTime = 10; // 默认等待10秒
@@ -1069,34 +1074,10 @@ public class Boss {
             return false;
         }
 
-        try {
-            // 从类路径加载 resume.jpg
-            URL resourceUrl = Boss.class.getResource("/resume.jpg");
-            if (resourceUrl == null) {
-                log.error("在类路径下未找到 resume.jpg 文件！");
-                return false;
-            }
-
-            // 将 URL 转为 File 对象
-            File imageFile = new File(resourceUrl.toURI());
-            log.info("简历图片路径：{}", imageFile.getAbsolutePath());
-
-            if (!imageFile.exists()) {
-                log.error("简历图片不存在！: {}", imageFile.getAbsolutePath());
-                return false;
-            }
-
-            // 使用 XPath 定位 <input type="file"> 元素
-            WebElement fileInput = CHROME_DRIVER
-                    .findElement(By.xpath("//div[@aria-label='发送图片']//input[@type='file']"));
-
-            // 上传图片
-            fileInput.sendKeys(imageFile.getAbsolutePath());
-            return true;
-        } catch (Exception e) {
-            log.error("发送简历图片时出错：{}", e.getMessage());
-            return false;
-        }
+        // 这个方法已经被 Playwright 版本的代码替代
+        // 在 processJobDetail 方法中已经实现了发送简历图片的功能
+        log.warn("sendResume 方法已被弃用，请使用 processJobDetail 中的简历发送功能");
+        return false;
     }
 
     /**
@@ -1519,7 +1500,7 @@ public class Boss {
             }
 
             // 小睡一下，避免 CPU 空转
-            SeleniumUtil.sleep(1);
+            PlaywrightUtil.sleep(1);
         }
         return false;
     }
