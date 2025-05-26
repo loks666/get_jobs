@@ -208,56 +208,57 @@ public class BossConfig {
      */
     @SneakyThrows
     public static synchronized void reload(Map<String, Object> bossConfigMap) {
-        BossConfig config = new BossConfig();
+        // 确保instance已经初始化
+        if (instance == null) {
+            instance = init();
+        }
         
-        // 从Map中读取配置
-        config.setSayHi((String) bossConfigMap.get("sayHi"));
-        config.setDebugger((Boolean) bossConfigMap.getOrDefault("debugger", false));
-        config.setKeywords((List<String>) bossConfigMap.get("keywords"));
-        config.setCityCode((List<String>) bossConfigMap.get("cityCode"));
-        config.setCustomCityCode((Map<String, String>) bossConfigMap.get("customCityCode"));
-        config.setIndustry((List<String>) bossConfigMap.get("industry"));
-        config.setExperience((List<String>) bossConfigMap.get("experience"));
-        config.setJobType((String) bossConfigMap.get("jobType"));
-        config.setSalary((String) bossConfigMap.get("salary"));
-        config.setDegree((List<String>) bossConfigMap.get("degree"));
-        config.setScale((List<String>) bossConfigMap.get("scale"));
-        config.setStage((List<String>) bossConfigMap.get("stage"));
-        config.setEnableAI((Boolean) bossConfigMap.getOrDefault("enableAI", false));
-        config.setFilterDeadHR((Boolean) bossConfigMap.getOrDefault("filterDeadHR", false));
-        config.setSendImgResume((Boolean) bossConfigMap.getOrDefault("sendImgResume", false));
-        config.setExpectedSalary((List<Integer>) bossConfigMap.get("expectedSalary"));
-        config.setWaitTime(String.valueOf(bossConfigMap.get("waitTime")));
-        config.setDeadStatus((List<String>) bossConfigMap.get("deadStatus"));
-        config.setKeyFilter((Boolean) bossConfigMap.getOrDefault("keyFilter", false));
-        config.setRecommendJobs((Boolean) bossConfigMap.getOrDefault("recommendJobs", false));
-        config.setH5Jobs((Boolean) bossConfigMap.getOrDefault("h5Jobs", false));
-        config.setCheckStateOwned((Boolean) bossConfigMap.getOrDefault("checkStateOwned", false));
-        config.setVipKey((String) bossConfigMap.getOrDefault("vipKey", ""));
-        config.setApiDomain((String) bossConfigMap.getOrDefault("apiDomain", ""));
+        // 直接更新现有instance的属性，而不是创建新对象
+        instance.setSayHi((String) bossConfigMap.get("sayHi"));
+        instance.setDebugger((Boolean) bossConfigMap.getOrDefault("debugger", false));
+        instance.setKeywords((List<String>) bossConfigMap.get("keywords"));
+        instance.setCityCode((List<String>) bossConfigMap.get("cityCode"));
+        instance.setCustomCityCode((Map<String, String>) bossConfigMap.get("customCityCode"));
+        instance.setIndustry((List<String>) bossConfigMap.get("industry"));
+        instance.setExperience((List<String>) bossConfigMap.get("experience"));
+        instance.setJobType((String) bossConfigMap.get("jobType"));
+        instance.setSalary((String) bossConfigMap.get("salary"));
+        instance.setDegree((List<String>) bossConfigMap.get("degree"));
+        instance.setScale((List<String>) bossConfigMap.get("scale"));
+        instance.setStage((List<String>) bossConfigMap.get("stage"));
+        instance.setEnableAI((Boolean) bossConfigMap.getOrDefault("enableAI", false));
+        instance.setFilterDeadHR((Boolean) bossConfigMap.getOrDefault("filterDeadHR", false));
+        instance.setSendImgResume((Boolean) bossConfigMap.getOrDefault("sendImgResume", false));
+        instance.setExpectedSalary((List<Integer>) bossConfigMap.get("expectedSalary"));
+        instance.setWaitTime(String.valueOf(bossConfigMap.get("waitTime")));
+        instance.setDeadStatus((List<String>) bossConfigMap.get("deadStatus"));
+        instance.setKeyFilter((Boolean) bossConfigMap.getOrDefault("keyFilter", false));
+        instance.setRecommendJobs((Boolean) bossConfigMap.getOrDefault("recommendJobs", false));
+        instance.setH5Jobs((Boolean) bossConfigMap.getOrDefault("h5Jobs", false));
+        instance.setCheckStateOwned((Boolean) bossConfigMap.getOrDefault("checkStateOwned", false));
+        instance.setVipKey((String) bossConfigMap.getOrDefault("vipKey", ""));
+        instance.setApiDomain((String) bossConfigMap.getOrDefault("apiDomain", ""));
         
         // 应用转换逻辑
-        config.setJobType(BossEnum.JobType.forValue(config.getJobType()).getCode());
-        config.setSalary(BossEnum.Salary.forValue(config.getSalary()).getCode());
+        instance.setJobType(BossEnum.JobType.forValue(instance.getJobType()).getCode());
+        instance.setSalary(BossEnum.Salary.forValue(instance.getSalary()).getCode());
         
         // 转换城市编码
-        List<String> convertedCityCodes = config.getCityCode().stream()
+        List<String> convertedCityCodes = instance.getCityCode().stream()
                 .map(city -> {
-                    if (config.getCustomCityCode() != null && config.getCustomCityCode().containsKey(city)) {
-                        return config.getCustomCityCode().get(city);
+                    if (instance.getCustomCityCode() != null && instance.getCustomCityCode().containsKey(city)) {
+                        return instance.getCustomCityCode().get(city);
                     }
                     return BossEnum.CityCode.forValue(city).getCode();
                 })
                 .collect(Collectors.toList());
-        config.setCityCode(convertedCityCodes);
+        instance.setCityCode(convertedCityCodes);
         
-        config.setExperience(config.getExperience().stream().map(value -> BossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
-        config.setDegree(config.getDegree().stream().map(value -> BossEnum.Degree.forValue(value).getCode()).collect(Collectors.toList()));
-        config.setScale(config.getScale().stream().map(value -> BossEnum.Scale.forValue(value).getCode()).collect(Collectors.toList()));
-        config.setStage(config.getStage().stream().map(value -> BossEnum.Financing.forValue(value).getCode()).collect(Collectors.toList()));
-        config.setIndustry(config.getIndustry().stream().map(value -> BossEnum.Industry.forValue(value).getCode()).collect(Collectors.toList()));
-        
-        instance = config;
+        instance.setExperience(instance.getExperience().stream().map(value -> BossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
+        instance.setDegree(instance.getDegree().stream().map(value -> BossEnum.Degree.forValue(value).getCode()).collect(Collectors.toList()));
+        instance.setScale(instance.getScale().stream().map(value -> BossEnum.Scale.forValue(value).getCode()).collect(Collectors.toList()));
+        instance.setStage(instance.getStage().stream().map(value -> BossEnum.Financing.forValue(value).getCode()).collect(Collectors.toList()));
+        instance.setIndustry(instance.getIndustry().stream().map(value -> BossEnum.Industry.forValue(value).getCode()).collect(Collectors.toList()));
     }
 
 }
