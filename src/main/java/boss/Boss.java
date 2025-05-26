@@ -104,7 +104,7 @@ public class Boss {
         PlaywrightUtil.init();
         startDate = new Date();
         login();
-        config.getCityCode().forEach(Boss::postJobByCityByPlaywright);
+//        config.getCityCode().forEach(Boss::postJobByCityByPlaywright);
 //        if (config.getH5Jobs()) {
 //            h5Config.getCityCode().forEach(Boss::postH5JobByCityByPlaywright);
 //        }

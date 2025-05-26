@@ -223,6 +223,8 @@ public class BossConfigController {
             existingBossConfig.put("vipKey", vipKeyField.getText());
             existingBossConfig.put("apiDomain", apiDomainField.getText());
 
+            log.info("是否投递推荐岗位:{}",recommendJobsCheckBox.isSelected());
+
             // 保存自定义城市代码
             Map<String, String> customCityCode = new HashMap<>();
             for (HBox row : customCityCodeRows) {
