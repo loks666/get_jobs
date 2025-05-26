@@ -6,7 +6,7 @@ import javafx.scene.control.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
-import utils.ProjectRootResolver;
+import utils.ConfigFileUtil;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
 import javafx.scene.layout.HBox;
@@ -78,9 +78,8 @@ public class BossConfigController {
 
     private void loadConfig() {
         try {
-            String configPath = ProjectRootResolver.rootPath + "/src/main/resources/config.yaml";
             Yaml yaml = new Yaml();
-            Map<String, Object> config = yaml.load(new FileInputStream(configPath));
+            Map<String, Object> config = yaml.load(ConfigFileUtil.getConfigInputStream());
             Map<String, Object> bossConfig = (Map<String, Object>) config.get("boss");
 
             // 设置表单值
@@ -188,9 +187,8 @@ public class BossConfigController {
     private void handleSaveAndStart() {
         try {
             // 读取现有配置文件
-            String configPath = ProjectRootResolver.rootPath + "/src/main/resources/config.yaml";
             Yaml yaml = new Yaml();
-            Map<String, Object> config = yaml.load(new FileInputStream(configPath));
+            Map<String, Object> config = yaml.load(ConfigFileUtil.getConfigInputStream());
             
             // 获取现有的boss配置，如果不存在则创建新的
             Map<String, Object> existingBossConfig = (Map<String, Object>) config.getOrDefault("boss", new HashMap<>());
@@ -248,9 +246,13 @@ public class BossConfigController {
             config.put("boss", existingBossConfig);
             
             // 保存配置文件
-            try (FileWriter writer = new FileWriter(configPath)) {
+            try (FileWriter writer = new FileWriter(ConfigFileUtil.getConfigWritePath())) {
                 yaml.dump(config, writer);
             }
+            
+            // 重新加载BossConfig单例实例
+            BossConfig.reload();
+            log.info("配置已保存并重新加载");
 
             // 启动Boss程序
             new Thread(() -> {

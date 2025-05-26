@@ -50,7 +50,7 @@ public class Boss {
     static String dataPath = ProjectRootResolver.rootPath + "/src/main/java/boss/data.json";
     static String cookiePath = ProjectRootResolver.rootPath + "/src/main/java/boss/cookie.json";
     static Date startDate;
-    public static BossConfig config = BossConfig.init();
+    public static BossConfig config = BossConfig.getInstance();
     static H5BossConfig h5Config = H5BossConfig.init();
     // 默认推荐岗位集合
     static List<Job> recommendJobs = new ArrayList<>();

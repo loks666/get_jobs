@@ -14,6 +14,12 @@ import java.util.stream.Collectors;
  */
 @Data
 public class BossConfig {
+    
+    /**
+     * 单例实例
+     */
+    private static volatile BossConfig instance;
+    
     /**
      * 用于打招呼的语句
      */
@@ -126,8 +132,34 @@ public class BossConfig {
      */
     private String apiDomain;
 
+    /**
+     * 私有构造函数，防止外部实例化
+     */
+    private BossConfig() {
+        // 私有构造函数
+    }
+
+    /**
+     * 获取单例实例
+     * 使用双重检查锁定确保线程安全
+     */
     @SneakyThrows
-    public static BossConfig init() {
+    public static BossConfig getInstance() {
+        if (instance == null) {
+            synchronized (BossConfig.class) {
+                if (instance == null) {
+                    instance = init();
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * 初始化配置（私有方法）
+     */
+    @SneakyThrows
+    private static BossConfig init() {
         BossConfig config = JobUtils.getConfig(BossConfig.class);
 
         // 转换工作类型
@@ -159,6 +191,15 @@ public class BossConfig {
         config.setIndustry(config.getIndustry().stream().map(value -> BossEnum.Industry.forValue(value).getCode()).collect(Collectors.toList()));
 
         return config;
+    }
+
+    /**
+     * 重新加载配置
+     * 当配置文件更新时调用此方法
+     */
+    @SneakyThrows
+    public static synchronized void reload() {
+        instance = init();
     }
 
 }

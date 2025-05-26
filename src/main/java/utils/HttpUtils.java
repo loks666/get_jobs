@@ -36,7 +36,11 @@ public class HttpUtils {
                 // 添加机器ID请求头
                 requestBuilder.header(MACHINE_ID_HEADER, getMachineId());
                 
-                requestBuilder.header(AUTHORIZATION_HEADER, BossConfig.init().getVipKey());
+                if (authorizationToken != null) {
+                    requestBuilder.header(AUTHORIZATION_HEADER, authorizationToken);
+                } else {
+                    requestBuilder.header(AUTHORIZATION_HEADER, BossConfig.getInstance().getVipKey());
+                }
 
                 Request request = requestBuilder.build();
                 log.debug("发送请求: {}", request.url());
