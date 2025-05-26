@@ -843,10 +843,12 @@ public class Boss {
             }
 
             if (config.getKeyFilter()) {
-                if (!job.getJobKeywordTag().toLowerCase().contains(keyword.toLowerCase())) {
-                    log.info("已过滤：岗位【{}】描述不包含关键字【{}】", job.getJobName(), keyword);
-                    jobPage.close();
-                    continue;
+                if(!job.getJobName().toLowerCase().contains(keyword.toLowerCase())){
+                    if (!job.getJobKeywordTag().toLowerCase().contains(keyword.toLowerCase())) {
+                        log.info("已过滤：岗位【{}】描述不包含关键字【{}】", job.getJobName(), keyword);
+                        jobPage.close();
+                        continue;
+                    }
                 }
             }
 
