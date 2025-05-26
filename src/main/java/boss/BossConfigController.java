@@ -15,6 +15,7 @@ import javafx.scene.layout.Priority;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.util.*;
+import java.io.IOException;
 
 public class BossConfigController {
     private static final Logger log = LoggerFactory.getLogger(BossConfigController.class);
@@ -250,8 +251,17 @@ public class BossConfigController {
                 yaml.dump(config, writer);
             }
             
+            // 同步配置到编译目录，使其立即生效
+            try {
+                ConfigFileUtil.syncConfigToClasspath();
+                log.info("配置文件已同步到类路径");
+            } catch (IOException e) {
+                log.warn("无法同步配置文件到类路径，配置将在下次编译后生效: {}", e.getMessage());
+            }
+            
             // 重新加载BossConfig单例实例
-            BossConfig.reload();
+            // 优先使用内存中的配置直接更新，确保配置立即生效
+            BossConfig.reload(existingBossConfig);
             log.info("配置已保存并重新加载");
 
             // 启动Boss程序
