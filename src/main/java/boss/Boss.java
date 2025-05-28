@@ -861,19 +861,19 @@ public class Boss {
 
             AiFilter filterResult = null;
             if (config.getEnableAI() && keyword != null) {
-                // AI检测岗位是否匹配
+                // AI检测岗位是否匹配并生成打招呼内容
                 Locator jdElement = jobPage.locator(BossElementLocators.JOB_DESCRIPTION);
                 if (jdElement.isVisible()) {
                     String jd = jdElement.textContent();
                     filterResult = checkJob(keyword, job.getJobName(), jd);
-
+                    
                     // 如果AI判定岗位描述和岗位名称不符，则跳过该职位
                     if (filterResult != null && !filterResult.getResult()) {
                         BossLogger.logJobFiltered("AI判定不匹配", job.getCompanyName(), job.getJobName());
                         jobPage.close();
                         return 0;
                     }
-
+                    
                     if (filterResult != null && filterResult.getResult()) {
                         BossLogger.logAIProcess("岗位匹配检测", true, "匹配成功");
                     }
@@ -929,7 +929,7 @@ public class Boss {
                     String greetingMessage = config.getSayHi().replaceAll("\\r|\\n", "");
                     
                     // 如果启用了AI且AI判定通过，优先使用AI生成的打招呼内容
-                    if (config.getEnableAI() && filterResult != null && filterResult.getResult()) {
+                    if (filterResult != null && filterResult.getResult()) {
                         String aiGreeting = filterResult.getMessage();
                         if (isValidString(aiGreeting)) {
                             greetingMessage = aiGreeting;
@@ -1221,10 +1221,15 @@ public class Boss {
             UnifiedAiService.JobMatchResult result = aiService.checkJobMatch(keyword, jobName, jd);
             
             if (result.isMatched()) {
-                // 解析AI响应，提取打招呼内容
-                String aiResponse = result.getMessage();
-                String greetingMessage = extractGreetingFromAiResponse(aiResponse);
-                return new AiFilter(true, greetingMessage);
+                // AI已经返回了生成的打招呼内容，直接使用
+                String aiGreeting = result.getMessage();
+                if (isValidString(aiGreeting) && aiGreeting.length() > 10) {
+                    log.debug("AI生成打招呼内容成功，长度: {}", aiGreeting.length());
+                    return new AiFilter(true, aiGreeting);
+                } else {
+                    log.debug("AI响应内容无效，将使用默认配置");
+                    return new AiFilter(true, null); // 匹配但内容无效
+                }
             } else {
                 return new AiFilter(false);
             }
@@ -1232,51 +1237,6 @@ public class Boss {
             BossLogger.logSystemError("AI职位匹配检测", e);
             // 发生异常时返回false，不匹配
             return new AiFilter(false);
-        }
-    }
-    
-    /**
-     * 从AI响应中提取打招呼内容
-     * 根据AI的prompt模板，AI会直接返回打招呼内容或者"false"
-     */
-    private static String extractGreetingFromAiResponse(String aiResponse) {
-        if (aiResponse == null || aiResponse.trim().isEmpty()) {
-            return null;
-        }
-        
-        try {
-            String cleanResponse = aiResponse.trim();
-            
-            // 如果AI返回包含"false"，说明不匹配，这在checkJobMatch中已经处理
-            if (cleanResponse.toLowerCase().contains("false")) {
-                log.debug("AI响应包含false，职位不匹配");
-                return null;
-            }
-            
-            // 移除可能的引号、换行符等
-            cleanResponse = cleanResponse.replaceAll("^[\"'\\s]+|[\"'\\s]+$", "");
-            cleanResponse = cleanResponse.replaceAll("\\n+", "\n").trim();
-            
-            // 验证响应内容的合理性
-            if (cleanResponse.length() >= 20 && cleanResponse.length() <= 800) {
-                // 检查是否像是一个合理的打招呼内容
-                if (cleanResponse.contains("您好") || cleanResponse.contains("你好") || 
-                    cleanResponse.contains("具备") || cleanResponse.contains("经验") ||
-                    cleanResponse.contains("熟悉") || cleanResponse.contains("掌握")) {
-                    
-                    log.debug("成功提取AI生成的打招呼内容，长度: {}", cleanResponse.length());
-                    return cleanResponse;
-                }
-            }
-            
-            // 如果内容不符合预期，记录日志但不使用
-            log.debug("AI响应内容不符合打招呼格式，将使用默认配置。响应内容: {}", 
-                    cleanResponse.length() > 100 ? cleanResponse.substring(0, 100) + "..." : cleanResponse);
-            return null;
-            
-        } catch (Exception e) {
-            log.debug("解析AI响应时出错: {}", e.getMessage());
-            return null;
         }
     }
 
