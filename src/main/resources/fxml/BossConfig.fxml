@@ -131,14 +131,14 @@
                         </HBox>
                     </VBox>
                     
-                    <!-- 等待时间 -->
+                    <!-- 简历图片路径 -->
                     <VBox spacing="5">
-                        <Label text="等待时间(秒)：">
+                        <Label text="简历图片路径：">
                             <tooltip>
-                                <Tooltip text="设置每次操作之间的等待时间，建议设置在10-30秒之间，避免操作过于频繁" />
+                                <Tooltip text="设置简历图片的完整文件路径，支持常见图片格式（jpg、png、gif等）" />
                             </tooltip>
                         </Label>
-                        <TextField fx:id="waitTimeField" />
+                        <TextField fx:id="resumeImagePathField" promptText="例如：D:\resume\my_resume.jpg" />
                     </VBox>
                     
                     <!-- 打招呼内容 -->
@@ -237,9 +237,19 @@
                 </VBox>
             </TitledPane>
             
-            <!-- 自定义配置区域 -->
-            <TitledPane text="自定义配置" expanded="false">
+            <!-- 系统参数配置区域 -->
+            <TitledPane text="系统参数配置" expanded="false">
                 <VBox spacing="10">
+                    <!-- 等待时间 -->
+                    <VBox spacing="5">
+                        <Label text="等待时间(秒)：">
+                            <tooltip>
+                                <Tooltip text="设置每次操作之间的等待时间，建议设置在10-30秒之间，避免操作过于频繁" />
+                            </tooltip>
+                        </Label>
+                        <TextField fx:id="waitTimeField" />
+                    </VBox>
+                    
                     <!-- VIP密钥 -->
                     <VBox spacing="5">
                         <Label text="VIP密钥：">
@@ -259,7 +269,12 @@
                         </Label>
                         <TextField fx:id="apiDomainField" />
                     </VBox>
-                    
+                </VBox>
+            </TitledPane>
+            
+            <!-- 自定义配置区域 -->
+            <TitledPane text="自定义配置" expanded="false">
+                <VBox spacing="10">
                     <!-- 补充城市代码 -->
                     <VBox spacing="5">
                         <Label text="补充城市代码：">

@@ -96,6 +96,11 @@ public class BossConfig {
     private Boolean sendImgResume;
 
     /**
+     * 简历图片路径
+     */
+    private String resumeImagePath;
+
+    /**
      * 目标薪资
      */
     private List<Integer> expectedSalary;
@@ -229,6 +234,7 @@ public class BossConfig {
         instance.setEnableAI((Boolean) bossConfigMap.getOrDefault("enableAI", false));
         instance.setFilterDeadHR((Boolean) bossConfigMap.getOrDefault("filterDeadHR", false));
         instance.setSendImgResume((Boolean) bossConfigMap.getOrDefault("sendImgResume", false));
+        instance.setResumeImagePath((String) bossConfigMap.getOrDefault("resumeImagePath", ""));
         instance.setExpectedSalary((List<Integer>) bossConfigMap.get("expectedSalary"));
         instance.setWaitTime(String.valueOf(bossConfigMap.get("waitTime")));
         instance.setDeadStatus((List<String>) bossConfigMap.get("deadStatus"));
