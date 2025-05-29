@@ -10,24 +10,32 @@ public class ConfigFileUtil {
     
     /**
      * 获取配置文件的输入流（用于读取）
-     * 使用类加载器从编译后的路径读取
+     * 优先从工作目录的getjobs目录读取，否则使用类加载器从编译后的路径读取
      */
     public static InputStream getConfigInputStream() throws IOException {
+        // 优先从工作目录的getjobs目录读取配置文件
+        String getjobsConfigPath = System.getProperty("user.dir") + File.separator + "getjobs" + File.separator + "config.yaml";
+        File getjobsConfigFile = new File(getjobsConfigPath);
+        
+        if (getjobsConfigFile.exists()) {
+            return new FileInputStream(getjobsConfigFile);
+        }
+        
+        // 如果getjobs目录的配置文件不存在，回退到classpath
         InputStream is = ConfigFileUtil.class.getClassLoader().getResourceAsStream("config.yaml");
         if (is == null) {
-            throw new FileNotFoundException("无法在类路径中找到 config.yaml 文件");
+            throw new FileNotFoundException("无法找到 config.yaml 文件，请检查getjobs目录或classpath");
         }
         return is;
     }
     
     /**
      * 获取配置文件的写入路径
-     * 返回源代码目录中的配置文件路径，用于保存修改
+     * 返回工作目录下getjobs目录中的配置文件路径，用于保存修改
      */
     public static String getConfigWritePath() {
-        // 始终返回源代码目录的路径，这样保存后下次编译会自动复制到target目录
-        return ProjectRootResolver.rootPath + File.separator + "src" + 
-               File.separator + "main" + File.separator + "resources" + 
+        // 返回工作目录下getjobs目录的路径，确保配置文件保存到用户数据目录
+        return System.getProperty("user.dir") + File.separator + "getjobs" + 
                File.separator + "config.yaml";
     }
     

@@ -23,6 +23,24 @@ boss:
   deadStatus: [2周内活跃, 本月活跃, 3月内活跃, 2月内活跃, 半年前活跃]
   sendImgResume: true
   resumeImagePath: D:\Users\zhang\IdeaProjects\npe_get_jobs\src\main\resources\resume.jpg
+  resumeContent: |
+    个人简历内容模板：
+    
+    姓名：[您的姓名]
+    联系方式：[您的电话/邮箱]
+    工作经验：[您的工作年限]
+    
+    主要技能：
+    - Java开发经验丰富，熟练使用Spring Boot、Spring Cloud等框架
+    - 具备微服务架构设计与开发能力
+    - 熟悉MySQL、Redis等数据库技术
+    - 掌握前端技术Vue、React等
+    
+    工作经历：
+    [详细工作经历描述]
+    
+    项目经验：
+    [主要项目经验说明]
   recommendJobs: false
   expectedSalary: [15, 25]
   jobType: 全职

@@ -43,14 +43,37 @@ public class JobUtils {
     @SneakyThrows
     public static <T> T getConfig(Class<T> clazz) {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        InputStream is = clazz.getClassLoader().getResourceAsStream("config.yaml");
-        if (is == null) {
-            throw new FileNotFoundException("无法找到 config.yaml 文件");
+        
+        // 优先从工作目录的getjobs目录读取配置文件
+        String getjobsConfigPath = System.getProperty("user.dir") + "/getjobs/config.yaml";
+        java.io.File getjobsConfigFile = new java.io.File(getjobsConfigPath);
+        
+        InputStream is = null;
+        if (getjobsConfigFile.exists()) {
+            try {
+                is = new java.io.FileInputStream(getjobsConfigFile);
+                log.debug("从getjobs目录读取配置文件: {}", getjobsConfigPath);
+            } catch (Exception e) {
+                log.warn("从getjobs目录读取配置文件失败，将使用resources目录: {}", e.getMessage());
+                is = null;
+            }
         }
-        JsonNode rootNode = mapper.readTree(is);
-        String key = clazz.getSimpleName().toLowerCase().replaceAll("config", "");
-        JsonNode configNode = rootNode.path(key);
-        return mapper.treeToValue(configNode, clazz);
+        
+        // 如果getjobs目录的配置文件不存在或读取失败，回退到resources目录
+        if (is == null) {
+            is = clazz.getClassLoader().getResourceAsStream("config.yaml");
+            if (is == null) {
+                throw new FileNotFoundException("无法找到 config.yaml 文件，请检查getjobs目录或resources目录");
+            }
+            log.debug("从resources目录读取配置文件");
+        }
+        
+        try (InputStream inputStream = is) {
+            JsonNode rootNode = mapper.readTree(inputStream);
+            String key = clazz.getSimpleName().toLowerCase().replaceAll("config", "");
+            JsonNode configNode = rootNode.path(key);
+            return mapper.treeToValue(configNode, clazz);
+        }
     }
 
     public static void runScheduled(Platform platform) {

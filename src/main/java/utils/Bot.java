@@ -34,7 +34,22 @@ public class Bot {
         // 使用 Jackson 加载 config.yaml 配置
         try {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-            HashMap<String, Object> config = mapper.readValue(new File(ProjectRootResolver.rootPath+"/src/main/resources/config.yaml"), new TypeReference<HashMap<String, Object>>() {
+            
+            // 优先从工作目录的getjobs目录读取配置文件
+            String getjobsConfigPath = System.getProperty("user.dir") + "/getjobs/config.yaml";
+            File getjobsConfigFile = new File(getjobsConfigPath);
+            File configFile;
+            
+            if (getjobsConfigFile.exists()) {
+                configFile = getjobsConfigFile;
+                log.debug("从getjobs目录读取配置文件: {}", getjobsConfigPath);
+            } else {
+                // 回退到resources目录
+                configFile = new File(ProjectRootResolver.rootPath+"/src/main/resources/config.yaml");
+                log.debug("getjobs目录配置文件不存在，使用resources目录配置文件");
+            }
+            
+            HashMap<String, Object> config = mapper.readValue(configFile, new TypeReference<HashMap<String, Object>>() {
             });
             log.info("YAML 配置内容: {}", config);
 

@@ -141,6 +141,16 @@
                         <TextField fx:id="resumeImagePathField" promptText="例如：D:\resume\my_resume.jpg" />
                     </VBox>
                     
+                    <!-- 简历内容 -->
+                    <VBox spacing="5">
+                        <Label text="简历内容：">
+                            <tooltip>
+                                <Tooltip text="设置详细的简历内容，包括个人信息、技能、工作经历、项目经验等" />
+                            </tooltip>
+                        </Label>
+                        <TextArea fx:id="resumeContentTextArea" wrapText="true" prefRowCount="8" promptText="在此输入详细的简历内容，包括个人信息、技能、工作经历、项目经验等..." />
+                    </VBox>
+                    
                     <!-- 打招呼内容 -->
                     <VBox spacing="5">
                         <Label text="打招呼内容：">

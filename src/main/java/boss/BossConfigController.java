@@ -44,6 +44,7 @@ public class BossConfigController {
     @FXML private TextField vipKeyField;
     @FXML private TextField apiDomainField;
     @FXML private TextField resumeImagePathField;
+    @FXML private TextArea resumeContentTextArea;
     @FXML private TextArea logTextArea;
     @FXML private VBox customCityCodeContainer;
     @FXML private VBox deadStatusContainer;
@@ -114,6 +115,7 @@ public class BossConfigController {
             vipKeyField.setText((String) bossConfig.getOrDefault("vipKey", ""));
             apiDomainField.setText((String) bossConfig.getOrDefault("apiDomain", ""));
             resumeImagePathField.setText((String) bossConfig.getOrDefault("resumeImagePath", ""));
+            resumeContentTextArea.setText((String) bossConfig.getOrDefault("resumeContent", ""));
 
             // 加载自定义城市代码
             Map<String, String> customCityCode = (Map<String, String>) bossConfig.getOrDefault("customCityCode", new HashMap<>());
@@ -225,6 +227,7 @@ public class BossConfigController {
             existingBossConfig.put("vipKey", vipKeyField.getText());
             existingBossConfig.put("apiDomain", apiDomainField.getText());
             existingBossConfig.put("resumeImagePath", resumeImagePathField.getText());
+            existingBossConfig.put("resumeContent", resumeContentTextArea.getText());
 
             log.info("是否投递推荐岗位:{}",recommendJobsCheckBox.isSelected());
 

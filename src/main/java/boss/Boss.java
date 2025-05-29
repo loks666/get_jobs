@@ -25,6 +25,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,8 +49,8 @@ public class Boss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
-    static String dataPath = ProjectRootResolver.rootPath + "/src/main/java/boss/data.json";
-    static String cookiePath = ProjectRootResolver.rootPath + "/src/main/java/boss/cookie.json";
+    static String dataPath = System.getProperty("user.dir") + "/getjobs/data.json";
+    static String cookiePath = System.getProperty("user.dir") + "/getjobs/cookie.json";
     static Date startDate;
     public static BossConfig config = BossConfig.getInstance();
     static H5BossConfig h5Config = H5BossConfig.init();
@@ -70,6 +71,35 @@ public class Boss {
      * 初始化数据文件
      */
     private static void initializeDataFiles() throws IOException {
+        // 确保getjobs目录存在
+        String getjobsDir = System.getProperty("user.dir") + "/getjobs";
+        File getjobsDirectory = new File(getjobsDir);
+        if (!getjobsDirectory.exists()) {
+            getjobsDirectory.mkdirs();
+            BossLogger.logFileOperation("创建getjobs目录", getjobsDir, true);
+        }
+        
+        // 初始化config.yaml文件
+        String configPath = getjobsDir + "/config.yaml";
+        File configFile = new File(configPath);
+        if (!configFile.exists()) {
+            try {
+                // 从resources目录读取config.yaml
+                java.io.InputStream configStream = Boss.class.getClassLoader()
+                    .getResourceAsStream("config.yaml");
+                if (configStream != null) {
+                    // 复制到getjobs目录
+                    Files.copy(configStream, Paths.get(configPath));
+                    configStream.close();
+                    BossLogger.logFileOperation("初始化配置文件", configPath, true);
+                } else {
+                    BossLogger.logFileOperation("配置文件模板读取", "config.yaml", false);
+                }
+            } catch (Exception e) {
+                BossLogger.logSystemError("配置文件初始化", e);
+            }
+        }
+        
         // 检查dataPath文件是否存在，不存在则创建
         File dataFile = new File(dataPath);
         if (!dataFile.exists()) {
@@ -241,7 +271,7 @@ public class Boss {
      */
     private static void parseRecommendJobs(Page page) {
         // 使用page.locator方法获取所有匹配的元素
-        Locator jobLocators = BossElementFinder.getPlaywrightLocator(page, BossElementLocators.JOB_CARD_BOX);
+        Locator jobLocators = BossElementFinder.getPlaywrightLocator(page, JOB_CARD_BOX);
         // 获取元素总数
         int count = jobLocators.count();
 
@@ -250,18 +280,18 @@ public class Boss {
         for (int i = 0; i < count; i++) {
             try {
                 Locator jobCard = jobLocators.nth(i);
-                String jobName = jobCard.locator(BossElementLocators.JOB_NAME).textContent();
+                String jobName = jobCard.locator(JOB_NAME).textContent();
                 if (blackJobs.stream().anyMatch(jobName::contains)) {
                     // 排除黑名单岗位
                     continue;
                 }
-                String companyName = jobCard.locator(BossElementLocators.COMPANY_NAME).textContent();
+                String companyName = jobCard.locator(COMPANY_NAME).textContent();
                 if (blackCompanies.stream().anyMatch(companyName::contains)) {
                     // 排除黑名单公司
                     continue;
                 }
 
-                String href = jobCard.locator(BossElementLocators.JOB_NAME).getAttribute("href");
+                String href = jobCard.locator(JOB_NAME).getAttribute("href");
                 if (jobHrefSet.contains(href)) {
                     log.debug("推荐岗位重复，跳过：{} - {}", companyName, jobName);
                     continue;
@@ -273,9 +303,9 @@ public class Boss {
                 job.setHref(href);
                 job.setCompanyName(companyName);
                 job.setJobName(jobName);
-                job.setJobArea(jobCard.locator(BossElementLocators.JOB_AREA).textContent());
+                job.setJobArea(jobCard.locator(JOB_AREA).textContent());
                 // 获取标签列表
-                Locator tagElements = jobCard.locator(BossElementLocators.TAG_LIST);
+                Locator tagElements = jobCard.locator(TAG_LIST);
                 int tagCount = tagElements.count();
                 StringBuilder tag = new StringBuilder();
                 for (int j = 0; j < tagCount; j++) {
@@ -363,7 +393,7 @@ public class Boss {
     }
 
     private static void updateListData() {
-        com.microsoft.playwright.Page page = PlaywrightUtil.getPageObject();
+        Page page = PlaywrightUtil.getPageObject();
         page.navigate("https://www.zhipin.com/web/geek/chat");
         PlaywrightUtil.sleep(3);
 
@@ -508,7 +538,7 @@ public class Boss {
         // 查找所有job卡片元素
         Page page = PlaywrightUtil.getPageObject();
         // 使用page.locator方法获取所有匹配的元素
-        Locator jobLocators = BossElementFinder.getPlaywrightLocator(page, BossElementLocators.JOB_CARD_BOX);
+        Locator jobLocators = BossElementFinder.getPlaywrightLocator(page, JOB_CARD_BOX);
         // 获取元素总数
         int count = jobLocators.count();
 
@@ -519,17 +549,17 @@ public class Boss {
         for (int i = 0; i < count; i++) {
             try {
                 Locator jobCard = jobLocators.nth(i);
-                String jobName = jobCard.locator(BossElementLocators.JOB_NAME).textContent();
-                String companyName = jobCard.locator(BossElementLocators.COMPANY_NAME).textContent();
-                String jobArea = jobCard.locator(BossElementLocators.JOB_AREA).textContent();
+                String jobName = jobCard.locator(JOB_NAME).textContent();
+                String companyName = jobCard.locator(COMPANY_NAME).textContent();
+                String jobArea = jobCard.locator(JOB_AREA).textContent();
 
                 Job job = new Job();
-                job.setHref(jobCard.locator(BossElementLocators.JOB_NAME).getAttribute("href"));
+                job.setHref(jobCard.locator(JOB_NAME).getAttribute("href"));
                 job.setCompanyName(companyName);
                 job.setJobName(jobName);
                 job.setJobArea(jobArea);
                 // 获取标签列表
-                Locator tagElements = jobCard.locator(BossElementLocators.TAG_LIST);
+                Locator tagElements = jobCard.locator(TAG_LIST);
                 int tagCount = tagElements.count();
                 StringBuilder tag = new StringBuilder();
                 for (int j = 0; j < tagCount; j++) {
@@ -618,9 +648,9 @@ public class Boss {
 
             try {
                 // 等待聊天按钮出现
-                Locator chatButton = jobPage.locator(BossElementLocators.CHAT_BUTTON);
+                Locator chatButton = jobPage.locator(CHAT_BUTTON);
                 if (!chatButton.nth(0).isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
-                    Locator errorElement = jobPage.locator(BossElementLocators.ERROR_CONTENT);
+                    Locator errorElement = jobPage.locator(ERROR_CONTENT);
                     if (errorElement.isVisible() && errorElement.textContent().contains("异常访问")) {
                         jobPage.close();
                         return -2;
@@ -724,9 +754,9 @@ public class Boss {
             try {
                 jobPage.navigate(homeUrl + job.getHref());
                 // 等待聊天按钮出现
-                Locator chatButton = jobPage.locator(BossElementLocators.CHAT_BUTTON);
+                Locator chatButton = jobPage.locator(CHAT_BUTTON);
                 if (!chatButton.nth(0).isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
-                    Locator errorElement = jobPage.locator(BossElementLocators.ERROR_CONTENT);
+                    Locator errorElement = jobPage.locator(ERROR_CONTENT);
                     if (errorElement.isVisible() && errorElement.textContent().contains("异常访问")) {
                         jobPage.close();
                         return -2;
@@ -793,12 +823,12 @@ public class Boss {
      * @return 处理结果，负数表示出错
      */
     @SneakyThrows
-    private static int processJobDetail(com.microsoft.playwright.Page jobPage, Job job, String keyword) {
+    private static int processJobDetail(Page jobPage, Job job, String keyword) {
         BossLogger.setJobContext(job.getCompanyName(), job.getJobName());
 
         // 获取薪资
         try {
-            Locator salaryElement = jobPage.locator(BossElementLocators.JOB_DETAIL_SALARY);
+            Locator salaryElement = jobPage.locator(JOB_DETAIL_SALARY);
             if (salaryElement.isVisible()) {
                 String salaryText = salaryElement.textContent();
                 job.setSalary(salaryText);
@@ -815,7 +845,7 @@ public class Boss {
 
         // 获取招聘人员信息
         try {
-            Locator recruiterElement = jobPage.locator(BossElementLocators.RECRUITER_INFO);
+            Locator recruiterElement = jobPage.locator(RECRUITER_INFO);
             if (recruiterElement.isVisible()) {
                 String recruiterName = recruiterElement.textContent();
                 job.setRecruiter(recruiterName.replaceAll("\\r|\\n", ""));
@@ -838,7 +868,7 @@ public class Boss {
         jobPage.evaluate("window.scrollTo(0, 0)");
         PlaywrightUtil.sleep(1);
 
-        Locator chatBtn = jobPage.locator(BossElementLocators.CHAT_BUTTON);
+        Locator chatBtn = jobPage.locator(CHAT_BUTTON);
         chatBtn = chatBtn.nth(0);
 
         // 每次点击沟通前都休眠5秒 减少调用频率
@@ -860,11 +890,12 @@ public class Boss {
             PlaywrightUtil.sleep(sleepTime);
 
             AiFilter filterResult = null;
+            String jd = "";
             if (config.getEnableAI() && keyword != null) {
-                // AI检测岗位是否匹配并生成打招呼内容
-                Locator jdElement = jobPage.locator(BossElementLocators.JOB_DESCRIPTION);
+                // AI检测岗位是否匹配并
+                Locator jdElement = jobPage.locator(JOB_DESCRIPTION);
                 if (jdElement.isVisible()) {
-                    String jd = jdElement.textContent();
+                    jd = jdElement.textContent();
                     filterResult = checkJob(keyword, job.getJobName(), jd);
                     
                     // 如果AI判定岗位描述和岗位名称不符，则跳过该职位
@@ -892,9 +923,9 @@ public class Boss {
             try {
                 // 处理可能出现的弹框
                 try {
-                    Locator dialogTitle = jobPage.locator(BossElementLocators.DIALOG_TITLE);
+                    Locator dialogTitle = jobPage.locator(DIALOG_TITLE);
                     if (dialogTitle.nth(0).isVisible()) {
-                        Locator closeBtn = jobPage.locator(BossElementLocators.DIALOG_CLOSE);
+                        Locator closeBtn = jobPage.locator(DIALOG_CLOSE);
                         if (closeBtn.nth(0).isVisible()) {
                             closeBtn.nth(0).click();
                             chatBtn.nth(0).click();
@@ -904,7 +935,7 @@ public class Boss {
                 }
 
                 // 对话文本录入框
-                Locator input = jobPage.locator(BossElementLocators.CHAT_INPUT);
+                Locator input = jobPage.locator(CHAT_INPUT);
                 input = input.nth(0);
 
                 try {
@@ -918,7 +949,7 @@ public class Boss {
 
                 if (input.isVisible(new Locator.IsVisibleOptions().setTimeout(10000))) {
                     input.click();
-                    Locator dialogElement = jobPage.locator(BossElementLocators.DIALOG_CONTAINER);
+                    Locator dialogElement = jobPage.locator(DIALOG_CONTAINER);
                     dialogElement = dialogElement.nth(0);
                     if (dialogElement.isVisible() && "不匹配".equals(dialogElement.textContent())) {
                         jobPage.close();
@@ -928,16 +959,35 @@ public class Boss {
                     // 准备打招呼内容
                     String greetingMessage = config.getSayHi().replaceAll("\\r|\\n", "");
                     
-                    // 如果启用了AI且AI判定通过，优先使用AI生成的打招呼内容
+                    // 如果启用了AI且AI判定通过，使用AI生成的求职问候语
                     if (filterResult != null && filterResult.getResult()) {
-                        String aiGreeting = filterResult.getMessage();
-                        if (isValidString(aiGreeting)) {
-                            greetingMessage = aiGreeting;
-                            BossLogger.logAIProcess("打招呼生成", true, "使用AI生成的内容");
-                            log.debug("使用AI生成的打招呼内容，长度: {}", greetingMessage.length());
-                        } else {
-                            BossLogger.logAIProcess("打招呼生成", false, "AI内容无效，使用默认配置");
-                            log.debug("AI生成的打招呼内容无效，使用配置的默认内容");
+                        try {
+                            // 获取简历内容，优先从配置获取，否则使用默认内容
+                            String resumeContent = getResumeContent();
+                            
+                            // 调用AI生成求职问候语
+                            UnifiedAiService aiService = UnifiedAiService.getInstance();
+                            UnifiedAiService.JobGreetingResponse response = aiService.generateJobGreeting(
+                                jd, resumeContent, UnifiedAiService.AiPlatform.DEEPSEEK, 1, "professional");
+                            
+                            if (response != null && response.isSuccess() && response.getData() != null 
+                                && response.getData().getGreetings() != null && !response.getData().getGreetings().isEmpty()) {
+                                String aiGreeting = response.getData().getGreetings().get(0).getContent();
+                                if (isValidString(aiGreeting) && aiGreeting.length() > 10) {
+                                    greetingMessage = aiGreeting.replaceAll("\\r|\\n", "");
+                                    BossLogger.logAIProcess("求职问候语生成", true, "使用AI生成的求职问候语");
+                                    log.debug("使用AI生成的求职问候语，长度: {}", greetingMessage.length());
+                                } else {
+                                    BossLogger.logAIProcess("求职问候语生成", false, "AI问候语内容无效，使用默认配置");
+                                    log.debug("AI生成的求职问候语内容无效，使用配置的默认内容");
+                                }
+                            } else {
+                                BossLogger.logAIProcess("求职问候语生成", false, "AI响应无效，使用默认配置");
+                                log.debug("AI求职问候语生成响应无效，使用配置的默认内容");
+                            }
+                        } catch (Exception e) {
+                            BossLogger.logSystemError("AI求职问候语生成", e);
+                            log.debug("AI求职问候语生成失败，使用配置的默认内容: {}", e.getMessage());
                         }
                     } else {
                         log.debug("使用配置的默认打招呼内容");
@@ -945,12 +995,12 @@ public class Boss {
 
                     input.fill(greetingMessage);
 
-                    Locator sendBtn = jobPage.locator(BossElementLocators.SEND_BUTTON);
+                    Locator sendBtn = jobPage.locator(SEND_BUTTON);
                     sendBtn = sendBtn.nth(0);
                     if (sendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(5000))) {
                         // 点击发送打招呼内容
                         sendBtn.click();
-                        PlaywrightUtil.sleep(5);
+                        PlaywrightUtil.sleep(3);
 
                         String recruiter = job.getRecruiter();
                         String company = job.getCompanyName();
@@ -962,7 +1012,7 @@ public class Boss {
                             imgResume = sendResumeImage(jobPage);
                         }
 
-                        PlaywrightUtil.sleep(2);
+                        PlaywrightUtil.sleep(3);
 
                         // 投递成功日志
                         BossLogger.logJobSuccess(company, job.getJobName(),
@@ -1001,9 +1051,9 @@ public class Boss {
                 File imageFile = new File(resumePath);
                 if (imageFile.exists() && imageFile.isFile()) {
                     // 使用Playwright上传文件
-                    Locator fileInput = jobPage.locator(BossElementLocators.IMAGE_UPLOAD);
+                    Locator fileInput = jobPage.locator(IMAGE_UPLOAD);
                     if (fileInput.isVisible()) {
-                        fileInput.setInputFiles(new java.nio.file.Path[]{java.nio.file.Paths.get(imageFile.getPath())});
+                        fileInput.setInputFiles(new Path[]{Paths.get(imageFile.getPath())});
                         // 等待发送按钮并点击
                         Locator imageSendBtn = jobPage.locator(".image-uploader-btn");
                         if (imageSendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(2000))) {
@@ -1026,6 +1076,28 @@ public class Boss {
 
     public static boolean isValidString(String str) {
         return str != null && !str.isEmpty();
+    }
+
+    /**
+     * 获取简历内容
+     * 优先从配置获取，如果没有配置则使用默认简历内容
+     * 
+     * @return 简历内容
+     */
+    private static String getResumeContent() {
+        // 优先从配置中获取简历内容
+        String resumeContent = config.getResumeContent();
+        if (isValidString(resumeContent) && resumeContent.trim().length() > 10) {
+            return resumeContent;
+        }
+        
+        // 如果配置中没有简历内容或内容太短，使用默认模板
+        return "Java开发工程师\n" +
+               "工作经验：5年\n" +
+               "技能专长：熟练掌握Java、Spring Boot、Spring Cloud、MySQL、Redis等技术栈\n" +
+               "项目经验：具有微服务架构设计和开发经验，参与过多个大型企业级项目\n" +
+               "教育背景：计算机科学与技术本科\n" +
+               "个人优势：具备良好的编码规范、团队协作能力和快速学习能力";
     }
 
     public static Boolean sendResume(String company) {
@@ -1289,7 +1361,7 @@ public class Boss {
     private static boolean isLimit() {
         try {
             PlaywrightUtil.sleep(1);
-            com.microsoft.playwright.Page page = PlaywrightUtil.getPageObject();
+            Page page = PlaywrightUtil.getPageObject();
             Locator dialogElement = page.locator(DIALOG_CON);
             if (dialogElement.isVisible(new Locator.IsVisibleOptions().setTimeout(2000))) {
                 String text = dialogElement.textContent();
@@ -1352,16 +1424,16 @@ public class Boss {
             Page page = PlaywrightUtil.getPageObject();
 
             // 检查是否有登录按钮
-            Locator loginButton = page.locator(BossElementLocators.LOGIN_BTNS);
+            Locator loginButton = page.locator(LOGIN_BTNS);
             if (loginButton.isVisible() && loginButton.textContent().contains("登录")) {
                 return true;
             }
 
             // 检查是否有错误页面
             try {
-                Locator pageHeader = page.locator(BossElementLocators.PAGE_HEADER);
+                Locator pageHeader = page.locator(PAGE_HEADER);
                 if (pageHeader.isVisible()) {
-                    Locator errorPageLogin = page.locator(BossElementLocators.ERROR_PAGE_LOGIN);
+                    Locator errorPageLogin = page.locator(ERROR_PAGE_LOGIN);
                     if (errorPageLogin.isVisible()) {
                         errorPageLogin.click();
                         return true;
@@ -1388,7 +1460,7 @@ public class Boss {
 
         // 1. 如果已经登录，则直接返回
         try {
-            Locator loginBtn = page.locator(BossElementLocators.LOGIN_BTN);
+            Locator loginBtn = page.locator(LOGIN_BTN);
             if (loginBtn.isVisible() && !loginBtn.textContent().equals("登录")) {
                 BossLogger.logLoginStatus("检测到已登录状态");
                 return;
@@ -1399,7 +1471,7 @@ public class Boss {
         BossLogger.logLoginStatus("等待扫码登录");
 
         // 2. 定位二维码登录的切换按钮
-        Locator scanButton = page.locator(BossElementLocators.LOGIN_SCAN_SWITCH);
+        Locator scanButton = page.locator(LOGIN_SCAN_SWITCH);
         boolean scanButtonVisible = scanButton.isVisible(new Locator.IsVisibleOptions().setTimeout(30000));
         if (!scanButtonVisible) {
             BossLogger.logBusinessError("扫码登录", "未找到二维码登录按钮");
@@ -1428,7 +1500,7 @@ public class Boss {
                 // 尝试点击二维码按钮并等待页面出现已登录的元素
                 scanButton.click();
                 // 等待登录成功标志
-                boolean loginSuccess = page.locator(BossElementLocators.LOGIN_SUCCESS_HEADER)
+                boolean loginSuccess = page.locator(LOGIN_SUCCESS_HEADER)
                         .isVisible(new Locator.IsVisibleOptions().setTimeout(2000));
 
                 // 如果找到登录成功元素，说明登录成功
@@ -1444,7 +1516,7 @@ public class Boss {
                 }
             } catch (Exception e) {
                 // scanButton.click() 可能已经登录成功，没有这个扫码登录按钮
-                boolean loginSuccess = page.locator(BossElementLocators.LOGIN_SUCCESS_HEADER)
+                boolean loginSuccess = page.locator(LOGIN_SUCCESS_HEADER)
                         .isVisible(new Locator.IsVisibleOptions().setTimeout(2000));
                 if (loginSuccess) {
                     login = true;
