@@ -33,6 +33,7 @@ liepin:
   cityCode: "上海" # 目前支持的：全国 北京 上海 广州 深圳 成都
   keywords: [ "Java", "Python", "Golang", "大模型" ]
   salary: "15$30" # 填 15$30 代表 15k-30k
+  pubTime: "30" # 发布时间，单位天
 
 zhilian:
   cityCode: "上海"

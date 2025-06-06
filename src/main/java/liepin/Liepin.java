@@ -110,6 +110,7 @@ public class Liepin {
         return baseUrl +
                 JobUtils.appendParam("city", config.getCityCode()) +
                 JobUtils.appendParam("salary", config.getSalary()) +
+                JobUtils.appendParam("pubTime", config.getPubTime()) +
                 "&currentPage=" + 0 + "&dq=" + config.getCityCode();
     }
 
