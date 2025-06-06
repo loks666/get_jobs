@@ -42,6 +42,11 @@ public class LiepinConfig {
      */
     private String excludeJobName;
 
+    /**
+     * 发布时间
+     */
+    private String pubTime;
+
 
     @SneakyThrows
     public static LiepinConfig init() {
