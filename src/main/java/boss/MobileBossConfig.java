@@ -6,6 +6,7 @@ import utils.JobUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
  * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  */
 @Data
-public class BossConfig {
+public class MobileBossConfig {
     /**
      * 用于打招呼的语句
      */
@@ -33,7 +34,7 @@ public class BossConfig {
      * 城市编码
      */
     private List<String> cityCode;
-
+    
     /**
      * 自定义城市编码映射
      */
@@ -101,37 +102,40 @@ public class BossConfig {
 
     private List<String> deadStatus;
 
-    @SneakyThrows
-    public static BossConfig init() {
-        BossConfig config = JobUtils.getConfig(BossConfig.class);
+    private Integer nextIntervalMinutes;
 
-        // 转换工作类型
-        config.setJobType(BossEnum.JobType.forValue(config.getJobType()).getCode());
+    /**
+     * 是否使用关键词匹配岗位m名称，岗位名称不包含关键字就过滤
+     *
+     */
+    private Boolean keyFilter;
+
+    @SneakyThrows
+    public static MobileBossConfig init() {
+        MobileBossConfig config = JobUtils.getConfig(MobileBossConfig.class);
+
         // 转换薪资范围
-        config.setSalary(BossEnum.Salary.forValue(config.getSalary()).getCode());
-        // 转换城市编码
-//        config.setCityCode(config.getCityCode().stream().map(value -> BossEnum.CityCode.forValue(value).getCode()).collect(Collectors.toList()));
+        config.setSalary(MobileBossEnum.Salary.forValue(config.getSalary()).getCode());
+        
+        // 处理城市编码
         List<String> convertedCityCodes = config.getCityCode().stream()
-                .map(city -> {
-                    // 优先从自定义映射中获取
-                    if (config.getCustomCityCode() != null && config.getCustomCityCode().containsKey(city)) {
-                        return config.getCustomCityCode().get(city);
-                    }
-                    // 否则从枚举中获取
-                    return BossEnum.CityCode.forValue(city).getCode();
-                })
-                .collect(Collectors.toList());
+            .map(city -> {
+                // 优先从自定义映射中获取
+                if (config.getCustomCityCode() != null && config.getCustomCityCode().containsKey(city)) {
+                    return config.getCustomCityCode().get(city);
+                } 
+                // 否则从枚举中获取
+                return MobileBossEnum.CityCode.forValue(city).getCode();
+            })
+            .collect(Collectors.toList());
         config.setCityCode(convertedCityCodes);
+        
         // 转换工作经验要求
-        config.setExperience(config.getExperience().stream().map(value -> BossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
+        config.setExperience(config.getExperience().stream().map(value -> MobileBossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
         // 转换学历要求
-        config.setDegree(config.getDegree().stream().map(value -> BossEnum.Degree.forValue(value).getCode()).collect(Collectors.toList()));
+        config.setDegree(config.getDegree().stream().map(value -> MobileBossEnum.Degree.forValue(value).getCode()).collect(Collectors.toList()));
         // 转换公司规模
-        config.setScale(config.getScale().stream().map(value -> BossEnum.Scale.forValue(value).getCode()).collect(Collectors.toList()));
-        // 转换公司融资阶段
-        config.setStage(config.getStage().stream().map(value -> BossEnum.Financing.forValue(value).getCode()).collect(Collectors.toList()));
-        // 转换行业
-        config.setIndustry(config.getIndustry().stream().map(value -> BossEnum.Industry.forValue(value).getCode()).collect(Collectors.toList()));
+        config.setScale(config.getScale().stream().map(value -> MobileBossEnum.Scale.forValue(value).getCode()).collect(Collectors.toList()));
 
         return config;
     }
