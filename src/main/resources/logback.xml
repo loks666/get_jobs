@@ -4,7 +4,7 @@
     <property name="server.name" value="job"/>
 
     <!-- 设置日志格式，包含日期、线程、日志级别、类名、方法名、文件和行号 -->
-    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36}.%method(%file:%line) - %msg%n"/>
     <property name="log.file" value="${log.path}/${server.name}.%d{yyyy-MM-dd}.log"/>
 
     <!-- 控制台标准输出 -->

@@ -246,7 +246,7 @@ public class Boss {
                 unchangedCount = 0;
 
                 // 滚动到页面底部加载更多
-                PlaywrightUtil.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+                safeEvaluateJavaScript(page, "window.scrollTo(0, document.body.scrollHeight)");
                 log.debug("{}下拉页面加载更多...", jobType);
 
                 // 等待新内容加载
@@ -256,7 +256,7 @@ public class Boss {
                 if (unchangedCount < 2) {
                     log.debug("{}下拉后岗位数量未增加，再次尝试...", jobType);
                     // 再次尝试滚动
-                    page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+                    safeEvaluateJavaScript(page, "window.scrollTo(0, document.body.scrollHeight)");
                     page.waitForTimeout(2000);
                 }
             }
@@ -475,7 +475,7 @@ public class Boss {
                     PlaywrightUtil.sleep(1);
                 } else {
                     // 如果找不到特定元素，尝试滚动到页面底部
-                    page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+                    safeEvaluateJavaScript(page, "window.scrollTo(0, document.body.scrollHeight)");
                     PlaywrightUtil.sleep(1);
                 }
             } catch (Exception e) {
@@ -861,12 +861,7 @@ public class Boss {
         }
 
         // 模拟用户浏览行为
-        jobPage.evaluate("window.scrollBy(0, 300)");
-        PlaywrightUtil.sleep(1);
-        jobPage.evaluate("window.scrollBy(0, 300)");
-        PlaywrightUtil.sleep(1);
-        jobPage.evaluate("window.scrollTo(0, 0)");
-        PlaywrightUtil.sleep(1);
+        simulateUserBrowsingBehavior(jobPage);
 
         Locator chatBtn = jobPage.locator(CHAT_BUTTON);
         chatBtn = chatBtn.nth(0);
@@ -1038,6 +1033,107 @@ public class Boss {
 
         BossLogger.clearContext();
         return 0;
+    }
+
+    /**
+     * 模拟用户浏览行为
+     * 安全地执行页面滚动，避免执行上下文被销毁的错误
+     */
+    private static void simulateUserBrowsingBehavior(Page jobPage) {
+        try {
+            // 检查页面是否仍然有效
+            if (!isPageValid(jobPage)) {
+                BossLogger.logBusinessError("页面浏览模拟", "页面状态无效，跳过滚动操作");
+                return;
+            }
+            
+            // 第一次滚动
+            safeEvaluateJavaScript(jobPage, "window.scrollBy(0, 300)");
+            PlaywrightUtil.sleep(1);
+            
+            // 再次检查页面状态
+            if (!isPageValid(jobPage)) {
+                return;
+            }
+            
+            // 第二次滚动
+            safeEvaluateJavaScript(jobPage, "window.scrollBy(0, 300)");
+            PlaywrightUtil.sleep(1);
+            
+            // 最后检查页面状态
+            if (!isPageValid(jobPage)) {
+                return;
+            }
+            
+            // 回到顶部
+            safeEvaluateJavaScript(jobPage, "window.scrollTo(0, 0)");
+            PlaywrightUtil.sleep(1);
+            
+        } catch (Exception e) {
+            BossLogger.logSystemError("页面浏览行为模拟", e);
+        }
+    }
+    
+    /**
+     * 安全地执行JavaScript代码
+     */
+    private static void safeEvaluateJavaScript(Page page, String script) {
+        try {
+            // 检查页面状态
+            if (!isPageValid(page)) {
+                log.debug("页面状态无效，跳过JavaScript执行: {}", script);
+                return;
+            }
+            
+            page.evaluate(script);
+            
+        } catch (Exception e) {
+            // 捕获执行上下文被销毁的异常
+            if (e.getMessage() != null && e.getMessage().contains("Execution context was destroyed")) {
+                BossLogger.logBusinessError("JavaScript执行", "页面执行上下文被销毁，可能发生了页面跳转");
+            } else {
+                log.debug("JavaScript执行失败: {} - {}", script, e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * 安全地执行JavaScript代码并返回结果
+     */
+    private static Object safeEvaluateJavaScriptWithResult(Page page, String script, Object defaultResult) {
+        try {
+            // 检查页面状态
+            if (!isPageValid(page)) {
+                log.debug("页面状态无效，跳过JavaScript执行: {}", script);
+                return defaultResult;
+            }
+            
+            return page.evaluate(script);
+            
+        } catch (Exception e) {
+            // 捕获执行上下文被销毁的异常
+            if (e.getMessage() != null && e.getMessage().contains("Execution context was destroyed")) {
+                BossLogger.logBusinessError("JavaScript执行", "页面执行上下文被销毁，可能发生了页面跳转");
+            } else {
+                log.debug("JavaScript执行失败: {} - {}", script, e.getMessage());
+            }
+            return defaultResult;
+        }
+    }
+    
+    /**
+     * 检查页面是否仍然有效
+     */
+    private static boolean isPageValid(Page page) {
+        try {
+            // 尝试获取页面URL来检查页面是否仍然有效
+            String url = page.url();
+            // 检查是否是正常的岗位详情页面
+            return url != null && url.contains("zhipin.com") && !url.contains("error");
+        } catch (Exception e) {
+            log.debug("页面状态检查失败: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -1576,11 +1672,12 @@ public class Boss {
                     // 向下滚动到底部
                     while (true) {
                         // 当前页面中 class="item" 的 li 元素数量
-                        int currentCount = (int) page.evaluate("document.querySelectorAll('li.item').length");
+                        int currentCount = (int) safeEvaluateJavaScriptWithResult(page, 
+                            "document.querySelectorAll('li.item').length", 0);
 
                         // 滚动到底部
                         // 滚动到比页面高度更大的值，确保触发加载
-                        page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight + 100)");
+                        safeEvaluateJavaScript(page, "window.scrollTo(0, document.documentElement.scrollHeight + 100)");
                         page.waitForTimeout(10000); // 等待数据加载
 
                         // 检查数量是否变化
