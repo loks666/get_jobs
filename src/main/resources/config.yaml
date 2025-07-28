@@ -9,7 +9,7 @@ boss:
   degree: [本科]
   scale: [不限]
   industry: [不限]
-  enableAI: true
+  enableAIJobMatchDetection: true
   experience: [5-10年]
   salary: 10-20K
   checkStateOwned: false
