@@ -1,8 +1,7 @@
 package boss;
 
-import ai.AiConfig;
+
 import ai.AiFilter;
-import ai.AiService;
 import ai.UnifiedAiService;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
@@ -15,13 +14,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
-import utils.*;
+import utils.Job;
+import utils.JobUtils;
+import utils.PlaywrightUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 import static boss.BossElementLocators.*;
 import static utils.Bot.sendMessageByTime;
-import static utils.HttpUtils.OBJECT_MAPPER;
 import static utils.JobUtils.formatDuration;
 
 /**
@@ -275,7 +274,6 @@ public class Boss {
         // 获取元素总数
         int count = jobLocators.count();
 
-        List<Job> jobs = new ArrayList<>();
         // 遍历所有找到的job卡片
         for (int i = 0; i < count; i++) {
             try {
@@ -1194,18 +1192,6 @@ public class Boss {
                "项目经验：具有微服务架构设计和开发经验，参与过多个大型企业级项目\n" +
                "教育背景：计算机科学与技术本科\n" +
                "个人优势：具备良好的编码规范、团队协作能力和快速学习能力";
-    }
-
-    public static Boolean sendResume(String company) {
-        // 如果 config.getSendImgResume() 为 true，再去找图片
-        if (!config.getSendImgResume()) {
-            return false;
-        }
-
-        // 这个方法已经被 Playwright 版本的代码替代
-        // 在 processJobDetail 方法中已经实现了发送简历图片的功能
-        log.warn("sendResume方法已被弃用，请使用processJobDetail中的简历发送功能");
-        return false;
     }
 
     /**

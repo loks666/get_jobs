@@ -18,10 +18,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import boss.BossScheduled;
-import job51.Job51Scheduled;
-import lagou.LagouScheduled;
-import liepin.LiepinScheduled;
-import zhilian.ZhilianScheduled;
+
 
 @Slf4j
 public class JobUtils {
@@ -85,20 +82,16 @@ public class JobUtils {
                 scheduleTaskAtTime(platformName, 15, 0, BossScheduled::postJobs);
             }
             case JOB51 -> {
-                Job51Scheduled.postJobs();
-                scheduleTaskAtTime(platformName, 10, 0, Job51Scheduled::postJobs);
+              
             }
             case LIEPIN -> {
-                LiepinScheduled.postJobs();
-                scheduleTaskAtTime(platformName, 10, 0, LiepinScheduled::postJobs);
+              
             }
             case ZHILIAN -> {
-                ZhilianScheduled.postJobs();
-                scheduleTaskAtTime(platformName, 10, 0, ZhilianScheduled::postJobs);
+             
             }
             case LAGOU -> {
-                LagouScheduled.postJobs();
-                scheduleTaskAtTime(platformName, 10, 0, LagouScheduled::postJobs);
+              
             }
             default -> log.warn("未定义的平台任务：{}", platformName);
         }
