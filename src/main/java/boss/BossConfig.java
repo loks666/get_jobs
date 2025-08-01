@@ -10,16 +10,17 @@ import java.util.stream.Collectors;
 
 /**
  * @author loks666
- * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ *         项目链接: <a href=
+ *         "https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  */
 @Data
 public class BossConfig {
-    
+
     /**
      * 单例实例
      */
     private static volatile BossConfig instance;
-    
+
     /**
      * 用于打招呼的语句
      */
@@ -81,9 +82,14 @@ public class BossConfig {
     private List<String> stage;
 
     /**
-     * 是否开放AI检测
+     * 是否启用AI岗位匹配度检测
      */
-    private Boolean enableAI;
+    private Boolean enableAIJobMatchDetection;
+
+    /**
+     * 是否启用AI打招呼功能
+     */
+    private Boolean enableAIGreeting;
 
     /**
      * 是否过滤不活跃hr
@@ -177,7 +183,8 @@ public class BossConfig {
         // 转换薪资范围
         config.setSalary(BossEnum.Salary.forValue(config.getSalary()).getCode());
         // 转换城市编码
-//        config.setCityCode(config.getCityCode().stream().map(value -> BossEnum.CityCode.forValue(value).getCode()).collect(Collectors.toList()));
+        // config.setCityCode(config.getCityCode().stream().map(value ->
+        // BossEnum.CityCode.forValue(value).getCode()).collect(Collectors.toList()));
         List<String> convertedCityCodes = config.getCityCode().stream()
                 .map(city -> {
                     // 优先从自定义映射中获取
@@ -190,15 +197,20 @@ public class BossConfig {
                 .collect(Collectors.toList());
         config.setCityCode(convertedCityCodes);
         // 转换工作经验要求
-        config.setExperience(config.getExperience().stream().map(value -> BossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
+        config.setExperience(config.getExperience().stream().map(value -> BossEnum.Experience.forValue(value).getCode())
+                .collect(Collectors.toList()));
         // 转换学历要求
-        config.setDegree(config.getDegree().stream().map(value -> BossEnum.Degree.forValue(value).getCode()).collect(Collectors.toList()));
+        config.setDegree(config.getDegree().stream().map(value -> BossEnum.Degree.forValue(value).getCode())
+                .collect(Collectors.toList()));
         // 转换公司规模
-        config.setScale(config.getScale().stream().map(value -> BossEnum.Scale.forValue(value).getCode()).collect(Collectors.toList()));
+        config.setScale(config.getScale().stream().map(value -> BossEnum.Scale.forValue(value).getCode())
+                .collect(Collectors.toList()));
         // 转换公司融资阶段
-        config.setStage(config.getStage().stream().map(value -> BossEnum.Financing.forValue(value).getCode()).collect(Collectors.toList()));
+        config.setStage(config.getStage().stream().map(value -> BossEnum.Financing.forValue(value).getCode())
+                .collect(Collectors.toList()));
         // 转换行业
-        config.setIndustry(config.getIndustry().stream().map(value -> BossEnum.Industry.forValue(value).getCode()).collect(Collectors.toList()));
+        config.setIndustry(config.getIndustry().stream().map(value -> BossEnum.Industry.forValue(value).getCode())
+                .collect(Collectors.toList()));
 
         return config;
     }
@@ -222,7 +234,7 @@ public class BossConfig {
         if (instance == null) {
             instance = init();
         }
-        
+
         // 直接更新现有instance的属性，而不是创建新对象
         instance.setSayHi((String) bossConfigMap.get("sayHi"));
         instance.setDebugger((Boolean) bossConfigMap.getOrDefault("debugger", false));
@@ -236,7 +248,8 @@ public class BossConfig {
         instance.setDegree((List<String>) bossConfigMap.get("degree"));
         instance.setScale((List<String>) bossConfigMap.get("scale"));
         instance.setStage((List<String>) bossConfigMap.get("stage"));
-        instance.setEnableAI((Boolean) bossConfigMap.getOrDefault("enableAI", false));
+        instance.setEnableAIJobMatchDetection((Boolean) bossConfigMap.getOrDefault("enableAIJobMatchDetection", false));
+        instance.setEnableAIGreeting((Boolean) bossConfigMap.getOrDefault("enableAIGreeting", false));
         instance.setFilterDeadHR((Boolean) bossConfigMap.getOrDefault("filterDeadHR", false));
         instance.setSendImgResume((Boolean) bossConfigMap.getOrDefault("sendImgResume", false));
         instance.setResumeImagePath((String) bossConfigMap.getOrDefault("resumeImagePath", ""));
@@ -250,11 +263,11 @@ public class BossConfig {
         instance.setCheckStateOwned((Boolean) bossConfigMap.getOrDefault("checkStateOwned", false));
         instance.setVipKey((String) bossConfigMap.getOrDefault("vipKey", ""));
         instance.setApiDomain((String) bossConfigMap.getOrDefault("apiDomain", ""));
-        
+
         // 应用转换逻辑
         instance.setJobType(BossEnum.JobType.forValue(instance.getJobType()).getCode());
         instance.setSalary(BossEnum.Salary.forValue(instance.getSalary()).getCode());
-        
+
         // 转换城市编码
         List<String> convertedCityCodes = instance.getCityCode().stream()
                 .map(city -> {
@@ -265,12 +278,17 @@ public class BossConfig {
                 })
                 .collect(Collectors.toList());
         instance.setCityCode(convertedCityCodes);
-        
-        instance.setExperience(instance.getExperience().stream().map(value -> BossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
-        instance.setDegree(instance.getDegree().stream().map(value -> BossEnum.Degree.forValue(value).getCode()).collect(Collectors.toList()));
-        instance.setScale(instance.getScale().stream().map(value -> BossEnum.Scale.forValue(value).getCode()).collect(Collectors.toList()));
-        instance.setStage(instance.getStage().stream().map(value -> BossEnum.Financing.forValue(value).getCode()).collect(Collectors.toList()));
-        instance.setIndustry(instance.getIndustry().stream().map(value -> BossEnum.Industry.forValue(value).getCode()).collect(Collectors.toList()));
+
+        instance.setExperience(instance.getExperience().stream()
+                .map(value -> BossEnum.Experience.forValue(value).getCode()).collect(Collectors.toList()));
+        instance.setDegree(instance.getDegree().stream().map(value -> BossEnum.Degree.forValue(value).getCode())
+                .collect(Collectors.toList()));
+        instance.setScale(instance.getScale().stream().map(value -> BossEnum.Scale.forValue(value).getCode())
+                .collect(Collectors.toList()));
+        instance.setStage(instance.getStage().stream().map(value -> BossEnum.Financing.forValue(value).getCode())
+                .collect(Collectors.toList()));
+        instance.setIndustry(instance.getIndustry().stream().map(value -> BossEnum.Industry.forValue(value).getCode())
+                .collect(Collectors.toList()));
     }
 
 }

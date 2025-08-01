@@ -36,9 +36,9 @@ import static utils.JobUtils.formatDuration;
 
 /**
  * @author loks666
- * 项目链接: <a href=
- * "https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
- * Boss直聘自动投递
+ *         项目链接: <a href=
+ *         "https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ *         Boss直聘自动投递
  */
 public class Boss {
     private static final Logger log = LoggerFactory.getLogger(Boss.class);
@@ -77,7 +77,7 @@ public class Boss {
             getjobsDirectory.mkdirs();
             BossLogger.logFileOperation("创建getjobs目录", getjobsDir, true);
         }
-        
+
         // 初始化config.yaml文件
         String configPath = getjobsDir + "/config.yaml";
         File configFile = new File(configPath);
@@ -85,7 +85,7 @@ public class Boss {
             try {
                 // 从resources目录读取config.yaml
                 java.io.InputStream configStream = Boss.class.getClassLoader()
-                    .getResourceAsStream("config.yaml");
+                        .getResourceAsStream("config.yaml");
                 if (configStream != null) {
                     // 复制到getjobs目录
                     Files.copy(configStream, Paths.get(configPath));
@@ -98,7 +98,7 @@ public class Boss {
                 BossLogger.logSystemError("配置文件初始化", e);
             }
         }
-        
+
         // 检查dataPath文件是否存在，不存在则创建
         File dataFile = new File(dataPath);
         if (!dataFile.exists()) {
@@ -146,9 +146,9 @@ public class Boss {
             startDate = new Date();
             login();
             config.getCityCode().forEach(Boss::postJobByCityByPlaywright);
-            //        if (config.getH5Jobs()) {
-            //            h5Config.getCityCode().forEach(Boss::postH5JobByCityByPlaywright);
-            //        }
+            // if (config.getH5Jobs()) {
+            // h5Config.getCityCode().forEach(Boss::postH5JobByCityByPlaywright);
+            // }
             if (recommendJobs.isEmpty() && config.getRecommendJobs()) {
                 getRecommendJobs();
                 // 处理推荐职位
@@ -506,7 +506,8 @@ public class Boss {
             parseJson(json);
             BossLogger.logFileOperation("加载黑名单数据", path, true);
             BossLogger.logStatistics("黑名单数据", blackCompanies.size() + blackRecruiters.size() + blackJobs.size(),
-                    String.format("公司:%d, 招聘者:%d, 岗位:%d", blackCompanies.size(), blackRecruiters.size(), blackJobs.size()));
+                    String.format("公司:%d, 招聘者:%d, 岗位:%d", blackCompanies.size(), blackRecruiters.size(),
+                            blackJobs.size()));
         } catch (IOException e) {
             BossLogger.logFileOperation("加载黑名单数据", path, false);
             BossLogger.logSystemError("数据加载", e);
@@ -884,20 +885,20 @@ public class Boss {
 
             AiFilter filterResult = null;
             String jd = "";
-            if (config.getEnableAI() && keyword != null) {
+            if (config.getEnableAIJobMatchDetection() && keyword != null) {
                 // AI检测岗位是否匹配并
                 Locator jdElement = jobPage.locator(JOB_DESCRIPTION);
                 if (jdElement.isVisible()) {
                     jd = jdElement.textContent();
                     filterResult = checkJob(keyword, job.getJobName(), jd);
-                    
+
                     // 如果AI判定岗位描述和岗位名称不符，则跳过该职位
                     if (filterResult != null && !filterResult.getResult()) {
                         BossLogger.logJobFiltered("AI判定不匹配", job.getCompanyName(), job.getJobName());
                         jobPage.close();
                         return 0;
                     }
-                    
+
                     if (filterResult != null && filterResult.getResult()) {
                         BossLogger.logAIProcess("岗位匹配检测", true, "匹配成功");
                     }
@@ -951,20 +952,21 @@ public class Boss {
 
                     // 准备打招呼内容
                     String greetingMessage = config.getSayHi().replaceAll("\\r|\\n", "");
-                    
-                    // 如果启用了AI且AI判定通过，使用AI生成的求职问候语
-                    if (filterResult != null && filterResult.getResult()) {
+
+                    // 如果启用了AI打招呼功能，使用AI生成的求职问候语
+                    if (config.getEnableAIGreeting()) {
                         try {
                             // 获取简历内容，优先从配置获取，否则使用默认内容
                             String resumeContent = getResumeContent();
-                            
+
                             // 调用AI生成求职问候语
                             UnifiedAiService aiService = UnifiedAiService.getInstance();
                             UnifiedAiService.JobGreetingResponse response = aiService.generateJobGreeting(
-                                jd, resumeContent, UnifiedAiService.AiPlatform.DEEPSEEK, 1, "professional");
-                            
-                            if (response != null && response.isSuccess() && response.getData() != null 
-                                && response.getData().getGreetings() != null && !response.getData().getGreetings().isEmpty()) {
+                                    jd, resumeContent, UnifiedAiService.AiPlatform.DEEPSEEK, 1, "professional");
+
+                            if (response != null && response.isSuccess() && response.getData() != null
+                                    && response.getData().getGreetings() != null
+                                    && !response.getData().getGreetings().isEmpty()) {
                                 String aiGreeting = response.getData().getGreetings().get(0).getContent();
                                 if (isValidString(aiGreeting) && aiGreeting.length() > 10) {
                                     greetingMessage = aiGreeting.replaceAll("\\r|\\n", "");
@@ -1044,34 +1046,34 @@ public class Boss {
                 BossLogger.logBusinessError("页面浏览模拟", "页面状态无效，跳过滚动操作");
                 return;
             }
-            
+
             // 第一次滚动
             safeEvaluateJavaScript(jobPage, "window.scrollBy(0, 300)");
             PlaywrightUtil.sleep(1);
-            
+
             // 再次检查页面状态
             if (!isPageValid(jobPage)) {
                 return;
             }
-            
+
             // 第二次滚动
             safeEvaluateJavaScript(jobPage, "window.scrollBy(0, 300)");
             PlaywrightUtil.sleep(1);
-            
+
             // 最后检查页面状态
             if (!isPageValid(jobPage)) {
                 return;
             }
-            
+
             // 回到顶部
             safeEvaluateJavaScript(jobPage, "window.scrollTo(0, 0)");
             PlaywrightUtil.sleep(1);
-            
+
         } catch (Exception e) {
             BossLogger.logSystemError("页面浏览行为模拟", e);
         }
     }
-    
+
     /**
      * 安全地执行JavaScript代码
      */
@@ -1082,9 +1084,9 @@ public class Boss {
                 log.debug("页面状态无效，跳过JavaScript执行: {}", script);
                 return;
             }
-            
+
             page.evaluate(script);
-            
+
         } catch (Exception e) {
             // 捕获执行上下文被销毁的异常
             if (e.getMessage() != null && e.getMessage().contains("Execution context was destroyed")) {
@@ -1094,7 +1096,7 @@ public class Boss {
             }
         }
     }
-    
+
     /**
      * 安全地执行JavaScript代码并返回结果
      */
@@ -1105,9 +1107,9 @@ public class Boss {
                 log.debug("页面状态无效，跳过JavaScript执行: {}", script);
                 return defaultResult;
             }
-            
+
             return page.evaluate(script);
-            
+
         } catch (Exception e) {
             // 捕获执行上下文被销毁的异常
             if (e.getMessage() != null && e.getMessage().contains("Execution context was destroyed")) {
@@ -1118,7 +1120,7 @@ public class Boss {
             return defaultResult;
         }
     }
-    
+
     /**
      * 检查页面是否仍然有效
      */
@@ -1147,7 +1149,7 @@ public class Boss {
                     // 使用Playwright上传文件
                     Locator fileInput = jobPage.locator(IMAGE_UPLOAD);
                     if (fileInput.isVisible()) {
-                        fileInput.setInputFiles(new Path[]{Paths.get(imageFile.getPath())});
+                        fileInput.setInputFiles(new Path[] { Paths.get(imageFile.getPath()) });
                         // 等待发送按钮并点击
                         Locator imageSendBtn = jobPage.locator(".image-uploader-btn");
                         if (imageSendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(2000))) {
@@ -1184,24 +1186,24 @@ public class Boss {
         if (isValidString(resumeContent) && resumeContent.trim().length() > 10) {
             return resumeContent;
         }
-        
+
         // 如果配置中没有简历内容或内容太短，使用默认模板
         return "Java开发工程师\n" +
-               "工作经验：5年\n" +
-               "技能专长：熟练掌握Java、Spring Boot、Spring Cloud、MySQL、Redis等技术栈\n" +
-               "项目经验：具有微服务架构设计和开发经验，参与过多个大型企业级项目\n" +
-               "教育背景：计算机科学与技术本科\n" +
-               "个人优势：具备良好的编码规范、团队协作能力和快速学习能力";
+                "工作经验：5年\n" +
+                "技能专长：熟练掌握Java、Spring Boot、Spring Cloud、MySQL、Redis等技术栈\n" +
+                "项目经验：具有微服务架构设计和开发经验，参与过多个大型企业级项目\n" +
+                "教育背景：计算机科学与技术本科\n" +
+                "个人优势：具备良好的编码规范、团队协作能力和快速学习能力";
     }
 
     /**
      * 检查岗位薪资是否符合预期
      *
      * @return boolean
-     * true 不符合预期
-     * false 符合预期
-     * 期望的最低薪资如果比岗位最高薪资还小，则不符合（薪资给的太少）
-     * 期望的最高薪资如果比岗位最低薪资还小，则不符合(要求太高满足不了)
+     *         true 不符合预期
+     *         false 符合预期
+     *         期望的最低薪资如果比岗位最高薪资还小，则不符合（薪资给的太少）
+     *         期望的最高薪资如果比岗位最低薪资还小，则不符合(要求太高满足不了)
      */
     private static boolean isSalaryNotExpected(String salary) {
         try {
@@ -1300,7 +1302,7 @@ public class Boss {
     }
 
     private static boolean isSalaryOutOfRange(Integer[] jobSalary, Integer miniSalary, Integer maxSalary,
-                                              String jobType) {
+            String jobType) {
         if (jobSalary == null) {
             return true;
         }
@@ -1321,7 +1323,6 @@ public class Boss {
         // 如果职位薪资上限高于期望的最高薪资，返回不符合
         return maxSalary != null && jobSalary[0] > maxSalary;
     }
-
 
     private static boolean isDeadHR(Page page) {
         if (!config.getFilterDeadHR()) {
@@ -1373,7 +1374,7 @@ public class Boss {
         try {
             UnifiedAiService aiService = UnifiedAiService.getInstance();
             UnifiedAiService.JobMatchResult result = aiService.checkJobMatch(keyword, jobName, jd);
-            
+
             if (result.isMatched()) {
                 // AI已经返回了生成的打招呼内容，直接使用
                 String aiGreeting = result.getMessage();
@@ -1396,7 +1397,7 @@ public class Boss {
 
     private static boolean isTargetJob(String keyword, String jobName) {
         boolean keywordIsAI = false;
-        for (String target : new String[]{"大模型", "AI"}) {
+        for (String target : new String[] { "大模型", "AI" }) {
             if (keyword.contains(target)) {
                 keywordIsAI = true;
                 break;
@@ -1404,7 +1405,7 @@ public class Boss {
         }
 
         boolean jobIsDesign = false;
-        for (String designOrVision : new String[]{"设计", "视觉", "产品", "运营"}) {
+        for (String designOrVision : new String[] { "设计", "视觉", "产品", "运营" }) {
             if (jobName.contains(designOrVision)) {
                 jobIsDesign = true;
                 break;
@@ -1412,7 +1413,7 @@ public class Boss {
         }
 
         boolean jobIsAI = false;
-        for (String target : new String[]{"AI", "人工智能", "大模型", "生成"}) {
+        for (String target : new String[] { "AI", "人工智能", "大模型", "生成" }) {
             if (jobName.contains(target)) {
                 jobIsAI = true;
                 break;
@@ -1637,7 +1638,6 @@ public class Boss {
         return false;
     }
 
-
     private static void postH5JobByCityByPlaywright(String cityCode) {
 
         Page page = PlaywrightUtil.getPageObject(PlaywrightUtil.DeviceType.MOBILE);
@@ -1658,8 +1658,8 @@ public class Boss {
                     // 向下滚动到底部
                     while (true) {
                         // 当前页面中 class="item" 的 li 元素数量
-                        int currentCount = (int) safeEvaluateJavaScriptWithResult(page, 
-                            "document.querySelectorAll('li.item').length", 0);
+                        int currentCount = (int) safeEvaluateJavaScriptWithResult(page,
+                                "document.querySelectorAll('li.item').length", 0);
 
                         // 滚动到底部
                         // 滚动到比页面高度更大的值，确保触发加载
@@ -1741,7 +1741,6 @@ public class Boss {
             }
         }
 
-
         String yde = ydeSet.stream().collect(Collectors.joining("-"));
         log.info("yde:{}", yde);
         if (StringUtils.hasLength(yde)) {
@@ -1756,7 +1755,6 @@ public class Boss {
         searchUrl = searchUrl + "&ka=sel-salary-" + salary.split("_")[1];
         return searchUrl;
     }
-
 
     private static boolean isH5JobsPresent(Page page) {
         try {
@@ -1876,4 +1874,3 @@ public class Boss {
     }
 
 }
-
