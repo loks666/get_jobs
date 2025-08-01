@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+import utils.ConfigFileUtil;
 import utils.Job;
 import utils.JobUtils;
 import utils.PlaywrightUtil;
@@ -48,11 +49,11 @@ public class Boss {
     static Set<String> blackRecruiters;
     static Set<String> blackJobs;
     static List<Job> resultList = new ArrayList<>();
-    static String dataPath = System.getProperty("user.dir") + "/getjobs/data.json";
-    static String cookiePath = System.getProperty("user.dir") + "/getjobs/cookie.json";
+
+    static String dataPath = ConfigFileUtil.getDataFilePath();
+    static String cookiePath = ConfigFileUtil.getCookieFilePath();
     static Date startDate;
     public static BossConfig config = BossConfig.getInstance();
-    static H5BossConfig h5Config = H5BossConfig.init();
     // 默认推荐岗位集合
     static List<Job> recommendJobs = new ArrayList<>();
 
@@ -70,63 +71,9 @@ public class Boss {
      * 初始化数据文件
      */
     private static void initializeDataFiles() throws IOException {
-        // 确保getjobs目录存在
-        String getjobsDir = System.getProperty("user.dir") + "/getjobs";
-        File getjobsDirectory = new File(getjobsDir);
-        if (!getjobsDirectory.exists()) {
-            getjobsDirectory.mkdirs();
-            BossLogger.logFileOperation("创建getjobs目录", getjobsDir, true);
-        }
-
-        // 初始化config.yaml文件
-        String configPath = getjobsDir + "/config.yaml";
-        File configFile = new File(configPath);
-        if (!configFile.exists()) {
-            try {
-                // 从resources目录读取config.yaml
-                java.io.InputStream configStream = Boss.class.getClassLoader()
-                        .getResourceAsStream("config.yaml");
-                if (configStream != null) {
-                    // 复制到getjobs目录
-                    Files.copy(configStream, Paths.get(configPath));
-                    configStream.close();
-                    BossLogger.logFileOperation("初始化配置文件", configPath, true);
-                } else {
-                    BossLogger.logFileOperation("配置文件模板读取", "config.yaml", false);
-                }
-            } catch (Exception e) {
-                BossLogger.logSystemError("配置文件初始化", e);
-            }
-        }
-
-        // 检查dataPath文件是否存在，不存在则创建
-        File dataFile = new File(dataPath);
-        if (!dataFile.exists()) {
-            // 确保父目录存在
-            if (!dataFile.getParentFile().exists()) {
-                dataFile.getParentFile().mkdirs();
-            }
-            // 创建文件并写入初始JSON结构
-            Map<String, Set<String>> initialData = new HashMap<>();
-            initialData.put("blackCompanies", new HashSet<>());
-            initialData.put("blackRecruiters", new HashSet<>());
-            initialData.put("blackJobs", new HashSet<>());
-            String initialJson = customJsonFormat(initialData);
-            Files.write(Paths.get(dataPath), initialJson.getBytes());
-            BossLogger.logFileOperation("创建数据文件", dataPath, true);
-        }
-
-        // 检查cookiePath文件是否存在，不存在则创建
-        File cookieFile = new File(cookiePath);
-        if (!cookieFile.exists()) {
-            // 确保父目录存在
-            if (!cookieFile.getParentFile().exists()) {
-                cookieFile.getParentFile().mkdirs();
-            }
-            // 创建空的cookie文件
-            Files.write(Paths.get(cookiePath), "[]".getBytes());
-            BossLogger.logFileOperation("创建cookie文件", cookiePath, true);
-        }
+        // 使用统一的文件初始化方法
+        ConfigFileUtil.initializeAllFiles();
+        BossLogger.logFileOperation("初始化所有文件", "data目录", true);
     }
 
     public static void main(String[] args) {
@@ -1100,7 +1047,9 @@ public class Boss {
     /**
      * 安全地执行JavaScript代码并返回结果
      */
-    private static Object safeEvaluateJavaScriptWithResult(Page page, String script, Object defaultResult) {
+    private static Object safeEvaluateJavaScriptWithResult(Page page, String script, Object defaultResult)
+
+    {
         try {
             // 检查页面状态
             if (!isPageValid(page)) {
@@ -1638,239 +1587,8 @@ public class Boss {
         return false;
     }
 
-    private static void postH5JobByCityByPlaywright(String cityCode) {
 
-        Page page = PlaywrightUtil.getPageObject(PlaywrightUtil.DeviceType.MOBILE);
 
-        for (String keyword : h5Config.getKeywords()) {
-            String searchUrl = getH5SearchUrl(cityCode, keyword);
-            log.info("查询url:{}", searchUrl);
 
-            try {
-                log.info("开始投递，页面url：{}", searchUrl);
-                // 使用PlaywrightUtil获取移动设备页面并导航
-                page.navigate(searchUrl);
-
-                // 点击立即沟通，建立chat窗口
-                if (isH5JobsPresent(page)) {
-                    int previousCount = 0;
-                    int retry = 0;
-                    // 向下滚动到底部
-                    while (true) {
-                        // 当前页面中 class="item" 的 li 元素数量
-                        int currentCount = (int) safeEvaluateJavaScriptWithResult(page,
-                                "document.querySelectorAll('li.item').length", 0);
-
-                        // 滚动到底部
-                        // 滚动到比页面高度更大的值，确保触发加载
-                        safeEvaluateJavaScript(page, "window.scrollTo(0, document.documentElement.scrollHeight + 100)");
-                        page.waitForTimeout(10000); // 等待数据加载
-
-                        // 检查数量是否变化
-                        if (currentCount == previousCount) {
-                            retry++;
-                            log.info("第{}次下拉重试", retry);
-                            if (retry >= 2) {
-                                log.info("尝试2次下拉后无新增岗位，退出");
-                                break; // 连续两次未加载新数据，认为加载完毕
-                            }
-                        } else {
-                            retry = 0; // 重置尝试次数
-                        }
-
-                        previousCount = currentCount;
-
-                    }
-                    log.info("已加载全部岗位，总数量: " + previousCount);
-                }
-
-                // chat页面进行消息沟通
-                h5ResumeSubmission(keyword);
-            } catch (Exception e) {
-                log.error("使用Playwright处理页面时出错: {}", e.getMessage(), e);
-            }
-
-        }
-
-    }
-
-    private static String getH5SearchUrl(String cityCode, String keyword) {
-        // 经验
-        List<String> experience = h5Config.getExperience();
-        // 学历
-        List<String> degree = h5Config.getDegree();
-        // 薪资
-        String salary = h5Config.getSalary();
-        // 规模
-        List<String> scale = h5Config.getScale();
-
-        String searchUrl = baseUrl;
-
-        log.info("cityCode:{}", cityCode);
-        log.info("experience:{}", experience);
-        log.info("degree:{}", degree);
-        log.info("salary:{}", salary);
-        if (!H5BossEnum.CityCode.NULL.equals(cityCode)) {
-            searchUrl = searchUrl + "/" + cityCode + "/";
-        }
-
-        Set<String> ydeSet = new LinkedHashSet<>();
-        if (!experience.isEmpty()) {
-            if (!H5BossEnum.Salary.NULL.equals(salary)) {
-                ydeSet.add(salary);
-            }
-        }
-
-        if (!degree.isEmpty()) {
-            String degreeStr = degree.stream().findFirst().get();
-            if (!H5BossEnum.Degree.NULL.equals(degreeStr)) {
-                ydeSet.add(degreeStr);
-            }
-        }
-        if (!experience.isEmpty()) {
-            String experienceStr = experience.stream().findFirst().get();
-            if (!H5BossEnum.Experience.NULL.equals(experienceStr)) {
-                ydeSet.add(experienceStr);
-            }
-        }
-
-        if (!scale.isEmpty()) {
-            String scaleStr = scale.stream().findFirst().get();
-            if (!H5BossEnum.Scale.NULL.equals(scaleStr)) {
-                ydeSet.add(scaleStr);
-            }
-        }
-
-        String yde = ydeSet.stream().collect(Collectors.joining("-"));
-        log.info("yde:{}", yde);
-        if (StringUtils.hasLength(yde)) {
-            if (!searchUrl.endsWith("/")) {
-                searchUrl = searchUrl + "/" + yde + "/";
-            } else {
-                searchUrl = searchUrl + yde + "/";
-            }
-        }
-
-        searchUrl = searchUrl + "?query=" + keyword;
-        searchUrl = searchUrl + "&ka=sel-salary-" + salary.split("_")[1];
-        return searchUrl;
-    }
-
-    private static boolean isH5JobsPresent(Page page) {
-        try {
-            page.waitForSelector("li.item", new Page.WaitForSelectorOptions().setTimeout(40000));
-            return true;
-        } catch (Exception e) {
-            log.warn("页面上没有找到职位列表: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    @SneakyThrows
-    private static Integer h5ResumeSubmission(String keyword) {
-        // 查找所有job卡片元素
-        Page page = PlaywrightUtil.getPageObject(PlaywrightUtil.DeviceType.MOBILE);
-        // 获取元素总数
-        List<ElementHandle> jobCards = page.querySelectorAll("ul li.item");
-        List<Job> jobs = new ArrayList<>();
-        int filteredCount = 0;
-
-        for (ElementHandle jobCard : jobCards) {
-            try {
-                // 获取招聘者信息
-                ElementHandle recruiterElement = jobCard.querySelector("div.recruiter div.name");
-                String recruiterText = recruiterElement.textContent();
-
-                String salary = jobCard.querySelector("div.title span.salary").textContent();
-                String jobHref = jobCard.querySelector("a").getAttribute("href");
-
-                if (blackRecruiters.stream().anyMatch(recruiterText::contains)) {
-                    // 排除黑名单招聘人员
-                    BossLogger.logJobFiltered("黑名单招聘人员", "", "", recruiterText);
-                    filteredCount++;
-                    continue;
-                }
-
-                String jobName = jobCard.querySelector("div.title span.title-text").textContent();
-                if (blackJobs.stream().anyMatch(jobName::contains) || !isTargetJob(keyword, jobName)) {
-                    // 排除黑名单岗位
-                    BossLogger.logJobFiltered("黑名单岗位或不匹配", "", jobName);
-                    filteredCount++;
-                    continue;
-                }
-
-                String companyName = jobCard.querySelector("div.name span.company").textContent();
-                if (blackCompanies.stream().anyMatch(companyName::contains)) {
-                    // 排除黑名单公司
-                    BossLogger.logJobFiltered("黑名单公司", companyName, jobName);
-                    filteredCount++;
-                    continue;
-                }
-
-                if (isSalaryNotExpected(salary)) {
-                    // 过滤薪资
-                    BossLogger.logJobFiltered("薪资不符合", companyName, jobName, salary);
-                    filteredCount++;
-                    continue;
-                }
-
-                if (config.getKeyFilter()) {
-                    if (!jobName.toLowerCase().contains(keyword.toLowerCase())) {
-                        BossLogger.logJobFiltered("关键词不匹配", companyName, jobName, keyword);
-                        filteredCount++;
-                        continue;
-                    }
-                }
-
-                if (jobHrefSet.contains(jobHref)) {
-                    log.debug("H5岗位重复，跳过：{} - {}", companyName, jobName);
-                    filteredCount++;
-                    continue;
-                } else {
-                    jobHrefSet.add(jobHref);
-                }
-
-                Job job = new Job();
-                // 获取职位链接
-                job.setHref(jobHref);
-                // 获取职位名称
-                job.setJobName(jobName);
-                // 获取工作地点
-                job.setJobArea(jobCard.querySelector("div.name span.workplace").textContent());
-                // 获取薪资
-                job.setSalary(salary);
-                // 获取标签
-                List<ElementHandle> tagElements = jobCard.querySelectorAll("div.labels span");
-                StringBuilder tag = new StringBuilder();
-                for (ElementHandle tagElement : tagElements) {
-                    tag.append(tagElement.textContent()).append("·");
-                }
-                if (tag.length() > 0) {
-                    job.setCompanyTag(tag.substring(0, tag.length() - 1));
-                } else {
-                    job.setCompanyTag("");
-                }
-                // 获取公司名称
-                job.setCompanyName(companyName);
-                // 设置招聘者信息
-                job.setRecruiter(recruiterText);
-                jobs.add(job);
-            } catch (Exception e) {
-                log.debug("处理H5岗位卡片失败: {}", e.getMessage());
-                filteredCount++;
-            }
-        }
-
-        BossLogger.logStatistics("H5岗位筛选", jobs.size(),
-                String.format("总岗位:%d, 过滤:%d, 待处理:%d", jobCards.size(), filteredCount, jobs.size()));
-
-        // 处理每个职位详情
-        int result = processJobList(jobs, keyword);
-        if (result < 0) {
-            return result;
-        }
-
-        return resultList.size();
-    }
 
 }

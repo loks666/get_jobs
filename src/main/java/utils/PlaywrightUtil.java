@@ -99,19 +99,6 @@ public class PlaywrightUtil {
             }
         });
 
-        // 需要启动h5岗位查询投递的时候才使用
-        if(Boss.config.getH5Jobs()){
-            // 创建移动设备页面
-            MOBILE_PAGE = MOBILE_CONTEXT.newPage();
-            MOBILE_PAGE.setDefaultTimeout(DEFAULT_TIMEOUT);
-
-            MOBILE_PAGE.onConsoleMessage(message -> {
-                if (message.type().equals("error")) {
-                    log.error("Mobile browser console error: {}", message.text());
-                }
-            });
-        }
-
         log.info("Playwright和浏览器实例已初始化完成");
     }
 

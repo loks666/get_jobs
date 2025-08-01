@@ -131,8 +131,6 @@ public class BossConfig {
 
     private Boolean recommendJobs;
 
-    private Boolean h5Jobs;
-
     /**
      * 是否判定国企
      */
@@ -159,7 +157,6 @@ public class BossConfig {
      * 获取单例实例
      * 使用双重检查锁定确保线程安全
      */
-    @SneakyThrows
     public static BossConfig getInstance() {
         if (instance == null) {
             synchronized (BossConfig.class) {
@@ -259,7 +256,6 @@ public class BossConfig {
         instance.setDeadStatus((List<String>) bossConfigMap.get("deadStatus"));
         instance.setKeyFilter((Boolean) bossConfigMap.getOrDefault("keyFilter", false));
         instance.setRecommendJobs((Boolean) bossConfigMap.getOrDefault("recommendJobs", false));
-        instance.setH5Jobs((Boolean) bossConfigMap.getOrDefault("h5Jobs", false));
         instance.setCheckStateOwned((Boolean) bossConfigMap.getOrDefault("checkStateOwned", false));
         instance.setVipKey((String) bossConfigMap.getOrDefault("vipKey", ""));
         instance.setApiDomain((String) bossConfigMap.getOrDefault("apiDomain", ""));
