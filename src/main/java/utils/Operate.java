@@ -1,5 +1,6 @@
-package boss;
+package utils;
 
+import boss.Locators;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 import org.openqa.selenium.JavascriptExecutor;
@@ -7,9 +8,6 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import utils.JobUtils;
-import utils.PlaywrightUtil;
-import utils.SeleniumUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +28,8 @@ import static utils.Constant.CHROME_DRIVER;
  * - 滚动页面
  * - 发送简历
  */
-public class BossPageOperations {
-    private static final Logger log = LoggerFactory.getLogger(BossPageOperations.class);
+public class Operate {
+    private static final Logger log = LoggerFactory.getLogger(Operate.class);
     private static final Random random = new Random();
 
     /**
@@ -73,7 +71,7 @@ public class BossPageOperations {
 
         while (unchangedCount < 2 && loadAttempts < maxLoadAttempts) {
             // 获取所有岗位卡片
-            List<ElementHandle> jobCards = page.querySelectorAll(BossElementLocators.JOB_CARD_BOX);
+            List<ElementHandle> jobCards = page.querySelectorAll(Locators.JOB_CARD_BOX);
             currentJobCount = jobCards.size();
 
             log.info("当前已加载岗位数量: " + currentJobCount);
@@ -240,7 +238,7 @@ public class BossPageOperations {
 
         while (!shouldBreak) {
             try {
-                Optional<WebElement> finishedElement = BossElementFinder.findElement(BossElementLocators.FINISHED_TEXT);
+                Optional<WebElement> finishedElement = Finder.findElement(Locators.FINISHED_TEXT);
                 if (finishedElement.isPresent() && "没有更多了".equals(finishedElement.get().getText())) {
                     shouldBreak = true;
                 }
@@ -249,7 +247,7 @@ public class BossPageOperations {
             }
 
             // 尝试查找"滚动加载更多"元素
-            Optional<WebElement> loadMoreElement = BossElementFinder.findElement(BossElementLocators.SCROLL_LOAD_MORE);
+            Optional<WebElement> loadMoreElement = Finder.findElement(Locators.SCROLL_LOAD_MORE);
 
             if (loadMoreElement.isPresent()) {
                 try {
@@ -271,7 +269,7 @@ public class BossPageOperations {
             }
 
             // 防止无限循环，给一个额外的检查
-            List<WebElement> items = BossElementFinder.findElements(BossElementLocators.CHAT_LIST_ITEM);
+            List<WebElement> items = Finder.findElements(Locators.CHAT_LIST_ITEM);
             if (items.isEmpty()) {
                 log.info("没有找到聊天记录项，停止滚动");
                 break;
@@ -313,7 +311,7 @@ public class BossPageOperations {
      */
     public static boolean sendResumeImage(String imagePath) {
         try {
-            Optional<WebElement> fileInput = BossElementFinder.findElement(BossElementLocators.IMAGE_UPLOAD);
+            Optional<WebElement> fileInput = Finder.findElement(Locators.IMAGE_UPLOAD);
             if (fileInput.isPresent()) {
                 fileInput.get().sendKeys(imagePath);
                 return true;
