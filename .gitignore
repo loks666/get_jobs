@@ -8,6 +8,9 @@ config.yaml
 *.iml
 *.ipr
 .idea
+*.sh
+CLAUDE.md
+.claude
 ### Eclipse ###
 .apt_generated
 .classpath
