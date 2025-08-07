@@ -73,7 +73,7 @@ public class Job51 {
 
     private static boolean isLoginRequired() {
         try {
-            String text = CHROME_DRIVER.findElement(By.xpath("//p[@class=\"tit\"]")).getText();
+            String text = CHROME_DRIVER.findElement(By.cssSelector("span.login")).getText();
             return text != null && text.contains("登录");
         } catch (Exception e) {
             log.info("cookie有效，已登录...");
@@ -216,7 +216,7 @@ public class Job51 {
     private static void scanLogin() {
         log.info("等待扫码登陆..");
         CHROME_DRIVER.get(loginUrl);
-        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.id("hasresume")));
+        WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//a[contains(text(), '在线简历')]")));
         SeleniumUtil.saveCookie(cookiePath);
     }
 
