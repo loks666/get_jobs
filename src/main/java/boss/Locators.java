@@ -4,7 +4,7 @@ package boss;
  * Boss直聘网页元素定位器
  * 集中管理所有页面元素的定位表达式
  */
-public class BossElementLocators {
+public class Locators {
     // 主页相关元素
     public static final String LOGIN_BTN = "//li[@class='nav-figure']";
     public static final String LOGIN_SCAN_SWITCH = "//div[@class='btn-sign-switch ewm-switch']";

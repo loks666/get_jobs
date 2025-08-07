@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 
 /**
  * Playwright工具类，提供浏览器自动化相关的功能
@@ -91,29 +92,17 @@ public class PlaywrightUtil {
         DESKTOP_PAGE = DESKTOP_CONTEXT.newPage();
         DESKTOP_PAGE.setDefaultTimeout(DEFAULT_TIMEOUT);
 
-        // 创建移动设备页面，暂时用不到mobile端页面，注释不打开
-        // MOBILE_PAGE = MOBILE_CONTEXT.newPage();
-        // MOBILE_PAGE.setDefaultTimeout(DEFAULT_TIMEOUT);
-
-        // 启用JavaScript捕获控制台日志（用于调试）
-        DESKTOP_PAGE.onConsoleMessage(message -> {
-            if (message.type().equals("error")) {
-                log.error("Browser console error: {}", message.text());
-            }
-        });
-
-//        MOBILE_PAGE.onConsoleMessage(message -> {
+//        // 启用JavaScript捕获控制台日志（用于调试）
+//        DESKTOP_PAGE.onConsoleMessage(message -> {
 //            if (message.type().equals("error")) {
-//                log.error("Mobile browser console error: {}", message.text());
+//                log.error("Browser console error: {}", message.text());
 //            }
 //        });
-
-        log.info("Playwright和浏览器实例已初始化完成");
     }
 
     /**
      * 设置默认设备类型
-     * 
+     *
      * @param deviceType 设备类型
      */
     public static void setDefaultDeviceType(DeviceType deviceType) {
@@ -123,7 +112,7 @@ public class PlaywrightUtil {
 
     /**
      * 获取当前页面（基于当前设备类型）
-     * 
+     *
      * @param deviceType 设备类型
      * @return 对应的Page对象
      */
@@ -133,7 +122,7 @@ public class PlaywrightUtil {
 
     /**
      * 获取当前上下文（基于当前设备类型）
-     * 
+     *
      * @param deviceType 设备类型
      * @return 对应的BrowserContext对象
      */
@@ -163,7 +152,7 @@ public class PlaywrightUtil {
 
     /**
      * 导航到指定URL
-     * 
+     *
      * @param url        目标URL
      * @param deviceType 设备类型
      */
@@ -174,7 +163,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型导航到指定URL
-     * 
+     *
      * @param url 目标URL
      */
     public static void navigate(String url) {
@@ -183,7 +172,7 @@ public class PlaywrightUtil {
 
     /**
      * 移动设备导航到指定URL (兼容旧代码)
-     * 
+     *
      * @param url 目标URL
      */
     public static void mobileNavigate(String url) {
@@ -192,7 +181,7 @@ public class PlaywrightUtil {
 
     /**
      * 等待指定时间（秒）
-     * 
+     *
      * @param seconds 等待的秒数
      */
     public static void sleep(int seconds) {
@@ -206,7 +195,7 @@ public class PlaywrightUtil {
 
     /**
      * 等待指定时间（毫秒）
-     * 
+     *
      * @param millis 等待的毫秒数
      */
     public static void sleepMillis(int millis) {
@@ -219,8 +208,17 @@ public class PlaywrightUtil {
     }
 
     /**
+     * 兼容SeleniumUtil的sleepByMilliSeconds方法
+     *
+     * @param milliSeconds 等待的毫秒数
+     */
+    public static void sleepByMilliSeconds(int milliSeconds) {
+        sleepMillis(milliSeconds);
+    }
+
+    /**
      * 查找元素
-     * 
+     *
      * @param selector   元素选择器
      * @param deviceType 设备类型
      * @return 元素对象，如果未找到则返回null
@@ -231,7 +229,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型查找元素
-     * 
+     *
      * @param selector 元素选择器
      * @return 元素对象，如果未找到则返回null
      */
@@ -241,7 +239,7 @@ public class PlaywrightUtil {
 
     /**
      * 查找元素并等待直到可见
-     * 
+     *
      * @param selector   元素选择器
      * @param timeout    超时时间（毫秒）
      * @param deviceType 设备类型
@@ -255,7 +253,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型查找元素并等待直到可见
-     * 
+     *
      * @param selector 元素选择器
      * @param timeout  超时时间（毫秒）
      * @return 元素对象，如果未找到则返回null
@@ -266,7 +264,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认超时时间和默认设备类型等待元素
-     * 
+     *
      * @param selector 元素选择器
      * @return 元素对象，如果未找到则返回null
      */
@@ -276,7 +274,7 @@ public class PlaywrightUtil {
 
     /**
      * 点击元素
-     * 
+     *
      * @param selector   元素选择器
      * @param deviceType 设备类型
      */
@@ -291,7 +289,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型点击元素
-     * 
+     *
      * @param selector 元素选择器
      */
     public static void click(String selector) {
@@ -300,7 +298,7 @@ public class PlaywrightUtil {
 
     /**
      * 填写表单字段
-     * 
+     *
      * @param selector   元素选择器
      * @param text       要输入的文本
      * @param deviceType 设备类型
@@ -316,7 +314,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型填写表单字段
-     * 
+     *
      * @param selector 元素选择器
      * @param text     要输入的文本
      */
@@ -326,7 +324,7 @@ public class PlaywrightUtil {
 
     /**
      * 模拟人类输入文本（逐字输入）
-     * 
+     *
      * @param selector   元素选择器
      * @param text       要输入的文本
      * @param minDelay   字符间最小延迟（毫秒）
@@ -355,7 +353,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型模拟人类输入文本
-     * 
+     *
      * @param selector 元素选择器
      * @param text     要输入的文本
      * @param minDelay 字符间最小延迟（毫秒）
@@ -367,7 +365,7 @@ public class PlaywrightUtil {
 
     /**
      * 获取元素文本
-     * 
+     *
      * @param selector   元素选择器
      * @param deviceType 设备类型
      * @return 元素文本内容
@@ -383,7 +381,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型获取元素文本
-     * 
+     *
      * @param selector 元素选择器
      * @return 元素文本内容
      */
@@ -393,7 +391,7 @@ public class PlaywrightUtil {
 
     /**
      * 获取元素属性值
-     * 
+     *
      * @param selector      元素选择器
      * @param attributeName 属性名
      * @param deviceType    设备类型
@@ -410,7 +408,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型获取元素属性值
-     * 
+     *
      * @param selector      元素选择器
      * @param attributeName 属性名
      * @return 属性值
@@ -421,7 +419,7 @@ public class PlaywrightUtil {
 
     /**
      * 截取页面截图并保存
-     * 
+     *
      * @param path       保存路径
      * @param deviceType 设备类型
      */
@@ -436,7 +434,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型截取页面截图并保存
-     * 
+     *
      * @param path 保存路径
      */
     public static void screenshot(String path) {
@@ -445,7 +443,7 @@ public class PlaywrightUtil {
 
     /**
      * 截取特定元素的截图
-     * 
+     *
      * @param selector   元素选择器
      * @param path       保存路径
      * @param deviceType 设备类型
@@ -461,7 +459,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型截取特定元素的截图
-     * 
+     *
      * @param selector 元素选择器
      * @param path     保存路径
      */
@@ -471,7 +469,7 @@ public class PlaywrightUtil {
 
     /**
      * 保存Cookie到文件
-     * 
+     *
      * @param path       保存路径
      * @param deviceType 设备类型
      */
@@ -505,7 +503,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型保存Cookie到文件
-     * 
+     *
      * @param path 保存路径
      */
     public static void saveCookies(String path) {
@@ -514,7 +512,7 @@ public class PlaywrightUtil {
 
     /**
      * 从文件加载Cookie
-     * 
+     *
      * @param path       Cookie文件路径
      * @param deviceType 设备类型
      */
@@ -563,7 +561,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型从文件加载Cookie
-     * 
+     *
      * @param path Cookie文件路径
      */
     public static void loadCookies(String path) {
@@ -572,63 +570,30 @@ public class PlaywrightUtil {
 
     /**
      * 执行JavaScript代码
-     * 
+     *
      * @param script     JavaScript代码
      * @param deviceType 设备类型
-     * @return 执行结果
      */
-    public static Object evaluate(String script, DeviceType deviceType) {
+    public static void evaluate(String script, DeviceType deviceType) {
         try {
-            return getPage(deviceType).evaluate(script);
+            getPage(deviceType).evaluate(script);
         } catch (PlaywrightException e) {
             log.error("执行JavaScript失败 (设备类型: {})", deviceType, e);
-            return null;
         }
     }
 
     /**
      * 使用默认设备类型执行JavaScript代码
-     * 
+     *
      * @param script JavaScript代码
-     * @return 执行结果
      */
-    public static Object evaluate(String script) {
-        return evaluate(script, defaultDeviceType);
-    }
-
-    /**
-     * 模拟随机用户行为
-     * 
-     * @param deviceType 设备类型
-     */
-    public static void simulateRandomUserBehavior(DeviceType deviceType) {
-        Random random = new Random();
-
-        // 随机滚动
-        int scrollY = random.nextInt(1001) - 500; // -500到500之间的随机值
-        getPage(deviceType).evaluate("window.scrollBy(0," + scrollY + ")");
-
-        sleepMillis(random.nextInt(500) + 200); // 200-700ms随机延迟
-
-        // 有5%的概率进行截图
-        if (random.nextInt(100) < 5) {
-            screenshot(ProjectRootResolver.rootPath + "/screenshots/random_" + System.currentTimeMillis() + ".png",
-                    deviceType);
-        }
-
-        log.debug("已模拟随机用户行为 (设备类型: {})", deviceType);
-    }
-
-    /**
-     * 使用默认设备类型模拟随机用户行为
-     */
-    public static void simulateRandomUserBehavior() {
-        simulateRandomUserBehavior(defaultDeviceType);
+    public static void evaluate(String script) {
+        evaluate(script, defaultDeviceType);
     }
 
     /**
      * 等待页面加载完成
-     * 
+     *
      * @param deviceType 设备类型
      */
     public static void waitForPageLoad(DeviceType deviceType) {
@@ -637,36 +602,8 @@ public class PlaywrightUtil {
     }
 
     /**
-     * 使用默认设备类型等待页面加载完成
-     */
-    public static void waitForPageLoad() {
-        waitForPageLoad(defaultDeviceType);
-    }
-
-    /**
-     * 检查元素是否存在
-     * 
-     * @param selector   元素选择器
-     * @param deviceType 设备类型
-     * @return 是否存在
-     */
-    public static boolean elementExists(String selector, DeviceType deviceType) {
-        return getPage(deviceType).locator(selector).count() > 0;
-    }
-
-    /**
-     * 使用默认设备类型检查元素是否存在
-     * 
-     * @param selector 元素选择器
-     * @return 是否存在
-     */
-    public static boolean elementExists(String selector) {
-        return elementExists(selector, defaultDeviceType);
-    }
-
-    /**
      * 检查元素是否可见
-     * 
+     *
      * @param selector   元素选择器
      * @param deviceType 设备类型
      * @return 是否可见
@@ -681,7 +618,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型检查元素是否可见
-     * 
+     *
      * @param selector 元素选择器
      * @return 是否可见
      */
@@ -691,7 +628,7 @@ public class PlaywrightUtil {
 
     /**
      * 选择下拉列表选项（通过文本）
-     * 
+     *
      * @param selector   选择器
      * @param optionText 选项文本
      * @param deviceType 设备类型
@@ -702,7 +639,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型选择下拉列表选项（通过文本）
-     * 
+     *
      * @param selector   选择器
      * @param optionText 选项文本
      */
@@ -712,7 +649,7 @@ public class PlaywrightUtil {
 
     /**
      * 选择下拉列表选项（通过值）
-     * 
+     *
      * @param selector   选择器
      * @param value      选项值
      * @param deviceType 设备类型
@@ -723,7 +660,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型选择下拉列表选项（通过值）
-     * 
+     *
      * @param selector 选择器
      * @param value    选项值
      */
@@ -733,7 +670,7 @@ public class PlaywrightUtil {
 
     /**
      * 获取当前页面标题
-     * 
+     *
      * @param deviceType 设备类型
      * @return 页面标题
      */
@@ -743,7 +680,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型获取当前页面标题
-     * 
+     *
      * @return 页面标题
      */
     public static String getTitle() {
@@ -752,7 +689,7 @@ public class PlaywrightUtil {
 
     /**
      * 获取当前页面URL
-     * 
+     *
      * @param deviceType 设备类型
      * @return 页面URL
      */
@@ -762,7 +699,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型获取当前页面URL
-     * 
+     *
      * @return 页面URL
      */
     public static String getUrl() {
@@ -771,72 +708,65 @@ public class PlaywrightUtil {
 
     /**
      * 初始化Stealth模式（使浏览器更难被检测为自动化工具）
-     * 
+     * 增强版本，集成SeleniumUtil的反检测功能
+     *
      * @param deviceType 设备类型
      */
     public static void initStealth(DeviceType deviceType) {
-        BrowserContext context;
-
-        // 根据设备类型创建相应的上下文
+        // 获取当前页面，不重新创建上下文和页面
+        Page page = getPage(deviceType);
+        
+        // 为现有上下文设置额外的HTTP头
+        BrowserContext context = getContext(deviceType);
         if (deviceType == DeviceType.DESKTOP) {
-            // 桌面设备上下文
-            context = BROWSER.newContext(new Browser.NewContextOptions()
-                    .setViewportSize(1920, 1080)
-                    .setUserAgent(
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36")
-                    .setJavaScriptEnabled(true)
-                    .setBypassCSP(true)
-                    .setExtraHTTPHeaders(Map.of(
-                            "sec-ch-ua", "\"Chromium\";v=\"135\", \"Not A(Brand\";v=\"99\"",
-                            "sec-ch-ua-mobile", "?0",
-                            "sec-ch-ua-platform", "\"Windows\"",
-                            "sec-fetch-dest", "document",
-                            "sec-fetch-mode", "navigate",
-                            "sec-fetch-site", "same-origin",
-                            "accept-language", "zh-CN,zh;q=0.9,en;q=0.8")));
-
-            // 更新全局上下文
-            DESKTOP_CONTEXT = context;
-            // 创建页面
-            DESKTOP_PAGE = DESKTOP_CONTEXT.newPage();
+            context.setExtraHTTPHeaders(Map.of(
+                    "sec-ch-ua", "\"Google Chrome\";v=\"135\", \"Not-A.Brand\";v=\"8\", \"Chromium\";v=\"135\"",
+                    "sec-ch-ua-mobile", "?0",
+                    "sec-ch-ua-platform", "\"macOS\"",
+                    "accept-language", "zh-CN,zh;q=0.9",
+                    "referer", "https://www.zhipin.com/",
+                    "sec-fetch-dest", "document",
+                    "sec-fetch-mode", "navigate",
+                    "sec-fetch-site", "same-origin"));
         } else {
-            // 移动设备上下文
-            context = BROWSER.newContext(new Browser.NewContextOptions()
-                    .setViewportSize(375, 812)
-                    .setDeviceScaleFactor(3.0)
-                    .setIsMobile(true)
-                    .setHasTouch(true)
-                    .setUserAgent(
-                            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1")
-                    .setJavaScriptEnabled(true)
-                    .setBypassCSP(true)
-                    .setExtraHTTPHeaders(Map.of(
-                            "sec-ch-ua", "\"Chromium\";v=\"135\", \"Not A(Brand\";v=\"99\"",
-                            "sec-ch-ua-mobile", "?1",
-                            "sec-ch-ua-platform", "\"iOS\"",
-                            "sec-fetch-dest", "document",
-                            "sec-fetch-mode", "navigate",
-                            "sec-fetch-site", "same-origin",
-                            "accept-language", "zh-CN,zh;q=0.9,en;q=0.8")));
-
-            // 更新全局上下文
-            MOBILE_CONTEXT = context;
-            // 创建页面
-            MOBILE_PAGE = MOBILE_CONTEXT.newPage();
+            context.setExtraHTTPHeaders(Map.of(
+                    "sec-ch-ua", "\"Chromium\";v=\"135\", \"Not A(Brand\";v=\"99\"",
+                    "sec-ch-ua-mobile", "?1",
+                    "sec-ch-ua-platform", "\"iOS\"",
+                    "accept-language", "zh-CN,zh;q=0.9",
+                    "sec-fetch-dest", "document",
+                    "sec-fetch-mode", "navigate",
+                    "sec-fetch-site", "same-origin"));
         }
 
-        // 获取当前页面
-        Page page = getPage(deviceType);
+        // 注入反检测脚本（从SeleniumUtil移植）
+        String stealthScript = """
+                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_JSON;
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Object;
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Proxy;
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Window;
+                window.navigator.chrome = { runtime: {} };
+                Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh']});
+                Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3]});
+                Object.defineProperty(navigator, 'injected', {get: () => 123});
+                """;
+        
+        page.addInitScript(stealthScript);
 
-        // 执行stealth.min.js（需要事先准备此文件）
+        // 如果有stealth.min.js文件，也尝试加载
         try {
             String stealthJs = new String(
-                    Files.readAllBytes(Paths.get(ProjectRootResolver.rootPath + "/src/main/resources/stealth.min.js")));
+                    Files.readAllBytes(Paths.get("src/main/resources/stealth.min.js")));
             page.addInitScript(stealthJs);
-            log.info("已启用Stealth模式 (设备类型: {})", deviceType);
+            log.info("已加载stealth.min.js文件");
         } catch (IOException e) {
-            log.error("启用Stealth模式失败，无法加载stealth.min.js (设备类型: {})", deviceType, e);
+            log.info("未找到stealth.min.js文件，使用内置反检测脚本");
         }
+        log.info("已启用增强Stealth模式 (设备类型: {})", deviceType);
     }
 
     /**
@@ -847,8 +777,38 @@ public class PlaywrightUtil {
     }
 
     /**
+     * 设置默认请求头（从SeleniumUtil移植）
+     *
+     * @param deviceType 设备类型
+     */
+    public static void setDefaultHeaders(DeviceType deviceType) {
+        BrowserContext context = getContext(deviceType);
+        
+        Map<String, String> headers = Map.of(
+                "sec-ch-ua", "\"Google Chrome\";v=\"135\", \"Not-A.Brand\";v=\"8\", \"Chromium\";v=\"135\"",
+                "sec-ch-ua-mobile", deviceType == DeviceType.MOBILE ? "?1" : "?0",
+                "sec-ch-ua-platform", deviceType == DeviceType.MOBILE ? "\"iOS\"" : "\"macOS\"",
+                "user-agent", deviceType == DeviceType.MOBILE ? 
+                    "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1" :
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+                "accept-language", "zh-CN,zh;q=0.9",
+                "referer", "https://www.zhipin.com/"
+        );
+        
+        context.setExtraHTTPHeaders(headers);
+        log.info("已设置默认请求头 (设备类型: {})", deviceType);
+    }
+
+    /**
+     * 使用默认设备类型设置默认请求头
+     */
+    public static void setDefaultHeaders() {
+        setDefaultHeaders(defaultDeviceType);
+    }
+
+    /**
      * 获取当前设备类型的Page对象
-     * 
+     *
      * @param deviceType 设备类型
      * @return 对应的Page对象
      */
@@ -858,7 +818,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型获取Page对象
-     * 
+     *
      * @return 对应的Page对象
      */
     public static Page getPageObject() {
@@ -867,7 +827,7 @@ public class PlaywrightUtil {
 
     /**
      * 设置自定义Cookie
-     * 
+     *
      * @param name       Cookie名称
      * @param value      Cookie值
      * @param domain     Cookie域
@@ -878,7 +838,7 @@ public class PlaywrightUtil {
      * @param deviceType 设备类型
      */
     public static void setCookie(String name, String value, String domain, String path,
-            Double expires, Boolean secure, Boolean httpOnly, DeviceType deviceType) {
+                                 Double expires, Boolean secure, Boolean httpOnly, DeviceType deviceType) {
         com.microsoft.playwright.options.Cookie cookie = new com.microsoft.playwright.options.Cookie(name, value);
         cookie.domain = domain;
         cookie.path = path;
@@ -904,7 +864,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型设置自定义Cookie
-     * 
+     *
      * @param name     Cookie名称
      * @param value    Cookie值
      * @param domain   Cookie域
@@ -914,13 +874,13 @@ public class PlaywrightUtil {
      * @param httpOnly 是否仅HTTP（可选）
      */
     public static void setCookie(String name, String value, String domain, String path,
-            Double expires, Boolean secure, Boolean httpOnly) {
+                                 Double expires, Boolean secure, Boolean httpOnly) {
         setCookie(name, value, domain, path, expires, secure, httpOnly, defaultDeviceType);
     }
 
     /**
      * 简化的设置Cookie方法
-     * 
+     *
      * @param name       Cookie名称
      * @param value      Cookie值
      * @param domain     Cookie域
@@ -933,7 +893,7 @@ public class PlaywrightUtil {
 
     /**
      * 使用默认设备类型的简化设置Cookie方法
-     * 
+     *
      * @param name   Cookie名称
      * @param value  Cookie值
      * @param domain Cookie域
@@ -941,5 +901,50 @@ public class PlaywrightUtil {
      */
     public static void setCookie(String name, String value, String domain, String path) {
         setCookie(name, value, domain, path, null, null, null, defaultDeviceType);
+    }
+
+    /**
+     * 检查Cookie文件是否有效（从SeleniumUtil移植）
+     *
+     * @param cookiePath Cookie文件路径
+     * @return 文件是否存在
+     */
+    public static boolean isCookieValid(String cookiePath) {
+        return Files.exists(Paths.get(cookiePath));
+    }
+
+    /**
+     * 带错误消息的元素查找（从SeleniumUtil移植）
+     *
+     * @param selector    元素选择器
+     * @param message     错误消息
+     * @param deviceType  设备类型
+     * @return 元素对象的Optional包装
+     */
+    public static Optional<Locator> findElementWithMessage(String selector, String message, DeviceType deviceType) {
+        try {
+            Locator locator = getPage(deviceType).locator(selector);
+            // 检查元素是否存在
+            if (locator.count() > 0) {
+                return Optional.of(locator);
+            } else {
+                log.error(message);
+                return Optional.empty();
+            }
+        } catch (Exception e) {
+            log.error(message + ": " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 使用默认设备类型的带错误消息的元素查找
+     *
+     * @param selector 元素选择器
+     * @param message  错误消息
+     * @return 元素对象的Optional包装
+     */
+    public static Optional<Locator> findElementWithMessage(String selector, String message) {
+        return findElementWithMessage(selector, message, defaultDeviceType);
     }
 }

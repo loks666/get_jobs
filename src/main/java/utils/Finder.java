@@ -1,4 +1,4 @@
-package boss;
+package utils;
 
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
@@ -11,8 +11,6 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import utils.Constant;
-import utils.SeleniumUtil;
 
 import java.time.Duration;
 import java.util.List;
@@ -28,8 +26,8 @@ import java.util.Optional;
  * - WAIT.until(ExpectedConditions.presenceOfElementLocated(By.xpath("...")))
  * - SeleniumUtil.findElement("...", "")
  */
-public class BossElementFinder {
-    private static final Logger log = LoggerFactory.getLogger(BossElementFinder.class);
+public class Finder {
+    private static final Logger log = LoggerFactory.getLogger(Finder.class);
     private static final WebDriver driver = Constant.CHROME_DRIVER;
     private static final int DEFAULT_TIMEOUT_SECONDS = 10;
 
