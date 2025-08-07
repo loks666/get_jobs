@@ -51,7 +51,6 @@
             <version>1.2.3</version>
         </dependency>
 
-
         <dependency>
             <groupId>com.microsoft.playwright</groupId>
             <artifactId>playwright</artifactId>
