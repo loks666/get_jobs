@@ -8,8 +8,6 @@ public class Locators {
     // 主页相关元素
     public static final String LOGIN_BTN = "//li[@class='nav-figure']";
     public static final String LOGIN_SCAN_SWITCH = "//div[@class='btn-sign-switch ewm-switch']";
-    public static final String LOGIN_SUCCESS_HEADER = "//*[@id=\"header\"]/div[1]/div[1]/a";
-    public static final String LOGIN_SUCCESS_INDICATOR = "//*[@id=\"wrap\"]/div[2]/div[1]/div/div[1]/a[2]";
 
     /**
      * 搜索结果页相关元素
