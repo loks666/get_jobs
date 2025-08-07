@@ -99,6 +99,9 @@ public class BossConfig {
      */
     private String waitTime;
 
+    /**
+     * HR未上线状态
+     */
     private List<String> deadStatus;
 
     @SneakyThrows
