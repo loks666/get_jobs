@@ -2,48 +2,21 @@
 boss:
   debugger: false # 开发者模式，默认为false即可
   sayHi: "您好,我有8年工作经验,还有AIGC大模型、Java,Python,Golang和运维的相关经验,希望应聘这个岗位,期待可以与您进一步沟通,谢谢！" #必须要关闭boss的自动打招呼
-  keywords: [ "Java"  ] # 需要搜索的职位,会依次投递
+  keywords: [ "大模型","Python","Golang","Java" ] # 需要搜索的职位,会依次投递
   industry: [ "不限" ] # 公司行业，只能选三个，相关代码枚举的部分，如果需要其他的需要自己找
-  cityCode: [ "广州" ] # 只列举了部分,如果没有的需要自己找：目前支持的：全国 北京 上海 杭州 广州 深圳 成都 天津
-  customCityCode:
-    "佛山": "101280800"
-    "珠海": "101280700"
+  cityCode: [ "上海" ] # 只列举了部分,如果没有的需要自己找：目前支持的：全国 北京 上海 杭州 广州 深圳 成都 天津
   experience: [ "5-10年" ] # 工作经验："应届毕业生", "1年以下", "1-3年", "3-5年", "5-10年", "10年以上"
   jobType: "不限" #求职类型："全职", "兼职"
-  salary: "10-20K" # 薪资（单选）："3K以下", "3-5K", "5-10K", "10-20K", "20-50K", "50K以上"
-  degree: [ "本科" ] # 学历: "初中及以下", "中专/中技", "高中", "大专", "本科", "硕士", "博士"
+  salary: "20-50K" # 薪资（单选）："3K以下", "3-5K", "5-10K", "10-20K", "20-50K", "50K以上"
+  degree: [ "不限" ] # 学历: "初中及以下", "中专/中技", "高中", "大专", "本科", "硕士", "博士"
   scale: [ "不限" ] # 公司规模："0-20人", "20-99人", "100-499人", "500-999人", "1000-9999人", "10000人以上"
   stage: [ "不限" ] # "未融资", "天使轮", "A轮", "B轮", "C轮", "D轮及以上", "已上市", "不需要融资"
   expectedSalary: [ 15,25 ] #期望薪资，单位为K，第一个数字为最低薪资，第二个数字为最高薪资，只填一个数字默认为最低薪水
   waitTime: 10 #每投递一个岗位，等待几秒
   filterDeadHR: true # 是否过滤不活跃HR,该选项会过滤半年前活跃的HR
   enableAI: false # 开启AI检测与自动生成打招呼语
-  sendImgResume: true # 是否发送图片简历
-  deadStatus: ["2周内活跃","本月活跃","2月内活跃","半年前活跃"] # 过滤掉HR状态
-mobileboss:
-  debugger: false # 开发者模式，默认为false即可
-  sayHi: "您好,我有8年工作经验,还有AIGC大模型、Java,Python,Golang和运维的相关经验,希望应聘这个岗位,期待可以与您进一步沟通,谢谢！" #必须要关闭boss的自动打招呼
-  keywords: [ "Java" ] # 需要搜索的职位,会依次投递
-  cityCode: [ "广州" ] # 只列举了部分,如果没有的需要自己找：目前支持的：全国 北京 上海 杭州 广州 深圳 成都 天津
-  customCityCode: 
-    "佛山": "c101280800"
-    "珠海": "c101280700"
-  experience: [ "5-10年" ] # 工作经验："应届毕业生", "1年以下", "1-3年", "3-5年", "5-10年", "10年以上"
-  salary: "10-20K" # 薪资（单选）："3K以下", "3-5K", "5-10K", "10-20K", "20-50K", "50K以上"
-  degree: [ "本科" ] # 学历: "初中及以下", "中专/中技", "高中", "大专", "本科", "硕士", "博士"
-  scale: [ "不限" ] # 公司规模："0-20人", "20-99人", "100-499人", "500-999人", "1000-9999人", "10000人以上"
-  expectedSalary: [ 15,25 ] #期望薪资，单位为K，第一个数字为最低薪资，第二个数字为最高薪资，只填一个数字默认为最低薪水
-  waitTime: 10 #每投递一个岗位，等待几秒
-  filterDeadHR: true # 是否过滤不活跃HR,该选项会过滤半年前活跃的HR
-  enableAI: false # 开启AI检测与自动生成打招呼语
-  sendImgResume: true # 是否发送图片简历
-  deadStatus: ["2周内活跃","本月活跃","2月内活跃","半年前活跃"] # 过滤掉HR状态
-  nextIntervalMinutes: 50
-  keyFilter: true # 是否使用关键词匹配岗位名称，true岗位名称不包含完整关键字就会过滤，false则不过滤直接使用boss搜索结果
-  ### 以下几个参数移动端查岗暂不支持
-  jobType: "不限" #求职类型："全职", "兼职"
-  industry: [ "不限" ] # 公司行业，只能选三个，相关代码枚举的部分，如果需要其他的需要自己找
-  stage: [ "不限" ] # "未融资", "天使轮", "A轮", "B轮", "C轮", "D轮及以上", "已上市", "不需要融资"
+  sendImgResume: false # 是否发送图片简历
+  deadStatus: [ "2周内活跃","本月活跃","2月内活跃","半年前活跃" ] # 过滤掉HR状态
 
 job51:
   jobArea: [ "上海" ]  #工作地区：目前只有【北京 成都 上海 广州 深圳】
@@ -68,9 +41,8 @@ zhilian:
   keywords: [ "AI", "Java", "Python", "Golang" ]
 
 ai:
-  introduce: "我熟练使用Spring Boot、Spring Cloud、Alibaba Cloud及其生态体系，擅长MySQL、Oracle、PostgreSQL等关系型数据库以及MongoDB、Redis等非关系型数据库。熟悉Docker、Kubernetes等容器化技术，掌握WebSocket、Netty等通信协议，拥有即时通讯系统的开发经验。熟练使用MyBatis-Plus、Spring Data、Django ORM等ORM框架，熟练使用Python、Golang开发，具备机器学习、深度学习及大语言模型的开发与部署经验。此外，我熟悉前端开发，涉及Vue、React、Nginx配置及PHP框架应用" #这是喂给AI的提示词，主要介绍自己的优势
+  introduce: "我熟练使用Java Python Golang语言进行开发，目前主要方向为AI开发，Java熟悉Spring Boot、Cloud生态体系，擅长MySQL、Oracle、PostgreSQL等关系型数据库以及MongoDB、Redis等非关系型数据库。熟悉Docker、Kubernetes等容器化技术，掌握WebSocket、Netty等通信协议，拥有即时通讯系统的开发经验。熟练使用MyBatis-Plus、Spring Data、Django ORM等ORM框架，熟练使用Python、Golang开发，具备机器学习、深度学习及大语言模型的开发与部署经验。此外，我熟悉前端开发，涉及Vue、React、Nginx配置及PHP框架应用" #这是喂给AI的提示词，主要介绍自己的优势
   prompt: "我目前在找工作,%s,我期望的的岗位方向是【%s】,目前我需要投递的岗位名称是【%s】,这个岗位的要求是【%s】,如果这个岗位和我的期望与经历基本符合，注意是基本符合，那么请帮我写一个给HR打招呼的文本发给我，如果这个岗位和我的期望经历完全不相干，直接返回false给我，注意只要返回我需要的内容即可，不要有其他的语气助词，重点要突出我和岗位的匹配度以及我的优势，我自己写的招呼语是：【%s】,你可以参照我自己写的根据岗位情况进行适当调整" #这是AI的提示词，可以自行修改
 
 bot:
-  is_send: true #开启企业微信消息推送
-  is_bark_send: true #开启Bark消息推送
+  is_send: false #开启企业微信消息推送

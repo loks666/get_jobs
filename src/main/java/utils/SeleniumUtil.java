@@ -50,7 +50,7 @@ public class SeleniumUtil {
         SeleniumUtil.getWait(WAIT_TIME);
     }
 
-    public static void getChromeDriver(){
+    public static void getChromeDriver() {
         getChromeDriver(false);
     }
 
@@ -63,16 +63,16 @@ public class SeleniumUtil {
         String osType = getOSType(osName);
         switch (osType) {
             case "windows":
-                options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");//TODO 注意: 这里需要修改为你的chrome的安装路径,不然启动会报错!!! 右键chrome图标右键，选择属性，复制路径
-                System.setProperty("webdriver.chrome.driver", ProjectRootResolver.rootPath+"/src/main/resources/chromedriver.exe");
+                options.setBinary("C:/Program Files/Google/Chrome/Application/chrome.exe");
+                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver.exe");
                 break;
             case "mac":
                 options.setBinary("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
-                System.setProperty("webdriver.chrome.driver", ProjectRootResolver.rootPath+"/src/main/resources/chromedriver");
+                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver");
                 break;
             case "linux":
                 options.setBinary("/usr/bin/google-chrome-stable");
-                System.setProperty("webdriver.chrome.driver", ProjectRootResolver.rootPath+"/src/main/resources/chromedriver-linux64/chromedriver");
+                System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver-linux64/chromedriver");
                 break;
             default:
                 log.info("你这什么破系统，没见过，别跑了!");
@@ -80,7 +80,7 @@ public class SeleniumUtil {
         }
         BossConfig config = BossConfig.init();
         if (config.getDebugger()) {
-            options.addExtensions(new File(ProjectRootResolver.rootPath+"/src/main/resources/xpathHelper.crx"));
+            options.addExtensions(new File("src/main/resources/xpathHelper.crx"));
         } else {
             options.addArguments("--disable-extensions");
         }
@@ -95,8 +95,6 @@ public class SeleniumUtil {
         options.addArguments("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36");
 
 
-
-
         CHROME_DRIVER = new ChromeDriver(options);
         CHROME_DRIVER.manage().window().maximize();
 
@@ -105,7 +103,7 @@ public class SeleniumUtil {
         ChromeOptions mobileOptions = new ChromeOptions();
         addMobileEmulationOptions(mobileOptions);
 
-        if(mobile){
+        if (mobile) {
             MOBILE_CHROME_DRIVER = new ChromeDriver(mobileOptions);
             MOBILE_CHROME_DRIVER.manage().window().maximize();
         }
@@ -114,6 +112,7 @@ public class SeleniumUtil {
 
     /**
      * 添加移动设备模拟配置到ChromeOptions
+     *
      * @param options ChromeOptions对象
      */
     private static void addMobileEmulationOptions(ChromeOptions options) {
@@ -192,7 +191,7 @@ public class SeleniumUtil {
     public static void loadCookie(String cookiePath) {
         // 首先清除由于浏览器打开已有的cookies
         CHROME_DRIVER.manage().deleteAllCookies();
-        if(Objects.nonNull(MOBILE_CHROME_DRIVER)){
+        if (Objects.nonNull(MOBILE_CHROME_DRIVER)) {
             MOBILE_CHROME_DRIVER.manage().deleteAllCookies();
         }
         // 从文件中读取JSONArray
@@ -230,7 +229,7 @@ public class SeleniumUtil {
                         .build();
                 try {
                     CHROME_DRIVER.manage().addCookie(cookie);
-                    if(Objects.nonNull(MOBILE_CHROME_DRIVER)){
+                    if (Objects.nonNull(MOBILE_CHROME_DRIVER)) {
                         MOBILE_CHROME_DRIVER.manage().addCookie(cookie);
                     }
                 } catch (Exception ignore) {
@@ -243,15 +242,15 @@ public class SeleniumUtil {
 
     public static void getActions() {
         ACTIONS = new Actions(Constant.CHROME_DRIVER);
-        if(Objects.nonNull(MOBILE_CHROME_DRIVER)){
+        if (Objects.nonNull(MOBILE_CHROME_DRIVER)) {
             MOBILE_ACTIONS = new Actions(MOBILE_CHROME_DRIVER);
         }
     }
 
     public static void getWait(long time) {
         WAIT = new WebDriverWait(Constant.CHROME_DRIVER, Duration.ofSeconds(time));
-        if(Objects.nonNull(MOBILE_CHROME_DRIVER)){
-            MOBILE_WAIT = new WebDriverWait(MOBILE_CHROME_DRIVER,Duration.ofSeconds(time));
+        if (Objects.nonNull(MOBILE_CHROME_DRIVER)) {
+            MOBILE_WAIT = new WebDriverWait(MOBILE_CHROME_DRIVER, Duration.ofSeconds(time));
         }
     }
 
@@ -294,31 +293,24 @@ public class SeleniumUtil {
         return Files.exists(Paths.get(cookiePath));
     }
 
-    public static void simulateRandomUserBehavior(boolean condition){
-        if(condition){
-            RandomUserBehaviorSimulator.simulateRandomUserBehavior();
-        }
-    }
-
-
     /**
      * 注入反自动化检测的脚本，隐藏 webdriver、语言、插件等特征字段。
      * 必须在 driver.get(url) 之前调用。
      */
     public static void injectStealthJs(DevTools devTools) {
         String script = """
-            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-            delete cdc_adoQpoasnfa76pfcZLmcfl_Array;
-            delete cdc_adoQpoasnfa76pfcZLmcfl_JSON;
-            delete cdc_adoQpoasnfa76pfcZLmcfl_Object;
-            delete cdc_adoQpoasnfa76pfcZLmcfl_Promise;
-            delete cdc_adoQpoasnfa76pfcZLmcfl_Proxy;
-            delete cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
-            delete cdc_adoQpoasnfa76pfcZLmcfl_Window;
-            window.navigator.chrome = { runtime: {} };
-            Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh']});
-            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3]});
-        """;
+                    Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                    delete cdc_adoQpoasnfa76pfcZLmcfl_Array;
+                    delete cdc_adoQpoasnfa76pfcZLmcfl_JSON;
+                    delete cdc_adoQpoasnfa76pfcZLmcfl_Object;
+                    delete cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+                    delete cdc_adoQpoasnfa76pfcZLmcfl_Proxy;
+                    delete cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+                    delete cdc_adoQpoasnfa76pfcZLmcfl_Window;
+                    window.navigator.chrome = { runtime: {} };
+                    Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh']});
+                    Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3]});
+                """;
 
         devTools.send(Page.addScriptToEvaluateOnNewDocument(
                 script,
@@ -344,8 +336,6 @@ public class SeleniumUtil {
         devTools.send(Network.enable(Optional.empty(), Optional.empty(), Optional.empty()));
         devTools.send(Network.setExtraHTTPHeaders(new Headers(headersMap)));
     }
-
-
 
 
 }
