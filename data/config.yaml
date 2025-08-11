@@ -12,36 +12,24 @@ boss:
   experience: [5-10年]
   salary: 10-20K
   checkStateOwned: false
-  sayHi: |
-    您好，我具备多年 Java Web 开发经验，完整经历从 JSP/Servlet 到 SSM（Spring + Spring MVC + MyBatis），再到 Spring Boot / Spring Cloud 微服务架构的演进过程，熟悉系统拆分、服务治理、配置中心、链路追踪等核心组件；掌握 Redis、Kafka、Nacos、Docker、Jenkins 等中间件与持续集成运维工具，具备微服务系统的全流程开发与交付能力。
-    前端方面，经历了从传统 HTML/CSS/JavaScript 开发，到 jQuery、Bootstrap 样式框架、ExtJS 富客户端框架，再到现代 Vue + Element-UI 的组件化开发模式，熟悉前后端分离架构与 RESTful API 调用，能够独立完成页面交互、组件封装及联调工作。
-    参与过支付、商城、物流仓储、订单中心等系统，具备持续集成及运维能力。独立完成需求、完成系统设计及开发实现，也具备任务拆解与团队协作推进能力。
+  sayHi: |-
+    拥有8年以上全栈开发经验（其中5年专注Java技术栈），专注于构建高可用、可扩展的微服务架构。精通Java技术生态，深度掌握Spring Boot、Spring Cloud微服务架构设计与实施，具备复杂业务系统拆分和服务治理的实战能力。
+
+    核心技能聚焦：
+
+    后端架构：精通Spring Boot/Cloud微服务开发，熟练掌握MySQL、MongoDB、Redis、RabbitMQ/Kafka消息队列、Nacos配置中心等中间件
+    工程化与运维：熟练运用Docker、Kubernetes容器化技术，精通Jenkins CI/CD流程搭建与优化，熟练掌握Git版本控制
+    全栈能力：具备Vue前端开发及RESTful API设计能力，高效完成前后端联调
   filterDeadHR: true
   stage: [不限]
   vipKey: zhangk
   deadStatus: [2周内活跃, 本月活跃, 3月内活跃, 2月内活跃, 半年前活跃]
   sendImgResume: true
   resumeImagePath: D:\Users\zhang\IdeaProjects\npe_get_jobs\src\main\resources\resume.jpg
-  resumeContent: |
-    个人简历内容模板：
-    
-    姓名：[您的姓名]
-    联系方式：[您的电话/邮箱]
-    工作经验：[您的工作年限]
-    
-    主要技能：
-    - Java开发经验丰富，熟练使用Spring Boot、Spring Cloud等框架
-    - 具备微服务架构设计与开发能力
-    - 熟悉MySQL、Redis等数据库技术
-    - 掌握前端技术Vue、React等
-    
-    工作经历：
-    [详细工作经历描述]
-    
-    项目经验：
-    [主要项目经验说明]
+  resumeContent: ''
   recommendJobs: false
   expectedSalary: [15, 25]
   jobType: 全职
   waitTime: 10
+  enableAIGreeting: false
 bot: {is_send: true}

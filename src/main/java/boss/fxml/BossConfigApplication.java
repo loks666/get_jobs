@@ -1,4 +1,4 @@
-package boss;
+package boss.fxml;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -15,6 +15,16 @@ public class BossConfigApplication extends Application {
         
         primaryStage.setTitle("Boss直聘配置");
         primaryStage.setScene(new Scene(root));
+        
+        // 设置窗口大小，避免被底部导航栏遮挡
+        primaryStage.setWidth(1400);
+        primaryStage.setHeight(900);
+        primaryStage.setMinWidth(1200);
+        primaryStage.setMinHeight(800);
+        
+        // 设置窗口居中显示
+        primaryStage.centerOnScreen();
+        
         primaryStage.show();
     }
 

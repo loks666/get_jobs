@@ -16,7 +16,7 @@
     </appender>
 
     <!-- GUI文本区域输出 -->
-    <appender name="TEXT_AREA" class="boss.TextAreaAppender">
+    <appender name="TEXT_AREA" class="boss.fxml.TextAreaAppender">
         <encoder>
             <charset>UTF-8</charset>
             <pattern>${log.pattern}</pattern>

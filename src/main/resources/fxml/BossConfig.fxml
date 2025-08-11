@@ -6,7 +6,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="boss.BossConfigController"
+            fx:controller="boss.fxml.BossConfigController"
             stylesheets="@../css/modern-style.css"
             style="-fx-background-color: linear-gradient(to bottom, #f8fafc, #e2e8f0);">
     
@@ -22,7 +22,7 @@
     
     <!-- Main Content -->
     <center>
-        <HBox spacing="20" style="-fx-padding: 20;">
+        <HBox spacing="20" style="-fx-padding: 20; -fx-max-height: 800;">
             
             <!-- Left Panel: Basic Configuration -->
             <VBox spacing="16" HBox.hgrow="ALWAYS" 
@@ -31,8 +31,8 @@
                 <Label text="🔧 基本配置" 
                        style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2d3748;"/>
                 
-                <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
-                    <VBox spacing="20">
+                <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS">
+                    <VBox spacing="20" style="-fx-max-height: 700;">
                         
                         <!-- Search Configuration Card -->
                         <VBox spacing="16" 
@@ -261,7 +261,10 @@
                 <Label text="⚙️ 智能设置" 
                        style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2d3748;"/>
                 
-                <!-- Feature Toggles Card -->
+                <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS">
+                    <VBox spacing="16" style="-fx-max-height: 700;">
+                
+                        <!-- Feature Toggles Card -->
                 <VBox spacing="16" 
                       style="-fx-background-color: #ebf8ff; -fx-background-radius: 8; -fx-padding: 16; -fx-border-color: #bee3f8; -fx-border-radius: 8;">
                     <Label text="🎛️ 功能开关" 
@@ -308,16 +311,6 @@
                             <Label text="接收推荐岗位" style="-fx-text-fill: #2d3748; -fx-font-weight: 500;">
                                 <tooltip>
                                     <Tooltip text="开启后将自动接收系统推荐的相关职位" />
-                                </tooltip>
-                            </Label>
-                        </HBox>
-                        
-                        <HBox spacing="12" alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.rowIndex="4">
-                            <CheckBox fx:id="h5JobsCheckBox" selected="false" disable="true" 
-                                     style="-fx-text-fill: #a0aec0; -fx-font-weight: 500;"/>
-                            <Label text="H5岗位 (已禁用)" style="-fx-text-fill: #a0aec0; -fx-font-weight: 500;">
-                                <tooltip>
-                                    <Tooltip text="H5端发布的职位（功能已禁用）" />
                                 </tooltip>
                             </Label>
                         </HBox>
@@ -421,18 +414,20 @@
                     </VBox>
                 </VBox>
                 
-                <!-- Action Button -->
-                <Button text="🚀 保存配置并开始执行" onAction="#handleSaveAndStart" 
-                        maxWidth="Infinity"
-                        style="-fx-background-color: linear-gradient(to right, #48bb78, #38a169); -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 16; -fx-effect: dropshadow(gaussian, rgba(72,187,120,0.3), 10, 0, 0, 3);">
-                    <tooltip>
-                        <Tooltip text="保存当前配置并开始执行自动投递任务" />
-                    </tooltip>
-                </Button>
+                        <!-- Action Button -->
+                        <Button text="🚀 保存配置并开始执行" onAction="#handleSaveAndStart" 
+                                maxWidth="Infinity"
+                                style="-fx-background-color: linear-gradient(to right, #48bb78, #38a169); -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 16; -fx-effect: dropshadow(gaussian, rgba(72,187,120,0.3), 10, 0, 0, 3);">
+                            <tooltip>
+                                <Tooltip text="保存当前配置并开始执行自动投递任务" />
+                            </tooltip>
+                        </Button>
+                    </VBox>
+                </ScrollPane>
             </VBox>
             
             <!-- Right Panel: Console Log -->
-            <VBox spacing="16" HBox.hgrow="ALWAYS" 
+            <VBox fx:id="logPanel" spacing="16" HBox.hgrow="ALWAYS" 
                   style="-fx-background-color: white; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 15, 0, 0, 5); -fx-padding: 24;">
                 
                 <HBox spacing="12" alignment="CENTER_LEFT">
@@ -447,6 +442,7 @@
                           wrapText="true" 
                           editable="false" 
                           VBox.vgrow="ALWAYS"
+                          prefRowCount="20"
                           style="-fx-background-color: #1a202c; -fx-text-fill: #e2e8f0; -fx-background-radius: 8; -fx-border-radius: 8; -fx-font-family: 'JetBrains Mono', 'Consolas', monospace; -fx-font-size: 13px; -fx-padding: 16;" />
             </VBox>
         </HBox>

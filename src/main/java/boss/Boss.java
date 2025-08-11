@@ -3,6 +3,7 @@ package boss;
 
 import ai.AiFilter;
 import ai.UnifiedAiService;
+import boss.fxml.BossConfigApplication;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
@@ -13,7 +14,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 import utils.ConfigFileUtil;
 import utils.Job;
 import utils.JobUtils;

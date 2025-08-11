@@ -1,5 +1,7 @@
-package boss;
+package boss.fxml;
 
+import boss.Boss;
+import boss.BossConfig;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -63,8 +65,6 @@ public class BossConfigController {
     @FXML
     private CheckBox recommendJobsCheckBox;
     @FXML
-    private CheckBox h5JobsCheckBox;
-    @FXML
     private CheckBox checkStateOwnedCheckBox;
     @FXML
     private TextField vipKeyField;
@@ -80,6 +80,8 @@ public class BossConfigController {
     private VBox customCityCodeContainer;
     @FXML
     private VBox deadStatusContainer;
+    @FXML
+    private VBox logPanel;
     private List<HBox> customCityCodeRows = new ArrayList<>();
     private List<TextField> deadStatusFields = new ArrayList<>();
 
@@ -112,6 +114,9 @@ public class BossConfigController {
 
         // 优化所有Tooltip的显示速度
         optimizeTooltips();
+        
+        // 设置调试模式监听器，控制日志面板的显示/隐藏
+        setupDebugModeListener();
     }
 
     private void loadConfig() {
@@ -148,7 +153,6 @@ public class BossConfigController {
             sendImgResumeCheckBox.setSelected((Boolean) bossConfig.getOrDefault("sendImgResume", false));
             keyFilterCheckBox.setSelected((Boolean) bossConfig.getOrDefault("keyFilter", false));
             recommendJobsCheckBox.setSelected((Boolean) bossConfig.getOrDefault("recommendJobs", false));
-            h5JobsCheckBox.setSelected((Boolean) bossConfig.getOrDefault("h5Jobs", false));
             checkStateOwnedCheckBox.setSelected((Boolean) bossConfig.getOrDefault("checkStateOwned", false));
             vipKeyField.setText((String) bossConfig.getOrDefault("vipKey", ""));
             apiDomainField.setText((String) bossConfig.getOrDefault("apiDomain", ""));
@@ -262,7 +266,6 @@ public class BossConfigController {
             existingBossConfig.put("sendImgResume", sendImgResumeCheckBox.isSelected());
             existingBossConfig.put("keyFilter", keyFilterCheckBox.isSelected());
             existingBossConfig.put("recommendJobs", recommendJobsCheckBox.isSelected());
-            existingBossConfig.put("h5Jobs", h5JobsCheckBox.isSelected());
             existingBossConfig.put("checkStateOwned", checkStateOwnedCheckBox.isSelected());
             existingBossConfig.put("vipKey", vipKeyField.getText());
             existingBossConfig.put("apiDomain", apiDomainField.getText());
@@ -366,6 +369,27 @@ public class BossConfigController {
                 }
             } catch (Exception e) {
                 log.warn("优化Tooltip时出现错误: {}", e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 设置调试模式监听器，控制日志面板的显示/隐藏
+     */
+    private void setupDebugModeListener() {
+        // 根据初始状态设置日志面板的可见性
+        logPanel.setVisible(debuggerCheckBox.isSelected());
+        logPanel.setManaged(debuggerCheckBox.isSelected());
+        
+        // 添加调试模式复选框的监听器
+        debuggerCheckBox.selectedProperty().addListener((obs, oldValue, newValue) -> {
+            logPanel.setVisible(newValue);
+            logPanel.setManaged(newValue);
+            
+            if (newValue) {
+                log.info("调试模式已开启，日志面板已显示");
+            } else {
+                log.info("调试模式已关闭，日志面板已隐藏");
             }
         });
     }
