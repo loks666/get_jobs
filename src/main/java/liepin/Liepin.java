@@ -143,7 +143,7 @@ public class Liepin {
                 log.info("命中已排除公司：{}", companyName);
                 continue;
             }
-            if (CONTAINS_JOB_NAME.stream().noneMatch(jobName::contains)){
+            if (!CONTAINS_JOB_NAME.isEmpty() && CONTAINS_JOB_NAME.stream().noneMatch(jobName::contains)){
                 log.info("命中未包含的工作名：{}",jobName);
                 continue;
             }
