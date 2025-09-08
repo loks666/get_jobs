@@ -347,7 +347,7 @@ cd get_jobs
 
 - 近日已经有人反馈，有人拿着本项目免费开源的代码，在闲鱼等小红书各处售卖
 - 本项目代码完全开源免费，请勿上当受骗，请大家擦亮眼睛
-- 这是一个将本项目免费源码的网站，请避雷：http://yjzd.westpy.cn/  
+- 这是一个将本项目免费源码的网站  
   <img src="src/main/resources/images/骗子网站.png" alt="骗子网站">
   <img src="src/main/resources/images/pian1.png" alt="骗子1">
   <img src="src/main/resources/images/pian2.png" alt="骗子2">
