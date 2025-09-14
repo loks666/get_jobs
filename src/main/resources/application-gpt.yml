@@ -1,0 +1,119 @@
+spring:
+  ai:
+    openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      chat:
+        # 启用OpenAI聊天模型
+        enabled: true
+        options:
+          # 默认使用的模型
+          model: ${OPENAI_MODEL:gpt-4o}
+          # 默认温度参数 (1.0.0-M6版本使用Double类型)
+          temperature: 0.7
+          # 默认最大token数
+          max-tokens: 2000
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:xxx}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      chat:
+        # 启用OpenAI聊天模型
+        enabled: true
+        options:
+          # 默认使用的模型
+          model: ${DEEPSEEK_MODEL:deepseek-chat}
+          # 默认温度参数 (1.0.0-M6版本使用Double类型)
+          temperature: 0.7
+          # 默认最大token数
+          max-tokens: 5000
+
+# 提示词配置管理
+pure:
+  admin:
+    # 简历优化提示词配置
+    resume-optimization:
+      prompts:
+        # 企业分析助手提示词
+        enterprise-analysis-system: |
+          你是一个专业的企业分析助手。请根据给定的企业名称，判断该企业是否为国有企业。
+          只需要返回true或false，true表示是国企，false表示不是国企。
+          判断依据：
+          1. 企业名称中包含'国有'、'集团'等关键词；
+          2. 是否为中央或地方政府直接或间接控股；
+          3. 是否为国资委管理的企业；
+          4. 是否为行政机构改制的企业。
+          请严格按照这些标准进行判断。
+        enterprise-analysis-user: "请判断以下企业是否为国有企业：%s"
+        
+        # 岗位匹配分析助手提示词
+        job-match-analysis-system: |
+          你是一个专业的岗位匹配分析助手。请根据给定的岗位关键字和岗位描述，判断岗位描述是否与岗位关键字匹配。
+          只需要返回true或false，true表示匹配，false表示不匹配。
+          判断依据：
+          1. 岗位描述中是否包含岗位关键字中的核心技能要求；
+          2. 岗位职责是否与关键字所述的工作内容相符；
+          3. 技术栈、工具要求是否一致；
+          4. 工作性质和行业领域是否匹配。
+          请基于这些标准进行严格判断。
+        job-match-analysis-user: |
+          请判断以下岗位描述是否与岗位关键字匹配：
+
+          岗位关键字：%s
+
+          岗位描述：%s
+        
+
+        # 求职问候语用户消息模板
+        job-greeting-user: |
+          岗位描述：
+          %s
+
+          个人简历：
+          %s
+
+          请根据以上岗位描述和个人简历，生成个性化的求职问候语。
+
+        
+
+        # 求职问候语系统提示词
+        job-greeting-system: |
+          你是一位专业的求职顾问，专门帮助求职者根据岗位要求和个人简历生成个性化的求职问候语。
+
+          请严格按照以下要求：
+          1. 风格要求：%s
+          2. 生成%d个不同的问候语选项
+          3. 每个问候语都要：
+             - 保持真实谦逊，避免过度包装
+             - 针对岗位关键要求进行合理匹配
+             - 结合简历中的实际技能和经验
+             - 突出学习能力和工作积极性
+             - 长度控制在80-150字之间
+             - 使用朴实的语言，避免空洞套话
+             - 体现求职诚意和职业素养
+
+          请用JSON格式返回结果，包含以下字段：
+          {
+            "greetings": [
+              {
+                "content": "问候语内容",
+                "highlightedSkills": ["技能1", "技能2"],
+                "matchedRequirements": ["匹配要求1", "匹配要求2"],
+                "recommendedScene": "推荐使用场景"
+              }
+            ],
+            "matchAnalysis": {
+              "overallMatchRate": 匹配度百分比,
+              "matchedSkills": ["匹配的技能"],
+              "missingSkills": ["可提升的技能"],
+              "strengths": ["优势亮点"],
+              "suggestions": ["改进建议"]
+            }
+          }
+
+
+
+
+
+
+
+
+

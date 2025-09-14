@@ -12,95 +12,117 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.5.0</version>
+        <version>3.2.12</version>
     </parent>
 
     <properties>
+        <spring-ai.version>1.0.0-M6</spring-ai.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
     </properties>
 
+
     <dependencies>
+        <!-- ========================= -->
+        <!-- Spring Boot 基础与 Web 层 -->
+        <!-- ========================= -->
+        <!-- Spring Boot 基础设施（日志、配置、校验等） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <!-- Web 支持（MVC、Jackson、Tomcat 等） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!-- 嵌入式 Tomcat（通常已被 spring-boot-starter-web 间接引入，可视情况保留） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </dependency>
+        <!-- 数据访问：JPA -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- ===================== -->
+        <!-- 数据库与内存数据库 -->
+        <!-- ===================== -->
+        <!-- 内存数据库 H2（仅运行期使用） -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- ========================= -->
+        <!-- JSON/YAML 处理与序列化 -->
+        <!-- ========================= -->
+        <!-- Jackson 核心与绑定（对象与 JSON 互转） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <!-- Jackson YAML 数据格式支持 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+        <!-- 读取 YAML 配置（底层解析器） -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+        </dependency>
+        <!-- 轻量 JSON 处理（可用于简单 JSON 构造/解析） -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20231013</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.30</version>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.11</version>
-        </dependency>
-
-
-        <dependency>
-            <groupId>com.microsoft.playwright</groupId>
-            <artifactId>playwright</artifactId>
-            <version>1.51.0</version>
-        </dependency>
-
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.12.3</version>
-        </dependency>
-
-        <!-- Apache HttpClient 用于发送 HTTP 请求 -->
+        <!-- ================= -->
+        <!-- HTTP/网络客户端 -->
+        <!-- ================= -->
+        <!-- Apache HttpClient Fluent API（简化 HTTP 调用） -->
         <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
             <artifactId>httpclient5-fluent</artifactId>
             <version>5.1</version>
         </dependency>
-
-        <!-- dotenv-java 用于加载 .env 文件中的环境变量 -->
-        <dependency>
-            <groupId>io.github.cdimascio</groupId>
-            <artifactId>dotenv-java</artifactId>
-            <version>2.2.0</version>
-        </dependency>
-
-
-        <!-- OkHttp3 -->
+        <!-- OkHttp（高性能 HTTP 客户端） -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
             <version>4.12.0</version>
         </dependency>
 
-        <!-- Jackson for JSON processing -->
+        <!-- ===================== -->
+        <!-- AI/大模型 接入能力 -->
+        <!-- ===================== -->
+        <!-- Spring AI OpenAI Starter（通过 Spring 方式接入 LLM 服务） -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.16.1</version>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+            <version>${spring-ai.version}</version>
         </dependency>
 
+        <!-- ============ -->
+        <!-- 工具与辅助 -->
+        <!-- ============ -->
+        <!-- 环境变量读取（支持 .env 文件） -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>2.16.1</version>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>2.2.0</version>
         </dependency>
-
-        <!-- Lombok -->
+        <!-- 注解处理：仅编译期生效，不参与打包 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -108,25 +130,31 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- JavaFX依赖 -->
+        <!-- ===================== -->
+        <!-- 桌面 UI（JavaFX）   -->
+        <!-- ===================== -->
+        <!-- JavaFX 控件 -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>21</version>
         </dependency>
+        <!-- JavaFX FXML 支持 -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
             <version>21</version>
         </dependency>
-        
-        <!-- SnakeYAML依赖 -->
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>1.33</version>
-        </dependency>
 
+        <!-- ===================== -->
+        <!-- 自动化/浏览器驱动   -->
+        <!-- ===================== -->
+        <!-- Playwright（浏览器自动化/抓取/端到端测试） -->
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>1.51.0</version>
+        </dependency>
     </dependencies>
 
     <distributionManagement>
@@ -147,6 +175,7 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
+                    <release>21</release>
                 </configuration>
             </plugin>
             <!-- Maven Exec Plugin -->
@@ -155,16 +184,16 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
-                    <mainClass>StartAll</mainClass>
+                    <mainClass>getjobs.GetJobsApplication</mainClass>
                 </configuration>
             </plugin>
 
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.5.0</version>
+                <version>3.2.12</version>
                 <configuration>
-                    <mainClass>boss.Boss</mainClass>
+                    <mainClass>getjobs.GetJobsApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

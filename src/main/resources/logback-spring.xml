@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- <configuration scan="true" scanPeriod="60 seconds" debug="false"> -->
+<!-- 关闭 scan，避免重复初始化 -->
+<configuration scan="false" debug="false">
+    <!-- Logback获取SkyWalking的全局唯一标识 trace-id 记录到日志中 -->
+    <conversionRule conversionWord="trace_id"
+                    converterClass="org.apache.skywalking.apm.toolkit.log.logback.v1.x.LogbackPatternConverter"/>
+
+    <springProperty scope="context" name="SERVER_IP" source="spring.cloud.client.ip-address"/>
+    <springProperty scope="context" name="SERVER_NAME" source="spring.application.name" />
+    <springProperty scope="context" name="SERVER_PORT" source="server.port"/>
+
+
+    <!-- 日志文件保存路径 -->
+    <property name="LOG_HOME" value="${user.home}/logs"/>
+    <!--彩色日志定义-->
+    <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度, %msg：日志消息，%n是换行符, %trace_id: 调用链-->
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%date{yyyy-MM-dd HH:mm:ss.SSS} [${SERVER_IP}:${SERVER_PORT}] [%level] %([%thread]) [${SERVER_NAME},%X{traceId},%X{spanId}] -- %cyan(%logger)[%L]: %msg%n"/>
+
+
+    <!-- nacos日志配置-->
+    <!--<property scope="context" name="com.alibaba.nacos.naming.log.level" value="off"/>
+    <property scope="context" name="com.alibaba.nacos.config.log.level" value="off"/>
+    <property scope="context" name="nacos.logging.path" value="logs/nacos"/>-->
+
+    <!-- 关闭nacos的日志输出 -->
+    <!--<logger name="com.alibaba.nacos" level="off"/>-->
+
+
+    <!--<contextName>${SERVER_NAME}</contextName>-->
+
+    <!--输出到控制台 ConsoleAppender-->
+    <appender name="CONSOLE_LOG_PATTERN" class="ch.qos.logback.core.ConsoleAppender">
+        <!--展示格式 layout-->
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>
+                <pattern>%d{HH:mm:ss.SSS} %contextName [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </pattern>
+        </layout>
+    </appender>
+
+    <springProfile name="dev,prod">
+        <springProperty name="ACCESS_LOG_FILE"
+                        source="logging.access_log_file" />
+        <!-- 控制台输出 -->
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+
+
+        <!-- 按照每天生成日志文件 -->
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <!--<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <FileNamePattern>${LOG_HOME}/${SERVER_NAME}-%d{yyyy-MM-dd}.log</FileNamePattern>
+                <MaxHistory>30</MaxHistory>
+            </rollingPolicy>-->
+            <!--日志文件最大的大小-->
+            <!--<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+                <MaxFileSize>50MB</MaxFileSize>
+            </triggeringPolicy>-->
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <!--日志文件输出的文件名-->
+                <FileNamePattern>${LOG_HOME}/${SERVER_NAME}-%d{yyyy-MM-dd}-%i.log</FileNamePattern>
+                <!--日志文件保留天数-->
+                <MaxHistory>30</MaxHistory>
+                <maxFileSize>50MB</maxFileSize>
+                <totalSizeCap>1GB</totalSizeCap>
+            </rollingPolicy>
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <!-- 异步输出至文件 -->
+        <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+            <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+            <discardingThreshold >0</discardingThreshold>
+            <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+            <queueSize>512</queueSize>
+            <appender-ref ref="STDOUT" />
+        </appender>
+
+
+        <!-- access log 日志配置 -->
+        <appender name="ACCESSLOGFILE"
+                  class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            </encoder>
+            <file>${ACCESS_LOG_FILE}</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>${ACCESS_LOG_FILE}_%d{yyyy-MM-dd}</fileNamePattern>
+                <maxHistory>100</maxHistory>
+                <totalSizeCap>1GB</totalSizeCap>
+            </rollingPolicy>
+        </appender>
+
+
+        <!--<appender name="FLUENT" class="com.sndyuk.logback.appender.FluentAppender">
+            <remoteHost>170.106.186.65</remoteHost>
+            <port>24224</port>
+            <tag>springboot-dev</tag>
+        </appender>-->
+
+        <!-- 输出SQL 到控制台和文件 -->
+        <!--<logger name="org.hibernate.SQL" additivity="false" level="DEBUG">
+            <appender-ref ref="STDOUT" />
+        </logger>-->
+
+        <!-- 输出SQL 的参数到控制台和文件 -->
+        <!--<logger name="org.hibernate.type.descriptor.sql.BasicBinder" additivity="false" level="TRACE" >
+            <appender-ref ref="STDOUT" />
+        </logger>-->
+
+
+        <logger name="com.dev" additivity="false" level="${logging.level.com.dev:-DEBUG}">
+            <appender-ref ref="STDOUT"/>
+            <appender-ref ref="FILE" />
+        </logger>
+
+        <logger name="org.apache.coyote" additivity="false" level="${logging.level.org.apache.coyote:-DEBUG}">
+            <appender-ref ref="FILE" />
+        </logger>
+
+        <root level="${logging.level.root:-INFO}">
+            <appender-ref ref="STDOUT"/>
+            <appender-ref ref="FILE"/>
+            <!--<appender-ref ref="FLUENT"/>-->
+            <!--<appender-ref ref="ACCESSLOGFILE"/>-->
+        </root>
+    </springProfile>
+
+
+    <!-- 应用运行环境为 dev 时候使用的日志 -->
+    <springProfile name="prod">
+        <!-- 按照每天生成日志文件 -->
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <!--<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <FileNamePattern>${LOG_HOME}/${SERVER_NAME}-%d{yyyy-MM-dd}.log</FileNamePattern>
+                <MaxHistory>30</MaxHistory>
+            </rollingPolicy>-->
+            <!--日志文件最大的大小-->
+            <!--<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+                <MaxFileSize>50MB</MaxFileSize>
+            </triggeringPolicy>-->
+
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <!--日志文件输出的文件名-->
+                <FileNamePattern>${LOG_HOME}/${SERVER_NAME}-%d{yyyy-MM-dd}-%i.log</FileNamePattern>
+                <!--日志文件保留天数-->
+                <MaxHistory>30</MaxHistory>
+                <maxFileSize>50MB</maxFileSize>
+                <totalSizeCap>20GB</totalSizeCap>
+            </rollingPolicy>
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="STDOUT"/>
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+
+</configuration>
