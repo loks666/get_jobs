@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Slf4j
 @EnableScheduling
 @SpringBootApplication
-@EntityScan("getjobs.entity")
+@EntityScan("getjobs.repository.entity")
 public class GetJobsApplication {
 
     public static void main(String[] args) {
