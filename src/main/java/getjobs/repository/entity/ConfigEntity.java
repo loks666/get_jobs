@@ -1,4 +1,4 @@
-package getjobs.entity;
+package getjobs.repository.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -44,6 +44,9 @@ public class ConfigEntity extends BaseEntity {
 
     @Column(name = "salary", length = 50)
     private String salary;
+
+    @Column(name = "expected_position", length = 200)
+    private String expectedPosition;
 
     @Convert(converter = JsonListStringConverter.class)
     @Column(name = "degree", columnDefinition = "TEXT")

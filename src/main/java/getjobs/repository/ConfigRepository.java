@@ -1,6 +1,6 @@
 package getjobs.repository;
 
-import getjobs.entity.ConfigEntity;
+import getjobs.repository.entity.ConfigEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

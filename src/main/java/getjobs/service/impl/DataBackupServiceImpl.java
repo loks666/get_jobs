@@ -2,8 +2,8 @@ package getjobs.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import getjobs.entity.ConfigEntity;
-import getjobs.entity.JobEntity;
+import getjobs.repository.entity.ConfigEntity;
+import getjobs.repository.entity.JobEntity;
 import getjobs.repository.ConfigRepository;
 import getjobs.repository.JobRepository;
 import getjobs.service.DataBackupService;

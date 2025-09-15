@@ -1,7 +1,7 @@
 package getjobs.service;
 
-import getjobs.dto.JobDTO;
-import getjobs.entity.JobEntity;
+import getjobs.modules.boss.dto.JobDTO;
+import getjobs.repository.entity.JobEntity;
 import getjobs.repository.JobRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

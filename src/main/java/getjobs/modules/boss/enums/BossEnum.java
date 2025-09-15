@@ -1,4 +1,4 @@
-package getjobs.enums;
+package getjobs.modules.boss.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.Getter;

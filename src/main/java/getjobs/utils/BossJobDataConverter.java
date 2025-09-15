@@ -2,8 +2,8 @@ package getjobs.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import getjobs.dto.JobDTO;
-import getjobs.entity.JobEntity;
+import getjobs.modules.boss.dto.JobDTO;
+import getjobs.repository.entity.JobEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

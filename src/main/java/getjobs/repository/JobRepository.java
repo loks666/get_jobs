@@ -1,6 +1,6 @@
 package getjobs.repository;
 
-import getjobs.entity.JobEntity;
+import getjobs.repository.entity.JobEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

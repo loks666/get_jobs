@@ -1,19 +1,21 @@
-package getjobs.service;
+package getjobs.modules.boss.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.openjson.JSONObject;
 import com.microsoft.playwright.*;
-import getjobs.dto.BossApiResponse;
-import getjobs.entity.JobEntity;
+import getjobs.modules.boss.dto.BossApiResponse;
+import getjobs.repository.entity.JobEntity;
 import getjobs.repository.JobRepository;
 import getjobs.utils.BossJobDataConverter;
 import getjobs.utils.PlaywrightUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PostConstruct;
+
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
@@ -638,10 +640,10 @@ public class BossApiMonitorService {
                 jobEntity.setJobAddress(jobInfo.getString("address"));
             }
             if (jobInfo.has("longitude")) {
-                jobEntity.setJobLongitude(jobInfo.getBigDecimal("longitude"));
+                jobEntity.setJobLongitude(new BigDecimal(jobInfo.getString("longitude")));
             }
             if (jobInfo.has("latitude")) {
-                jobEntity.setJobLatitude(jobInfo.getBigDecimal("latitude"));
+                jobEntity.setJobLatitude(new BigDecimal(jobInfo.getString("latitude")));
             }
             if (jobInfo.has("staticMapUrl") && !jobInfo.isNull("staticMapUrl")) {
                 jobEntity.setJobStaticMapUrl(jobInfo.getString("staticMapUrl"));

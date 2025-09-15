@@ -1,22 +1,24 @@
-package getjobs.service.impl;
+package getjobs.modules.boss.service.impl;
 
-import com.microsoft.playwright.*;
+import com.github.openjson.JSONArray;
+import com.github.openjson.JSONObject;
+import com.microsoft.playwright.ElementHandle;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.WaitForSelectorState;
-import getjobs.boss.BossElementFinder;
-import getjobs.boss.BossElementLocators;
-import getjobs.dto.BossConfigDTO;
+import getjobs.modules.boss.BossElementLocators;
+import getjobs.modules.boss.dto.BossConfigDTO;
+import getjobs.modules.boss.dto.JobDTO;
+import getjobs.repository.entity.ConfigEntity;
 import getjobs.enums.RecruitmentPlatformEnum;
+import getjobs.modules.boss.service.BossApiMonitorService;
+import getjobs.service.ConfigService;
 import getjobs.service.RecruitmentService;
-import getjobs.dto.JobDTO;
 import getjobs.utils.JobUtils;
 import getjobs.utils.PlaywrightUtil;
-import getjobs.service.ConfigService;
-import getjobs.service.BossApiMonitorService;
-import getjobs.entity.ConfigEntity;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
-import org.json.JSONArray;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -31,7 +33,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static getjobs.boss.BossElementLocators.*;
+import static getjobs.modules.boss.BossElementLocators.*;
 
 /**
  * Boss直聘招聘服务实现类
@@ -52,7 +54,6 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     private Set<String> blackRecruiters = new HashSet<>();
 
     private Set<String> blackJobs = new HashSet<>();
-    private Set<String> jobHrefSet = new HashSet<>();
 
     private final ConfigService configService;
     private final BossApiMonitorService bossApiMonitorService;
@@ -1084,10 +1085,10 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     private String getCurrentCookiesAsJson() {
         try {
             Page page = PlaywrightUtil.getPageObject();
-            List<com.microsoft.playwright.options.Cookie> cookies = page.context().cookies();
+            List<Cookie> cookies = page.context().cookies();
             JSONArray jsonArray = new JSONArray();
 
-            for (com.microsoft.playwright.options.Cookie cookie : cookies) {
+            for (Cookie cookie : cookies) {
                 JSONObject jsonObject = new JSONObject();
                 jsonObject.put("name", cookie.name);
                 jsonObject.put("value", cookie.value);

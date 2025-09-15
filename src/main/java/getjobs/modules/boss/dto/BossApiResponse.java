@@ -1,4 +1,4 @@
-package getjobs.dto;
+package getjobs.modules.boss.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;

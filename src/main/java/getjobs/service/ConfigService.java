@@ -1,6 +1,6 @@
 package getjobs.service;
 
-import getjobs.entity.ConfigEntity;
+import getjobs.repository.entity.ConfigEntity;
 
 public interface ConfigService {
 

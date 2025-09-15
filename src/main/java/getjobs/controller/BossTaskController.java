@@ -1,8 +1,8 @@
 package getjobs.controller;
 
-import getjobs.dto.BossConfigDTO;
-import getjobs.service.BossTaskService;
-import getjobs.service.BossTaskService.*;
+import getjobs.modules.boss.dto.BossConfigDTO;
+import getjobs.modules.boss.service.BossTaskService;
+import getjobs.modules.boss.service.BossTaskService.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

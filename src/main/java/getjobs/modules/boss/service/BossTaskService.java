@@ -1,12 +1,15 @@
-package getjobs.service;
+package getjobs.modules.boss.service;
 
-import getjobs.dto.BossConfigDTO;
+import getjobs.modules.boss.dto.BossConfigDTO;
 import getjobs.enums.RecruitmentPlatformEnum;
-import getjobs.dto.JobDTO;
-import getjobs.entity.JobEntity;
+import getjobs.modules.boss.dto.JobDTO;
+import getjobs.repository.entity.JobEntity;
 import getjobs.repository.JobRepository;
+import getjobs.service.JobService;
+import getjobs.service.PlaywrightManager;
+import getjobs.service.RecruitmentService;
+import getjobs.service.RecruitmentServiceFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;

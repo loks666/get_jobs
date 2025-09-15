@@ -1,7 +1,7 @@
-package getjobs.dto;
+package getjobs.modules.boss.dto;
 
-import getjobs.enums.BossEnum;
-import getjobs.entity.ConfigEntity;
+import getjobs.modules.boss.enums.BossEnum;
+import getjobs.repository.entity.ConfigEntity;
 import getjobs.repository.ConfigRepository;
 import getjobs.utils.SpringContextUtil;
 import lombok.Data;
@@ -29,6 +29,7 @@ public class BossConfigDTO {
     private String degree;
     private String scale;
     private String stage;
+    private String expectedPosition;
 
     // 可选：自定义城市编码映射
     private Map<String, String> customCityCode;
@@ -148,6 +149,7 @@ public class BossConfigDTO {
         dto.setCustomCityCode(entity.getCustomCityCode());
         dto.setJobType(entity.getJobType());
         dto.setSalary(entity.getSalary());
+        dto.setExpectedPosition(entity.getExpectedPosition());
 
         return dto;
     }

@@ -1,6 +1,6 @@
 package getjobs.service.impl;
 
-import getjobs.entity.ConfigEntity;
+import getjobs.repository.entity.ConfigEntity;
 import getjobs.repository.ConfigRepository;
 import getjobs.service.ConfigService;
 import org.springframework.stereotype.Service;

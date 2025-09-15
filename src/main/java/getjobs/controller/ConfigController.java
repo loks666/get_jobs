@@ -1,7 +1,7 @@
 package getjobs.controller;
 
-import getjobs.dto.BossConfigDTO;
-import getjobs.entity.ConfigEntity;
+import getjobs.modules.boss.dto.BossConfigDTO;
+import getjobs.repository.entity.ConfigEntity;
 import getjobs.service.ConfigService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -47,6 +47,7 @@ public class ConfigController {
         e.setExperience(wrap(dto.getExperience()));
         e.setJobType(dto.getJobType());
         e.setSalary(dto.getSalary());
+        e.setExpectedPosition(dto.getExpectedPosition());
         e.setDegree(wrap(dto.getDegree()));
         e.setScale(wrap(dto.getScale()));
         e.setStage(wrap(dto.getStage()));

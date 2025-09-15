@@ -1,4 +1,4 @@
-package getjobs.boss;
+package getjobs.modules.boss;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;

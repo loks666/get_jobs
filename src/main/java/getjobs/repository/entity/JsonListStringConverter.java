@@ -1,4 +1,4 @@
-package getjobs.entity;
+package getjobs.repository.entity;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

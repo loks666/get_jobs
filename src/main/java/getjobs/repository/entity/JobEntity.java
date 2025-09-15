@@ -1,4 +1,4 @@
-package getjobs.entity;
+package getjobs.repository.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;

@@ -1,9 +1,8 @@
 package getjobs.service;
 
 import getjobs.enums.RecruitmentPlatformEnum;
-import getjobs.service.impl.BossRecruitmentServiceImpl;
+import getjobs.modules.boss.service.impl.BossRecruitmentServiceImpl;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;

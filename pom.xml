@@ -80,11 +80,11 @@
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
         </dependency>
-        <!-- 轻量 JSON 处理（可用于简单 JSON 构造/解析） -->
+        <!-- 替代 org.json（Apache-2.0） -->
         <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20231013</version>
+            <groupId>com.github.openjson</groupId>
+            <artifactId>openjson</artifactId>
+            <version>1.0.12</version>
         </dependency>
 
         <!-- ================= -->
@@ -130,21 +130,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- ===================== -->
-        <!-- 桌面 UI（JavaFX）   -->
-        <!-- ===================== -->
-        <!-- JavaFX 控件 -->
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-controls</artifactId>
-            <version>21</version>
-        </dependency>
-        <!-- JavaFX FXML 支持 -->
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-fxml</artifactId>
-            <version>21</version>
-        </dependency>
 
         <!-- ===================== -->
         <!-- 自动化/浏览器驱动   -->

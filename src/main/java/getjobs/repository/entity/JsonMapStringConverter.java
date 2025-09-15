@@ -1,4 +1,4 @@
-package getjobs.entity;
+package getjobs.repository.entity;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,15 +6,15 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 
 @Converter
-public class JsonListIntegerConverter implements AttributeConverter<List<Integer>, String> {
+public class JsonMapStringConverter implements AttributeConverter<Map<String, String>, String> {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Override
-    public String convertToDatabaseColumn(List<Integer> attribute) {
+    public String convertToDatabaseColumn(Map<String, String> attribute) {
         try {
             if (attribute == null)
                 return null;
@@ -25,14 +25,14 @@ public class JsonListIntegerConverter implements AttributeConverter<List<Integer
     }
 
     @Override
-    public List<Integer> convertToEntityAttribute(String dbData) {
+    public Map<String, String> convertToEntityAttribute(String dbData) {
         try {
             if (dbData == null || dbData.isEmpty())
-                return Collections.emptyList();
-            return MAPPER.readValue(dbData, new TypeReference<List<Integer>>() {
+                return Collections.emptyMap();
+            return MAPPER.readValue(dbData, new TypeReference<Map<String, String>>() {
             });
         } catch (Exception e) {
-            return Collections.emptyList();
+            return Collections.emptyMap();
         }
     }
 }
