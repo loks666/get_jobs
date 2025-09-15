@@ -3,6 +3,7 @@ package getjobs.modules.boss.service;
 import getjobs.modules.boss.dto.BossConfigDTO;
 import getjobs.enums.RecruitmentPlatformEnum;
 import getjobs.modules.boss.dto.JobDTO;
+import getjobs.modules.boss.enums.JobStatusEnum;
 import getjobs.repository.entity.JobEntity;
 import getjobs.repository.JobRepository;
 import getjobs.service.JobService;
@@ -44,7 +45,6 @@ public class BossTaskService {
 
     // 存储任务执行状态和结果
     private final ConcurrentHashMap<String, TaskStatus> taskStatusMap = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, List<JobDTO>> taskResultsMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Date> taskStartTimeMap = new ConcurrentHashMap<>();
 
     public BossTaskService(PlaywrightManager playwrightManager, RecruitmentServiceFactory serviceFactory, JobService jobService, JobRepository jobRepository) {
@@ -143,9 +143,6 @@ public class BossTaskService {
                 allJobDTOS.addAll(recommendJobDTOS);
             }
 
-            // 保存结果到内存
-            taskResultsMap.put(taskId, new CopyOnWriteArrayList<>(allJobDTOS));
-
             // 保存到数据库
             int savedCount = 0;
             if (!allJobDTOS.isEmpty()) {
@@ -229,7 +226,7 @@ public class BossTaskService {
                 }
 
                 for (Map.Entry<String, List<Long>> entry : reasonGroups.entrySet()) {
-                    jobService.updateJobStatus(entry.getValue(), 3, entry.getKey()); // 3表示已过滤状态
+                    jobService.updateJobStatus(entry.getValue(), JobStatusEnum.FILTERED.getCode(), entry.getKey()); // 3表示已过滤状态
                 }
             }
 
@@ -419,7 +416,7 @@ public class BossTaskService {
             result.setTimestamp(new Date());
 
             // 显示岗位详情
-            if (config.getDebugger() || filteredJobDTOS.size() <= 10) {
+            if (filteredJobDTOS.size() <= 10) {
                 result.setJobDetails(buildJobDetails(filteredJobDTOS));
             }
 
@@ -453,15 +450,6 @@ public class BossTaskService {
         return taskStatusMap.get(taskId);
     }
 
-    /**
-     * 获取任务结果
-     * 
-     * @param taskId 任务ID
-     * @return 任务结果
-     */
-    public List<JobDTO> getTaskResults(String taskId) {
-        return taskResultsMap.get(taskId);
-    }
 
     /**
      * 清理任务数据
@@ -470,7 +458,6 @@ public class BossTaskService {
      */
     public void clearTaskData(String taskId) {
         taskStatusMap.remove(taskId);
-        taskResultsMap.remove(taskId);
         taskStartTimeMap.remove(taskId);
     }
 

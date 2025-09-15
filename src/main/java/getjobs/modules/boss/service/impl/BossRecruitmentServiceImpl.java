@@ -13,6 +13,9 @@ import getjobs.modules.boss.dto.JobDTO;
 import getjobs.repository.entity.ConfigEntity;
 import getjobs.enums.RecruitmentPlatformEnum;
 import getjobs.modules.boss.service.BossApiMonitorService;
+import getjobs.modules.boss.enums.JobStatusEnum;
+import getjobs.repository.JobRepository;
+import getjobs.repository.entity.JobEntity;
 import getjobs.service.ConfigService;
 import getjobs.service.RecruitmentService;
 import getjobs.utils.JobUtils;
@@ -57,10 +60,13 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
 
     private final ConfigService configService;
     private final BossApiMonitorService bossApiMonitorService;
+    private final JobRepository jobRepository;
 
-    public BossRecruitmentServiceImpl(ConfigService configService, BossApiMonitorService bossApiMonitorService) {
+    public BossRecruitmentServiceImpl(ConfigService configService, BossApiMonitorService bossApiMonitorService,
+            JobRepository jobRepository) {
         this.configService = configService;
         this.bossApiMonitorService = bossApiMonitorService;
+        this.jobRepository = jobRepository;
     }
 
     @Override
@@ -196,23 +202,48 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
                 if (delivered) {
                     successCount++;
                     log.info("投递成功: {} - {}", jobDTO.getCompanyName(), jobDTO.getJobName());
+                    updateJobStatus(jobDTO, JobStatusEnum.DELIVERED_SUCCESS.getCode(), null);
                 } else {
                     log.warn("投递失败: {} - {}", jobDTO.getCompanyName(), jobDTO.getJobName());
+                    updateJobStatus(jobDTO, JobStatusEnum.DELIVERED_FAILED.getCode(), "自动投递失败");
                 }
 
                 // 投递间隔
                 PlaywrightUtil.sleep(15);
 
-                if (config.getDebugger()) {
-                    break; // 调试模式只投递一个
-                }
             } catch (Exception e) {
                 log.error("投递岗位失败: {} - {}", jobDTO.getCompanyName(), jobDTO.getJobName(), e);
+                try {
+                    updateJobStatus(jobDTO, JobStatusEnum.DELIVERED_FAILED.getCode(), "异常投递失败");
+                } catch (Exception ignore) {
+                }
             }
         }
 
         log.info("Boss直聘岗位投递完成，成功投递: {}", successCount);
         return successCount;
+    }
+
+    /**
+     * 根据加密职位ID更新职位状态与原因
+     */
+    private void updateJobStatus(JobDTO jobDTO, int status, String reason) {
+        try {
+            if (jobDTO == null || jobDTO.getEncryptJobId() == null) {
+                return;
+            }
+            JobEntity entity = jobRepository.findByEncryptJobId(jobDTO.getEncryptJobId());
+            if (entity == null) {
+                return;
+            }
+            entity.setStatus(status);
+            if (reason != null && !reason.isEmpty()) {
+                entity.setFilterReason(reason);
+            }
+            jobRepository.save(entity);
+        } catch (Exception e) {
+            log.debug("更新职位状态失败: {} - {} - {}", jobDTO.getCompanyName(), jobDTO.getJobName(), e.getMessage());
+        }
     }
 
     @Override

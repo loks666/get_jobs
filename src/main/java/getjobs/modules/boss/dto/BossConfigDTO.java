@@ -15,7 +15,6 @@ public class BossConfigDTO {
 
     // 文本与布尔
     private String sayHi;
-    private Boolean debugger;
 
     // 逗号分隔原始输入（来自表单/配置）
     private String keywords;

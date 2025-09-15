@@ -1,0 +1,900 @@
+/* 全局样式 */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    --border-radius: 12px;
+    --transition: all 0.3s ease;
+}
+
+body {
+    background: linear-gradient(to bottom, #f8fafc, #e2e8f0);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+}
+
+/* 头部样式 */
+.header-gradient {
+    background: var(--primary-gradient);
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+/* 卡片样式 */
+.card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    transition: var(--transition);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+}
+
+/* 配置卡片样式 */
+.config-card {
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.config-card .card-title {
+    color: #4a5568;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+/* 表单控件样式 */
+.form-control, .form-select {
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    transition: var(--transition);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-label {
+    color: #2d3748;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+/* 复选框样式 */
+.form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.form-check-label {
+    color: #2d3748;
+    font-weight: 500;
+}
+
+/* 按钮样式 */
+.btn-success {
+    background: var(--success-gradient);
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 16px;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+    transition: var(--transition);
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(72, 187, 120, 0.4);
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+}
+
+/* 手风琴样式 */
+.accordion-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.accordion-button {
+    background-color: #edf2f7;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #e2e8f0;
+    color: #2d3748;
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+}
+
+
+/* 滚动区域样式 */
+.scrollable-content {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.scrollable-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollable-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 工具提示样式 */
+.tooltip {
+    font-size: 12px;
+}
+
+.tooltip-inner {
+    background-color: #2d3748;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+/* 徽章样式 */
+.badge {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 12px;
+}
+
+/* 响应式设计 */
+@media (max-width: 992px) {
+    .container-fluid {
+        padding: 16px;
+    }
+    
+    .card-body {
+        padding: 16px;
+    }
+    
+    .config-card {
+        padding: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-gradient .container-fluid {
+        padding: 16px;
+    }
+    
+    .header-gradient h1 {
+        font-size: 24px;
+    }
+    
+    .header-gradient p {
+        font-size: 14px;
+    }
+    
+    .btn-success {
+        padding: 12px;
+        font-size: 14px;
+    }
+    
+    .scrollable-content {
+        max-height: 400px;
+    }
+}
+
+@media (max-width: 576px) {
+    .row.g-4 {
+        --bs-gutter-x: 1rem;
+        --bs-gutter-y: 1rem;
+    }
+    
+    .config-card {
+        margin-bottom: 12px;
+    }
+    
+    .form-control, .form-select {
+        padding: 10px;
+        font-size: 13px;
+    }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+/* 加载状态 */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* 成功状态 */
+.success-flash {
+    animation: successFlash 0.6s ease-out;
+}
+
+@keyframes successFlash {
+    0% {
+        background-color: #68d391;
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* 错误状态 */
+.error-flash {
+    animation: errorFlash 0.6s ease-out;
+}
+
+@keyframes errorFlash {
+    0% {
+        background-color: #fc8181;
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* 顶部平台页签（提升与紫色背景的对比度） */
+.header-gradient .nav-tabs {
+    border-bottom: 0;
+    gap: 8px;
+}
+
+.header-gradient .nav-tabs .nav-link {
+    color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    font-weight: 600;
+    backdrop-filter: saturate(120%) blur(2px);
+    transition: var(--transition);
+}
+
+.header-gradient .nav-tabs .nav-link:hover,
+.header-gradient .nav-tabs .nav-link:focus {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.header-gradient .nav-tabs .nav-link.active {
+    color: #334155;
+    background-color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.header-gradient .nav-tabs .nav-link i {
+    color: inherit;
+}
+
+/* 岗位明细表格样式 */
+.job-records-table {
+    font-size: 14px;
+}
+
+.job-records-table .table {
+    margin-bottom: 0;
+}
+
+.job-records-table .table th {
+    background-color: #2d3748;
+    color: white;
+    border: none;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 12px 8px;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.job-records-table .table td {
+    padding: 12px 8px;
+    vertical-align: top;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.job-records-table .table tbody tr:hover {
+    background-color: #f7fafc;
+}
+
+.job-records-table .table tbody tr.job-row {
+    transition: background-color 0.2s ease;
+}
+
+/* 岗位信息列样式 */
+.job-title {
+    font-weight: 600;
+    color: #2b6cb0;
+    margin-bottom: 4px;
+}
+
+.job-position {
+    font-size: 12px;
+    color: #718096;
+    margin-bottom: 8px;
+}
+
+.job-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.job-labels .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+/* 公司信息列样式 */
+.company-name {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+
+.company-info {
+    font-size: 12px;
+    color: #718096;
+    line-height: 1.4;
+}
+
+/* 工作地点列样式 */
+.location-city {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+
+.location-details {
+    font-size: 12px;
+    color: #718096;
+    line-height: 1.4;
+}
+
+/* 薪资待遇列样式 */
+.salary-desc {
+    font-weight: 600;
+    color: #38a169;
+    margin-bottom: 4px;
+}
+
+.job-requirements {
+    font-size: 12px;
+    color: #718096;
+    line-height: 1.4;
+}
+
+/* 职位要求列样式 */
+.skills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.skills-container .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+.job-description {
+    font-size: 12px;
+    color: #718096;
+    line-height: 1.4;
+    max-height: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* HR信息列样式 */
+.hr-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.hr-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 8px;
+    object-fit: cover;
+}
+
+.hr-name {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.hr-details {
+    font-size: 12px;
+    color: #718096;
+    line-height: 1.4;
+}
+
+.hr-status {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+}
+
+.hr-status .bi-circle-fill {
+    font-size: 8px;
+    margin-right: 4px;
+}
+
+/* 投递状态列样式 */
+.status-badge {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.status-time {
+    font-size: 11px;
+    color: #718096;
+    margin-top: 4px;
+    line-height: 1.3;
+}
+
+/* 操作按钮列样式 */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.action-buttons .btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+/* 统计卡片样式 */
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    transition: transform 0.2s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+.stats-card h6 {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.stats-card small {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+/* 分页样式 */
+.pagination {
+    margin-top: 20px;
+}
+
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    border: 1px solid #e2e8f0;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.pagination .page-link:hover {
+    background-color: #f7fafc;
+    border-color: #cbd5e0;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #a0aec0;
+    background-color: #f7fafc;
+}
+
+/* 响应式表格样式 */
+@media (max-width: 1200px) {
+    .job-records-table .table th,
+    .job-records-table .table td {
+        padding: 8px 6px;
+        font-size: 13px;
+    }
+    
+    .job-title {
+        font-size: 14px;
+    }
+    
+    .company-name {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 992px) {
+    .job-records-table .table th,
+    .job-records-table .table td {
+        padding: 6px 4px;
+        font-size: 12px;
+    }
+    
+    .job-labels .badge,
+    .skills-container .badge {
+        font-size: 9px;
+        padding: 1px 4px;
+    }
+    
+    .action-buttons .btn {
+        font-size: 11px;
+        padding: 3px 6px;
+    }
+}
+
+@media (max-width: 768px) {
+    .job-records-table {
+        font-size: 12px;
+    }
+    
+    .job-records-table .table th,
+    .job-records-table .table td {
+        padding: 4px 2px;
+        font-size: 11px;
+    }
+    
+    .job-title,
+    .company-name,
+    .location-city,
+    .salary-desc {
+        font-size: 13px;
+    }
+    
+    .job-position,
+    .company-info,
+    .location-details,
+    .job-requirements,
+    .hr-details,
+    .status-time {
+        font-size: 11px;
+    }
+    
+    .hr-avatar {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .stats-card {
+        padding: 12px;
+    }
+    
+    .stats-card h6 {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .job-records-table .table th,
+    .job-records-table .table td {
+        padding: 3px 1px;
+        font-size: 10px;
+    }
+    
+    .job-title,
+    .company-name,
+    .location-city,
+    .salary-desc {
+        font-size: 12px;
+    }
+    
+    .job-position,
+    .company-info,
+    .location-details,
+    .job-requirements,
+    .hr-details,
+    .status-time {
+        font-size: 10px;
+    }
+    
+    .hr-avatar {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .action-buttons .btn {
+        font-size: 10px;
+        padding: 2px 4px;
+    }
+    
+    .stats-card {
+        padding: 8px;
+    }
+    
+    .stats-card h6 {
+        font-size: 18px;
+    }
+}
+
+/* 表格滚动条样式 */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 加载状态样式 */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* 空状态样式 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #718096;
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state h5 {
+    color: #4a5568;
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    font-size: 14px;
+    margin-bottom: 0;
+}
+
+/* 新增字段样式 */
+.job-status {
+    margin-top: 4px;
+}
+
+.company-logo-img {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-top: 4px;
+}
+
+.location-address {
+    margin-top: 4px;
+}
+
+.job-type {
+    margin-top: 4px;
+}
+
+.skill-count {
+    margin-top: 4px;
+}
+
+.hr-cert {
+    margin-top: 4px;
+}
+
+.welfare-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.welfare-container .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+.welfare-count {
+    margin-top: 4px;
+}
+
+.no-welfare {
+    color: #a0aec0;
+    font-style: italic;
+}
+
+.job-flags {
+    margin-top: 4px;
+}
+
+.job-flags .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+/* 公司信息模态框样式 */
+.company-logo-large img {
+    border: 1px solid #e2e8f0;
+    padding: 8px;
+}
+
+.company-basic-info ul li {
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.intro-content {
+    background-color: #f7fafc;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.intro-content p {
+    margin-bottom: 0;
+    line-height: 1.6;
+    color: #4a5568;
+}
+
+.welfare-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.welfare-tags .badge {
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+/* 响应式调整 */
+@media (max-width: 992px) {
+    .company-logo-img {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .welfare-container .badge {
+        font-size: 9px;
+        padding: 1px 4px;
+    }
+    
+    .job-flags .badge {
+        font-size: 9px;
+        padding: 1px 4px;
+    }
+}
+
+@media (max-width: 768px) {
+    .company-logo-img {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .welfare-container .badge {
+        font-size: 8px;
+        padding: 1px 3px;
+    }
+    
+    .job-flags .badge {
+        font-size: 8px;
+        padding: 1px 3px;
+    }
+}
+
+@media (max-width: 576px) {
+    .company-logo-img {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .welfare-container .badge {
+        font-size: 7px;
+        padding: 1px 2px;
+    }
+    
+    .job-flags .badge {
+        font-size: 7px;
+        padding: 1px 2px;
+    }
+}
