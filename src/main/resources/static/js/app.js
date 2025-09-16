@@ -504,11 +504,7 @@ class BossConfigApp {
         });
 
         // 添加按钮
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn btn-sm btn-outline-primary mt-2';
-        addBtn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>添加城市代码';
-        addBtn.onclick = () => this.showAddCityCodeModal();
-        container.appendChild(addBtn);
+        this.appendAddCityCodeButton(container);
     }
 
     // 添加城市代码项
@@ -522,6 +518,15 @@ class BossConfigApp {
             </button>
         `;
         container.appendChild(item);
+    }
+
+    // 追加“添加城市代码”按钮
+    appendAddCityCodeButton(container) {
+        const addBtn = document.createElement('button');
+        addBtn.className = 'btn btn-sm btn-outline-primary mt-2';
+        addBtn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>添加城市代码';
+        addBtn.onclick = () => this.showAddCityCodeModal();
+        container.appendChild(addBtn);
     }
 
     // 显示添加城市代码模态框
@@ -559,11 +564,7 @@ class BossConfigApp {
         });
 
         // 添加按钮
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn btn-sm btn-outline-warning mt-2';
-        addBtn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>添加HR状态';
-        addBtn.onclick = () => this.showAddHRStatusModal();
-        container.appendChild(addBtn);
+        this.appendAddHRStatusButton(container);
     }
 
     // 添加HR状态项
@@ -577,6 +578,46 @@ class BossConfigApp {
             </button>
         `;
         container.appendChild(item);
+    }
+
+    // 追加“添加HR状态”按钮
+    appendAddHRStatusButton(container) {
+        const addBtn = document.createElement('button');
+        addBtn.className = 'btn btn-sm btn-outline-warning mt-2';
+        addBtn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>添加HR状态';
+        addBtn.onclick = () => this.showAddHRStatusModal();
+        container.appendChild(addBtn);
+    }
+
+    // 从DOM收集自定义城市代码
+    collectCustomCityCodeFromDOM() {
+        const container = document.getElementById('customCityCodeContainer');
+        const result = {};
+        if (!container) return result;
+        const items = container.querySelectorAll('div > span.fw-semibold');
+        items.forEach(span => {
+            const text = span.textContent || '';
+            const parts = text.split(' - ');
+            if (parts.length >= 2) {
+                const city = parts[0].trim();
+                const code = parts.slice(1).join(' - ').trim();
+                if (city && code) result[city] = code;
+            }
+        });
+        return result;
+    }
+
+    // 从DOM收集HR状态集合
+    collectDeadStatusFromDOM() {
+        const container = document.getElementById('deadStatusContainer');
+        const result = [];
+        if (!container) return result;
+        const items = container.querySelectorAll('div > span.fw-semibold');
+        items.forEach(span => {
+            const text = (span.textContent || '').trim();
+            if (text) result.push(text);
+        });
+        return result;
     }
 
     // 显示添加HR状态模态框
@@ -635,6 +676,8 @@ class BossConfigApp {
             sendImgResume: document.getElementById('sendImgResumeCheckBox').checked,
             keyFilter: document.getElementById('keyFilterCheckBox').checked,
             recommendJobs: document.getElementById('recommendJobsCheckBox').checked,
+            enableBlacklistFilter: document.getElementById('enableBlacklistFilterCheckBox').checked,
+            blacklistKeywords: document.getElementById('blacklistKeywordsTextArea').value,
             
             // AI配置
             enableAIJobMatchDetection: document.getElementById('enableAIJobMatchDetectionCheckBox').checked,
@@ -642,7 +685,11 @@ class BossConfigApp {
             checkStateOwned: document.getElementById('checkStateOwnedCheckBox').checked,
             
             // 系统参数
-            waitTime: document.getElementById('waitTimeField').value
+            waitTime: document.getElementById('waitTimeField').value,
+
+            // 高级配置（新增）：城市代码 & HR状态
+            customCityCode: this.collectCustomCityCodeFromDOM(),
+            deadStatus: this.collectDeadStatusFromDOM()
         };
 
         localStorage.setItem('bossConfig', JSON.stringify(this.config));
@@ -716,6 +763,32 @@ class BossConfigApp {
                 }
             }
         });
+
+        // 回填自定义城市代码
+        try {
+            const map = this.config.customCityCode;
+            const container = document.getElementById('customCityCodeContainer');
+            if (container) {
+                container.innerHTML = '';
+                if (map && typeof map === 'object' && !Array.isArray(map)) {
+                    Object.entries(map).forEach(([city, code]) => this.addCityCodeItem(container, city, code));
+                }
+                this.appendAddCityCodeButton(container);
+            }
+        } catch (_) {}
+
+        // 回填HR状态集合
+        try {
+            const list = this.config.deadStatus;
+            const container = document.getElementById('deadStatusContainer');
+            if (container) {
+                container.innerHTML = '';
+                if (Array.isArray(list)) {
+                    list.forEach(status => this.addHRStatusItem(container, status));
+                }
+                this.appendAddHRStatusButton(container);
+            }
+        } catch (_) {}
     }
 
     // 获取字段ID
@@ -743,7 +816,9 @@ class BossConfigApp {
             enableAIJobMatchDetection: 'enableAIJobMatchDetectionCheckBox',
             enableAIGreeting: 'enableAIGreetingCheckBox',
             checkStateOwned: 'checkStateOwnedCheckBox',
-            waitTime: 'waitTimeField'
+            waitTime: 'waitTimeField',
+            enableBlacklistFilter: 'enableBlacklistFilterCheckBox',
+            blacklistKeywords: 'blacklistKeywordsTextArea'
         };
         return fieldMap[key] || key;
     }
@@ -1004,6 +1079,8 @@ class BossConfigApp {
             sendImgResume: document.getElementById('sendImgResumeCheckBox').checked,
             keyFilter: document.getElementById('keyFilterCheckBox').checked,
             recommendJobs: document.getElementById('recommendJobsCheckBox').checked,
+            enableBlacklistFilter: document.getElementById('enableBlacklistFilterCheckBox').checked,
+            blacklistKeywords: document.getElementById('blacklistKeywordsTextArea').value,
             
             // AI配置
             enableAIJobMatchDetection: document.getElementById('enableAIJobMatchDetectionCheckBox').checked,
@@ -1011,7 +1088,11 @@ class BossConfigApp {
             checkStateOwned: document.getElementById('checkStateOwnedCheckBox').checked,
             
             // 系统参数
-            waitTime: document.getElementById('waitTimeField').value
+            waitTime: document.getElementById('waitTimeField').value,
+
+            // 高级配置（新增）：城市代码 & HR状态
+            customCityCode: this.collectCustomCityCodeFromDOM(),
+            deadStatus: this.collectDeadStatusFromDOM()
         };
     }
 

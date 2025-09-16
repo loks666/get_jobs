@@ -138,7 +138,7 @@ public class JobService {
         dto.setHrAvatar(entity.getHrAvatar());
         dto.setHrOnline(entity.getHrOnline());
         dto.setHrCertLevel(entity.getHrCertLevel());
-        dto.setHrActiveTime(entity.getHrActiveTime());
+        dto.setHrActiveTime(entity.getBossActiveTimeDesc());
 
         // 系统信息映射
         dto.setPlatform(entity.getPlatform());

@@ -65,6 +65,8 @@ public class ConfigController {
         e.setKeyFilter(Boolean.TRUE.equals(dto.getKeyFilter()));
         e.setRecommendJobs(Boolean.TRUE.equals(dto.getRecommendJobs()));
         e.setCheckStateOwned(Boolean.TRUE.equals(dto.getCheckStateOwned()));
+        e.setCustomCityCode(dto.getCustomCityCode());
+        e.setDeadStatus(dto.getDeadStatus());
         return e;
     }
 

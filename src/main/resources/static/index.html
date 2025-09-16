@@ -135,6 +135,38 @@
                                                 <input type="text" class="form-control form-control-sm" id="cityCodeField"
                                                        placeholder="北京, 上海, 深圳">
                                             </div>
+                                            <!-- Advanced Configuration Accordion -->
+                                            <div class="accordion" id="advancedConfigAccordion">
+                                                <div class="accordion-item">
+                                                    <h2 class="accordion-header">
+                                                        <button class="accordion-button collapsed" type="button"
+                                                                data-bs-toggle="collapse" data-bs-target="#advancedConfig"
+                                                                aria-expanded="false" aria-controls="advancedConfig">
+                                                            <i class="bi bi-gear-fill me-2"></i>城市编码补充
+                                                        </button>
+                                                    </h2>
+                                                    <div id="advancedConfig" class="accordion-collapse collapse"
+                                                         data-bs-parent="#advancedConfigAccordion">
+                                                        <div class="accordion-body p-2">
+                                                            <!-- Custom City Codes -->
+                                                            <div class="mb-2">
+                                                                <label class="form-label fw-semibold small">
+                                                                    补充城市代码
+                                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                                       data-bs-toggle="tooltip"
+                                                                       title="添加自定义的城市代码映射关系"></i>
+                                                                </label>
+                                                                <div id="customCityCodeContainer"
+                                                                     class="border rounded p-2 bg-light">
+                                                                    <small class="text-muted fst-italic">格式：城市名 -
+                                                                        城市代码</small>
+                                                                </div>
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <!-- Job Requirements Card -->
@@ -333,51 +365,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- Advanced Configuration Accordion -->
-                                        <div class="accordion" id="advancedConfigAccordion">
-                                            <div class="accordion-item">
-                                                <h2 class="accordion-header">
-                                                    <button class="accordion-button collapsed" type="button"
-                                                            data-bs-toggle="collapse" data-bs-target="#advancedConfig"
-                                                            aria-expanded="false" aria-controls="advancedConfig">
-                                                        <i class="bi bi-gear-fill me-2"></i>城市编码&HR状态补充
-                                                    </button>
-                                                </h2>
-                                                <div id="advancedConfig" class="accordion-collapse collapse"
-                                                     data-bs-parent="#advancedConfigAccordion">
-                                                    <div class="accordion-body p-2">
-                                                        <!-- Custom City Codes -->
-                                                        <div class="mb-2">
-                                                            <label class="form-label fw-semibold small">
-                                                                补充城市代码
-                                                                <i class="bi bi-question-circle text-muted ms-1"
-                                                                   data-bs-toggle="tooltip"
-                                                                   title="添加自定义的城市代码映射关系"></i>
-                                                            </label>
-                                                            <div id="customCityCodeContainer"
-                                                                 class="border rounded p-2 bg-light">
-                                                                <small class="text-muted fst-italic">格式：城市名 -
-                                                                    城市代码</small>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- HR Status Configuration -->
-                                                        <div class="mb-2">
-                                                            <label class="form-label fw-semibold small">
-                                                                HR状态配置
-                                                                <i class="bi bi-question-circle text-muted ms-1"
-                                                                   data-bs-toggle="tooltip"
-                                                                   title="配置HR活跃度判断规则"></i>
-                                                            </label>
-                                                            <div id="deadStatusContainer"
-                                                                 class="border rounded p-2 bg-light">
-                                                                <small class="text-muted fst-italic">可添加或删除HR状态</small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -412,6 +399,37 @@
                                                 </label>
                                             </div>
 
+                                            <!-- HR Status Configuration (Accordion) -->
+                                            <div class="accordion" id="hrStatusConfigAccordion">
+                                                <div class="accordion-item">
+                                                    <h2 class="accordion-header">
+                                                        <button class="accordion-button collapsed" type="button"
+                                                                data-bs-toggle="collapse" data-bs-target="#hrStatusConfig"
+                                                                aria-expanded="false" aria-controls="hrStatusConfig">
+                                                            <i class="bi bi-gear-fill me-2"></i>HR过滤状态配置
+                                                        </button>
+                                                    </h2>
+                                                    <div id="hrStatusConfig" class="accordion-collapse collapse"
+                                                         data-bs-parent="#hrStatusConfigAccordion">
+                                                        <div class="accordion-body p-2">
+                                                            <div class="mb-2 small lh-sm">
+                                                                <label class="form-label fw-semibold small">
+                                                                    HR过滤状态配置
+                                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                                       data-bs-toggle="tooltip"
+                                                                       title="配置HR活跃度判断规则"></i>
+                                                                </label>
+                                                                <div id="deadStatusContainer"
+                                                                     class="border rounded p-1 bg-light me-auto fs-6 lh-sm"
+                                                                     style="max-width: 400px;">
+                                                                    <small class="text-muted fst-italic">可添加或删除HR状态</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <div class="form-check mb-2">
                                                 <input class="form-check-input" type="checkbox"
                                                        id="sendImgResumeCheckBox">
@@ -442,6 +460,30 @@
                                                        data-bs-toggle="tooltip"
                                                        title="开启后将自动接收系统推荐的相关职位"></i>
                                                 </label>
+                                            </div>
+
+                                            <!-- Blacklist Filter -->
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="enableBlacklistFilterCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="enableBlacklistFilterCheckBox">
+                                                    过滤黑名单岗位
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将根据黑名单关键词过滤不想要的岗位（职位/公司/描述命中即过滤）"></i>
+                                                </label>
+                                            </div>
+
+                                            <!-- Blacklist Keywords Config -->
+                                            <div class="mb-2">
+                                                <label for="blacklistKeywordsTextArea" class="form-label fw-semibold small">
+                                                    黑名单关键词配置
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="请输入黑名单关键词，使用英文逗号或换行分隔；示例：外包, 中介, 驻场"></i>
+                                                </label>
+                                                <textarea class="form-control form-control-sm" id="blacklistKeywordsTextArea" rows="2"
+                                                          placeholder="外包, 中介, 驻场"></textarea>
                                             </div>
                                         </div>
 
@@ -682,6 +724,17 @@
                                                 </td>
                                             </tr>
                                             <tr>
+                                                <td class="text-muted">过滤黑名单岗位</td>
+                                                <td>
+                                                    <span v-if="config.enableBlacklistFilter" class="badge bg-success">开启</span>
+                                                    <span v-else class="badge bg-secondary">关闭</span>
+                                                </td>
+                                            </tr>
+                                            <tr v-if="config.blacklistKeywords">
+                                                <td class="text-muted">黑名单关键词</td>
+                                                <td>{{ safe(config.blacklistKeywords) }}</td>
+                                            </tr>
+                                            <tr>
                                                 <td class="text-muted">接收推荐岗位</td>
                                                 <td>
                                                     <span v-if="config.recommendJobDTOS" class="badge bg-success">开启</span>
@@ -812,12 +865,13 @@
                                                 <th style="min-width: 120px;">HR信息</th>
                                                 <th style="min-width: 100px;">公司福利</th>
                                                 <th style="min-width: 100px;">投递状态</th>
+                                                <th style="min-width: 140px;">过滤原因</th>
                                                 <th style="min-width: 120px;">操作</th>
                                             </tr>
                                             </thead>
                                             <tbody>
                                             <tr v-if="currentPageData.length === 0">
-                                                <td colspan="10" class="empty-state">
+                                                <td colspan="11" class="empty-state">
                                                     <i class="bi bi-inbox"></i>
                                                     <h5>暂无数据</h5>
                                                     <p>请先执行岗位采集任务</p>
@@ -955,6 +1009,16 @@
                                                     <div class="job-flags" v-if="job.isFavorite || job.isOptimal">
                                                         <span v-if="job.isFavorite" class="badge bg-danger me-1">收藏</span>
                                                         <span v-if="job.isOptimal" class="badge bg-warning">优选</span>
+                                                    </div>
+                                                </td>
+
+                                                <!-- 过滤原因 -->
+                                                <td>
+                                                    <div v-if="job.filterReason" :title="job.filterReason">
+                                                        {{ truncateText(job.filterReason, 60) }}
+                                                    </div>
+                                                    <div v-else class="text-muted">
+                                                        -
                                                     </div>
                                                 </td>
                                                 
