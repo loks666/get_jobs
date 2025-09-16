@@ -145,8 +145,24 @@ class BossConfigApp {
         if (minSalary && maxSalary) {
             [minSalary, maxSalary].forEach(field => {
                 field.addEventListener('input', () => {
+                    // 只允许正整数，范围 0-100
+                    const raw = field.value.replace(/[^0-9]/g, '');
+                    field.value = raw;
                     this.validateSalaryRange();
                 });
+                field.addEventListener('blur', () => {
+                    // 失焦时归一化到 0-100 区间
+                    let v = parseInt(field.value, 10);
+                    if (isNaN(v)) v = 0;
+                    if (v < 0) v = 0;
+                    if (v > 100) v = 100;
+                    field.value = String(v);
+                    this.validateSalaryRange();
+                });
+                field.setAttribute('min', '0');
+                field.setAttribute('max', '100');
+                field.setAttribute('step', '1');
+                field.setAttribute('inputmode', 'numeric');
             });
         }
 
@@ -428,10 +444,10 @@ class BossConfigApp {
         const minSalary = document.getElementById('minSalaryField');
         const maxSalary = document.getElementById('maxSalaryField');
         
-        const minValue = parseInt(minSalary.value) || 0;
-        const maxValue = parseInt(maxSalary.value) || 0;
+        const minValue = Math.min(100, Math.max(0, parseInt(minSalary.value, 10) || 0));
+        const maxValue = Math.min(100, Math.max(0, parseInt(maxSalary.value, 10) || 0));
         
-        const isValid = minValue > 0 && maxValue > 0 && minValue <= maxValue;
+        const isValid = Number.isInteger(minValue) && Number.isInteger(maxValue) && minValue >= 0 && maxValue >= 0 && minValue <= maxValue;
         
         this.updateFieldValidation(minSalary, isValid);
         this.updateFieldValidation(maxSalary, isValid);

@@ -205,20 +205,20 @@ public class JobService {
     /**
      * 批量更新职位状态和过滤原因
      * 
-     * @param jobIds       职位ID列表
+     * @param encryptJobIds       加密职位ID列表
      * @param status       新状态
      * @param filterReason 过滤原因
      * @return 更新的职位数量
      */
     @Transactional
-    public int updateJobStatus(List<Long> jobIds, Integer status, String filterReason) {
-        if (jobIds == null || jobIds.isEmpty()) {
+    public int updateJobStatus(List<String> encryptJobIds, Integer status, String filterReason) {
+        if (encryptJobIds == null || encryptJobIds.isEmpty()) {
             log.warn("没有职位ID需要更新状态");
             return 0;
         }
 
         try {
-            List<JobEntity> jobEntities = jobRepository.findAllById(jobIds);
+            List<JobEntity> jobEntities = jobRepository.findAllByEncryptJobIdIn(encryptJobIds);
             for (JobEntity entity : jobEntities) {
                 entity.setStatus(status);
                 entity.setFilterReason(filterReason);

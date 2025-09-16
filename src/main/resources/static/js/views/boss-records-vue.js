@@ -163,12 +163,16 @@
 
                     // 获取状态文本
                     getStatusText(status) {
+                        // PENDING(1, "待处理"),
+                        //     FILTERED(2, "已过滤"),
+                        //     DELIVERED_SUCCESS(3, "投递成功"),
+                        //     DELIVERED_FAILED(4, "投递失败");
                         const statusMap = {
                             0: '待处理',
-                            1: '已处理', 
-                            2: '已忽略',
-                            3: '进行中',
-                            4: '失败'
+                            1: '待处理',
+                            2: '已过滤',
+                            3: '投递成功',
+                            4: '投递失败'
                         };
                         return statusMap[status] || '未知';
                     },

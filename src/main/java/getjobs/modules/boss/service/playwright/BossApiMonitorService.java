@@ -1,4 +1,4 @@
-package getjobs.modules.boss.service;
+package getjobs.modules.boss.service.playwright;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.openjson.JSONObject;

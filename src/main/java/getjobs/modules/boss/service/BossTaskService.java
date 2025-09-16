@@ -47,7 +47,7 @@ public class BossTaskService {
     private final ConcurrentHashMap<String, TaskStatus> taskStatusMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Date> taskStartTimeMap = new ConcurrentHashMap<>();
 
-    public BossTaskService(PlaywrightManager playwrightManager, RecruitmentServiceFactory serviceFactory, JobService jobService, JobRepository jobRepository) {
+    public BossTaskService(PlaywrightManager playwrightManager, RecruitmentServiceFactory serviceFactory, JobService jobService, JobRepository jobRepository, JobFilterService jobFilterService) {
         this.playwrightManager = playwrightManager;
         this.serviceFactory = serviceFactory;
         this.jobService = jobService;
@@ -191,42 +191,51 @@ public class BossTaskService {
         try {
             log.info("开始执行岗位过滤操作");
 
+            RecruitmentService bossService = serviceFactory.getService(RecruitmentPlatformEnum.BOSS_ZHIPIN.name());
+
             // 直接从数据库查询所有职位实体
             List<JobEntity> allJobEntities = jobService.findAllJobEntitiesByPlatform("BOSS直聘");
             if (allJobEntities == null || allJobEntities.isEmpty()) {
                 throw new IllegalArgumentException("数据库中未找到职位数据或职位数据为空");
             }
 
+
             // 执行过滤逻辑，获取过滤原因
             List<JobDTO> filteredJobDTOS = new ArrayList<>();
-            List<Long> filteredJobIds = new ArrayList<>();
+            List<String> filteredJobIds = new ArrayList<>();
             List<String> filterReasons = new ArrayList<>();
 
+            List<JobDTO> jobDTOS = new ArrayList<>();
             for (JobEntity entity : allJobEntities) {
                 JobDTO job = jobService.convertToDTO(entity);
-                String filterReason = getFilterReason(job, config);
+                jobDTOS.add(job);
+            }
+            List<JobDTO> filterJobs   = bossService.filterJobs(jobDTOS, config);
+            filterJobs.forEach(job -> {
+                String filterReason = job.getFilterReason();
                 if (filterReason == null) {
                     // 通过过滤
                     filteredJobDTOS.add(job);
                 } else {
                     // 被过滤，记录原因
-                    filteredJobIds.add(entity.getId());
+                    filteredJobIds.add(job.getEncryptJobId());
                     filterReasons.add(filterReason);
                 }
-            }
+            });
+
 
             // 批量更新被过滤的职位状态
             if (!filteredJobIds.isEmpty()) {
                 // 按过滤原因分组更新
-                Map<String, List<Long>> reasonGroups = new HashMap<>();
+                Map<String, List<String>> reasonGroups = new HashMap<>();
                 for (int i = 0; i < filteredJobIds.size(); i++) {
                     String reason = filterReasons.get(i);
-                    Long jobId = filteredJobIds.get(i);
-                    reasonGroups.computeIfAbsent(reason, k -> new ArrayList<>()).add(jobId);
+                    String  encryptJobId = filteredJobIds.get(i);
+                    reasonGroups.computeIfAbsent(reason, k -> new ArrayList<>()).add(encryptJobId);
                 }
 
-                for (Map.Entry<String, List<Long>> entry : reasonGroups.entrySet()) {
-                    jobService.updateJobStatus(entry.getValue(), JobStatusEnum.FILTERED.getCode(), entry.getKey()); // 3表示已过滤状态
+                for (Map.Entry<String, List<String>> entry : reasonGroups.entrySet()) {
+                    jobService.updateJobStatus(entry.getValue(), JobStatusEnum.FILTERED.getCode(), entry.getKey());
                 }
             }
 
@@ -257,108 +266,6 @@ public class BossTaskService {
         }
     }
 
-    /**
-     * 获取职位过滤原因
-     * 
-     * @param job    职位信息
-     * @param config 配置信息
-     * @return 过滤原因，null表示通过过滤
-     */
-    private String getFilterReason(JobDTO job, BossConfigDTO config) {
-        // 检查岗位黑名单
-        if (isJobInBlacklist(job)) {
-            return "岗位名称包含黑名单关键词";
-        }
-
-        // 检查公司黑名单
-        if (isCompanyInBlacklist(job)) {
-            return "公司名称包含黑名单关键词";
-        }
-
-        // 检查招聘者黑名单
-        if (isRecruiterInBlacklist(job)) {
-            return "招聘者包含黑名单关键词";
-        }
-
-        // 检查薪资
-        if (!isSalaryExpected(job, config)) {
-            return "薪资不符合预期范围";
-        }
-
-        return null; // 通过所有过滤条件
-    }
-
-    /**
-     * 检查岗位是否在黑名单中
-     */
-    private boolean isJobInBlacklist(JobDTO jobDTO) {
-        List<String> blackJobs = Arrays.asList("销售", "客服", "推广"); // 可以从配置中读取
-        return blackJobs.stream().anyMatch(blackJob -> jobDTO.getJobName().contains(blackJob));
-    }
-
-    /**
-     * 检查公司是否在黑名单中
-     */
-    private boolean isCompanyInBlacklist(JobDTO jobDTO) {
-        List<String> blackCompanies = Arrays.asList("外包", "派遣"); // 可以从配置中读取
-        return blackCompanies.stream().anyMatch(blackCompany -> jobDTO.getCompanyName().contains(blackCompany));
-    }
-
-    /**
-     * 检查招聘者是否在黑名单中
-     */
-    private boolean isRecruiterInBlacklist(JobDTO jobDTO) {
-        List<String> blackRecruiters = Arrays.asList(); // 可以从配置中读取
-        return blackRecruiters.stream()
-                .anyMatch(blackRecruiter -> jobDTO.getRecruiter() != null
-                        && jobDTO.getRecruiter().contains(blackRecruiter));
-    }
-
-    /**
-     * 检查薪资是否符合预期
-     */
-    private boolean isSalaryExpected(JobDTO jobDTO, BossConfigDTO config) {
-        if (jobDTO.getSalary() == null || jobDTO.getSalary().isEmpty()) {
-            return true; // 没有薪资信息时默认通过
-        }
-
-        try {
-            List<Integer> expectedSalary = config.getExpectedSalary();
-            if (expectedSalary == null || expectedSalary.isEmpty()) {
-                return true; // 没有期望薪资时默认通过
-            }
-
-            return !isSalaryNotExpected(jobDTO.getSalary(), expectedSalary);
-        } catch (Exception e) {
-            log.debug("薪资验证失败: {}", e.getMessage());
-            return true; // 验证失败时默认通过
-        }
-    }
-
-    /**
-     * 检查薪资是否不符合预期
-     */
-    private boolean isSalaryNotExpected(String salary, List<Integer> expectedSalary) {
-        try {
-            // 简化的薪资检查逻辑
-            if (salary.contains("面议") || salary.contains("不限")) {
-                return false;
-            }
-
-            // 提取薪资数字进行简单比较
-            String numbers = salary.replaceAll("[^0-9]", "");
-            if (numbers.length() >= 2) {
-                int salaryValue = Integer.parseInt(numbers.substring(0, Math.min(4, numbers.length())));
-                int minExpected = expectedSalary.get(0);
-                return salaryValue < minExpected;
-            }
-
-            return false;
-        } catch (Exception e) {
-            log.debug("薪资解析失败: {}", e.getMessage());
-            return false;
-        }
-    }
 
     /**
      * 4. 投递操作

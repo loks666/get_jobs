@@ -2,7 +2,7 @@ package getjobs.controller;
 
 import getjobs.repository.entity.JobEntity;
 import getjobs.repository.JobRepository;
-import getjobs.modules.boss.service.BossApiMonitorService;
+import getjobs.modules.boss.service.playwright.BossApiMonitorService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

@@ -7,14 +7,15 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.WaitForSelectorState;
+import getjobs.enums.RecruitmentPlatformEnum;
 import getjobs.modules.boss.BossElementLocators;
 import getjobs.modules.boss.dto.BossConfigDTO;
 import getjobs.modules.boss.dto.JobDTO;
-import getjobs.repository.entity.ConfigEntity;
-import getjobs.enums.RecruitmentPlatformEnum;
-import getjobs.modules.boss.service.BossApiMonitorService;
 import getjobs.modules.boss.enums.JobStatusEnum;
+import getjobs.modules.boss.service.JobFilterService;
+import getjobs.modules.boss.service.playwright.BossApiMonitorService;
 import getjobs.repository.JobRepository;
+import getjobs.repository.entity.ConfigEntity;
 import getjobs.repository.entity.JobEntity;
 import getjobs.service.ConfigService;
 import getjobs.service.RecruitmentService;
@@ -26,8 +27,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -53,20 +52,17 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     private static final String GEEK_JOB_URL = HOME_URL + "/web/geek/job?";
     private static final String GEEK_CHAT_URL = HOME_URL + "/web/geek/chat";
 
-    private Set<String> blackCompanies = new HashSet<>();
-    private Set<String> blackRecruiters = new HashSet<>();
-
-    private Set<String> blackJobs = new HashSet<>();
-
     private final ConfigService configService;
     private final BossApiMonitorService bossApiMonitorService;
     private final JobRepository jobRepository;
+    private final JobFilterService jobFilterService;
 
     public BossRecruitmentServiceImpl(ConfigService configService, BossApiMonitorService bossApiMonitorService,
-            JobRepository jobRepository) {
+                                      JobRepository jobRepository, JobFilterService jobFilterService) {
         this.configService = configService;
         this.bossApiMonitorService = bossApiMonitorService;
         this.jobRepository = jobRepository;
+        this.jobFilterService = jobFilterService;
     }
 
     @Override
@@ -173,17 +169,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
 
     @Override
     public List<JobDTO> filterJobs(List<JobDTO> jobDTOS, BossConfigDTO config) {
-        log.info("开始Boss直聘岗位过滤，原始岗位数量: {}", jobDTOS.size());
-
-        List<JobDTO> filteredJobDTOS = jobDTOS.stream()
-                .filter(job -> !isJobInBlacklist(job))
-                .filter(job -> !isCompanyInBlacklist(job))
-                .filter(job -> !isRecruiterInBlacklist(job))
-                .filter(job -> isSalaryExpected(job, config))
-                .collect(Collectors.toList());
-
-        log.info("Boss直聘岗位过滤完成，过滤后岗位数量: {}", filteredJobDTOS.size());
-        return filteredJobDTOS;
+        return jobFilterService.filterJobs(jobDTOS, config);
     }
 
     @Override
@@ -268,18 +254,8 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
 
     @Override
     public void saveData(String dataPath) {
-        try {
-            updateBlacklistFromChat();
-            Map<String, Set<String>> data = new HashMap<>();
-            data.put("blackCompanies", blackCompanies);
-            data.put("blackRecruiters", blackRecruiters);
-            data.put("blackJobs", blackJobs);
-            String json = customJsonFormat(data);
-            Files.write(Paths.get(dataPath), json.getBytes());
-            log.info("保存Boss直聘黑名单数据: {}", dataPath);
-        } catch (IOException e) {
-            log.error("保存Boss直聘黑名单数据失败: {}", dataPath, e);
-        }
+        updateBlacklistFromChat();
+        log.info("保存Boss直聘黑名单数据: {}", dataPath);
     }
 
     // ==================== 私有辅助方法 ====================
@@ -607,229 +583,6 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     }
 
     /**
-     * 检查岗位是否在黑名单中
-     */
-    private boolean isJobInBlacklist(JobDTO jobDTO) {
-        return blackJobs.stream().anyMatch(blackJob -> jobDTO.getJobName().contains(blackJob));
-    }
-
-    /**
-     * 检查公司是否在黑名单中
-     */
-    private boolean isCompanyInBlacklist(JobDTO jobDTO) {
-        return blackCompanies.stream().anyMatch(blackCompany -> jobDTO.getCompanyName().contains(blackCompany));
-    }
-
-    /**
-     * 检查招聘者是否在黑名单中
-     */
-    private boolean isRecruiterInBlacklist(JobDTO jobDTO) {
-        return blackRecruiters.stream()
-                .anyMatch(blackRecruiter -> jobDTO.getRecruiter() != null
-                        && jobDTO.getRecruiter().contains(blackRecruiter));
-    }
-
-    /**
-     * 检查薪资是否符合预期
-     */
-    private boolean isSalaryExpected(JobDTO jobDTO, BossConfigDTO config) {
-        if (jobDTO.getSalary() == null || jobDTO.getSalary().isEmpty()) {
-            return true; // 没有薪资信息时默认通过
-        }
-
-        try {
-            List<Integer> expectedSalary = config.getExpectedSalary();
-            if (expectedSalary == null || expectedSalary.isEmpty()) {
-                return true; // 没有期望薪资时默认通过
-            }
-
-            return !isSalaryNotExpected(jobDTO.getSalary(), expectedSalary);
-        } catch (Exception e) {
-            log.debug("薪资验证失败: {}", e.getMessage());
-            return true; // 验证失败时默认通过
-        }
-    }
-
-    /**
-     * 检查薪资是否不符合预期
-     */
-    private boolean isSalaryNotExpected(String salary, List<Integer> expectedSalary) {
-        try {
-            // 清理薪资文本
-            salary = removeYearBonusText(salary);
-
-            if (!isSalaryInExpectedFormat(salary)) {
-                return true;
-            }
-
-            salary = cleanSalaryText(salary);
-            String jobType = detectJobType(salary);
-            salary = removeDayUnitIfNeeded(salary);
-
-            Integer[] jobSalaryRange = parseSalaryRange(salary);
-            return isSalaryOutOfRange(jobSalaryRange,
-                    getMinimumSalary(expectedSalary),
-                    getMaximumSalary(expectedSalary),
-                    jobType);
-        } catch (Exception e) {
-            log.error("薪资解析出错", e);
-            return true;
-        }
-    }
-
-    /**
-     * 去掉年终奖信息
-     */
-    private String removeYearBonusText(String salary) {
-        if (salary.contains("薪")) {
-            return salary.replaceAll("·\\d+薪", "");
-        }
-        return salary;
-    }
-
-    /**
-     * 判断薪资格式是否符合预期
-     */
-    private boolean isSalaryInExpectedFormat(String salaryText) {
-        return salaryText.contains("K") || salaryText.contains("k") || salaryText.contains("元/天");
-    }
-
-    /**
-     * 清理薪资文本
-     */
-    private String cleanSalaryText(String salaryText) {
-        salaryText = salaryText.replace("K", "").replace("k", "");
-        int dotIndex = salaryText.indexOf('·');
-        if (dotIndex != -1) {
-            salaryText = salaryText.substring(0, dotIndex);
-        }
-        return salaryText;
-    }
-
-    /**
-     * 判断是否是按天计薪
-     */
-    private String detectJobType(String salary) {
-        if (salary.contains("元/天")) {
-            return "day";
-        }
-        return "month";
-    }
-
-    /**
-     * 如果是日薪，则去除"元/天"
-     */
-    private String removeDayUnitIfNeeded(String salary) {
-        if (salary.contains("元/天")) {
-            return salary.replaceAll("元/天", "");
-        }
-        return salary;
-    }
-
-    /**
-     * 解析薪资范围
-     */
-    private Integer[] parseSalaryRange(String salaryText) {
-        try {
-            return Arrays.stream(salaryText.split("-"))
-                    .map(s -> s.replaceAll("[^0-9]", ""))
-                    .map(Integer::parseInt)
-                    .toArray(Integer[]::new);
-        } catch (Exception e) {
-            log.debug("薪资解析失败: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * 检查薪资是否超出范围
-     */
-    private boolean isSalaryOutOfRange(Integer[] jobSalary, Integer miniSalary, Integer maxSalary, String jobType) {
-        if (jobSalary == null) {
-            return true;
-        }
-        if (miniSalary == null) {
-            return false;
-        }
-
-        if (Objects.equals("day", jobType)) {
-            // 期望薪资转为平均每日的工资
-            maxSalary = BigDecimal.valueOf(maxSalary).multiply(BigDecimal.valueOf(1000))
-                    .divide(BigDecimal.valueOf(21.75), 0, RoundingMode.HALF_UP).intValue();
-            miniSalary = BigDecimal.valueOf(miniSalary).multiply(BigDecimal.valueOf(1000))
-                    .divide(BigDecimal.valueOf(21.75), 0, RoundingMode.HALF_UP).intValue();
-        }
-
-        // 如果职位薪资下限低于期望的最低薪资，返回不符合
-        if (jobSalary[1] < miniSalary) {
-            return true;
-        }
-        // 如果职位薪资上限高于期望的最高薪资，返回不符合
-        return maxSalary != null && jobSalary[0] > maxSalary;
-    }
-
-    private Integer getMinimumSalary(List<Integer> expectedSalary) {
-        return expectedSalary != null && !expectedSalary.isEmpty() ? expectedSalary.get(0) : null;
-    }
-
-    private Integer getMaximumSalary(List<Integer> expectedSalary) {
-        return expectedSalary != null && expectedSalary.size() > 1 ? expectedSalary.get(1) : null;
-    }
-
-    /**
-     * 检查是否是不活跃HR
-     */
-    @Deprecated
-    private boolean isDeadHR(Page page, BossConfigDTO config) {
-        if (!config.getFilterDeadHR()) {
-            return false;
-        }
-        try {
-            Locator activeTimeElement = page.locator(HR_ACTIVE_TIME).nth(0);
-
-            if (activeTimeElement.isVisible(new Locator.IsVisibleOptions().setTimeout(5000.0))) {
-                String activeTimeText = activeTimeElement.textContent();
-                String companyHR = getCompanyAndHR(page).replaceAll("\\s+", "");
-                boolean isDeadHR = containsDeadStatus(activeTimeText, config.getDeadStatus());
-
-                log.info("HR活跃状态：{}，文本：{}，isActive={}", companyHR, activeTimeText, !isDeadHR);
-                return isDeadHR;
-            }
-        } catch (Exception e) {
-            String companyHR = getCompanyAndHR(page).replaceAll("\\s+", "");
-            log.debug("未找到{}的活跃状态，默认投递", companyHR);
-        }
-        return false;
-    }
-
-    /**
-     * 检查是否包含不活跃状态
-     */
-    private boolean containsDeadStatus(String activeTimeText, List<String> deadStatus) {
-        for (String status : deadStatus) {
-            if (activeTimeText.contains(status)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 获取公司和HR信息
-     */
-    private String getCompanyAndHR(Page page) {
-        try {
-            Locator element = page.locator(RECRUITER_INFO).nth(0);
-            if (element.isVisible(new Locator.IsVisibleOptions().setTimeout(2000.0))) {
-                return element.textContent().replaceAll("\n", "");
-            }
-        } catch (Exception e) {
-            log.debug("获取公司和HR信息失败: {}", e.getMessage());
-        }
-        return "未知公司和HR";
-    }
-
-    /**
      * 更新黑名单数据从聊天记录
      */
     private void updateBlacklistFromChat() {
@@ -889,14 +642,15 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
                                 || message.contains("遗憾") || message.contains("需要本") || message.contains("对不");
                         boolean nomatch = message.contains("不是") || message.contains("不生");
                         if (match && !nomatch) {
-                            if (!blackCompanies.stream().anyMatch(companyName::contains)) {
-                                companyName = companyName.replaceAll("\\.{3}", "");
-                                if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
-                                    blackCompanies.add(companyName);
-                                    newBlackCompanies++;
-                                    log.debug("新增黑名单公司：{} - 拒绝信息：{}", companyName, message);
-                                }
-                            }
+                            // TODO 数据库中查询获取
+//                            if (!blackCompanies.stream().anyMatch(companyName::contains)) {
+//                                companyName = companyName.replaceAll("\\.{3}", "");
+//                                if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
+//                                    blackCompanies.add(companyName);
+//                                    newBlackCompanies++;
+//                                    log.debug("新增黑名单公司：{} - 拒绝信息：{}", companyName, message);
+//                                }
+//                            }
                         }
                     }
                 } catch (Exception e) {
@@ -919,7 +673,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
             }
         }
 
-        log.info("聊天记录分析：处理{}条，新增黑名单公司：{}，总黑名单公司：{}", processedItems, newBlackCompanies, blackCompanies.size());
+        log.info("聊天记录分析：处理{}条，新增黑名单公司：{}", processedItems, newBlackCompanies);
     }
 
     /**
