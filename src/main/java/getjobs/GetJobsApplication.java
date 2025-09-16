@@ -11,7 +11,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EntityScan("getjobs.repository")
 public class GetJobsApplication {
-
     public static void main(String[] args) {
         SpringApplication.run(GetJobsApplication.class, args);
     }

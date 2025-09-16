@@ -2,9 +2,19 @@
 
 #### 补全`application-gpt.yml`配置
 api-key: ${OPENAI_API_KEY} -> api-key: ${OPENAI_API_KEY:xxx}
+不用AI功能默认值随便填一个xxx，否则填自己申请的key
 ```yaml
 spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:xxx}
+```
+
+### 启动
+`getjobs.GetJobsApplication` 直接运行main函数
+
+```java
+public static void main(String[] args) {
+        SpringApplication.run(GetJobsApplication.class, args);
+    }
 ```
