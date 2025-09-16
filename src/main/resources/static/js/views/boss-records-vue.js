@@ -362,7 +362,9 @@
             // 挂载到指定元素
             const mountElement = document.getElementById('bossRecordsApp');
             if (mountElement) {
-                this.app.mount(mountElement);
+                const rootInstance = this.app.mount(mountElement);
+                // 暴露根组件实例，便于外部按钮调用其方法
+                window.bossRecordsRoot = rootInstance;
             }
         }
 

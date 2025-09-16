@@ -220,9 +220,32 @@ class BossConfigApp {
             self.loadJobDetails('51job', 'job51', 0);
         });
 
-        // 搜索按钮
+        // Boss 记录页：搜索/刷新按钮交给 Vue 根实例处理
         document.getElementById('bossRecordSearchBtn')?.addEventListener('click', () => {
-            this.loadJobDetails('Boss直聘', 'boss', 0);
+            try {
+                if (window.bossRecordsRoot && typeof window.bossRecordsRoot.searchJobs === 'function') {
+                    // 同步输入框值到 Vue 的 searchKeyword
+                    const kw = document.getElementById('bossRecordKeyword')?.value || '';
+                    window.bossRecordsRoot.searchKeyword = kw;
+                    window.bossRecordsRoot.searchJobs();
+                } else {
+                    // 回退到原有 DOM 渲染
+                    this.loadJobDetails('Boss直聘', 'boss', 0);
+                }
+            } catch (_) {
+                this.loadJobDetails('Boss直聘', 'boss', 0);
+            }
+        });
+        document.getElementById('bossRecordRefreshBtn')?.addEventListener('click', () => {
+            try {
+                if (window.bossRecordsRoot && typeof window.bossRecordsRoot.refreshData === 'function') {
+                    window.bossRecordsRoot.refreshData();
+                } else {
+                    this.loadJobDetails('Boss直聘', 'boss', 0);
+                }
+            } catch (_) {
+                this.loadJobDetails('Boss直聘', 'boss', 0);
+            }
         });
         document.getElementById('zhilianRecordSearchBtn')?.addEventListener('click', () => {
             this.loadJobDetails('智联招聘', 'zhilian', 0);
