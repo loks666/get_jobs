@@ -191,7 +191,7 @@ public class BossTaskService {
         try {
             log.info("开始执行岗位过滤操作");
 
-            RecruitmentService bossService = serviceFactory.getService(RecruitmentPlatformEnum.BOSS_ZHIPIN.name());
+            RecruitmentService bossService = serviceFactory.getService(RecruitmentPlatformEnum.BOSS_ZHIPIN);
 
             // 直接从数据库查询所有职位实体
             List<JobEntity> allJobEntities = jobService.findAllJobEntitiesByPlatform("BOSS直聘");
