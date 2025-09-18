@@ -58,7 +58,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     private final JobFilterService jobFilterService;
 
     public BossRecruitmentServiceImpl(ConfigService configService, BossApiMonitorService bossApiMonitorService,
-                                      JobRepository jobRepository, JobFilterService jobFilterService) {
+            JobRepository jobRepository, JobFilterService jobFilterService) {
         this.configService = configService;
         this.bossApiMonitorService = bossApiMonitorService;
         this.jobRepository = jobRepository;
@@ -302,13 +302,22 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
      * 构建搜索URL
      */
     private String getSearchUrl(String cityCode, BossConfigDTO config) {
-        return GEEK_JOB_URL + JobUtils.appendParam("city", cityCode) +
+        return GEEK_JOB_URL +
+        // 城市参数：指定搜索的城市代码
+                JobUtils.appendParam("city", cityCode) +
+                // 职位类型参数：指定搜索的职位类型代码（如：全职、兼职、实习等）
                 JobUtils.appendParam("jobType", config.getJobTypeCode()) +
+                // 薪资参数：指定期望薪资范围代码
                 JobUtils.appendParam("salary", config.getSalaryCode()) +
+                // 工作经验参数：指定工作经验要求代码列表（如：1-3年、3-5年等）
                 JobUtils.appendListParam("experience", config.getExperienceCodes()) +
+                // 学历要求参数：指定学历要求代码列表（如：本科、硕士、博士等）
                 JobUtils.appendListParam("degree", config.getDegreeCodes()) +
+                // 公司规模参数：指定公司规模代码列表（如：20-99人、100-499人等）
                 JobUtils.appendListParam("scale", config.getScaleCodes()) +
+                // 行业参数：指定行业类型代码列表（如：互联网、金融、教育等）
                 JobUtils.appendListParam("industry", config.getIndustryCodes()) +
+                // 融资阶段参数：指定公司融资阶段代码列表（如：天使轮、A轮、B轮等）
                 JobUtils.appendListParam("stage", config.getStageCodes());
     }
 
@@ -643,14 +652,14 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
                         boolean nomatch = message.contains("不是") || message.contains("不生");
                         if (match && !nomatch) {
                             // TODO 数据库中查询获取
-//                            if (!blackCompanies.stream().anyMatch(companyName::contains)) {
-//                                companyName = companyName.replaceAll("\\.{3}", "");
-//                                if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
-//                                    blackCompanies.add(companyName);
-//                                    newBlackCompanies++;
-//                                    log.debug("新增黑名单公司：{} - 拒绝信息：{}", companyName, message);
-//                                }
-//                            }
+                            // if (!blackCompanies.stream().anyMatch(companyName::contains)) {
+                            // companyName = companyName.replaceAll("\\.{3}", "");
+                            // if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
+                            // blackCompanies.add(companyName);
+                            // newBlackCompanies++;
+                            // log.debug("新增黑名单公司：{} - 拒绝信息：{}", companyName, message);
+                            // }
+                            // }
                         }
                     }
                 } catch (Exception e) {

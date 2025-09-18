@@ -6,7 +6,7 @@
 
     <groupId>com.superxiang</groupId>
     <artifactId>npe_get_jobs</artifactId>
-    <version>v2.0.1</version>
+    <version>v2.1.1</version>
     <name>get_jobs</name>
 
     <parent>
@@ -37,6 +37,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty-http</artifactId>
+        </dependency>
+
         <!-- 嵌入式 Tomcat（通常已被 spring-boot-starter-web 间接引入，可视情况保留） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

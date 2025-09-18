@@ -74,8 +74,8 @@ class BossConfigApp {
         // 表单验证
         this.bindFormValidation();
 
-        // 高级配置动态添加
-        this.bindAdvancedConfig();
+        // 高级配置动态添加（仅HR状态，城市编码补充已移除）
+        this.bindHRStatusConfig();
 
         // 实时配置保存
         this.bindAutoSave();
@@ -500,74 +500,8 @@ class BossConfigApp {
         }
     }
 
-    // 高级配置绑定
-    bindAdvancedConfig() {
-        // 城市代码配置
-        this.bindCityCodeConfig();
-        
-        // HR状态配置
-        this.bindHRStatusConfig();
-    }
-
-    // 城市代码配置
-    bindCityCodeConfig() {
-        const container = document.getElementById('customCityCodeContainer');
-        if (!container) return;
-
-        // 添加示例城市代码
-        const sampleCityCodes = [
-            { city: '北京', code: '101010100' },
-            { city: '上海', code: '101020100' },
-            { city: '深圳', code: '101280600' },
-            { city: '广州', code: '101280100' }
-        ];
-
-        sampleCityCodes.forEach(item => {
-            this.addCityCodeItem(container, item.city, item.code);
-        });
-
-        // 添加按钮
-        this.appendAddCityCodeButton(container);
-    }
-
-    // 添加城市代码项
-    addCityCodeItem(container, city, code) {
-        const item = document.createElement('div');
-        item.className = 'd-flex justify-content-between align-items-center mb-2 p-2 bg-white rounded border';
-        item.innerHTML = `
-            <span class="fw-semibold">${city} - ${code}</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="this.parentElement.remove()">
-                <i class="bi bi-trash"></i>
-            </button>
-        `;
-        container.appendChild(item);
-    }
-
-    // 追加“添加城市代码”按钮
-    appendAddCityCodeButton(container) {
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn btn-sm btn-outline-primary mt-2';
-        addBtn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>添加城市代码';
-        addBtn.onclick = () => this.showAddCityCodeModal();
-        container.appendChild(addBtn);
-    }
-
-    // 显示添加城市代码模态框
-    showAddCityCodeModal() {
-        this.showInputModal(
-            '添加城市代码',
-            '城市名称',
-            '请输入城市名称',
-            '城市代码',
-            '请输入城市代码',
-            (city, code) => {
-                if (city && code) {
-                    const container = document.getElementById('customCityCodeContainer');
-                    this.addCityCodeItem(container, city, code);
-                }
-            }
-        );
-    }
+    // 高级配置绑定（城市编码补充已移除）
+    bindAdvancedConfig() {}
 
     // HR状态配置
     bindHRStatusConfig() {
@@ -612,23 +546,7 @@ class BossConfigApp {
         container.appendChild(addBtn);
     }
 
-    // 从DOM收集自定义城市代码
-    collectCustomCityCodeFromDOM() {
-        const container = document.getElementById('customCityCodeContainer');
-        const result = {};
-        if (!container) return result;
-        const items = container.querySelectorAll('div > span.fw-semibold');
-        items.forEach(span => {
-            const text = span.textContent || '';
-            const parts = text.split(' - ');
-            if (parts.length >= 2) {
-                const city = parts[0].trim();
-                const code = parts.slice(1).join(' - ').trim();
-                if (city && code) result[city] = code;
-            }
-        });
-        return result;
-    }
+    // 自定义城市代码功能已移除
 
     // 从DOM收集HR状态集合
     collectDeadStatusFromDOM() {
@@ -672,11 +590,17 @@ class BossConfigApp {
 
     // 保存配置
     saveConfig() {
+        const getMultiSelectValues = (selectId) => {
+            const el = document.getElementById(selectId);
+            if (!el) return '';
+            return Array.from(el.selectedOptions).map(o => o.value).filter(Boolean).join(',');
+        };
+
         this.config = {
             // 搜索条件
             keywords: document.getElementById('keywordsField').value,
             industry: document.getElementById('industryField').value,
-            cityCode: document.getElementById('cityCodeField').value,
+            cityCode: getMultiSelectValues('cityCodeField'),
             
             // 职位要求
             experience: document.getElementById('experienceComboBox').value,
@@ -710,8 +634,7 @@ class BossConfigApp {
             // 系统参数
             waitTime: document.getElementById('waitTimeField').value,
 
-            // 高级配置（新增）：城市代码 & HR状态
-            customCityCode: this.collectCustomCityCodeFromDOM(),
+            // 高级配置（仅HR状态）
             deadStatus: this.collectDeadStatusFromDOM()
         };
 
@@ -787,16 +710,14 @@ class BossConfigApp {
             }
         });
 
-        // 回填自定义城市代码
+        // 回填城市多选
         try {
-            const map = this.config.customCityCode;
-            const container = document.getElementById('customCityCodeContainer');
-            if (container) {
-                container.innerHTML = '';
-                if (map && typeof map === 'object' && !Array.isArray(map)) {
-                    Object.entries(map).forEach(([city, code]) => this.addCityCodeItem(container, city, code));
-                }
-                this.appendAddCityCodeButton(container);
+            const codes = (this.config.cityCode || '').split(',').map(s => s.trim()).filter(Boolean);
+            const citySelect = document.getElementById('cityCodeField');
+            if (citySelect && codes.length) {
+                Array.from(citySelect.options).forEach(opt => {
+                    opt.selected = codes.includes(opt.value);
+                });
             }
         } catch (_) {}
 
@@ -1076,11 +997,16 @@ class BossConfigApp {
 
     // 获取当前配置
     getCurrentConfig() {
+        const getMultiSelectValues = (selectId) => {
+            const el = document.getElementById(selectId);
+            if (!el) return '';
+            return Array.from(el.selectedOptions).map(o => o.value).filter(Boolean).join(',');
+        };
         return {
             // 搜索条件
             keywords: document.getElementById('keywordsField').value,
             industry: document.getElementById('industryField').value,
-            cityCode: document.getElementById('cityCodeField').value,
+            cityCode: getMultiSelectValues('cityCodeField'),
             
             // 职位要求
             experience: document.getElementById('experienceComboBox').value,
@@ -1113,8 +1039,7 @@ class BossConfigApp {
             // 系统参数
             waitTime: document.getElementById('waitTimeField').value,
 
-            // 高级配置（新增）：城市代码 & HR状态
-            customCityCode: this.collectCustomCityCodeFromDOM(),
+            // 高级配置（仅HR状态）
             deadStatus: this.collectDeadStatusFromDOM()
         };
     }
@@ -1372,6 +1297,130 @@ class BossConfigApp {
 // 页面加载完成后初始化应用（原配置表单/记录页逻辑）
 document.addEventListener('DOMContentLoaded', () => {
     window.bossConfigApp = new BossConfigApp();
+
+    // 加载 Boss 字典并渲染到控件
+    (async function loadBossDicts() {
+        try {
+            const res = await fetch('http://localhost:8080/dicts/BOSS_ZHIPIN');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (!data || !Array.isArray(data.groups)) return;
+
+            const groupMap = new Map();
+            data.groups.forEach(g => groupMap.set(g.key, Array.isArray(g.items) ? g.items : []));
+
+            // 渲染城市（Bootstrap Dropdown + 搜索 + 多选）并与隐藏select联动
+            const cityItems = groupMap.get('cityList') || [];
+            const citySelect = document.getElementById('cityCodeField');
+            const citySearch = document.getElementById('citySearchField');
+            const cityListContainer = document.getElementById('cityDropdownList');
+            const cityDropdownBtn = document.getElementById('cityDropdownBtn');
+            const citySummary = document.getElementById('citySelectionSummary');
+
+            const updateCitySummary = () => {
+                if (!citySelect || !cityDropdownBtn || !citySummary) return;
+                const values = Array.from(citySelect.selectedOptions).map(o => o.textContent);
+                if (values.length === 0) {
+                    cityDropdownBtn.textContent = '选择城市';
+                    citySummary.textContent = '未选择';
+                } else if (values.length <= 2) {
+                    const text = values.join('、');
+                    cityDropdownBtn.textContent = text;
+                    citySummary.textContent = `已选 ${values.length} 项：${text}`;
+                } else {
+                    cityDropdownBtn.textContent = `已选 ${values.length} 项`;
+                    citySummary.textContent = `已选 ${values.length} 项`;
+                }
+            };
+
+            const renderCityOptions = (list) => {
+                if (!citySelect) return;
+                // 保留当前已选
+                const selected = new Set(Array.from(citySelect.selectedOptions).map(o => o.value));
+
+                // 重建隐藏select
+                citySelect.innerHTML = '';
+                list.forEach(it => {
+                    const value = it.code ?? '';
+                    const label = `${it.name ?? ''}${it.code ? ' (' + it.code + ')' : ''}`;
+                    const opt = document.createElement('option');
+                    opt.value = value;
+                    opt.textContent = label;
+                    if (selected.has(value)) opt.selected = true;
+                    citySelect.appendChild(opt);
+                });
+
+                // 重建dropdown列表
+                if (cityListContainer) {
+                    cityListContainer.innerHTML = '';
+                    list.forEach(it => {
+                        const value = it.code ?? '';
+                        const label = `${it.name ?? ''}${it.code ? ' (' + it.code + ')' : ''}`;
+
+                        const item = document.createElement('div');
+                        item.className = 'form-check mb-1';
+                        const id = `city_chk_${value}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
+                        item.innerHTML = `
+                            <input class="form-check-input" type="checkbox" value="${value}" id="${id}" ${selected.has(value) ? 'checked' : ''}>
+                            <label class="form-check-label small" for="${id}">${label}</label>
+                        `;
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        checkbox.addEventListener('change', () => {
+                            // 同步到隐藏select
+                            const option = Array.from(citySelect.options).find(o => o.value === value);
+                            if (option) option.selected = checkbox.checked;
+                            updateCitySummary();
+                        });
+                        cityListContainer.appendChild(item);
+                    });
+                }
+
+                updateCitySummary();
+            };
+
+            renderCityOptions(cityItems);
+            if (citySearch) {
+                citySearch.addEventListener('input', () => {
+                    const kw = citySearch.value.trim().toLowerCase();
+                    if (!kw) {
+                        renderCityOptions(cityItems);
+                        return;
+                    }
+                    const filtered = cityItems.filter(it =>
+                        String(it.name || '').toLowerCase().includes(kw) ||
+                        String(it.code || '').toLowerCase().includes(kw)
+                    );
+                    renderCityOptions(filtered);
+                });
+            }
+
+            // 通用方法：将字典渲染到 select
+            const fillSelect = (selectId, items) => {
+                const sel = document.getElementById(selectId);
+                if (!sel || !Array.isArray(items)) return;
+                // 保留第一项“请选择”，其余重建
+                const first = sel.querySelector('option');
+                sel.innerHTML = '';
+                if (first && first.value === '') sel.appendChild(first);
+                items.forEach(it => {
+                    const opt = document.createElement('option');
+                    opt.value = it.code ?? it.name ?? '';
+                    opt.textContent = it.name ?? String(it.code ?? '');
+                    sel.appendChild(opt);
+                });
+            };
+
+            fillSelect('experienceComboBox', groupMap.get('experienceList'));
+            fillSelect('salaryComboBox', groupMap.get('salaryList'));
+            fillSelect('degreeComboBox', groupMap.get('degreeList'));
+            fillSelect('scaleComboBox', groupMap.get('scaleList'));
+            fillSelect('stageComboBox', groupMap.get('stageList'));
+            fillSelect('jobTypeComboBox', groupMap.get('jobTypeList'));
+
+        } catch (e) {
+            console.warn('加载Boss字典失败：', e?.message || e);
+        }
+    })();
 
     // =============================
     // 初始化"求职配置"Vue 视图

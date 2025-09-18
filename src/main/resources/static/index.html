@@ -124,49 +124,29 @@
                                                        placeholder="互联网, 金融科技, 人工智能">
                                             </div>
 
-                                            <!-- City -->
+                                            <!-- City (Bootstrap Dropdown + 搜索 + 多选)，保留隐藏select兼容旧逻辑 -->
                                             <div class="mb-2">
                                                 <label for="cityCodeField" class="form-label fw-semibold small">
                                                     工作城市
                                                     <i class="bi bi-question-circle text-muted ms-1"
                                                        data-bs-toggle="tooltip"
-                                                       title="输入期望工作的城市，多个城市用逗号分隔，例如：北京,上海,广州"></i>
+                                                       title="从字典中选择工作城市，支持模糊检索；可多选"></i>
                                                 </label>
-                                                <input type="text" class="form-control form-control-sm" id="cityCodeField"
-                                                       placeholder="北京, 上海, 深圳">
-                                            </div>
-                                            <!-- Advanced Configuration Accordion -->
-                                            <div class="accordion" id="advancedConfigAccordion">
-                                                <div class="accordion-item">
-                                                    <h2 class="accordion-header">
-                                                        <button class="accordion-button collapsed" type="button"
-                                                                data-bs-toggle="collapse" data-bs-target="#advancedConfig"
-                                                                aria-expanded="false" aria-controls="advancedConfig">
-                                                            <i class="bi bi-gear-fill me-2"></i>城市编码补充
-                                                        </button>
-                                                    </h2>
-                                                    <div id="advancedConfig" class="accordion-collapse collapse"
-                                                         data-bs-parent="#advancedConfigAccordion">
-                                                        <div class="accordion-body p-2">
-                                                            <!-- Custom City Codes -->
-                                                            <div class="mb-2">
-                                                                <label class="form-label fw-semibold small">
-                                                                    补充城市代码
-                                                                    <i class="bi bi-question-circle text-muted ms-1"
-                                                                       data-bs-toggle="tooltip"
-                                                                       title="添加自定义的城市代码映射关系"></i>
-                                                                </label>
-                                                                <div id="customCityCodeContainer"
-                                                                     class="border rounded p-2 bg-light">
-                                                                    <small class="text-muted fst-italic">格式：城市名 -
-                                                                        城市代码</small>
-                                                                </div>
-                                                            </div>
-
-                                                        </div>
+                                                <div class="dropdown w-100">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button"
+                                                            id="cityDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        选择城市
+                                                    </button>
+                                                    <div class="dropdown-menu p-2 w-100" aria-labelledby="cityDropdownBtn" style="min-width: 100%;">
+                                                        <input type="text" class="form-control form-control-sm mb-2" id="citySearchField"
+                                                               placeholder="输入城市名或编码进行筛选...">
+                                                        <div id="cityDropdownList" style="max-height: 240px; overflow: auto;"></div>
                                                     </div>
                                                 </div>
+                                                <small class="text-muted d-block mt-1" id="citySelectionSummary">未选择</small>
+                                                <select class="form-select form-select-sm d-none" id="cityCodeField" multiple></select>
                                             </div>
+                                            <!-- Advanced Configuration Accordion (城市编码补充已移除) -->
                                         </div>
 
                                         <!-- Job Requirements Card -->
