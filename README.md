@@ -61,6 +61,7 @@
 
 - Github(国外访问)：https://github.com/loks666/get_jobs
 - Gitee·码云(中国大陆)：https://gitee.com/lok666/get_jobs
+- GitCode(中国大陆)：https://gitcode.com/super_journey/get_jobs
 
 ### AI代理购买
 
