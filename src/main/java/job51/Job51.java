@@ -22,6 +22,11 @@ import static utils.JobUtils.formatDuration;
  * 前程无忧自动投递简历
  */
 public class Job51 {
+    static {
+        // 在类加载时就设置日志文件名，确保Logger初始化时能获取到正确的属性
+        System.setProperty("log.name", "job51");
+    }
+    
     private static final Logger log = LoggerFactory.getLogger(Job51.class);
 
     static Integer page = 1;
@@ -50,6 +55,16 @@ public class Job51 {
         resultList.clear();
         CHROME_DRIVER.close();
         CHROME_DRIVER.quit();
+        
+        // 确保所有日志都被刷新到文件
+        try {
+            Thread.sleep(1000); // 等待1秒确保日志写入完成
+            // 强制刷新日志 - 使用正确的方法
+            ch.qos.logback.classic.LoggerContext loggerContext = (ch.qos.logback.classic.LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
+            loggerContext.stop();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private static String getSearchUrl() {

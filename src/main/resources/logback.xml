@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <property name="log.path" value="./target/logs"/>
-    <property name="server.name" value="job"/>
+    <!-- 支持通过系统属性设置日志文件名，默认为job -->
+    <property name="server.name" value="${log.name:-job}"/>
 
     <!-- 设置日志格式，包含日期、线程、日志级别、类名、方法名、文件和行号 -->
     <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
 <!--    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg (%caller{1})%n"/>-->
     <property name="log.file" value="${log.path}/${server.name}.%d{yyyy-MM-dd}.log"/>
+    
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <charset>UTF-8</charset>
@@ -23,6 +25,8 @@
             <fileNamePattern>${log.file}</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
+        <!-- 立即刷新到文件，确保日志不丢失 -->
+        <immediateFlush>true</immediateFlush>
     </appender>
 
     <root level="INFO">
