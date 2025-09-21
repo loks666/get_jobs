@@ -7,17 +7,13 @@ spring:
   application:
     name: npe-get-jobs
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
+    url: 'jdbc:sqlite::memory:'
+    driver-class-name: org.sqlite.JDBC
+    username:
     password:
   sql:
     init:
       mode: always 
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -25,10 +21,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: 
         hbm2ddl:
           auto: create-drop
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: 
 
 logging:
   level:
