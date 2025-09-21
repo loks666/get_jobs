@@ -1,4 +1,4 @@
-package getjobs.modules.dict.infrastructure.provider.dto;
+package getjobs.modules.dict.infrastructure.provider.dto.boss;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

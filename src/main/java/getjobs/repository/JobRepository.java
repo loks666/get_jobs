@@ -18,8 +18,8 @@ public interface JobRepository extends JpaRepository<JobEntity, Long> {
             "   OR LOWER(j.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "   OR LOWER(j.hrName) LIKE LOWER(CONCAT('%', :keyword, '%')) )")
     Page<JobEntity> search(@Param("platform") String platform,
-                           @Param("keyword") String keyword,
-                           Pageable pageable);
+            @Param("keyword") String keyword,
+            Pageable pageable);
 
     /**
      * 根据加密职位ID检查职位是否存在
@@ -60,6 +60,14 @@ public interface JobRepository extends JpaRepository<JobEntity, Long> {
      * @return 职位实体列表
      */
     List<JobEntity> findByStatusNot(Integer status);
+
+    /**
+     * 根据状态查找职位
+     *
+     * @param status 状态值
+     * @return 职位实体列表
+     */
+    List<JobEntity> findByStatus(Integer status);
 
     List<JobEntity> findAllByEncryptJobIdIn(List<String> encryptJobIds);
 }

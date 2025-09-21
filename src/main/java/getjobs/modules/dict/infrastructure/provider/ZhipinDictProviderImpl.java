@@ -7,9 +7,9 @@ import getjobs.modules.dict.api.DictGroup;
 import getjobs.modules.dict.api.DictGroupKey;
 import getjobs.modules.dict.api.DictItem;
 import getjobs.modules.dict.domain.DictProvider;
-import getjobs.modules.dict.infrastructure.provider.dto.CityGroupData;
+import getjobs.modules.dict.infrastructure.provider.dto.boss.CityGroupData;
 import getjobs.modules.dict.infrastructure.provider.dto.ConditionsData;
-import getjobs.modules.dict.infrastructure.provider.dto.ZhipinResponse;
+import getjobs.modules.dict.infrastructure.provider.dto.boss.ZhipinResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -123,6 +123,13 @@ public class ZhipinDictProviderImpl implements DictProvider {
                     if (data.stageList() != null) {
                         groups.add(new DictGroup(DictGroupKey.STAGE.key(),
                                 data.stageList().stream()
+                                        .map(item -> new DictItem(String.valueOf(item.code()), item.name()))
+                                        .collect(Collectors.toList())));
+                    }
+
+                    if (data.companyNatureList() != null) {
+                        groups.add(new DictGroup(DictGroupKey.COMPANY_NATURE.key(),
+                                data.companyNatureList().stream()
                                         .map(item -> new DictItem(String.valueOf(item.code()), item.name()))
                                         .collect(Collectors.toList())));
                     }

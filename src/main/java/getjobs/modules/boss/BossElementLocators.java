@@ -12,8 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 public class BossElementLocators {
     // 主页相关元素
     public static final String LOGIN_BTN = "//li[@class='nav-figure']";
-    public static final String LOGIN_SCAN_SWITCH = "//div[@class='btn-sign-switch ewm-switch' " +
-            "or @class='btn-sign-switch phone-switch']";
     public static final String LOGIN_SUCCESS_HEADER = "//*[@id=\"header\"]/div[1]/div[@class='user-nav']/ul/li[@class='nav-figure']";
 
     /**
@@ -33,8 +31,6 @@ public class BossElementLocators {
     // 职位详情页元素
     public static final String CHAT_BUTTON = "a.btn.btn-startchat";
     public static final String ERROR_CONTENT = "//div[@class='error-content']";
-    public static final String RECRUITER_INFO = "//div[@class='boss-info-attr']";
-    public static final String HR_ACTIVE_TIME = "//span[@class='boss-active-time']";
 
     // 聊天相关元素
     public static final String DIALOG_TITLE = "//div[@class='dialog-title']";

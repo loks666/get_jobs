@@ -1,4 +1,4 @@
-package getjobs.modules.boss.enums;
+package getjobs.enums;
 
 import lombok.Getter;
 

@@ -1,10 +1,9 @@
 package getjobs.controller;
 
 import getjobs.modules.boss.dto.ConfigDTO;
-import getjobs.modules.boss.service.BossTaskService;
-import getjobs.modules.boss.service.BossTaskService.*;
+import getjobs.modules.job51.service.Job51TaskService;
+import getjobs.modules.job51.service.Job51TaskService.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Boss任务控制器 - 提供4个独立的API接口
+ * 51job任务控制器 - 提供4个独立的API接口
  * 
  * @author loks666
  *         项目链接: <a href=
@@ -20,25 +19,28 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/boss/task")
-public class BossTaskController {
+@RequestMapping("/api/job51/task")
+public class Job51TaskController {
 
-    @Autowired
-    private BossTaskService bossTaskService;
+    private final Job51TaskService job51TaskService;
+
+    public Job51TaskController(Job51TaskService job51TaskService) {
+        this.job51TaskService = job51TaskService;
+    }
 
     /**
      * 1. 登录接口
-     * POST /api/boss/task/login
+     * POST /api/job51/task/login
      * 
-     * @param config Boss配置信息
+     * @param config 51job配置信息
      * @return 登录结果
      */
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody ConfigDTO config) {
-        log.info("接收到Boss登录请求");
+        log.info("接收到51job登录请求");
 
         try {
-            LoginResult result = bossTaskService.login(config);
+            LoginResult result = job51TaskService.login(config);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", result.isSuccess());
@@ -47,15 +49,15 @@ public class BossTaskController {
             response.put("timestamp", result.getTimestamp());
 
             if (result.isSuccess()) {
-                log.info("Boss登录成功，任务ID: {}", result.getTaskId());
+                log.info("51job登录成功，任务ID: {}", result.getTaskId());
                 return ResponseEntity.ok(response);
             } else {
-                log.warn("Boss登录失败，任务ID: {}, 原因: {}", result.getTaskId(), result.getMessage());
+                log.warn("51job登录失败，任务ID: {}, 原因: {}", result.getTaskId(), result.getMessage());
                 return ResponseEntity.badRequest().body(response);
             }
 
         } catch (Exception e) {
-            log.error("Boss登录接口执行异常", e);
+            log.error("51job登录接口执行异常", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "登录接口执行异常: " + e.getMessage());
@@ -65,17 +67,17 @@ public class BossTaskController {
 
     /**
      * 2. 采集岗位接口
-     * POST /api/boss/task/collect
+     * POST /api/job51/task/collect
      * 
-     * @param config Boss配置信息
+     * @param config 51job配置信息
      * @return 采集结果
      */
     @PostMapping("/collect")
     public ResponseEntity<Map<String, Object>> collectJobs(@RequestBody ConfigDTO config) {
-        log.info("接收到Boss岗位采集请求");
+        log.info("接收到51job岗位采集请求");
 
         try {
-            CollectResult result = bossTaskService.collectJobs(config);
+            CollectResult result = job51TaskService.collectJobs(config);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -87,11 +89,11 @@ public class BossTaskController {
             // 如果需要返回详细岗位信息，可以添加以下行
             // response.put("jobs", result.getJobs());
 
-            log.info("Boss岗位采集完成，任务ID: {}, 采集到 {} 个岗位", result.getTaskId(), result.getJobCount());
+            log.info("51job岗位采集完成，任务ID: {}, 采集到 {} 个岗位", result.getTaskId(), result.getJobCount());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("Boss岗位采集接口执行异常", e);
+            log.error("51job岗位采集接口执行异常", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "采集接口执行异常: " + e.getMessage());
@@ -101,17 +103,17 @@ public class BossTaskController {
 
     /**
      * 3. 过滤岗位接口
-     * POST /api/boss/task/filter
+     * POST /api/job51/task/filter
      * 
      * @param request 过滤请求
      * @return 过滤结果
      */
     @PostMapping("/filter")
     public ResponseEntity<Map<String, Object>> filterJobs(@RequestBody FilterRequest request) {
-        log.info("接收到Boss岗位过滤请求");
+        log.info("接收到51job岗位过滤请求");
 
         try {
-            FilterResult result = bossTaskService.filterJobs(request.getConfig());
+            FilterResult result = job51TaskService.filterJobs(request.getConfig());
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -123,12 +125,12 @@ public class BossTaskController {
             // 如果需要返回详细岗位信息，可以添加以下行
             // response.put("jobs", result.getJobs());
 
-            log.info("Boss岗位过滤完成，原始 {} 个，过滤后 {} 个",
+            log.info("51job岗位过滤完成，原始 {} 个，过滤后 {} 个",
                     result.getOriginalCount(), result.getFilteredCount());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("Boss岗位过滤接口执行异常", e);
+            log.error("51job岗位过滤接口执行异常", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "过滤接口执行异常: " + e.getMessage());
@@ -138,18 +140,18 @@ public class BossTaskController {
 
     /**
      * 4. 投递岗位接口
-     * POST /api/boss/task/deliver
+     * POST /api/job51/task/deliver
      * 
      * @param request 投递请求（包含配置和是否实际投递）
      * @return 投递结果
      */
     @PostMapping("/deliver")
     public ResponseEntity<Map<String, Object>> deliverJobs(@RequestBody DeliveryRequest request) {
-        log.info("接收到Boss岗位投递请求，实际投递: {}",
+        log.info("接收到51job岗位投递请求，实际投递: {}",
                 request.isEnableActualDelivery());
 
         try {
-            DeliveryResult result = bossTaskService.deliverJobs(
+            DeliveryResult result = job51TaskService.deliverJobs(
                     request.getConfig(),
                     request.isEnableActualDelivery());
 
@@ -167,12 +169,12 @@ public class BossTaskController {
                 response.put("jobDetails", result.getJobDetails());
             }
 
-            log.info("Boss岗位投递完成，任务ID: {}, 处理 {} 个岗位",
+            log.info("51job岗位投递完成，任务ID: {}, 处理 {} 个岗位",
                     result.getTaskId(), result.getDeliveredCount());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("Boss岗位投递接口执行异常", e);
+            log.error("51job岗位投递接口执行异常", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "投递接口执行异常: " + e.getMessage());
@@ -182,7 +184,7 @@ public class BossTaskController {
 
     /**
      * 查询任务状态接口
-     * GET /api/boss/task/status/{taskId}
+     * GET /api/job51/task/status/{taskId}
      * 
      * @param taskId 任务ID
      * @return 任务状态
@@ -190,7 +192,7 @@ public class BossTaskController {
     @GetMapping("/status/{taskId}")
     public ResponseEntity<Map<String, Object>> getTaskStatus(@PathVariable String taskId) {
         try {
-            BossTaskService.TaskStatus status = bossTaskService.getTaskStatus(taskId);
+            Job51TaskService.TaskStatus status = job51TaskService.getTaskStatus(taskId);
 
             Map<String, Object> response = new HashMap<>();
             if (status != null) {
@@ -215,7 +217,7 @@ public class BossTaskController {
 
     /**
      * 清理任务数据接口
-     * DELETE /api/boss/task/{taskId}
+     * DELETE /api/job51/task/{taskId}
      * 
      * @param taskId 任务ID
      * @return 清理结果
@@ -223,7 +225,7 @@ public class BossTaskController {
     @DeleteMapping("/{taskId}")
     public ResponseEntity<Map<String, Object>> clearTask(@PathVariable String taskId) {
         try {
-            bossTaskService.clearTaskData(taskId);
+            job51TaskService.clearTaskData(taskId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);

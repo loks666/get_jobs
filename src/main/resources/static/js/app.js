@@ -630,9 +630,7 @@ class BossConfigApp {
             enableAIJobMatchDetection: document.getElementById('enableAIJobMatchDetectionCheckBox').checked,
             enableAIGreeting: document.getElementById('enableAIGreetingCheckBox').checked,
             checkStateOwned: document.getElementById('checkStateOwnedCheckBox').checked,
-            
-            // 系统参数
-            waitTime: document.getElementById('waitTimeField').value,
+        
 
             // 高级配置（仅HR状态）
             deadStatus: this.collectDeadStatusFromDOM()
@@ -1035,9 +1033,7 @@ class BossConfigApp {
             enableAIJobMatchDetection: document.getElementById('enableAIJobMatchDetectionCheckBox').checked,
             enableAIGreeting: document.getElementById('enableAIGreetingCheckBox').checked,
             checkStateOwned: document.getElementById('checkStateOwnedCheckBox').checked,
-            
-            // 系统参数
-            waitTime: document.getElementById('waitTimeField').value,
+        
 
             // 高级配置（仅HR状态）
             deadStatus: this.collectDeadStatusFromDOM()
@@ -1297,6 +1293,11 @@ class BossConfigApp {
 // 页面加载完成后初始化应用（原配置表单/记录页逻辑）
 document.addEventListener('DOMContentLoaded', () => {
     window.bossConfigApp = new BossConfigApp();
+    
+    // 初始化51job配置表单
+    if (window.Job51ConfigForm) {
+        window.job51ConfigApp = new Job51ConfigForm();
+    }
 
     // 加载 Boss 字典并渲染到控件
     (async function loadBossDicts() {

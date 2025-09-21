@@ -1,6 +1,6 @@
 package getjobs.service;
 
-import getjobs.modules.boss.dto.BossConfigDTO;
+import getjobs.modules.boss.dto.ConfigDTO;
 import getjobs.modules.boss.dto.JobDTO;
 import getjobs.enums.RecruitmentPlatformEnum;
 
@@ -30,7 +30,7 @@ public interface RecruitmentService {
      * @param config 配置信息
      * @return 是否登录成功
      */
-    boolean login(BossConfigDTO config);
+    boolean login(ConfigDTO config);
 
     /**
      * 2. 采集岗位功能
@@ -39,7 +39,7 @@ public interface RecruitmentService {
      * @param config 配置信息，包含城市代码、关键词等搜索条件
      * @return 采集到的岗位列表
      */
-    List<JobDTO> collectJobs(BossConfigDTO config);
+    List<JobDTO> collectJobs(ConfigDTO config);
 
     /**
      * 采集推荐岗位
@@ -47,7 +47,7 @@ public interface RecruitmentService {
      * @param config 配置信息
      * @return 推荐岗位列表
      */
-    List<JobDTO> collectRecommendJobs(BossConfigDTO config);
+    List<JobDTO> collectRecommendJobs(ConfigDTO config);
 
     /**
      * 3. 过滤岗位功能
@@ -57,7 +57,7 @@ public interface RecruitmentService {
      * @param config 配置信息，包含薪资范围、黑名单等过滤条件
      * @return 过滤后的岗位列表
      */
-    List<JobDTO> filterJobs(List<JobDTO> jobDTOS, BossConfigDTO config);
+    List<JobDTO> filterJobs(List<JobDTO> jobDTOS, ConfigDTO config);
 
     /**
      * 4. 执行投递功能
@@ -67,7 +67,7 @@ public interface RecruitmentService {
      * @param config 配置信息，包含打招呼内容、简历等
      * @return 投递成功的岗位数量
      */
-    int deliverJobs(List<JobDTO> jobDTOS, BossConfigDTO config);
+    int deliverJobs(List<JobDTO> jobDTOS, ConfigDTO config);
 
     /**
      * 检查是否已达投递上限

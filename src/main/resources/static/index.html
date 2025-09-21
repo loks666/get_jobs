@@ -510,24 +510,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- System Configuration Card -->
-                                        <div class="config-card mb-2">
-                                            <h6 class="card-title text-warning mb-2">
-                                                <i class="bi bi-tools me-2"></i>系统参数
-                                            </h6>
-
-                                            <!-- Wait Time -->
-                                            <div class="mb-2">
-                                                <label for="waitTimeField" class="form-label fw-semibold small">
-                                                    操作间隔时间 (秒)
-                                                    <i class="bi bi-question-circle text-muted ms-1"
-                                                       data-bs-toggle="tooltip"
-                                                       title="设置每次操作之间的等待时间，建议设置在10-30秒之间"></i>
-                                                </label>
-                                                <input type="number" class="form-control form-control-sm" id="waitTimeField"
-                                                       placeholder="10" min="1" max="300">
-                                            </div>
-                                        </div>
 
                                         <!-- Action Buttons -->
                                         <div class="d-grid gap-2 mt-auto">
@@ -677,10 +659,6 @@
                                             <tr v-if="config.expectedSalary">
                                                 <td class="text-muted">期望薪资</td>
                                                 <td>{{ Array.isArray(config.expectedSalary) ? config.expectedSalary.join(' ~ ') : config.expectedSalary }}</td>
-                                            </tr>
-                                            <tr v-if="config.waitTime">
-                                                <td class="text-muted">操作间隔(秒)</td>
-                                                <td>{{ config.waitTime }}</td>
                                             </tr>
                                             <tr>
                                                 <td class="text-muted">过滤不活跃HR</td>
@@ -1140,7 +1118,356 @@
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="job51-config-pane" role="tabpanel"
                      aria-labelledby="job51-config-tab">
-                    <div class="alert alert-info">51job 配置即将上线，敬请期待。</div>
+                    <div class="row g-2" style="height: calc(100vh - 200px);">
+                        <!-- Left Panel: Basic Configuration -->
+                        <div class="col-lg-6">
+                            <div class="card shadow-lg h-100">
+                                <div class="card-header bg-white border-0 py-2">
+                                    <h6 class="mb-0 text-dark">
+                                        <i class="bi bi-gear-fill me-2 text-primary"></i>基本配置
+                                    </h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="d-flex flex-column h-100">
+
+                                        <!-- Search Configuration Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-primary mb-2">
+                                                <i class="bi bi-search me-2"></i>搜索条件
+                                            </h6>
+
+                                            <!-- Keywords -->
+                                            <div class="mb-2">
+                                                <label for="job51KeywordsField" class="form-label fw-semibold small">
+                                                    搜索关键词
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="输入职位搜索关键词，多个关键词请用英文逗号分隔，例如：Java,Spring,后端"></i>
+                                                </label>
+                                                <input type="text" class="form-control form-control-sm" id="job51KeywordsField"
+                                                       placeholder="Java, Spring Boot, 微服务">
+                                            </div>
+
+                                            <!-- Industry -->
+                                            <div class="mb-2">
+                                                <label for="job51IndustryField" class="form-label fw-semibold small">
+                                                    目标行业
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="选择目标公司所属行业，可多选"></i>
+                                                </label>
+                                                <select class="form-select form-select-sm" id="job51IndustryField" multiple>
+                                                    <option value="">请选择行业</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- City -->
+                                            <div class="mb-2">
+                                                <label for="job51CityCodeField" class="form-label fw-semibold small">
+                                                    工作城市
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="从字典中选择工作城市，支持模糊检索；可多选"></i>
+                                                </label>
+                                                <div class="dropdown w-100">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button"
+                                                            id="job51CityDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        选择城市
+                                                    </button>
+                                                    <div class="dropdown-menu p-2 w-100" aria-labelledby="job51CityDropdownBtn" style="min-width: 100%;">
+                                                        <input type="text" class="form-control form-control-sm mb-2" id="job51CitySearchField"
+                                                               placeholder="输入城市名或编码进行筛选...">
+                                                        <div id="job51CityDropdownList" style="max-height: 240px; overflow: auto;"></div>
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted d-block mt-1" id="job51CitySelectionSummary">未选择</small>
+                                                <select class="form-select form-select-sm d-none" id="job51CityCodeField" multiple></select>
+                                            </div>
+                                        </div>
+
+                                        <!-- Job Requirements Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-primary mb-2">
+                                                <i class="bi bi-clipboard-check me-2"></i>职位要求
+                                            </h6>
+
+                                            <div class="row g-2">
+                                                <!-- Experience -->
+                                                <div class="col-md-6">
+                                                    <label for="job51ExperienceComboBox" class="form-label fw-semibold small">
+                                                        工作经验
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择您的工作年限区间"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="job51ExperienceComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Job Type -->
+                                                <div class="col-md-6">
+                                                    <label for="job51JobTypeComboBox" class="form-label fw-semibold small">
+                                                        求职类型
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望的工作性质，如全职、兼职等"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="job51JobTypeComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Salary Range -->
+                                                <div class="col-md-6">
+                                                    <label for="job51SalaryComboBox" class="form-label fw-semibold small">
+                                                        薪资范围
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望的月薪范围"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="job51SalaryComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Education -->
+                                                <div class="col-md-6">
+                                                    <label for="job51DegreeComboBox" class="form-label fw-semibold small">
+                                                        学历要求
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择您的最高学历"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="job51DegreeComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Company Scale -->
+                                                <div class="col-md-6">
+                                                    <label for="job51ScaleComboBox" class="form-label fw-semibold small">
+                                                        公司规模
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望的公司人员规模"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="job51ScaleComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Company Nature -->
+                                                <div class="col-md-6">
+                                                    <label for="job51CompanyNatureComboBox" class="form-label fw-semibold small">
+                                                        公司性质
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望公司的性质，如国企、外企、民企等"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="job51CompanyNatureComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Resume Configuration Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-primary mb-2">
+                                                <i class="bi bi-file-earmark-text me-2"></i>简历配置
+                                            </h6>
+
+                                            <!-- Resume Content -->
+                                            <div class="mb-2">
+                                                <label for="job51ResumeContentTextArea" class="form-label fw-semibold small">
+                                                    简历内容摘要
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="设置详细的简历内容，包括个人信息、技能、工作经历、项目经验等"></i>
+                                                </label>
+                                                <textarea class="form-control form-control-sm" id="job51ResumeContentTextArea" rows="3"
+                                                          placeholder="在此输入详细的简历内容..."></textarea>
+                                            </div>
+
+                                            <!-- Cover Letter -->
+                                            <div class="mb-2">
+                                                <label for="job51CoverLetterTextArea" class="form-label fw-semibold small">
+                                                    求职信内容
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="设置求职信内容，用于向HR展示您的求职意向"></i>
+                                                </label>
+                                                <textarea class="form-control form-control-sm" id="job51CoverLetterTextArea" rows="2"
+                                                          placeholder="您好，我对贵公司的职位很感兴趣..."></textarea>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Settings & AI Configuration -->
+                        <div class="col-lg-6">
+                            <div class="card shadow-lg h-100">
+                                <div class="card-header bg-white border-0 py-2">
+                                    <h6 class="mb-0 text-dark">
+                                        <i class="bi bi-cpu me-2 text-success"></i>智能设置
+                                    </h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="d-flex flex-column h-100">
+
+                                        <!-- Feature Toggles Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-info mb-2">
+                                                <i class="bi bi-toggle-on me-2"></i>功能开关
+                                            </h6>
+
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="job51AutoApplyCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="job51AutoApplyCheckBox">
+                                                    自动投递简历
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将自动投递简历到匹配的职位"></i>
+                                                </label>
+                                            </div>
+
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="job51SmartFilterCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="job51SmartFilterCheckBox">
+                                                    智能职位过滤
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将根据设定的条件智能过滤职位"></i>
+                                                </label>
+                                            </div>
+
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="job51KeywordMatchCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="job51KeywordMatchCheckBox">
+                                                    关键词匹配
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将根据设定的关键词智能匹配职位要求"></i>
+                                                </label>
+                                            </div>
+
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="job51BlacklistFilterCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="job51BlacklistFilterCheckBox">
+                                                    过滤黑名单职位
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将根据黑名单关键词过滤不想要的职位"></i>
+                                                </label>
+                                            </div>
+
+                                            <!-- Blacklist Keywords Config -->
+                                            <div class="mb-2">
+                                                <label for="job51BlacklistKeywordsTextArea" class="form-label fw-semibold small">
+                                                    黑名单关键词配置
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="请输入黑名单关键词，使用英文逗号或换行分隔；示例：外包, 中介, 驻场"></i>
+                                                </label>
+                                                <textarea class="form-control form-control-sm" id="job51BlacklistKeywordsTextArea" rows="2"
+                                                          placeholder="外包, 中介, 驻场"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <!-- AI Configuration Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-success mb-2">
+                                                <i class="bi bi-robot me-2"></i>AI智能配置
+                                            </h6>
+
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="job51EnableAIJobMatchCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="job51EnableAIJobMatchCheckBox">
+                                                    AI职位匹配检测
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将使用AI智能分析职位描述，检测职位与期望的匹配度"></i>
+                                                </label>
+                                            </div>
+
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="job51EnableAICoverLetterCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="job51EnableAICoverLetterCheckBox">
+                                                    AI智能求职信
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将使用AI智能生成个性化的求职信内容，提高HR回复率"></i>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="d-grid gap-2 mt-auto">
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2"
+                                                            id="job51SaveConfigBtn">
+                                                        <i class="bi bi-save me-2"></i>保存配置
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-success btn-sm w-100 py-2"
+                                                            id="job51TestConfigBtn">
+                                                        <i class="bi bi-play-circle me-2"></i>测试配置
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 任务执行按钮组 -->
+                                            <div class="border-top pt-2">
+                                                <h6 class="text-muted mb-2 small">
+                                                    <i class="bi bi-list-ol me-2"></i>任务执行步骤
+                                                </h6>
+                                                
+                                                <!-- 步骤1: 登录 -->
+                                                <button type="button" class="btn btn-primary btn-sm w-100 py-2 mb-1"
+                                                        id="job51LoginBtn">
+                                                    <i class="bi bi-box-arrow-in-right me-2"></i>1. 51job登录
+                                                    <span class="badge bg-light text-dark ms-2" id="job51LoginStatus">待执行</span>
+                                                </button>
+                                                
+                                                <!-- 步骤2: 采集职位 -->
+                                                <button type="button" class="btn btn-info btn-sm w-100 py-2 mb-1"
+                                                        id="job51CollectBtn" disabled>
+                                                    <i class="bi bi-collection me-2"></i>2. 采集职位
+                                                    <span class="badge bg-light text-dark ms-2" id="job51CollectStatus">等待登录</span>
+                                                </button>
+                                                
+                                                <!-- 步骤3: 过滤职位 -->
+                                                <button type="button" class="btn btn-warning btn-sm w-100 py-2 mb-1"
+                                                        id="job51FilterBtn" disabled>
+                                                    <i class="bi bi-funnel me-2"></i>3. 过滤职位
+                                                    <span class="badge bg-light text-dark ms-2" id="job51FilterStatus">等待登录</span>
+                                                </button>
+                                                
+                                                <!-- 步骤4: 投递职位 -->
+                                                <button type="button" class="btn btn-success btn-sm w-100 py-2 mb-1"
+                                                        id="job51ApplyBtn" disabled>
+                                                    <i class="bi bi-rocket-takeoff me-2"></i>4. 投递职位
+                                                    <span class="badge bg-light text-dark ms-2" id="job51ApplyStatus">等待登录</span>
+                                                </button>
+                                                
+                                                <!-- 重置按钮 -->
+                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100"
+                                                        id="job51ResetTasksBtn">
+                                                    <i class="bi bi-arrow-clockwise me-1"></i>重置任务流程
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="tab-pane fade" id="job51-records-pane" role="tabpanel" aria-labelledby="job51-records-tab">
                     <div class="card shadow-lg">
@@ -1197,6 +1524,7 @@
 <script src="js/views/boss-config-form.js"></script>
 <script src="js/views/boss-config-readonly.js"></script>
 <script src="js/views/boss-records-vue.js"></script>
+<script src="js/views/job51-config-form.js"></script>
 <!-- App Entrypoint -->
 <script src="js/app.js"></script>
 

@@ -1,0 +1,224 @@
+package getjobs.modules.job51.service.impl;
+
+import com.microsoft.playwright.Page;
+import getjobs.enums.RecruitmentPlatformEnum;
+import getjobs.modules.boss.dto.ConfigDTO;
+import getjobs.modules.boss.dto.JobDTO;
+import getjobs.modules.job51.service.Job51ElementLocators;
+import getjobs.service.RecruitmentService;
+import getjobs.utils.PlaywrightUtil;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Scanner;
+
+/**
+ * 51job招聘服务实现
+ *
+ * @author loks666
+ * 项目链接: <a href=
+ * "https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ */
+@Slf4j
+@Service
+public class Job51RecruitmentServiceImpl implements RecruitmentService {
+
+    private static final String HOME_URL = RecruitmentPlatformEnum.JOB_51.getHomeUrl();
+    private static final String LOGIN_URL = "https://login.51job.com/login.php";
+    private static final String SEARCH_JOB_URL = "https://we.51job.com/pc/search?";
+
+    @Override
+    public RecruitmentPlatformEnum getPlatform() {
+        return RecruitmentPlatformEnum.JOB_51;
+    }
+
+    @Override
+    public boolean login(ConfigDTO config) {
+        log.info("开始51job登录检查");
+
+        try {
+            // 使用Playwright打开网站
+            Page page = PlaywrightUtil.getPageObject();
+            page.navigate(HOME_URL);
+
+            // 检查是否需要登录
+            if (isLoginRequired()) {
+                log.info("需要登录，开始登录流程");
+                return login();
+            } else {
+                log.info("51job已登录");
+                return true;
+            }
+        } catch (Exception e) {
+            log.error("51job登录失败", e);
+            return false;
+        }
+    }
+
+    @Override
+    public List<JobDTO> collectJobs(ConfigDTO config) {
+        log.info("开始执行51job岗位采集操作");
+        try {
+            Page page = PlaywrightUtil.getPageObject();
+            config.getCityCodeCodes().forEach(cityCode -> {
+                // 构造搜索条件
+                String searchParams = "jobArea=" + cityCode + "&keyword=" + config.getKeywords();
+                page.navigate(SEARCH_JOB_URL + searchParams);
+            });
+
+            log.info("51job岗位采集功能待实现");
+            return List.of(); // 暂时返回空列表，等待具体实现
+
+        } catch (Exception e) {
+            log.error("51job岗位采集失败", e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public List<JobDTO> collectRecommendJobs(ConfigDTO config) {
+        // TODO: 实现51job推荐岗位采集逻辑
+        return List.of();
+    }
+
+    @Override
+    public List<JobDTO> filterJobs(List<JobDTO> jobDTOS, ConfigDTO config) {
+        log.info("开始执行51job岗位过滤操作，待过滤岗位数量: {}", jobDTOS.size());
+        try {
+            // TODO: 实现51job岗位过滤逻辑
+            // 这里需要根据51job的岗位特点和过滤规则来实现过滤
+            // 可以参考Boss直聘的过滤逻辑，但需要适配51job的岗位结构
+
+            log.info("51job岗位过滤功能待实现");
+            return jobDTOS; // 暂时返回原始列表，等待具体实现
+
+        } catch (Exception e) {
+            log.error("51job岗位过滤失败", e);
+            return jobDTOS;
+        }
+    }
+
+    @Override
+    public int deliverJobs(List<JobDTO> jobDTOS, ConfigDTO config) {
+        log.info("开始执行51job岗位投递操作，待投递岗位数量: {}", jobDTOS.size());
+        try {
+            // TODO: 实现51job岗位投递逻辑
+            // 这里需要根据51job的投递流程来实现岗位投递
+            // 可能需要模拟点击投递按钮、填写投递信息等操作
+
+            log.info("51job岗位投递功能待实现");
+            return 0; // 暂时返回0，等待具体实现
+
+        } catch (Exception e) {
+            log.error("51job岗位投递失败", e);
+            return 0;
+        }
+    }
+
+    @Override
+    public boolean isDeliveryLimitReached() {
+        // TODO: 实现51job投递限制检查逻辑
+        // 这里需要检查是否达到51job的投递限制
+        log.info("51job投递限制检查功能待实现");
+        return false; // 暂时返回false，等待具体实现
+    }
+
+    @Override
+    public void saveData(String dataPath) {
+        log.info("开始保存51job数据到路径: {}", dataPath);
+        try {
+            // TODO: 实现51job数据保存逻辑
+            // 这里需要保存51job相关的数据，如登录状态、采集的岗位信息等
+
+            log.info("51job数据保存功能待实现");
+
+        } catch (Exception e) {
+            log.error("51job数据保存失败", e);
+        }
+    }
+
+    // ==================== 私有辅助方法 ====================
+
+    /**
+     * 检查是否需要登录
+     */
+    private boolean isLoginRequired() {
+        try {
+            Page page = PlaywrightUtil.getPageObject();
+
+            // 检查是否存在登录按钮
+            if (Job51ElementLocators.hasLoginElement(page)) {
+                log.debug("检测到登录按钮，需要登录");
+                return true; // 需要登录
+            }
+
+            return false;
+        } catch (Exception e) {
+            log.error("登录状态检查出错", e);
+            return true; // 出错时默认需要登录
+        }
+    }
+
+    /**
+     * 登录检查
+     */
+    @SneakyThrows
+    private boolean login() {
+        Page page = PlaywrightUtil.getPageObject();
+        page.navigate(LOGIN_URL);
+        PlaywrightUtil.sleep(3);
+
+        try {
+            // 检查是否已经登录
+            if (Job51ElementLocators.isUserLoggedIn(page)) {
+                log.info("检测到已登录状态");
+                return true;
+            }
+        } catch (Exception ignored) {
+        }
+
+        log.info("等待用户手动登录...");
+
+        boolean login = false;
+
+        while (!login) {
+            try {
+                // 使用统一的登录状态检查方法
+                if (Job51ElementLocators.isUserLoggedIn(page)) {
+                    login = true;
+                    log.info("登录成功");
+                }
+            } catch (Exception e) {
+                // 登录检查异常，继续等待
+                log.debug("登录状态检查异常，继续等待: {}", e.getMessage());
+            }
+
+            // 等待一段时间后再次检查
+            PlaywrightUtil.sleep(3);
+        }
+
+        return true;
+    }
+
+    /**
+     * 等待用户输入或超时
+     */
+    private boolean waitForUserInputOrTimeout(Scanner scanner) {
+        long end = System.currentTimeMillis() + 2000;
+        while (System.currentTimeMillis() < end) {
+            try {
+                if (System.in.available() > 0) {
+                    scanner.nextLine();
+                    return true;
+                }
+            } catch (IOException e) {
+                // 忽略异常
+            }
+            PlaywrightUtil.sleep(1);
+        }
+        return false;
+    }
+}

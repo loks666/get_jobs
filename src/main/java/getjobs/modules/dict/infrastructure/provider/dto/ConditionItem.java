@@ -6,6 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * 条件项
  */
 public record ConditionItem(
-        @JsonProperty("code") int code,
-        @JsonProperty("name") String name) {
+                @JsonProperty("code") String code,
+                @JsonProperty("name") String name) {
 }

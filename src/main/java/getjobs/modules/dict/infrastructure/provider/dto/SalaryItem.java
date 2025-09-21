@@ -6,8 +6,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * 薪资项
  */
 public record SalaryItem(
-        @JsonProperty("code") int code,
-        @JsonProperty("name") String name,
-        @JsonProperty("lowSalary") int lowSalary,
-        @JsonProperty("highSalary") int highSalary) {
+                @JsonProperty("code") String code,
+                @JsonProperty("name") String name,
+                @JsonProperty("lowSalary") Integer lowSalary,
+                @JsonProperty("highSalary") Integer highSalary) {
 }

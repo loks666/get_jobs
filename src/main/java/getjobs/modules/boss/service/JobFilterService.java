@@ -1,6 +1,6 @@
 package getjobs.modules.boss.service;
 
-import getjobs.modules.boss.dto.BossConfigDTO;
+import getjobs.modules.boss.dto.ConfigDTO;
 import getjobs.modules.boss.dto.JobDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ public class JobFilterService {
     private Set<String> blackJobs = new HashSet<>();
 
 
-    public List<JobDTO> filterJobs(List<JobDTO> jobDTOS, BossConfigDTO config) {
+    public List<JobDTO> filterJobs(List<JobDTO> jobDTOS, ConfigDTO config) {
         log.info("开始Boss直聘岗位过滤，原始岗位数量: {}", jobDTOS.size());
 
         List<JobDTO> filteredJobDTOS = jobDTOS.stream()
@@ -43,7 +43,7 @@ public class JobFilterService {
      * @param config 配置信息
      * @return 过滤原因，null表示通过过滤
      */
-    private String getFilterReason(JobDTO job, BossConfigDTO config) {
+    private String getFilterReason(JobDTO job, ConfigDTO config) {
         // 检查岗位黑名单
         if (isJobInBlacklist(job)) {
             return "岗位名称包含黑名单关键词";
@@ -101,7 +101,7 @@ public class JobFilterService {
     /**
      * 检查薪资是否符合预期
      */
-    private boolean isSalaryExpected(JobDTO jobDTO, BossConfigDTO config) {
+    private boolean isSalaryExpected(JobDTO jobDTO, ConfigDTO config) {
         if (jobDTO.getSalary() == null || jobDTO.getSalary().isEmpty()) {
             return true; // 没有薪资信息时默认通过
         }

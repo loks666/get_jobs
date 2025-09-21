@@ -12,10 +12,12 @@ public enum DictGroupKey {
     EXPERIENCE("experienceList", "工作经验"),
     SALARY("salaryList", "薪资区间"),
     STAGE("stageList", "融资阶段"),
+    COMPANY_NATURE("companyNatureList", "公司性质"),
     SCALE("scaleList", "公司规模"),
     PART_TIME("partTimeList", "兼职类型"),
     DEGREE("degreeList", "学历"),
-    JOB_TYPE("jobTypeList", "工作类型");
+    JOB_TYPE("jobTypeList", "工作类型"),
+    INDUSTRY("industryList", "行业类别");
 
     private final String key;
     private final String description;

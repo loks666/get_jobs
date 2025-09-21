@@ -13,7 +13,7 @@ import lombok.Getter;
 public enum RecruitmentPlatformEnum {
     BOSS_ZHIPIN("Boss直聘", "boss", "https://www.zhipin.com"),
     ZHILIAN_ZHAOPIN("智联招聘", "zhilian", "https://www.zhaopin.com"),
-    JOB_51("51job", "51job", "https://www.51job.com");
+    JOB_51("51job", "51job", "https://51job.com/");
 
     /**
      * 平台名称

@@ -1,4 +1,4 @@
-package getjobs.modules.boss.service;
+package getjobs.modules.job51.service;
 
 import getjobs.modules.boss.dto.ConfigDTO;
 import getjobs.enums.RecruitmentPlatformEnum;
@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Boss任务服务 - 将4个核心操作分离为独立的服务方法
+ * 51job任务服务 - 将4个核心操作分离为独立的服务方法
  * 
  * @author loks666
  *         项目链接: <a href=
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-public class BossTaskService {
+public class Job51TaskService {
 
     private final PlaywrightManager playwrightManager;
 
@@ -46,8 +46,8 @@ public class BossTaskService {
     private final ConcurrentHashMap<String, TaskStatus> taskStatusMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Date> taskStartTimeMap = new ConcurrentHashMap<>();
 
-    public BossTaskService(PlaywrightManager playwrightManager, RecruitmentServiceFactory serviceFactory,
-            JobService jobService, JobRepository jobRepository, JobFilterService jobFilterService) {
+    public Job51TaskService(PlaywrightManager playwrightManager, RecruitmentServiceFactory serviceFactory,
+            JobService jobService, JobRepository jobRepository) {
         this.playwrightManager = playwrightManager;
         this.serviceFactory = serviceFactory;
         this.jobService = jobService;
@@ -75,16 +75,16 @@ public class BossTaskService {
         taskStartTimeMap.put(taskId, new Date());
 
         try {
-            log.info("开始执行登录操作，任务ID: {}", taskId);
+            log.info("开始执行51job登录操作，任务ID: {}", taskId);
 
             // 确保Playwright已初始化
             playwrightManager.ensureInitialized();
 
-            // 获取Boss直聘服务
-            RecruitmentService bossService = serviceFactory.getService(RecruitmentPlatformEnum.BOSS_ZHIPIN);
+            // 获取51job服务
+            RecruitmentService job51Service = serviceFactory.getService(RecruitmentPlatformEnum.JOB_51);
 
             // 执行登录
-            boolean success = bossService.login(config);
+            boolean success = job51Service.login(config);
 
             LoginResult result = new LoginResult();
             result.setTaskId(taskId);
@@ -94,11 +94,11 @@ public class BossTaskService {
 
             taskStatusMap.put(taskId, success ? TaskStatus.COMPLETED : TaskStatus.FAILED);
 
-            log.info("登录操作完成，任务ID: {}, 结果: {}", taskId, success ? "成功" : "失败");
+            log.info("51job登录操作完成，任务ID: {}, 结果: {}", taskId, success ? "成功" : "失败");
             return result;
 
         } catch (Exception e) {
-            log.error("登录操作执行失败，任务ID: {}", taskId, e);
+            log.error("51job登录操作执行失败，任务ID: {}", taskId, e);
             taskStatusMap.put(taskId, TaskStatus.FAILED);
 
             LoginResult result = new LoginResult();
@@ -122,24 +122,24 @@ public class BossTaskService {
         taskStartTimeMap.put(taskId, new Date());
 
         try {
-            log.info("开始执行岗位采集操作，任务ID: {}", taskId);
+            log.info("开始执行51job岗位采集操作，任务ID: {}", taskId);
 
             // 确保Playwright已初始化
             playwrightManager.ensureInitialized();
 
-            // 获取Boss直聘服务
-            RecruitmentService bossService = serviceFactory.getService(RecruitmentPlatformEnum.BOSS_ZHIPIN);
+            // 获取51job服务
+            RecruitmentService job51Service = serviceFactory.getService(RecruitmentPlatformEnum.JOB_51);
 
             // 采集岗位
             List<JobDTO> allJobDTOS = new ArrayList<>();
 
             // 采集搜索岗位
-            List<JobDTO> searchJobDTOS = bossService.collectJobs(config);
+            List<JobDTO> searchJobDTOS = job51Service.collectJobs(config);
             allJobDTOS.addAll(searchJobDTOS);
 
             // 采集推荐岗位（如果配置开启）
             if (config.getRecommendJobs()) {
-                List<JobDTO> recommendJobDTOS = bossService.collectRecommendJobs(config);
+                List<JobDTO> recommendJobDTOS = job51Service.collectRecommendJobs(config);
                 allJobDTOS.addAll(recommendJobDTOS);
             }
 
@@ -147,7 +147,7 @@ public class BossTaskService {
             int savedCount = 0;
             if (!allJobDTOS.isEmpty()) {
                 try {
-                    savedCount = jobService.saveJobs(allJobDTOS, RecruitmentPlatformEnum.BOSS_ZHIPIN.name());
+                    savedCount = jobService.saveJobs(allJobDTOS, RecruitmentPlatformEnum.JOB_51.name());
                     log.info("成功保存 {} 个岗位到数据库", savedCount);
                 } catch (Exception e) {
                     log.error("保存岗位到数据库失败", e);
@@ -164,11 +164,11 @@ public class BossTaskService {
 
             taskStatusMap.put(taskId, TaskStatus.COMPLETED);
 
-            log.info("岗位采集操作完成，任务ID: {}, 采集到 {} 个岗位，保存到数据库 {} 个", taskId, allJobDTOS.size(), savedCount);
+            log.info("51job岗位采集操作完成，任务ID: {}, 采集到 {} 个岗位，保存到数据库 {} 个", taskId, allJobDTOS.size(), savedCount);
             return result;
 
         } catch (Exception e) {
-            log.error("岗位采集操作执行失败，任务ID: {}", taskId, e);
+            log.error("51job岗位采集操作执行失败，任务ID: {}", taskId, e);
             taskStatusMap.put(taskId, TaskStatus.FAILED);
 
             CollectResult result = new CollectResult();
@@ -189,12 +189,12 @@ public class BossTaskService {
      */
     public FilterResult filterJobs(ConfigDTO config) {
         try {
-            log.info("开始执行岗位过滤操作");
+            log.info("开始执行51job岗位过滤操作");
 
-            RecruitmentService bossService = serviceFactory.getService(RecruitmentPlatformEnum.BOSS_ZHIPIN);
+            RecruitmentService job51Service = serviceFactory.getService(RecruitmentPlatformEnum.JOB_51);
 
             // 直接从数据库查询所有职位实体
-            List<JobEntity> allJobEntities = jobService.findAllJobEntitiesByPlatform("BOSS直聘");
+            List<JobEntity> allJobEntities = jobService.findAllJobEntitiesByPlatform("51job");
             if (allJobEntities == null || allJobEntities.isEmpty()) {
                 throw new IllegalArgumentException("数据库中未找到职位数据或职位数据为空");
             }
@@ -209,7 +209,7 @@ public class BossTaskService {
                 JobDTO job = jobService.convertToDTO(entity);
                 jobDTOS.add(job);
             }
-            List<JobDTO> filterJobs = bossService.filterJobs(jobDTOS, config);
+            List<JobDTO> filterJobs = job51Service.filterJobs(jobDTOS, config);
             filterJobs.forEach(job -> {
                 String filterReason = job.getFilterReason();
                 if (filterReason == null) {
@@ -246,12 +246,12 @@ public class BossTaskService {
                     allJobEntities.size(), filteredJobDTOS.size(), filteredJobIds.size()));
             result.setTimestamp(new Date());
 
-            log.info("岗位过滤操作完成，原始 {} 个，过滤后 {} 个，已过滤 {} 个",
+            log.info("51job岗位过滤操作完成，原始 {} 个，过滤后 {} 个，已过滤 {} 个",
                     allJobEntities.size(), filteredJobDTOS.size(), filteredJobIds.size());
             return result;
 
         } catch (Exception e) {
-            log.error("岗位过滤操作执行失败", e);
+            log.error("51job岗位过滤操作执行失败", e);
 
             FilterResult result = new FilterResult();
             result.setTaskId(null);
@@ -277,7 +277,7 @@ public class BossTaskService {
         taskStartTimeMap.put(taskId, new Date());
 
         try {
-            log.info("开始执行岗位投递操作，任务ID: {}, 实际投递: {}",
+            log.info("开始执行51job岗位投递操作，任务ID: {}, 实际投递: {}",
                     taskId, enableActualDelivery);
 
             // 从数据库获取待处理状态的岗位记录
@@ -294,14 +294,14 @@ public class BossTaskService {
             int deliveredCount = 0;
 
             if (enableActualDelivery) {
-                // 获取Boss直聘服务
-                RecruitmentService bossService = serviceFactory.getService(RecruitmentPlatformEnum.BOSS_ZHIPIN);
+                // 获取51job服务
+                RecruitmentService job51Service = serviceFactory.getService(RecruitmentPlatformEnum.JOB_51);
 
                 // 执行实际投递
-                deliveredCount = bossService.deliverJobs(filteredJobDTOS, config);
+                deliveredCount = job51Service.deliverJobs(filteredJobDTOS, config);
 
                 // 保存数据
-                bossService.saveData(dataPath);
+                job51Service.saveData(dataPath);
 
                 log.info("实际投递完成，成功投递 {} 个岗位", deliveredCount);
             } else {
@@ -326,11 +326,11 @@ public class BossTaskService {
 
             taskStatusMap.put(taskId, TaskStatus.COMPLETED);
 
-            log.info("岗位投递操作完成，任务ID: {}, 处理 {} 个岗位", taskId, deliveredCount);
+            log.info("51job岗位投递操作完成，任务ID: {}, 处理 {} 个岗位", taskId, deliveredCount);
             return result;
 
         } catch (Exception e) {
-            log.error("岗位投递操作执行失败，任务ID: {}", taskId, e);
+            log.error("51job岗位投递操作执行失败，任务ID: {}", taskId, e);
             taskStatusMap.put(taskId, TaskStatus.FAILED);
 
             DeliveryResult result = new DeliveryResult();

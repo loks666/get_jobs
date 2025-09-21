@@ -1,6 +1,5 @@
 package getjobs.modules.boss.dto;
 
-import getjobs.modules.boss.enums.BossEnum;
 import getjobs.repository.entity.ConfigEntity;
 import getjobs.repository.ConfigRepository;
 import getjobs.utils.SpringContextUtil;
@@ -11,7 +10,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Data
-public class BossConfigDTO {
+public class ConfigDTO {
 
     // 文本与布尔
     private String sayHi;
@@ -57,14 +56,14 @@ public class BossConfigDTO {
     private List<String> deadStatus;
 
     // ------------ 单例加载 ------------
-    private static volatile BossConfigDTO instance;
+    private static volatile ConfigDTO instance;
 
-    private BossConfigDTO() {
+    private ConfigDTO() {
     }
 
-    public static BossConfigDTO getInstance() {
+    public static ConfigDTO getInstance() {
         if (instance == null) {
-            synchronized (BossConfigDTO.class) {
+            synchronized (ConfigDTO.class) {
                 if (instance == null) {
                     instance = init();
                 }
@@ -74,14 +73,14 @@ public class BossConfigDTO {
     }
 
     @SneakyThrows
-    private static BossConfigDTO init() {
+    private static ConfigDTO init() {
         // 从数据库查询ConfigEntity
         ConfigRepository configRepository = SpringContextUtil.getBean(ConfigRepository.class);
         Optional<ConfigEntity> configOpt = configRepository.getDefaultConfig();
 
         if (configOpt.isEmpty()) {
             // 如果数据库中没有配置，返回默认配置
-            return new BossConfigDTO();
+            return new ConfigDTO();
         }
 
         // 转换为BossConfigDTO
@@ -96,8 +95,8 @@ public class BossConfigDTO {
     /**
      * 将ConfigEntity转换为BossConfigDTO
      */
-    private static BossConfigDTO convertFromEntity(ConfigEntity entity) {
-        BossConfigDTO dto = new BossConfigDTO();
+    private static ConfigDTO convertFromEntity(ConfigEntity entity) {
+        ConfigDTO dto = new ConfigDTO();
 
         // 基础字段映射
         dto.setSayHi(entity.getSayHi());
@@ -168,37 +167,30 @@ public class BossConfigDTO {
                     if (customCityCode != null && customCityCode.containsKey(city)) {
                         return customCityCode.get(city);
                     }
-                    return BossEnum.CityCode.forValue(city).getCode();
+                    return city;
                 })
                 .collect(Collectors.toList());
     }
 
     public List<String> getIndustryCodes() {
-        return mapToCodes(splitToList(industry), v -> BossEnum.Industry.forValue(v).getCode());
+        return mapToCodes(splitToList(industry), v -> v);
     }
 
     public List<String> getExperienceCodes() {
-        return mapToCodes(splitToList(experience), v -> BossEnum.Experience.forValue(v).getCode());
+        return mapToCodes(splitToList(experience), v -> v);
     }
 
-    public String getJobTypeCode() {
-        return BossEnum.JobType.forValue(jobType).getCode();
-    }
-
-    public String getSalaryCode() {
-        return BossEnum.Salary.forValue(salary).getCode();
-    }
 
     public List<String> getDegreeCodes() {
-        return mapToCodes(splitToList(degree), v -> BossEnum.Degree.forValue(v).getCode());
+        return mapToCodes(splitToList(degree), v -> degree);
     }
 
     public List<String> getScaleCodes() {
-        return mapToCodes(splitToList(scale), v -> BossEnum.Scale.forValue(v).getCode());
+        return mapToCodes(splitToList(scale), v -> scale);
     }
 
     public List<String> getStageCodes() {
-        return mapToCodes(splitToList(stage), v -> BossEnum.Financing.forValue(v).getCode());
+        return mapToCodes(splitToList(stage), v -> stage);
     }
 
     public List<Integer> getExpectedSalary() {

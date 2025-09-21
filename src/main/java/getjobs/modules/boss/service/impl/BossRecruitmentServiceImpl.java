@@ -9,9 +9,9 @@ import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import getjobs.enums.RecruitmentPlatformEnum;
 import getjobs.modules.boss.BossElementLocators;
-import getjobs.modules.boss.dto.BossConfigDTO;
+import getjobs.modules.boss.dto.ConfigDTO;
 import getjobs.modules.boss.dto.JobDTO;
-import getjobs.modules.boss.enums.JobStatusEnum;
+import getjobs.enums.JobStatusEnum;
 import getjobs.modules.boss.service.JobFilterService;
 import getjobs.modules.boss.service.playwright.BossApiMonitorService;
 import getjobs.repository.JobRepository;
@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -71,7 +70,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     }
 
     @Override
-    public boolean login(BossConfigDTO config) {
+    public boolean login(ConfigDTO config) {
         log.info("开始Boss直聘登录检查");
 
         try {
@@ -102,7 +101,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     }
 
     @Override
-    public List<JobDTO> collectJobs(BossConfigDTO config) {
+    public List<JobDTO> collectJobs(ConfigDTO config) {
         log.info("开始Boss直聘岗位采集");
         List<JobDTO> allJobDTOS = new ArrayList<>();
 
@@ -124,7 +123,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     }
 
     @Override
-    public List<JobDTO> collectRecommendJobs(BossConfigDTO config) {
+    public List<JobDTO> collectRecommendJobs(ConfigDTO config) {
         log.info("开始Boss直聘推荐岗位采集");
         List<JobDTO> recommendJobDTOS = new ArrayList<>();
 
@@ -168,12 +167,12 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     }
 
     @Override
-    public List<JobDTO> filterJobs(List<JobDTO> jobDTOS, BossConfigDTO config) {
+    public List<JobDTO> filterJobs(List<JobDTO> jobDTOS, ConfigDTO config) {
         return jobFilterService.filterJobs(jobDTOS, config);
     }
 
     @Override
-    public int deliverJobs(List<JobDTO> jobDTOS, BossConfigDTO config) {
+    public int deliverJobs(List<JobDTO> jobDTOS, ConfigDTO config) {
         log.info("开始Boss直聘岗位投递，待投递岗位数量: {}", jobDTOS.size());
         int successCount = 0;
 
@@ -263,7 +262,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     /**
      * 按城市采集岗位
      */
-    private List<JobDTO> collectJobsByCity(String cityCode, String keyword, BossConfigDTO config) {
+    private List<JobDTO> collectJobsByCity(String cityCode, String keyword, ConfigDTO config) {
         String searchUrl = getSearchUrl(cityCode, config);
         String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
         String url = searchUrl + "&query=" + encodedKeyword;
@@ -301,14 +300,14 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     /**
      * 构建搜索URL
      */
-    private String getSearchUrl(String cityCode, BossConfigDTO config) {
+    private String getSearchUrl(String cityCode, ConfigDTO config) {
         return GEEK_JOB_URL +
         // 城市参数：指定搜索的城市代码
                 JobUtils.appendParam("city", cityCode) +
                 // 职位类型参数：指定搜索的职位类型代码（如：全职、兼职、实习等）
-                JobUtils.appendParam("jobType", config.getJobTypeCode()) +
+                JobUtils.appendParam("jobType", config.getJobType()) +
                 // 薪资参数：指定期望薪资范围代码
-                JobUtils.appendParam("salary", config.getSalaryCode()) +
+                JobUtils.appendParam("salary", config.getSalary()) +
                 // 工作经验参数：指定工作经验要求代码列表（如：1-3年、3-5年等）
                 JobUtils.appendListParam("experience", config.getExperienceCodes()) +
                 // 学历要求参数：指定学历要求代码列表（如：本科、硕士、博士等）
@@ -373,7 +372,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
      * 投递单个岗位
      */
     @SneakyThrows
-    private boolean deliverSingleJob(JobDTO jobDTO, BossConfigDTO config) {
+    private boolean deliverSingleJob(JobDTO jobDTO, ConfigDTO config) {
         // 在新标签页中打开岗位详情
         Page jobPage = PlaywrightUtil.getPageObject().context().newPage();
 
@@ -403,7 +402,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     /**
      * 执行具体的投递操作
      */
-    private boolean performDelivery(Page jobPage, JobDTO jobDTO, BossConfigDTO config) {
+    private boolean performDelivery(Page jobPage, JobDTO jobDTO, ConfigDTO config) {
         try {
             Locator chatBtn = jobPage.locator(CHAT_BUTTON).nth(0);
 
@@ -458,7 +457,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     /**
      * 处理聊天输入框
      */
-    private boolean handleChatInput(Page jobPage, JobDTO jobDTO, BossConfigDTO config) {
+    private boolean handleChatInput(Page jobPage, JobDTO jobDTO, ConfigDTO config) {
         try {
             Locator input = jobPage.locator(CHAT_INPUT).nth(0);
 
@@ -502,7 +501,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     /**
      * 发送简历图片
      */
-    private boolean sendResumeImage(Page jobPage, BossConfigDTO config) {
+    private boolean sendResumeImage(Page jobPage, ConfigDTO config) {
         try {
             String resumePath = config.getResumeImagePath();
             if (resumePath != null && !resumePath.isEmpty()) {

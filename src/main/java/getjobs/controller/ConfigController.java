@@ -1,6 +1,6 @@
 package getjobs.controller;
 
-import getjobs.modules.boss.dto.BossConfigDTO;
+import getjobs.modules.boss.dto.ConfigDTO;
 import getjobs.repository.entity.ConfigEntity;
 import getjobs.service.ConfigService;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +21,10 @@ public class ConfigController {
     }
 
     @PostMapping("/boss")
-    public ResponseEntity<Map<String, Object>> saveBossConfig(@RequestBody BossConfigDTO dto) {
+    public ResponseEntity<Map<String, Object>> saveBossConfig(@RequestBody ConfigDTO dto) {
         ConfigEntity entity = toEntity(dto);
         entity = configService.save(entity);
-        BossConfigDTO.reload();
+        ConfigDTO.reload();
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("success", true);
@@ -38,7 +38,7 @@ public class ConfigController {
         return ResponseEntity.ok(entity);
     }
 
-    private ConfigEntity toEntity(BossConfigDTO dto) {
+    private ConfigEntity toEntity(ConfigDTO dto) {
         ConfigEntity e = new ConfigEntity();
         e.setSayHi(dto.getSayHi());
         e.setKeywords(split(dto.getKeywords()));
