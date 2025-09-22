@@ -843,7 +843,8 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
      */
     private String getCookieFromConfig() {
         try {
-            ConfigEntity config = configService.load();
+            ConfigEntity config = configService
+                    .loadByPlatformType(RecruitmentPlatformEnum.BOSS_ZHIPIN.getPlatformCode());
             return config != null ? config.getCookieData() : null;
         } catch (Exception e) {
             log.error("从配置中获取Cookie失败", e);
@@ -856,7 +857,8 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
      */
     private void saveCookieToConfig() {
         try {
-            ConfigEntity config = configService.load();
+            ConfigEntity config = configService
+                    .loadByPlatformType(RecruitmentPlatformEnum.BOSS_ZHIPIN.getPlatformCode());
             if (config == null) {
                 config = new ConfigEntity();
             }
@@ -865,6 +867,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
             String cookieJson = getCurrentCookiesAsJson();
             config.setCookieData(cookieJson);
 
+            config.setPlatformType(RecruitmentPlatformEnum.BOSS_ZHIPIN.getPlatformCode());
             configService.save(config);
             log.info("Cookie已保存到配置实体");
         } catch (Exception e) {

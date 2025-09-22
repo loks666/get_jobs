@@ -22,4 +22,9 @@ public interface ConfigRepository extends JpaRepository<ConfigEntity, Long> {
     default Optional<ConfigEntity> getDefaultConfig() {
         return findFirstConfig();
     }
+
+    /**
+     * 按平台类型获取配置
+     */
+    Optional<ConfigEntity> findFirstByPlatformTypeOrderByIdAsc(String platformType);
 }

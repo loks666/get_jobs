@@ -6,6 +6,7 @@
         constructor() {
             this.config = {};
             this.isRunning = false;
+            this.dictDataLoaded = false; // 字典数据加载状态标志
             this.init();
         }
 
@@ -233,20 +234,39 @@
         async loadDataSequentially() {
             try {
                 console.log('BossConfigForm: 开始按顺序加载数据：字典 -> 配置');
+                
                 // 先加载字典数据
                 await this.loadBossDicts();
                 console.log('BossConfigForm: 字典数据加载完成，开始加载配置数据');
+                
+                // 等待DOM元素完全渲染
+                await this.waitForDOMReady();
+                
                 // 再加载配置数据
                 await this.loadSavedConfig();
                 console.log('BossConfigForm: 配置数据加载完成');
+                
             } catch (error) {
                 console.error('BossConfigForm: 数据加载失败:', error);
             }
         }
 
+        // 等待DOM元素完全准备就绪
+        async waitForDOMReady() {
+            return new Promise((resolve) => {
+                // 等待一个事件循环，确保所有DOM操作完成
+                setTimeout(() => {
+                    console.log('BossConfigForm: DOM元素准备就绪');
+                    resolve();
+                }, 100);
+            });
+        }
+
         // 加载保存的配置
         async loadSavedConfig() {
             try {
+                console.log('BossConfigForm: 开始加载配置数据...');
+                
                 const res = await fetch('/api/config/boss');
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const ct = res.headers.get('content-type') || '';
@@ -261,7 +281,12 @@
                 
                 if (data && typeof data === 'object' && Object.keys(data).length) {
                     this.config = data;
+                    console.log('BossConfigForm: 从后端加载到配置数据:', this.config);
+                    
+                    // 确保字典数据已加载后再填充表单
+                    await this.waitForDictDataReady();
                     this.populateForm();
+                    
                     localStorage.setItem('bossConfig', JSON.stringify(this.config));
                     return;
                 }
@@ -271,6 +296,10 @@
                 if (savedConfig) {
                     try {
                         this.config = JSON.parse(savedConfig);
+                        console.log('BossConfigForm: 从本地缓存加载到配置数据:', this.config);
+                        
+                        // 确保字典数据已加载后再填充表单
+                        await this.waitForDictDataReady();
                         this.populateForm();
                     } catch (error) {
                         console.warn('本地配置损坏，已清理：' + error.message);
@@ -284,6 +313,10 @@
                 if (savedConfig) {
                     try {
                         this.config = JSON.parse(savedConfig);
+                        console.log('BossConfigForm: 从本地缓存加载到配置数据（异常情况）:', this.config);
+                        
+                        // 确保字典数据已加载后再填充表单
+                        await this.waitForDictDataReady();
                         this.populateForm();
                     } catch (error) {
                         console.warn('本地配置损坏，已清理：' + error.message);
@@ -293,16 +326,257 @@
             }
         }
 
+        // 等待字典数据准备就绪
+        async waitForDictDataReady() {
+            return new Promise(async (resolve) => {
+                // 首先等待字典数据加载事件
+                if (!this.dictDataLoaded) {
+                    console.log('BossConfigForm: 等待字典数据加载完成...');
+                    
+                    // 监听字典数据加载完成事件
+                    const handleDictLoaded = () => {
+                        console.log('BossConfigForm: 收到字典数据加载完成事件');
+                        window.removeEventListener('bossDictDataLoaded', handleDictLoaded);
+                        // 继续等待DOM完全渲染
+                        this.waitForAllDictDataReady().then(resolve);
+                    };
+                    
+                    window.addEventListener('bossDictDataLoaded', handleDictLoaded);
+                    
+                    // 设置超时，避免无限等待
+                    setTimeout(() => {
+                        console.warn('BossConfigForm: 等待字典数据超时，强制继续');
+                        window.removeEventListener('bossDictDataLoaded', handleDictLoaded);
+                        this.waitForAllDictDataReady().then(resolve);
+                    }, 5000);
+                } else {
+                    // 字典数据已加载，等待DOM完全渲染
+                    console.log('BossConfigForm: 字典数据已就绪，等待DOM完全渲染');
+                    await this.waitForAllDictDataReady();
+                    resolve();
+                }
+            });
+        }
+
         populateForm() {
+            console.log('BossConfigForm: 开始填充表单，配置数据:', this.config);
+            
+            // 先处理普通字段
             Object.keys(this.config).forEach(key => {
                 const element = document.getElementById(this.getFieldId(key));
                 if (element) {
                     if (element.type === 'checkbox') {
                         element.checked = this.config[key];
+                        console.log(`BossConfigForm: 设置复选框 ${key} = ${this.config[key]}`);
                     } else {
                         element.value = this.config[key];
+                        console.log(`BossConfigForm: 设置字段 ${key} = ${this.config[key]}`);
                     }
                 }
+            });
+
+            // 特殊处理城市选择器
+            this.populateCitySelector();
+            
+            // 特殊处理其他下拉框
+            this.populateSelectBoxes();
+        }
+
+        // 填充城市选择器
+        populateCitySelector() {
+            const cityCode = this.config.cityCode;
+            if (!cityCode) return;
+            
+            console.log('BossConfigForm: 填充城市选择器，城市代码:', cityCode);
+            
+            const citySelect = document.getElementById('cityCodeField');
+            const cityDropdownBtn = document.getElementById('cityDropdownBtn');
+            const citySummary = document.getElementById('citySelectionSummary');
+            
+            if (!citySelect) {
+                console.warn('BossConfigForm: 未找到城市选择器元素');
+                return;
+            }
+
+            // 解析城市代码（支持逗号分隔的多个城市）
+            const codes = cityCode.split(',').map(s => s.trim()).filter(Boolean);
+            console.log('BossConfigForm: 解析的城市代码:', codes);
+
+            // 设置隐藏select的选中状态
+            Array.from(citySelect.options).forEach(opt => {
+                opt.selected = codes.includes(opt.value);
+            });
+
+            // 更新下拉框显示状态
+            this.updateCityDropdownDisplay();
+
+            // 更新城市摘要
+            if (typeof this.updateCitySummary === 'function') {
+                this.updateCitySummary();
+            } else {
+                this.updateCitySummaryFallback();
+            }
+        }
+
+        // 更新城市下拉框显示状态
+        updateCityDropdownDisplay() {
+            const citySelect = document.getElementById('cityCodeField');
+            const cityListContainer = document.getElementById('cityDropdownList');
+            
+            if (!citySelect || !cityListContainer) return;
+
+            // 更新checkbox状态
+            const checkboxes = cityListContainer.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                const option = Array.from(citySelect.options).find(o => o.value === checkbox.value);
+                if (option) {
+                    checkbox.checked = option.selected;
+                }
+            });
+        }
+
+        // 更新城市摘要显示
+        updateCitySummary() {
+            const cityDropdownBtn = document.getElementById('cityDropdownBtn');
+            const citySummary = document.getElementById('citySelectionSummary');
+            const citySelect = document.getElementById('cityCodeField');
+            
+            if (!cityDropdownBtn || !citySummary || !citySelect) return;
+
+            const selectedOptions = Array.from(citySelect.selectedOptions);
+            const values = selectedOptions.map(o => o.textContent);
+            
+            if (values.length === 0) {
+                cityDropdownBtn.textContent = '选择城市';
+                citySummary.textContent = '未选择';
+            } else if (values.length <= 2) {
+                const text = values.join('、');
+                cityDropdownBtn.textContent = text;
+                citySummary.textContent = `已选 ${values.length} 项：${text}`;
+            } else {
+                cityDropdownBtn.textContent = `已选 ${values.length} 项`;
+                citySummary.textContent = `已选 ${values.length} 项`;
+            }
+        }
+
+        // 备用的城市摘要更新方法
+        updateCitySummaryFallback() {
+            const cityDropdownBtn = document.getElementById('cityDropdownBtn');
+            const citySummary = document.getElementById('citySelectionSummary');
+            const citySelect = document.getElementById('cityCodeField');
+            
+            if (!cityDropdownBtn || !citySummary || !citySelect) return;
+
+            const selectedOptions = Array.from(citySelect.selectedOptions);
+            const values = selectedOptions.map(o => o.textContent);
+            
+            if (values.length === 0) {
+                cityDropdownBtn.textContent = '选择城市';
+                citySummary.textContent = '未选择';
+            } else if (values.length <= 2) {
+                const text = values.join('、');
+                cityDropdownBtn.textContent = text;
+                citySummary.textContent = `已选 ${values.length} 项：${text}`;
+            } else {
+                cityDropdownBtn.textContent = `已选 ${values.length} 项`;
+                citySummary.textContent = `已选 ${values.length} 项`;
+            }
+        }
+
+        // 填充其他下拉框
+        populateSelectBoxes() {
+            const selectFields = [
+                'experienceComboBox',
+                'jobTypeComboBox', 
+                'salaryComboBox',
+                'degreeComboBox',
+                'scaleComboBox',
+                'stageComboBox'
+            ];
+
+            selectFields.forEach(fieldId => {
+                const element = document.getElementById(fieldId);
+                const configKey = this.getConfigKeyFromFieldId(fieldId);
+                
+                if (element && this.config[configKey]) {
+                    const value = this.config[configKey];
+                    console.log(`BossConfigForm: 设置下拉框 ${fieldId} = ${value}`);
+                    
+                    // 查找匹配的选项
+                    const option = Array.from(element.options).find(opt => opt.value === value);
+                    if (option) {
+                        element.value = value;
+                        console.log(`BossConfigForm: 成功设置下拉框 ${fieldId}`);
+                    } else {
+                        console.warn(`BossConfigForm: 下拉框 ${fieldId} 中未找到值 ${value} 对应的选项`);
+                    }
+                }
+            });
+        }
+
+        // 从字段ID获取配置键名
+        getConfigKeyFromFieldId(fieldId) {
+            const fieldMap = {
+                'experienceComboBox': 'experience',
+                'jobTypeComboBox': 'jobType',
+                'salaryComboBox': 'salary',
+                'degreeComboBox': 'degree',
+                'scaleComboBox': 'scale',
+                'stageComboBox': 'stage'
+            };
+            return fieldMap[fieldId] || fieldId;
+        }
+
+        // 检查字典数据是否完全加载
+        isDictDataReady() {
+            const requiredSelects = [
+                'experienceComboBox',
+                'jobTypeComboBox',
+                'salaryComboBox',
+                'degreeComboBox',
+                'scaleComboBox',
+                'stageComboBox',
+                'cityCodeField'
+            ];
+
+            for (const selectId of requiredSelects) {
+                const select = document.getElementById(selectId);
+                if (!select || select.options.length <= 1) {
+                    console.log(`BossConfigForm: 下拉框 ${selectId} 尚未完全加载`);
+                    return false;
+                }
+            }
+
+            console.log('BossConfigForm: 所有字典数据已完全加载');
+            return true;
+        }
+
+        // 等待所有字典数据完全加载
+        async waitForAllDictDataReady() {
+            return new Promise((resolve) => {
+                if (this.isDictDataReady()) {
+                    resolve();
+                    return;
+                }
+
+                console.log('BossConfigForm: 等待所有字典数据完全加载...');
+                
+                let attempts = 0;
+                const maxAttempts = 50; // 最多等待5秒
+                
+                const checkInterval = setInterval(() => {
+                    attempts++;
+                    
+                    if (this.isDictDataReady()) {
+                        clearInterval(checkInterval);
+                        console.log('BossConfigForm: 所有字典数据加载完成');
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkInterval);
+                        console.warn('BossConfigForm: 等待字典数据超时，强制继续');
+                        resolve();
+                    }
+                }, 100);
             });
         }
 
@@ -507,6 +781,15 @@
                 this.fillSelect('jobTypeComboBox', groupMap.get('jobTypeList'));
                 
                 console.log('BossConfigForm: 字典数据加载完成');
+                
+                // 标记字典数据已加载完成
+                this.dictDataLoaded = true;
+                
+                // 触发自定义事件，通知其他组件字典数据已就绪
+                window.dispatchEvent(new CustomEvent('bossDictDataLoaded', {
+                    detail: { groupMap: groupMap }
+                }));
+                
             } catch (e) {
                 console.warn('BossConfigForm: 加载Boss字典失败：', e?.message || e);
                 // 如果失败，延迟重试
@@ -581,6 +864,9 @@
                     citySummary.textContent = `已选 ${values.length} 项`;
                 }
             };
+
+            // 将updateCitySummary方法绑定到实例，供其他方法调用
+            this.updateCitySummary = updateCitySummary;
 
             // 渲染城市选项
             const renderCityOptions = (list) => {

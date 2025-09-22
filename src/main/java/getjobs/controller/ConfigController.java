@@ -38,7 +38,7 @@ public class ConfigController {
 
     @GetMapping("/boss")
     public ResponseEntity<ConfigEntity> loadBossConfig() {
-        ConfigEntity entity = configService.load();
+        ConfigEntity entity = configService.loadByPlatformType(RecruitmentPlatformEnum.BOSS_ZHIPIN.getPlatformCode());
         return ResponseEntity.ok(entity);
     }
 
@@ -59,7 +59,7 @@ public class ConfigController {
 
     @GetMapping("/job51")
     public ResponseEntity<ConfigEntity> load51JobConfig() {
-        ConfigEntity entity = configService.load();
+        ConfigEntity entity = configService.loadByPlatformType(RecruitmentPlatformEnum.JOB_51.getPlatformCode());
         return ResponseEntity.ok(entity);
     }
 
