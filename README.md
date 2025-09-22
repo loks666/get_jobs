@@ -1,19 +1,13 @@
 <h1 align="center">🍀 Get Jobs【工作无忧】</h1>
-<p align="center">
-  <a href="https://github.com/loks666/get_jobs">
-    <img src="https://img.shields.io/github/stars/loks666/get_jobs?style=flat&label=%F0%9F%8C%9Fstars&labelColor=ff4f4f&color=ff8383" alt="GitHub Stars">
-  </a>
-  <a href="[qq-link]">
-    <img src="https://img.shields.io/badge/%F0%9F%90%A7QQ%E4%BA%A4%E6%B5%81%E7%BE%A4-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat" alt="QQ 交流群">
-  </a>
-  <a href="https://github.com/loks666/get_jobs/blob/master/LICENSE">
-    <img src="https://img.shields.io/badge/%F0%9F%93%91licenses-MIT-34D058?labelColor=22863A&style=flat" alt="License: MIT">
-  </a>
-  <img src="https://img.shields.io/github/issues-search?query=repo%3Aloks666/get_jobs+is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues%20closed&labelColor=008B8B&color=00CCCC" alt="Issues closed">
-  <a href="https://github.com/loks666/get_jobs/forks">
-    <img src="https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE" alt="Forks">
-  </a>
-</p>
+<div align="center">
+
+[![Stars](https://img.shields.io/github/stars/loks666/get_jobs?style=flat&label=%F0%9F%8C%9Fstars&labelColor=ff4f4f&color=ff8383)](https://github.com/loks666/get_jobs)
+[![QQ交流群](https://img.shields.io/badge/🐧QQ交流群-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat)][qq-link]
+[![License](https://img.shields.io/badge/📑licenses-MIT-34D058?labelColor=22863A&style=flat)](https://github.com/loks666/get_jobs/blob/master/LICENSE)
+![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Aloks666/get_jobs+is%3Aclosed&label=%F0%9F%A4%8F%F0%9F%8F%BBFissues%20closed&labelColor=008B8B&color=00CCCC)
+[![Forks](https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE)](https://github.com/loks666/get_jobs/forks)
+
+</div>
 <h2 align="center">黑暗无论多么长，光明迟早总是会来的</h2>
 <p align="center">
   <a href="https://trendshift.io/repositories/9608">
