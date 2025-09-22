@@ -1,4 +1,4 @@
-package getjobs.enums;
+package getjobs.common.enums;
 
 import lombok.Getter;
 

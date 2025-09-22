@@ -1,6 +1,6 @@
 package getjobs.controller;
 
-import getjobs.modules.boss.dto.ConfigDTO;
+import getjobs.common.dto.ConfigDTO;
 import getjobs.modules.job51.service.Job51TaskService;
 import getjobs.modules.job51.service.Job51TaskService.*;
 import lombok.extern.slf4j.Slf4j;

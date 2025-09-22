@@ -1,6 +1,6 @@
 package getjobs.service;
 
-import getjobs.enums.RecruitmentPlatformEnum;
+import getjobs.common.enums.RecruitmentPlatformEnum;
 import getjobs.modules.boss.service.impl.BossRecruitmentServiceImpl;
 import getjobs.modules.job51.service.impl.Job51RecruitmentServiceImpl;
 import lombok.extern.slf4j.Slf4j;

@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Boss 配置实体（字段与 BossConfig 对齐）
+ * 配置实体（支持多平台，平台类型由 platformType 字段指定）
  */
 @Data
 @Entity
-@Table(name = "boss_config")
+@Table(name = "config")
 @EqualsAndHashCode(callSuper = true)
 public class ConfigEntity extends BaseEntity {
 
@@ -85,6 +85,9 @@ public class ConfigEntity extends BaseEntity {
     @Column(name = "wait_time", length = 50)
     private String waitTime;
 
+    @Column(name = "platform_type", length = 20)
+    private String platformType;
+
     @Convert(converter = JsonListStringConverter.class)
     @Column(name = "dead_status", columnDefinition = "TEXT")
     private List<String> deadStatus;
@@ -100,5 +103,9 @@ public class ConfigEntity extends BaseEntity {
 
     @Column(name = "cookie_data", columnDefinition = "TEXT")
     private String cookieData;
+
+    @Convert(converter = JsonListStringConverter.class)
+    @Column(name = "company_nature", columnDefinition = "TEXT")
+    private List<String> companyNature;
 
 }

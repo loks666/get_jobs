@@ -1,6 +1,6 @@
 package getjobs.modules.boss.service;
 
-import getjobs.modules.boss.dto.ConfigDTO;
+import getjobs.common.dto.ConfigDTO;
 import getjobs.modules.boss.dto.JobDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -1,8 +1,8 @@
 package getjobs.modules.job51.service.impl;
 
 import com.microsoft.playwright.Page;
-import getjobs.enums.RecruitmentPlatformEnum;
-import getjobs.modules.boss.dto.ConfigDTO;
+import getjobs.common.enums.RecruitmentPlatformEnum;
+import getjobs.common.dto.ConfigDTO;
 import getjobs.modules.boss.dto.JobDTO;
 import getjobs.modules.job51.service.Job51ElementLocators;
 import getjobs.service.RecruitmentService;

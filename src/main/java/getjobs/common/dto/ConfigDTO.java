@@ -1,8 +1,9 @@
-package getjobs.modules.boss.dto;
+package getjobs.common.dto;
 
 import getjobs.repository.entity.ConfigEntity;
 import getjobs.repository.ConfigRepository;
 import getjobs.utils.SpringContextUtil;
+import getjobs.common.enums.RecruitmentPlatformEnum;
 import lombok.Data;
 import lombok.SneakyThrows;
 
@@ -51,6 +52,9 @@ public class ConfigDTO {
 
     // 系统
     private String waitTime;
+
+    // 平台类型
+    private String platformType;
 
     // 其他列表型配置
     private List<String> deadStatus;
@@ -110,6 +114,7 @@ public class ConfigDTO {
         dto.setResumeImagePath(entity.getResumeImagePath());
         dto.setResumeContent(entity.getResumeContent());
         dto.setWaitTime(entity.getWaitTime());
+        dto.setPlatformType(entity.getPlatformType());
 
         // 列表字段转换为逗号分隔的字符串
         if (entity.getKeywords() != null) {
@@ -200,6 +205,17 @@ public class ConfigDTO {
         if (maxSalary != null)
             list.add(maxSalary);
         return list;
+    }
+
+    /**
+     * 获取平台类型对应的枚举
+     * @return 招聘平台枚举，如果platformType为空或无效则返回null
+     */
+    public RecruitmentPlatformEnum getPlatformTypeEnum() {
+        if (platformType == null || platformType.trim().isEmpty()) {
+            return null;
+        }
+        return RecruitmentPlatformEnum.getByCode(platformType.trim());
     }
 
     // ------------ 工具方法 ------------

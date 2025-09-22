@@ -1,6 +1,6 @@
 package getjobs.modules.dict.service.registry;
 
-import getjobs.enums.RecruitmentPlatformEnum;
+import getjobs.common.enums.RecruitmentPlatformEnum;
 import getjobs.modules.dict.domain.DictProvider;
 import org.springframework.stereotype.Component;
 

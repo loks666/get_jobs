@@ -1,9 +1,9 @@
 package getjobs.modules.boss.service;
 
-import getjobs.modules.boss.dto.ConfigDTO;
-import getjobs.enums.RecruitmentPlatformEnum;
+import getjobs.common.dto.ConfigDTO;
+import getjobs.common.enums.RecruitmentPlatformEnum;
 import getjobs.modules.boss.dto.JobDTO;
-import getjobs.enums.JobStatusEnum;
+import getjobs.common.enums.JobStatusEnum;
 import getjobs.repository.entity.JobEntity;
 import getjobs.repository.JobRepository;
 import getjobs.service.JobService;

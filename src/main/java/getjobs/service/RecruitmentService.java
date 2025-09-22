@@ -1,8 +1,8 @@
 package getjobs.service;
 
-import getjobs.modules.boss.dto.ConfigDTO;
+import getjobs.common.dto.ConfigDTO;
 import getjobs.modules.boss.dto.JobDTO;
-import getjobs.enums.RecruitmentPlatformEnum;
+import getjobs.common.enums.RecruitmentPlatformEnum;
 
 import java.util.List;
 

@@ -12,7 +12,8 @@
         init() {
             this.initializeTooltips();
             this.bindEvents();
-            this.loadSavedConfig();
+            // 先加载字典数据，再加载配置数据，确保下拉框已准备好
+            this.loadDataSequentially();
         }
 
         initializeTooltips() {
@@ -228,50 +229,68 @@
             } catch (e) {}
         }
 
-        loadSavedConfig() {
-            fetch('/api/config/boss')
-                .then(async res => {
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    const ct = res.headers.get('content-type') || '';
-                    if (ct.includes('application/json')) {
-                        return res.json();
-                    } else {
-                        const text = await res.text();
-                        const snippet = (text || '').slice(0, 80);
-                        throw new Error('返回非JSON：' + snippet);
-                    }
-                })
-                .then(data => {
-                    if (data && typeof data === 'object' && Object.keys(data).length) {
-                        this.config = data;
+        // 按顺序加载数据：先字典，后配置
+        async loadDataSequentially() {
+            try {
+                console.log('BossConfigForm: 开始按顺序加载数据：字典 -> 配置');
+                // 先加载字典数据
+                await this.loadBossDicts();
+                console.log('BossConfigForm: 字典数据加载完成，开始加载配置数据');
+                // 再加载配置数据
+                await this.loadSavedConfig();
+                console.log('BossConfigForm: 配置数据加载完成');
+            } catch (error) {
+                console.error('BossConfigForm: 数据加载失败:', error);
+            }
+        }
+
+        // 加载保存的配置
+        async loadSavedConfig() {
+            try {
+                const res = await fetch('/api/config/boss');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const ct = res.headers.get('content-type') || '';
+                let data;
+                if (ct.includes('application/json')) {
+                    data = await res.json();
+                } else {
+                    const text = await res.text();
+                    const snippet = (text || '').slice(0, 80);
+                    throw new Error('返回非JSON：' + snippet);
+                }
+                
+                if (data && typeof data === 'object' && Object.keys(data).length) {
+                    this.config = data;
+                    this.populateForm();
+                    localStorage.setItem('bossConfig', JSON.stringify(this.config));
+                    return;
+                }
+                
+                // 如果后端没有数据，尝试本地缓存
+                const savedConfig = localStorage.getItem('bossConfig');
+                if (savedConfig) {
+                    try {
+                        this.config = JSON.parse(savedConfig);
                         this.populateForm();
-                        localStorage.setItem('bossConfig', JSON.stringify(this.config));
-                        return;
+                    } catch (error) {
+                        console.warn('本地配置损坏，已清理：' + error.message);
+                        localStorage.removeItem('bossConfig');
                     }
-                    const savedConfig = localStorage.getItem('bossConfig');
-                    if (savedConfig) {
-                        try {
-                            this.config = JSON.parse(savedConfig);
-                            this.populateForm();
-                        } catch (error) {
-                            console.warn('本地配置损坏，已清理：' + error.message);
-                            localStorage.removeItem('bossConfig');
-                        }
+                }
+            } catch (err) {
+                console.warn('后端配置读取失败：' + (err?.message || '未知错误'));
+                // 尝试本地缓存
+                const savedConfig = localStorage.getItem('bossConfig');
+                if (savedConfig) {
+                    try {
+                        this.config = JSON.parse(savedConfig);
+                        this.populateForm();
+                    } catch (error) {
+                        console.warn('本地配置损坏，已清理：' + error.message);
+                        localStorage.removeItem('bossConfig');
                     }
-                })
-                .catch((err) => {
-                    console.warn('后端配置读取失败：' + (err?.message || '未知错误'));
-                    const savedConfig = localStorage.getItem('bossConfig');
-                    if (savedConfig) {
-                        try {
-                            this.config = JSON.parse(savedConfig);
-                            this.populateForm();
-                        } catch (error) {
-                            console.warn('本地配置损坏，已清理：' + error.message);
-                            localStorage.removeItem('bossConfig');
-                        }
-                    }
-                });
+                }
+            }
         }
 
         populateForm() {
@@ -450,6 +469,226 @@
                 startBtn.classList.remove('loading');
                 startBtn.classList.add('success-flash');
                 setTimeout(() => startBtn.classList.remove('success-flash'), 600);
+            }
+        }
+
+        // 加载Boss字典数据
+        async loadBossDicts() {
+            // 等待DOM元素准备就绪
+            await this.waitForDOMElements();
+            
+            try {
+                console.log('BossConfigForm: 开始加载Boss字典数据...');
+                const res = await fetch('/dicts/BOSS_ZHIPIN');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                console.log('BossConfigForm: 接收到字典数据:', data);
+                
+                if (!data || !Array.isArray(data.groups)) {
+                    console.warn('BossConfigForm: 字典数据结构不正确:', data);
+                    return;
+                }
+
+                const groupMap = new Map();
+                data.groups.forEach(g => {
+                    console.log(`BossConfigForm: 处理字典组: ${g.key}, 项目数量: ${Array.isArray(g.items) ? g.items.length : 0}`);
+                    groupMap.set(g.key, Array.isArray(g.items) ? g.items : []);
+                });
+
+                // 渲染城市选择器
+                this.renderCitySelector(groupMap.get('cityList') || []);
+                
+                // 渲染其他下拉框
+                this.fillSelect('experienceComboBox', groupMap.get('experienceList'));
+                this.fillSelect('salaryComboBox', groupMap.get('salaryList'));
+                this.fillSelect('degreeComboBox', groupMap.get('degreeList'));
+                this.fillSelect('scaleComboBox', groupMap.get('scaleList'));
+                this.fillSelect('stageComboBox', groupMap.get('stageList'));
+                this.fillSelect('jobTypeComboBox', groupMap.get('jobTypeList'));
+                
+                console.log('BossConfigForm: 字典数据加载完成');
+            } catch (e) {
+                console.warn('BossConfigForm: 加载Boss字典失败：', e?.message || e);
+                // 如果失败，延迟重试
+                setTimeout(() => this.loadBossDicts(), 2000);
+            }
+        }
+
+        // 等待DOM元素准备就绪
+        async waitForDOMElements() {
+            const requiredElements = [
+                'cityCodeField',
+                'experienceComboBox',
+                'salaryComboBox',
+                'degreeComboBox',
+                'scaleComboBox',
+                'stageComboBox',
+                'jobTypeComboBox'
+            ];
+
+            return new Promise((resolve) => {
+                let attempts = 0;
+                const maxAttempts = 50; // 最多等待5秒
+
+                const checkElements = () => {
+                    attempts++;
+                    const missingElements = requiredElements.filter(id => !document.getElementById(id));
+                    
+                    if (missingElements.length === 0) {
+                        console.log('BossConfigForm: 所有DOM元素已准备就绪');
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        console.warn('BossConfigForm: 等待DOM元素超时，缺失元素:', missingElements);
+                        resolve(); // 即使超时也继续执行
+                    } else {
+                        console.log(`BossConfigForm: 等待DOM元素准备就绪，缺失: ${missingElements.join(', ')} (${attempts}/${maxAttempts})`);
+                        setTimeout(checkElements, 100);
+                    }
+                };
+
+                checkElements();
+            });
+        }
+
+        // 渲染城市选择器
+        renderCitySelector(cityItems) {
+            console.log('BossConfigForm: 渲染城市选择器，城市数量:', cityItems.length);
+            
+            const citySelect = document.getElementById('cityCodeField');
+            const citySearch = document.getElementById('citySearchField');
+            const cityListContainer = document.getElementById('cityDropdownList');
+            const cityDropdownBtn = document.getElementById('cityDropdownBtn');
+            const citySummary = document.getElementById('citySelectionSummary');
+            
+            if (!citySelect) {
+                console.warn('BossConfigForm: 未找到城市选择器元素');
+                return;
+            }
+
+            // 更新城市摘要显示
+            const updateCitySummary = () => {
+                if (!cityDropdownBtn || !citySummary) return;
+                const values = Array.from(citySelect.selectedOptions).map(o => o.textContent);
+                if (values.length === 0) {
+                    cityDropdownBtn.textContent = '选择城市';
+                    citySummary.textContent = '未选择';
+                } else if (values.length <= 2) {
+                    const text = values.join('、');
+                    cityDropdownBtn.textContent = text;
+                    citySummary.textContent = `已选 ${values.length} 项：${text}`;
+                } else {
+                    cityDropdownBtn.textContent = `已选 ${values.length} 项`;
+                    citySummary.textContent = `已选 ${values.length} 项`;
+                }
+            };
+
+            // 渲染城市选项
+            const renderCityOptions = (list) => {
+                // 保留当前已选
+                const selected = new Set(Array.from(citySelect.selectedOptions).map(o => o.value));
+
+                // 重建隐藏select
+                citySelect.innerHTML = '';
+                list.forEach(it => {
+                    const value = it.code ?? '';
+                    const label = `${it.name ?? ''}${it.code ? ' (' + it.code + ')' : ''}`;
+                    const opt = document.createElement('option');
+                    opt.value = value;
+                    opt.textContent = label;
+                    if (selected.has(value)) opt.selected = true;
+                    citySelect.appendChild(opt);
+                });
+
+                // 重建dropdown列表
+                if (cityListContainer) {
+                    cityListContainer.innerHTML = '';
+                    list.forEach(it => {
+                        const value = it.code ?? '';
+                        const label = `${it.name ?? ''}${it.code ? ' (' + it.code + ')' : ''}`;
+
+                        const item = document.createElement('div');
+                        item.className = 'form-check mb-1';
+                        const id = `city_chk_${value}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
+                        item.innerHTML = `
+                            <input class="form-check-input" type="checkbox" value="${value}" id="${id}" ${selected.has(value) ? 'checked' : ''}>
+                            <label class="form-check-label small" for="${id}">${label}</label>
+                        `;
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        checkbox.addEventListener('change', () => {
+                            // 同步到隐藏select
+                            const option = Array.from(citySelect.options).find(o => o.value === value);
+                            if (option) option.selected = checkbox.checked;
+                            updateCitySummary();
+                        });
+                        cityListContainer.appendChild(item);
+                    });
+                }
+
+                updateCitySummary();
+            };
+
+            renderCityOptions(cityItems);
+            
+            // 绑定搜索功能
+            if (citySearch) {
+                citySearch.addEventListener('input', () => {
+                    const kw = citySearch.value.trim().toLowerCase();
+                    if (!kw) {
+                        renderCityOptions(cityItems);
+                        return;
+                    }
+                    const filtered = cityItems.filter(it =>
+                        String(it.name || '').toLowerCase().includes(kw) ||
+                        String(it.code || '').toLowerCase().includes(kw)
+                    );
+                    renderCityOptions(filtered);
+                });
+            }
+        }
+
+        // 填充下拉框
+        fillSelect(selectId, items) {
+            console.log(`BossConfigForm: 填充下拉框 ${selectId}，数据项数量:`, Array.isArray(items) ? items.length : 0);
+            
+            if (!Array.isArray(items) || items.length === 0) {
+                console.warn(`BossConfigForm: 下拉框 ${selectId} 的数据无效:`, items);
+                return;
+            }
+
+            const sel = document.getElementById(selectId);
+            if (!sel) {
+                console.warn(`BossConfigForm: 未找到下拉框元素: ${selectId}`);
+                // 延迟重试
+                setTimeout(() => {
+                    const retrySel = document.getElementById(selectId);
+                    if (retrySel) {
+                        console.log(`BossConfigForm: 重试填充下拉框 ${selectId}`);
+                        this.fillSelect(selectId, items);
+                    }
+                }, 500);
+                return;
+            }
+            
+            try {
+                // 保留第一项"请选择"，其余重建
+                const first = sel.querySelector('option');
+                sel.innerHTML = '';
+                if (first && first.value === '') sel.appendChild(first);
+                
+                items.forEach(it => {
+                    const opt = document.createElement('option');
+                    opt.value = it.code ?? it.name ?? '';
+                    opt.textContent = it.name ?? String(it.code ?? '');
+                    sel.appendChild(opt);
+                });
+                
+                console.log(`BossConfigForm: 下拉框 ${selectId} 填充完成，共 ${items.length} 项`);
+                
+                // 触发change事件，通知其他组件
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+                
+            } catch (error) {
+                console.error(`BossConfigForm: 填充下拉框 ${selectId} 时出错:`, error);
             }
         }
     }

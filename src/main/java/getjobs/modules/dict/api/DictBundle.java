@@ -1,6 +1,6 @@
 package getjobs.modules.dict.api;
 
-import getjobs.enums.RecruitmentPlatformEnum;
+import getjobs.common.enums.RecruitmentPlatformEnum;
 
 import java.util.List;
 import java.util.Optional;

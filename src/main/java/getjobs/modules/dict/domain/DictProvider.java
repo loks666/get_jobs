@@ -1,6 +1,6 @@
 package getjobs.modules.dict.domain;
 
-import getjobs.enums.RecruitmentPlatformEnum;
+import getjobs.common.enums.RecruitmentPlatformEnum;
 import getjobs.modules.dict.api.DictBundle;
 import getjobs.modules.dict.api.DictGroup;
 

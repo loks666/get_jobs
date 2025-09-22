@@ -7,7 +7,7 @@ spring:
   application:
     name: npe-get-jobs
   datasource:
-    url: 'jdbc:sqlite::memory:'
+    url: 'jdbc:sqlite:file:memdb1?mode=memory&cache=shared'
     driver-class-name: org.sqlite.JDBC
     username:
     password:

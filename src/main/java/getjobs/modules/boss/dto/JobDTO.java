@@ -1,6 +1,6 @@
 package getjobs.modules.boss.dto;
 
-import getjobs.enums.RecruitmentPlatformEnum;
+import getjobs.common.enums.RecruitmentPlatformEnum;
 import lombok.Data;
 
 import java.io.Serializable;
