@@ -31,6 +31,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -104,17 +105,34 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     public List<JobDTO> collectJobs(ConfigDTO config) {
         log.info("开始Boss直聘岗位采集");
         List<JobDTO> allJobDTOS = new ArrayList<>();
+        
+        // 记录采集开始时间，用于统计新增岗位数量
+        LocalDateTime collectionStartTime = LocalDateTime.now();
 
         try {
             // 按城市和关键词搜索岗位
             for (String cityCode : config.getCityCodeCodes()) {
                 for (String keyword : config.getKeywordsList()) {
-                    List<JobDTO> cityJobDTOS = collectJobsByCity(cityCode, keyword, config);
-                    allJobDTOS.addAll(cityJobDTOS);
+                    collectJobsByCity(cityCode, keyword, config);
+                    // 不再依赖返回的空集合，岗位数据由监控服务自动入库
                 }
             }
 
-            log.info("Boss直聘岗位采集完成，共采集{}个岗位", allJobDTOS.size());
+            // 等待一段时间确保所有API响应都被处理完毕
+            try {
+                Thread.sleep(3000); // 等待3秒
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            // 统计采集期间新增的岗位数量
+            LocalDateTime collectionEndTime = LocalDateTime.now();
+            long collectedJobCount = jobRepository.countByPlatformAndCreatedAtBetween(
+                    "boss", collectionStartTime, collectionEndTime);
+
+            log.info("Boss直聘岗位采集完成，共采集{}个岗位", collectedJobCount);
+            
+            // 返回空集合，实际岗位数据已通过监控服务入库
             return allJobDTOS;
         } catch (Exception e) {
             log.error("Boss直聘岗位采集失败", e);
@@ -126,6 +144,9 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     public List<JobDTO> collectRecommendJobs(ConfigDTO config) {
         log.info("开始Boss直聘推荐岗位采集");
         List<JobDTO> recommendJobDTOS = new ArrayList<>();
+        
+        // 记录采集开始时间，用于统计新增岗位数量
+        LocalDateTime collectionStartTime = LocalDateTime.now();
 
         try {
             Page page = PlaywrightUtil.getPageObject();
@@ -159,16 +180,42 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
                     log.info("推荐岗位加载，总计: {}", totalJobs);
                 }
             }
+            
+            // 等待一段时间确保所有API响应都被处理完毕
+            try {
+                Thread.sleep(3000); // 等待3秒
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            // 统计采集期间新增的岗位数量
+            LocalDateTime collectionEndTime = LocalDateTime.now();
+            long collectedJobCount = jobRepository.countByPlatformAndCreatedAtBetween(
+                    "boss", collectionStartTime, collectionEndTime);
+
+            log.info("Boss直聘推荐岗位采集完成，共采集{}个岗位", collectedJobCount);
+            
         } catch (Exception e) {
             log.error("Boss直聘推荐岗位采集失败", e);
         }
 
+        // 返回空集合，实际岗位数据已通过监控服务入库
         return recommendJobDTOS;
     }
 
     @Override
     public List<JobDTO> filterJobs(List<JobDTO> jobDTOS, ConfigDTO config) {
-        return jobFilterService.filterJobs(jobDTOS, config);
+        // 从数据库获取boss平台的配置，不使用前端传递的config
+        ConfigEntity configEntity = configService.loadByPlatformType(RecruitmentPlatformEnum.BOSS_ZHIPIN.getPlatformCode());
+        if (configEntity == null) {
+            log.warn("数据库中未找到boss平台配置，跳过过滤");
+            return jobDTOS;
+        }
+        
+        // 将ConfigEntity转换为ConfigDTO
+        ConfigDTO dbConfig = convertConfigEntityToDTO(configEntity);
+        
+        return jobFilterService.filterJobs(jobDTOS, dbConfig);
     }
 
     @Override
@@ -260,9 +307,80 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     // ==================== 私有辅助方法 ====================
 
     /**
+     * 将ConfigEntity转换为ConfigDTO
+     * 使用反射创建ConfigDTO实例，因为构造函数是私有的
+     */
+    private ConfigDTO convertConfigEntityToDTO(ConfigEntity entity) {
+        try {
+            // 通过反射创建ConfigDTO实例
+            java.lang.reflect.Constructor<ConfigDTO> constructor = ConfigDTO.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            ConfigDTO dto = constructor.newInstance();
+
+            // 基础字段映射
+            dto.setSayHi(entity.getSayHi());
+            dto.setEnableAIJobMatchDetection(entity.getEnableAIJobMatchDetection());
+            dto.setEnableAIGreeting(entity.getEnableAIGreeting());
+            dto.setFilterDeadHR(entity.getFilterDeadHR());
+            dto.setSendImgResume(entity.getSendImgResume());
+            dto.setKeyFilter(entity.getKeyFilter());
+            dto.setRecommendJobs(entity.getRecommendJobs());
+            dto.setCheckStateOwned(entity.getCheckStateOwned());
+            dto.setResumeImagePath(entity.getResumeImagePath());
+            dto.setResumeContent(entity.getResumeContent());
+            dto.setWaitTime(entity.getWaitTime());
+            dto.setPlatformType(entity.getPlatformType());
+
+            // 列表字段转换为逗号分隔的字符串
+            if (entity.getKeywords() != null) {
+                dto.setKeywords(String.join(",", entity.getKeywords()));
+            }
+            if (entity.getCityCode() != null) {
+                dto.setCityCode(String.join(",", entity.getCityCode()));
+            }
+            if (entity.getIndustry() != null) {
+                dto.setIndustry(String.join(",", entity.getIndustry()));
+            }
+            if (entity.getExperience() != null) {
+                dto.setExperience(String.join(",", entity.getExperience()));
+            }
+            if (entity.getDegree() != null) {
+                dto.setDegree(String.join(",", entity.getDegree()));
+            }
+            if (entity.getScale() != null) {
+                dto.setScale(String.join(",", entity.getScale()));
+            }
+            if (entity.getStage() != null) {
+                dto.setStage(String.join(",", entity.getStage()));
+            }
+            if (entity.getDeadStatus() != null) {
+                dto.setDeadStatus(entity.getDeadStatus());
+            }
+
+            // 期望薪资处理
+            if (entity.getExpectedSalary() != null && entity.getExpectedSalary().size() >= 2) {
+                dto.setMinSalary(entity.getExpectedSalary().get(0));
+                dto.setMaxSalary(entity.getExpectedSalary().get(1));
+            }
+
+            // 其他字段
+            dto.setCustomCityCode(entity.getCustomCityCode());
+            dto.setJobType(entity.getJobType());
+            dto.setSalary(entity.getSalary());
+            dto.setExpectedPosition(entity.getExpectedPosition());
+
+            return dto;
+        } catch (Exception e) {
+            log.error("ConfigEntity转换为ConfigDTO失败", e);
+            // 如果转换失败，返回ConfigDTO的单例实例作为备用
+            return ConfigDTO.getInstance();
+        }
+    }
+
+    /**
      * 按城市采集岗位
      */
-    private List<JobDTO> collectJobsByCity(String cityCode, String keyword, ConfigDTO config) {
+    private void collectJobsByCity(String cityCode, String keyword, ConfigDTO config) {
         String searchUrl = getSearchUrl(cityCode, config);
         String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
         String url = searchUrl + "&query=" + encodedKeyword;
@@ -280,8 +398,6 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
         }
         page.navigate(url);
 
-        List<JobDTO> jobDTOS = new ArrayList<>();
-
         if (isJobsPresent()) {
             try {
                 // 滚动加载更多岗位
@@ -292,9 +408,10 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
             }
         }
 
+        // 点击所有岗位卡片以触发详情API调用，让监控服务获取更多岗位信息
         BossElementLocators.clickAllJobCards(page, 5000);
-
-        return jobDTOS;
+        
+        log.info("城市: {}，关键词: {} 的岗位采集操作完成，实际数据由监控服务自动入库", cityCode, keyword);
     }
 
     /**
@@ -950,3 +1067,4 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
         }
     }
 }
+

@@ -63,12 +63,6 @@
                     });
                 });
             }
-            const waitTimeField = document.getElementById('waitTimeField');
-            if (waitTimeField) {
-                waitTimeField.addEventListener('input', () => {
-                    this.validateWaitTime();
-                });
-            }
         }
 
         validateField(field) {
@@ -89,13 +83,6 @@
             return isValid;
         }
 
-        validateWaitTime() {
-            const waitTimeField = document.getElementById('waitTimeField');
-            const value = parseInt(waitTimeField.value) || 0;
-            const isValid = value >= 1 && value <= 300;
-            this.updateFieldValidation(waitTimeField, isValid);
-            return isValid;
-        }
 
         updateFieldValidation(field, isValid) {
             if (isValid) {
@@ -213,7 +200,6 @@
                 sayHi: document.getElementById('sayHiTextArea').value,
                 filterDeadHR: document.getElementById('filterDeadHRCheckBox').checked,
                 sendImgResume: document.getElementById('sendImgResumeCheckBox').checked,
-                keyFilter: document.getElementById('keyFilterCheckBox').checked,
                 recommendJobs: document.getElementById('recommendJobsCheckBox').checked,
                 enableAIJobMatchDetection: document.getElementById('enableAIJobMatchDetectionCheckBox').checked,
                 enableAIGreeting: document.getElementById('enableAIGreetingCheckBox').checked,
@@ -369,14 +355,23 @@
                         element.checked = this.config[key];
                         console.log(`BossConfigForm: 设置复选框 ${key} = ${this.config[key]}`);
                     } else {
-                        element.value = this.config[key];
-                        console.log(`BossConfigForm: 设置字段 ${key} = ${this.config[key]}`);
+                        // 处理可能的数组字段转换为逗号分隔字符串
+                        let value = this.config[key];
+                        if (Array.isArray(value)) {
+                            value = value.join(',');
+                            console.log(`BossConfigForm: 数组字段 ${key} 转换为字符串:`, this.config[key], '->', value);
+                        }
+                        element.value = value || '';
+                        console.log(`BossConfigForm: 设置字段 ${key} = ${value}`);
                     }
                 }
             });
 
             // 特殊处理城市选择器
             this.populateCitySelector();
+            
+            // 特殊处理期望薪资字段
+            this.populateExpectedSalary();
             
             // 特殊处理其他下拉框
             this.populateSelectBoxes();
@@ -387,7 +382,15 @@
             const cityCode = this.config.cityCode;
             if (!cityCode) return;
             
-            console.log('BossConfigForm: 填充城市选择器，城市代码:', cityCode);
+            // 处理数组格式（从后端返回）或字符串格式（从本地缓存）
+            let cityCodeStr = '';
+            if (Array.isArray(cityCode)) {
+                cityCodeStr = cityCode.join(',');
+            } else {
+                cityCodeStr = cityCode;
+            }
+            
+            console.log('BossConfigForm: 填充城市选择器，原始城市代码:', cityCode, '处理后:', cityCodeStr);
             
             const citySelect = document.getElementById('cityCodeField');
             const cityDropdownBtn = document.getElementById('cityDropdownBtn');
@@ -399,7 +402,7 @@
             }
 
             // 解析城市代码（支持逗号分隔的多个城市）
-            const codes = cityCode.split(',').map(s => s.trim()).filter(Boolean);
+            const codes = cityCodeStr.split(',').map(s => s.trim()).filter(Boolean);
             console.log('BossConfigForm: 解析的城市代码:', codes);
 
             // 设置隐藏select的选中状态
@@ -483,6 +486,21 @@
             }
         }
 
+        // 填充期望薪资字段
+        populateExpectedSalary() {
+            const expectedSalary = this.config.expectedSalary;
+            if (Array.isArray(expectedSalary) && expectedSalary.length >= 2) {
+                const minSalaryField = document.getElementById('minSalaryField');
+                const maxSalaryField = document.getElementById('maxSalaryField');
+                
+                if (minSalaryField && maxSalaryField) {
+                    minSalaryField.value = expectedSalary[0] || '';
+                    maxSalaryField.value = expectedSalary[1] || '';
+                    console.log(`BossConfigForm: 期望薪资回填: ${expectedSalary[0]} ~ ${expectedSalary[1]}`);
+                }
+            }
+        }
+
         // 填充其他下拉框
         populateSelectBoxes() {
             const selectFields = [
@@ -499,7 +517,14 @@
                 const configKey = this.getConfigKeyFromFieldId(fieldId);
                 
                 if (element && this.config[configKey]) {
-                    const value = this.config[configKey];
+                    let value = this.config[configKey];
+                    
+                    // 处理数组格式，取第一个元素（下拉框只能选一个值）
+                    if (Array.isArray(value)) {
+                        value = value.length > 0 ? value[0] : '';
+                        console.log(`BossConfigForm: 下拉框 ${fieldId} 数组转换:`, this.config[configKey], '->', value);
+                    }
+                    
                     console.log(`BossConfigForm: 设置下拉框 ${fieldId} = ${value}`);
                     
                     // 查找匹配的选项
@@ -598,7 +623,6 @@
                 sayHi: 'sayHiTextArea',
                 filterDeadHR: 'filterDeadHRCheckBox',
                 sendImgResume: 'sendImgResumeCheckBox',
-                keyFilter: 'keyFilterCheckBox',
                 recommendJobs: 'recommendJobsCheckBox',
                 enableAIJobMatchDetection: 'enableAIJobMatchDetectionCheckBox',
                 enableAIGreeting: 'enableAIGreetingCheckBox',
@@ -696,7 +720,7 @@
                     isValid = false;
                 }
             });
-            return isValid && this.validateSalaryRange() && this.validateWaitTime();
+            return isValid && this.validateSalaryRange() ;
         }
 
         startExecution() {

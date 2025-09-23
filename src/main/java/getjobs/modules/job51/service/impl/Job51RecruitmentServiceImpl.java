@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Scanner;
 
@@ -64,9 +66,11 @@ public class Job51RecruitmentServiceImpl implements RecruitmentService {
         try {
             Page page = PlaywrightUtil.getPageObject();
             config.getCityCodeCodes().forEach(cityCode -> {
-                // 构造搜索条件
-                String searchParams = "jobArea=" + cityCode + "&keyword=" + config.getKeywords();
-                page.navigate(SEARCH_JOB_URL + searchParams);
+                // 构造完整的搜索条件
+                String searchParams = buildSearchParams(cityCode, config);
+                String fullUrl = SEARCH_JOB_URL + searchParams;
+                log.info("访问搜索URL: {}", fullUrl);
+                page.navigate(fullUrl);
             });
 
             log.info("51job岗位采集功能待实现");
@@ -141,6 +145,78 @@ public class Job51RecruitmentServiceImpl implements RecruitmentService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 构建完整的搜索参数字符串
+     * 基于URL: https://we.51job.com/pc/search?jobArea=030200&keyword=java&salary=16000-20000&workYear=05&degree=04&companySize=03&companyType=04
+     * 
+     * @param cityCode 城市代码
+     * @param config 配置信息
+     * @return 完整的搜索参数字符串
+     */
+    private String buildSearchParams(String cityCode, ConfigDTO config) {
+        StringBuilder params = new StringBuilder();
+        
+        try {
+            // 必需参数
+            params.append("jobArea=").append(cityCode);
+            
+            // 关键词需要URL编码
+            String keywords = config.getKeywords() != null ? config.getKeywords().trim() : "";
+            params.append("&keyword=").append(URLEncoder.encode(keywords, StandardCharsets.UTF_8));
+            
+            // 可选参数 - 薪资范围 (如: 16000-20000)
+            appendParameterIfNotEmpty(params, "salary", config.getSalary());
+            
+            // 可选参数 - 工作年限 (如: 05表示5年以上)
+            appendParameterIfNotEmpty(params, "workYear", config.getExperience());
+            
+            // 可选参数 - 学历要求 (如: 04表示本科)
+            appendParameterIfNotEmpty(params, "degree", config.getDegree());
+            
+            // 可选参数 - 公司规模 (如: 03表示100-499人)
+            appendParameterIfNotEmpty(params, "companySize", config.getScale());
+            
+            // 可选参数 - 公司类型 (如: 04表示民营公司)
+            appendParameterIfNotEmpty(params, "companyType", config.getCompanyType());
+            
+            // 其他可能的参数
+            // industrytype - 行业类型
+            appendParameterIfNotEmpty(params, "industrytype", config.getIndustry());
+            
+            // jobtype - 职位类型 
+            appendParameterIfNotEmpty(params, "jobtype", config.getJobType());
+            
+        } catch (Exception e) {
+            log.error("构建搜索参数失败", e);
+            // 返回基础参数
+            return "jobArea=" + cityCode + "&keyword=" + 
+                   (config.getKeywords() != null ? config.getKeywords() : "");
+        }
+        
+        log.debug("构建的搜索参数: {}", params.toString());
+        return params.toString();
+    }
+    
+    /**
+     * 添加参数到StringBuilder（如果参数值不为空）
+     * 
+     * @param params 参数构建器
+     * @param paramName 参数名
+     * @param paramValue 参数值
+     */
+    private void appendParameterIfNotEmpty(StringBuilder params, String paramName, String paramValue) {
+        if (paramValue != null && !paramValue.trim().isEmpty()) {
+            try {
+                params.append("&").append(paramName).append("=")
+                      .append(URLEncoder.encode(paramValue.trim(), StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                log.warn("编码参数失败: {}={}", paramName, paramValue, e);
+                // 如果编码失败，使用原始值
+                params.append("&").append(paramName).append("=").append(paramValue.trim());
+            }
+        }
+    }
 
     /**
      * 检查是否需要登录

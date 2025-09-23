@@ -15,8 +15,8 @@ class Job51ConfigForm {
     init() {
         this.initializeTooltips();
         this.bindEvents();
-        this.loadJob51Dicts();
-        this.loadSavedConfig();
+        // 先加载字典数据，再加载配置数据，确保下拉框已准备好
+        this.loadDataSequentially();
     }
 
     // 初始化工具提示
@@ -37,11 +37,11 @@ class Job51ConfigForm {
             });
         }
 
-        // 测试配置按钮
-        const testConfigBtn = document.getElementById('job51TestConfigBtn');
-        if (testConfigBtn) {
-            testConfigBtn.addEventListener('click', () => {
-                this.handleTestConfig();
+        // 数据库备份按钮
+        const backupDataBtn = document.getElementById('job51BackupDataBtn');
+        if (backupDataBtn) {
+            backupDataBtn.addEventListener('click', () => {
+                this.handleBackupData();
             });
         }
 
@@ -49,6 +49,18 @@ class Job51ConfigForm {
         document.getElementById('job51LoginBtn')?.addEventListener('click', () => {
             this.handleLogin();
         });
+
+        // 手动确认登录按钮
+        const job51LoginManualBtn = document.getElementById('job51LoginManualBtn');
+        if (job51LoginManualBtn) {
+            job51LoginManualBtn.addEventListener('click', () => {
+                console.log('51job手动登录按钮被点击');
+                this.handleManualLogin();
+            });
+            console.log('已绑定51job手动登录按钮事件');
+        } else {
+            console.warn('未找到51job手动登录按钮元素');
+        }
 
         document.getElementById('job51CollectBtn')?.addEventListener('click', () => {
             this.handleCollect();
@@ -82,7 +94,6 @@ class Job51ConfigForm {
             'job51JobTypeComboBox',
             'job51SalaryComboBox',
             'job51DegreeComboBox',
-            'job51ResumeContentTextArea',
             'job51CoverLetterTextArea'
         ];
 
@@ -165,8 +176,6 @@ class Job51ConfigForm {
             
             // 功能开关
             autoApply: document.getElementById('job51AutoApplyCheckBox')?.checked || false,
-            smartFilter: document.getElementById('job51SmartFilterCheckBox')?.checked || false,
-            keywordMatch: document.getElementById('job51KeywordMatchCheckBox')?.checked || false,
             blacklistFilter: document.getElementById('job51BlacklistFilterCheckBox')?.checked || false,
             blacklistKeywords: document.getElementById('job51BlacklistKeywordsTextArea')?.value || '',
             
@@ -187,51 +196,58 @@ class Job51ConfigForm {
         } catch (e) {}
     }
 
-    // 加载保存的配置
-    loadSavedConfig() {
-        fetch('/api/config/job51')
-            .then(async res => {
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const ct = res.headers.get('content-type') || '';
-                if (ct.includes('application/json')) {
-                    return res.json();
-                } else {
-                    const text = await res.text();
-                    const snippet = (text || '').slice(0, 80);
-                    throw new Error('返回非JSON：' + snippet);
-                }
-            })
-            .then(data => {
-                if (data && typeof data === 'object' && Object.keys(data).length) {
-                    this.config = data;
+    // 加载保存的配置（优先后端，其次本地缓存）
+    async loadSavedConfig() {
+        try {
+            console.log('开始加载51job保存的配置...');
+            const res = await fetch('/api/config/job51');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const ct = res.headers.get('content-type') || '';
+            let data;
+            if (ct.includes('application/json')) {
+                data = await res.json();
+            } else {
+                const text = await res.text();
+                const snippet = (text || '').slice(0, 80);
+                throw new Error('返回非JSON：' + snippet);
+            }
+            
+            console.log('51job后端配置数据:', data);
+            if (data && typeof data === 'object' && Object.keys(data).length) {
+                this.config = data;
+                this.populateForm();
+                localStorage.setItem('job51Config', JSON.stringify(this.config));
+                console.log('51job配置已从后端加载并回填表单');
+                return;
+            }
+            
+            // 如果后端没有数据，尝试本地缓存
+            const savedConfig = localStorage.getItem('job51Config');
+            if (savedConfig) {
+                try {
+                    this.config = JSON.parse(savedConfig);
                     this.populateForm();
-                    localStorage.setItem('job51Config', JSON.stringify(this.config));
-                    return;
+                    console.log('51job配置已从本地缓存加载并回填表单');
+                } catch (error) {
+                    console.warn('51job本地配置损坏，已清理：' + error.message);
+                    localStorage.removeItem('job51Config');
                 }
-                const savedConfig = localStorage.getItem('job51Config');
-                if (savedConfig) {
-                    try {
-                        this.config = JSON.parse(savedConfig);
-                        this.populateForm();
-                    } catch (error) {
-                        console.warn('本地配置损坏，已清理：' + error.message);
-                        localStorage.removeItem('job51Config');
-                    }
+            }
+        } catch (err) {
+            console.warn('51job后端配置读取失败：' + (err?.message || '未知错误'));
+            // 尝试本地缓存
+            const savedConfig = localStorage.getItem('job51Config');
+            if (savedConfig) {
+                try {
+                    this.config = JSON.parse(savedConfig);
+                    this.populateForm();
+                    console.log('51job配置已从本地缓存加载并回填表单');
+                } catch (error) {
+                    console.warn('51job本地配置损坏，已清理：' + error.message);
+                    localStorage.removeItem('job51Config');
                 }
-            })
-            .catch((err) => {
-                console.warn('后端配置读取失败：' + (err?.message || '未知错误'));
-                const savedConfig = localStorage.getItem('job51Config');
-                if (savedConfig) {
-                    try {
-                        this.config = JSON.parse(savedConfig);
-                        this.populateForm();
-                    } catch (error) {
-                        console.warn('本地配置损坏，已清理：' + error.message);
-                        localStorage.removeItem('job51Config');
-                    }
-                }
-            });
+            }
+        }
     }
 
     // 填充表单
@@ -242,28 +258,78 @@ class Job51ConfigForm {
                 if (element.type === 'checkbox') {
                     element.checked = this.config[key];
                 } else {
-                    element.value = this.config[key];
+                    // 处理可能的数组字段转换为逗号分隔字符串
+                    let value = this.config[key];
+                    if (Array.isArray(value)) {
+                        value = value.join(',');
+                        console.log(`51job: 数组字段 ${key} 转换为字符串:`, this.config[key], '->', value);
+                    }
+                    element.value = value || '';
                 }
             }
         });
 
         // 回填城市多选
         try {
-            const codes = (this.config.cityCode || '').split(',').map(s => s.trim()).filter(Boolean);
+            // 处理数组格式（从后端返回）或字符串格式（从本地缓存）
+            let cityCodeStr = '';
+            if (Array.isArray(this.config.cityCode)) {
+                cityCodeStr = this.config.cityCode.join(',');
+            } else {
+                cityCodeStr = this.config.cityCode || '';
+            }
+            
+            const codes = cityCodeStr.split(',').map(s => s.trim()).filter(Boolean);
             const citySelect = document.getElementById('job51CityCodeField');
             if (citySelect && codes.length) {
+                console.log('51job回填城市选择，原始数据:', this.config.cityCode, '处理后:', codes);
                 Array.from(citySelect.options).forEach(opt => {
                     opt.selected = codes.includes(opt.value);
                 });
-                this.updateCitySummary();
+                
+                // 同步下拉复选框
+                const cityListContainer = document.getElementById('job51CityDropdownList');
+                const cityDropdownBtn = document.getElementById('job51CityDropdownBtn');
+                const citySummary = document.getElementById('job51CitySelectionSummary');
+                const selectedSet = new Set(codes);
+                if (cityListContainer) {
+                    cityListContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                        checkbox.checked = selectedSet.has(checkbox.value);
+                    });
+                }
+                
+                // 更新按钮文案和摘要
+                if (cityDropdownBtn && citySummary) {
+                    const values = Array.from(citySelect.selectedOptions).map(o => o.textContent || '').filter(Boolean);
+                    if (values.length === 0) {
+                        cityDropdownBtn.textContent = '选择城市';
+                        citySummary.textContent = '未选择';
+                    } else if (values.length <= 2) {
+                        const text = values.join('、');
+                        cityDropdownBtn.textContent = text;
+                        citySummary.textContent = `已选 ${values.length} 项：${text}`;
+                    } else {
+                        cityDropdownBtn.textContent = `已选 ${values.length} 项`;
+                        citySummary.textContent = `已选 ${values.length} 项`;
+                    }
+                }
             }
         } catch (_) {}
 
         // 回填行业多选
         try {
-            const codes = (this.config.industry || '').split(',').map(s => s.trim()).filter(Boolean);
+            // 处理数组格式（从后端返回）或字符串格式（从本地缓存）
+            let industryStr = '';
+            if (Array.isArray(this.config.industry)) {
+                industryStr = this.config.industry.join(',');
+            } else {
+                industryStr = this.config.industry || '';
+            }
+            
+            const codes = industryStr.split(',').map(s => s.trim()).filter(Boolean);
             const industrySelect = document.getElementById('job51IndustryField');
             if (industrySelect && codes.length) {
+                console.log('51job回填行业选择，原始数据:', this.config.industry, '处理后:', codes);
                 Array.from(industrySelect.options).forEach(opt => {
                     opt.selected = codes.includes(opt.value);
                 });
@@ -286,8 +352,6 @@ class Job51ConfigForm {
             resumeContent: 'job51ResumeContentTextArea',
             coverLetter: 'job51CoverLetterTextArea',
             autoApply: 'job51AutoApplyCheckBox',
-            smartFilter: 'job51SmartFilterCheckBox',
-            keywordMatch: 'job51KeywordMatchCheckBox',
             blacklistFilter: 'job51BlacklistFilterCheckBox',
             blacklistKeywords: 'job51BlacklistKeywordsTextArea',
             enableAIJobMatch: 'job51EnableAIJobMatchCheckBox',
@@ -296,21 +360,48 @@ class Job51ConfigForm {
         return fieldMap[key] || key;
     }
 
+    // 按顺序加载数据：先字典，后配置
+    async loadDataSequentially() {
+        try {
+            console.log('开始按顺序加载51job数据：字典 -> 配置');
+            // 先加载字典数据
+            await this.loadJob51Dicts();
+            console.log('51job字典数据加载完成，开始加载配置数据');
+            // 再加载配置数据
+            await this.loadSavedConfig();
+            console.log('51job配置数据加载完成');
+        } catch (error) {
+            console.error('51job数据加载失败:', error);
+        }
+    }
+
     // 加载51job字典数据
     async loadJob51Dicts() {
         try {
+            console.log('开始加载51job字典数据...');
             const res = await fetch('/dicts/JOB_51');
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
-            if (!data || !Array.isArray(data.groups)) return;
+            console.log('接收到51job字典数据:', data);
+            
+            if (!data || !Array.isArray(data.groups)) {
+                console.warn('51job字典数据结构不正确:', data);
+                return;
+            }
 
             const groupMap = new Map();
-            data.groups.forEach(g => groupMap.set(g.key, Array.isArray(g.items) ? g.items : []));
+            data.groups.forEach(g => {
+                console.log(`处理51job字典组: ${g.key}, 项目数量: ${Array.isArray(g.items) ? g.items.length : 0}`);
+                groupMap.set(g.key, Array.isArray(g.items) ? g.items : []);
+            });
 
             // 渲染城市选择
-            this.renderCitySelection(groupMap.get('cityList') || []);
+            const cityItems = groupMap.get('cityList') || [];
+            console.log('51job城市数据:', cityItems);
+            this.renderCitySelection(cityItems);
 
             // 渲染其他选择框
+            console.log('开始渲染51job其他下拉框...');
             this.fillSelect('job51IndustryField', groupMap.get('industryList'));
             this.fillSelect('job51ExperienceComboBox', groupMap.get('experienceList'));
             this.fillSelect('job51JobTypeComboBox', groupMap.get('jobTypeList'));
@@ -318,9 +409,11 @@ class Job51ConfigForm {
             this.fillSelect('job51DegreeComboBox', groupMap.get('degreeList'));
             this.fillSelect('job51ScaleComboBox', groupMap.get('scaleList'));
             this.fillSelect('job51CompanyNatureComboBox', groupMap.get('companyNatureList'));
+            console.log('51job所有下拉框渲染完成');
 
         } catch (e) {
             console.warn('加载51job字典失败：', e?.message || e);
+            throw e; // 重新抛出错误，让调用者知道字典加载失败
         }
     }
 
@@ -457,9 +550,39 @@ class Job51ConfigForm {
         this.showToast('51job配置已保存');
     }
 
-    // 处理测试配置
-    handleTestConfig() {
-        this.showToast('测试配置功能开发中...', 'info');
+    // 处理数据库备份
+    handleBackupData() {
+        const backupBtn = document.getElementById('job51BackupDataBtn');
+        if (backupBtn) {
+            backupBtn.disabled = true;
+            backupBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>备份中...';
+        }
+
+        fetch('/api/backup/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.showToast('数据库备份成功', 'success');
+                console.log('备份路径:', data.backupPath);
+            } else {
+                this.showToast('数据库备份失败: ' + data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('备份请求失败:', error);
+            this.showToast('数据库备份失败: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            if (backupBtn) {
+                backupBtn.disabled = false;
+                backupBtn.innerHTML = '<i class="bi bi-database me-2"></i>数据库备份';
+            }
+        });
     }
 
     // 处理登录
@@ -496,6 +619,27 @@ class Job51ConfigForm {
             this.updateButtonState('job51LoginBtn', 'job51LoginStatus', '登录失败', false);
             this.showToast('登录接口调用失败: ' + error.message, 'danger');
         }
+    }
+
+    // 手动确认登录
+    handleManualLogin() {
+        console.log('51job手动登录方法被调用');
+        
+        // 模拟登录成功的状态
+        this.taskStates.loginTaskId = 'manual_login_' + Date.now();
+        console.log('设置taskId:', this.taskStates.loginTaskId);
+        
+        this.updateButtonState('job51LoginBtn', 'job51LoginStatus', '登录成功', false);
+        console.log('更新51job登录按钮状态为登录成功');
+        
+        // 启用后续步骤按钮
+        this.enableNextStep('job51CollectBtn', 'job51CollectStatus', '可开始采集');
+        this.enableNextStep('job51FilterBtn', 'job51FilterStatus', '可开始过滤');  
+        this.enableNextStep('job51ApplyBtn', 'job51ApplyStatus', '可开始投递');
+        console.log('启用51job后续步骤按钮');
+        
+        this.showToast('已手动标记为登录状态', 'success');
+        console.log('51job手动登录处理完成');
     }
 
     // 处理采集
@@ -643,8 +787,6 @@ class Job51ConfigForm {
             resumeContent: document.getElementById('job51ResumeContentTextArea')?.value || '',
             coverLetter: document.getElementById('job51CoverLetterTextArea')?.value || '',
             autoApply: document.getElementById('job51AutoApplyCheckBox')?.checked || false,
-            smartFilter: document.getElementById('job51SmartFilterCheckBox')?.checked || false,
-            keywordMatch: document.getElementById('job51KeywordMatchCheckBox')?.checked || false,
             blacklistFilter: document.getElementById('job51BlacklistFilterCheckBox')?.checked || false,
             blacklistKeywords: document.getElementById('job51BlacklistKeywordsTextArea')?.value || '',
             enableAIJobMatch: document.getElementById('job51EnableAIJobMatchCheckBox')?.checked || false,
@@ -661,7 +803,6 @@ class Job51ConfigForm {
             'job51JobTypeComboBox',
             'job51SalaryComboBox',
             'job51DegreeComboBox',
-            'job51ResumeContentTextArea',
             'job51CoverLetterTextArea'
         ];
 

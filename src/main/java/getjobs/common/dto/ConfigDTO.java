@@ -28,6 +28,7 @@ public class ConfigDTO {
     private String degree;
     private String scale;
     private String stage;
+    private String companyType;  // 新增：公司类型字段，用于51job的companyType参数
     private String expectedPosition;
 
     // 可选：自定义城市编码映射
@@ -138,6 +139,10 @@ public class ConfigDTO {
         if (entity.getStage() != null) {
             dto.setStage(String.join(",", entity.getStage()));
         }
+        // 注意：需要在ConfigEntity中添加companyType字段
+        // if (entity.getCompanyType() != null) {
+        //     dto.setCompanyType(String.join(",", entity.getCompanyType()));
+        // }
         if (entity.getDeadStatus() != null) {
             dto.setDeadStatus(entity.getDeadStatus());
         }
@@ -196,6 +201,10 @@ public class ConfigDTO {
 
     public List<String> getStageCodes() {
         return mapToCodes(splitToList(stage), v -> stage);
+    }
+
+    public List<String> getCompanyTypeCodes() {
+        return mapToCodes(splitToList(companyType), v -> companyType);
     }
 
     public List<Integer> getExpectedSalary() {

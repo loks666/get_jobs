@@ -56,6 +56,18 @@ class BossConfigApp {
             this.handleLogin();
         });
 
+        // 手动确认登录按钮
+        const loginManualBtn = document.getElementById('loginManualBtn');
+        if (loginManualBtn) {
+            loginManualBtn.addEventListener('click', () => {
+                console.log('Boss手动登录按钮被点击');
+                this.handleManualLogin();
+            });
+            console.log('已绑定Boss手动登录按钮事件');
+        } else {
+            console.warn('未找到Boss手动登录按钮元素');
+        }
+
         document.getElementById('collectBtn')?.addEventListener('click', () => {
             this.handleCollect();
         });
@@ -167,13 +179,6 @@ class BossConfigApp {
             });
         }
 
-        // 等待时间验证
-        const waitTimeField = document.getElementById('waitTimeField');
-        if (waitTimeField) {
-            waitTimeField.addEventListener('input', () => {
-                this.validateWaitTime();
-            });
-        }
     }
 
     // =====================
@@ -479,16 +484,6 @@ class BossConfigApp {
         return isValid;
     }
 
-    // 验证等待时间
-    validateWaitTime() {
-        const waitTimeField = document.getElementById('waitTimeField');
-        const value = parseInt(waitTimeField.value) || 0;
-        
-        const isValid = value >= 1 && value <= 300;
-        this.updateFieldValidation(waitTimeField, isValid);
-        
-        return isValid;
-    }
 
     // 更新字段验证状态
     updateFieldValidation(field, isValid) {
@@ -622,7 +617,6 @@ class BossConfigApp {
             // 功能开关
             filterDeadHR: document.getElementById('filterDeadHRCheckBox').checked,
             sendImgResume: document.getElementById('sendImgResumeCheckBox').checked,
-            keyFilter: document.getElementById('keyFilterCheckBox').checked,
             recommendJobs: document.getElementById('recommendJobsCheckBox').checked,
             enableBlacklistFilter: document.getElementById('enableBlacklistFilterCheckBox').checked,
             blacklistKeywords: document.getElementById('blacklistKeywordsTextArea').value,
@@ -877,19 +871,58 @@ class BossConfigApp {
                 if (element.type === 'checkbox') {
                     element.checked = this.config[key];
                 } else {
-                    element.value = this.config[key];
+                    // 处理可能的数组字段转换为逗号分隔字符串
+                    let value = this.config[key];
+                    if (Array.isArray(value)) {
+                        value = value.join(',');
+                        console.log(`App.js: 数组字段 ${key} 转换为字符串:`, this.config[key], '->', value);
+                    }
+                    element.value = value || '';
                 }
             }
         });
 
         // 回填城市多选
         try {
-            const codes = (this.config.cityCode || '').split(',').map(s => s.trim()).filter(Boolean);
+            // 处理数组格式（从后端返回）或字符串格式（从本地缓存）
+            let cityCodeStr = '';
+            if (Array.isArray(this.config.cityCode)) {
+                cityCodeStr = this.config.cityCode.join(',');
+            } else {
+                cityCodeStr = this.config.cityCode || '';
+            }
+            
+            const codes = cityCodeStr.split(',').map(s => s.trim()).filter(Boolean);
             const citySelect = document.getElementById('cityCodeField');
             if (citySelect && codes.length) {
+                console.log('Boss直聘回填城市选择，原始数据:', this.config.cityCode, '处理后:', codes);
                 Array.from(citySelect.options).forEach(opt => {
                     opt.selected = codes.includes(opt.value);
                 });
+                // 同步下拉复选框与摘要/按钮文案
+                const cityListContainer = document.getElementById('cityDropdownList');
+                const cityDropdownBtn = document.getElementById('cityDropdownBtn');
+                const citySummary = document.getElementById('citySelectionSummary');
+                const selectedSet = new Set(codes);
+                if (cityListContainer) {
+                    cityListContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                        checkbox.checked = selectedSet.has(checkbox.value);
+                    });
+                }
+                if (cityDropdownBtn && citySummary) {
+                    const values = Array.from(citySelect.selectedOptions).map(o => o.textContent || '').filter(Boolean);
+                    if (values.length === 0) {
+                        cityDropdownBtn.textContent = '选择城市';
+                        citySummary.textContent = '未选择';
+                    } else if (values.length <= 2) {
+                        const text = values.join('、');
+                        cityDropdownBtn.textContent = text;
+                        citySummary.textContent = `已选 ${values.length} 项：${text}`;
+                    } else {
+                        cityDropdownBtn.textContent = `已选 ${values.length} 项`;
+                        citySummary.textContent = `已选 ${values.length} 项`;
+                    }
+                }
             }
         } catch (_) {}
 
@@ -927,12 +960,10 @@ class BossConfigApp {
             sayHi: 'sayHiTextArea',
             filterDeadHR: 'filterDeadHRCheckBox',
             sendImgResume: 'sendImgResumeCheckBox',
-            keyFilter: 'keyFilterCheckBox',
             recommendJobs: 'recommendJobsCheckBox',
             enableAIJobMatchDetection: 'enableAIJobMatchDetectionCheckBox',
             enableAIGreeting: 'enableAIGreetingCheckBox',
             checkStateOwned: 'checkStateOwnedCheckBox',
-            waitTime: 'waitTimeField',
             enableBlacklistFilter: 'enableBlacklistFilterCheckBox',
             blacklistKeywords: 'blacklistKeywordsTextArea'
         };
@@ -1040,6 +1071,27 @@ class BossConfigApp {
             this.updateButtonState('loginBtn', 'loginStatus', '登录失败', false);
             this.showToast('登录接口调用失败: ' + error.message, 'danger');
         }
+    }
+
+    // 手动确认登录
+    handleManualLogin() {
+        console.log('Boss手动登录方法被调用');
+        
+        // 模拟登录成功的状态
+        this.taskStates.loginTaskId = 'manual_login_' + Date.now();
+        console.log('设置taskId:', this.taskStates.loginTaskId);
+        
+        this.updateButtonState('loginBtn', 'loginStatus', '登录成功', false);
+        console.log('更新登录按钮状态为登录成功');
+        
+        // 启用后续步骤按钮（使用enableNextStep方法）
+        this.enableNextStep('collectBtn', 'collectStatus', '可开始采集');
+        this.enableNextStep('filterBtn', 'filterStatus', '可开始过滤');
+        this.enableNextStep('deliverBtn', 'deliverStatus', '可开始投递');
+        console.log('启用后续步骤按钮');
+        
+        this.showToast('已手动标记为登录状态', 'success');
+        console.log('Boss手动登录处理完成');
     }
 
     // 步骤2: 采集岗位
@@ -1198,7 +1250,6 @@ class BossConfigApp {
             // 功能开关
             filterDeadHR: document.getElementById('filterDeadHRCheckBox').checked,
             sendImgResume: document.getElementById('sendImgResumeCheckBox').checked,
-            keyFilter: document.getElementById('keyFilterCheckBox').checked,
             recommendJobs: document.getElementById('recommendJobsCheckBox').checked,
             enableBlacklistFilter: document.getElementById('enableBlacklistFilterCheckBox').checked,
             blacklistKeywords: document.getElementById('blacklistKeywordsTextArea').value,
@@ -1324,7 +1375,7 @@ class BossConfigApp {
             }
         });
 
-        return isValid && this.validateSalaryRange() && this.validateWaitTime();
+        return isValid && this.validateSalaryRange();
     }
 
     // 开始执行（已废弃，使用新的分步执行）
@@ -1487,6 +1538,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         config: {},
                         loading: false,
                         error: '',
+                        cityNameByCode: {},
                     };
                 },
                 computed: {
@@ -1503,11 +1555,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 },
                 methods: {
+                    async loadDict() {
+                        try {
+                            const res = await fetch('/dicts/BOSS_ZHIPIN');
+                            if (!res.ok) throw new Error('HTTP ' + res.status);
+                            const data = await res.json();
+                            if (!data || !Array.isArray(data.groups)) return;
+                            const cityGroup = data.groups.find(g => g.key === 'cityList');
+                            const map = {};
+                            (Array.isArray(cityGroup?.items) ? cityGroup.items : []).forEach(it => {
+                                if (it && it.code) map[String(it.code)] = it.name || String(it.code);
+                            });
+                            this.cityNameByCode = map;
+                        } catch (_) {
+                            // 忽略字典加载失败，回退显示原始code
+                            this.cityNameByCode = {};
+                        }
+                    },
                     async load(force = false) {
                         console.log('开始加载配置数据');
                         this.loading = true;
                         this.error = '';
                         try {
+                            // 预先加载城市字典（不阻塞后续渲染）
+                            await this.loadDict();
                             const res = await fetch('/api/config/boss');
                             console.log('API响应状态:', res.status);
                             if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -1542,6 +1613,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         } finally {
                             this.loading = false;
                         }
+                    },
+                    mapCityCodesToNames(value) {
+                        if (!value) return '';
+                        if (Array.isArray(value)) {
+                            return value.map(v => this.cityNameByCode[String(v)] || String(v)).join('、');
+                        }
+                        const codes = String(value).split(',').map(s => s.trim()).filter(Boolean);
+                        if (codes.length === 0) return '';
+                        return codes.map(c => this.cityNameByCode[c] || c).join('、');
                     },
                     safe(v) {
                         if (Array.isArray(v)) return v.join('、');

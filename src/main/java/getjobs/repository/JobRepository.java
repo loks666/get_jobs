@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface JobRepository extends JpaRepository<JobEntity, Long> {
@@ -70,4 +71,23 @@ public interface JobRepository extends JpaRepository<JobEntity, Long> {
     List<JobEntity> findByStatus(Integer status);
 
     List<JobEntity> findAllByEncryptJobIdIn(List<String> encryptJobIds);
+
+    /**
+     * 统计指定时间范围内新增的岗位数量
+     *
+     * @param startTime 开始时间
+     * @param endTime   结束时间
+     * @return 岗位数量
+     */
+    long countByCreatedAtBetween(LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * 统计指定时间范围内、指定平台的新增岗位数量
+     *
+     * @param platform  平台名称
+     * @param startTime 开始时间
+     * @param endTime   结束时间
+     * @return 岗位数量
+     */
+    long countByPlatformAndCreatedAtBetween(String platform, LocalDateTime startTime, LocalDateTime endTime);
 }

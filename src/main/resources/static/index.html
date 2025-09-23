@@ -421,15 +421,7 @@
                                                 </label>
                                             </div>
 
-                                            <div class="form-check mb-2">
-                                                <input class="form-check-input" type="checkbox" id="keyFilterCheckBox">
-                                                <label class="form-check-label fw-semibold small" for="keyFilterCheckBox">
-                                                    关键词智能匹配
-                                                    <i class="bi bi-question-circle text-muted ms-1"
-                                                       data-bs-toggle="tooltip"
-                                                       title="开启后将根据设定的关键词智能匹配职位要求"></i>
-                                                </label>
-                                            </div>
+                                            
 
                                             <div class="form-check mb-2">
                                                 <input class="form-check-input" type="checkbox"
@@ -535,11 +527,21 @@
                                                 </h6>
                                                 
                                                 <!-- 步骤1: 登录 -->
-                                                <button type="button" class="btn btn-primary btn-sm w-100 py-2 mb-1"
-                                                        id="loginBtn">
-                                                    <i class="bi bi-box-arrow-in-right me-2"></i>1. Boss登录
-                                                    <span class="badge bg-light text-dark ms-2" id="loginStatus">待执行</span>
-                                                </button>
+                                                <div class="d-flex gap-1 mb-1">
+                                                    <button type="button" class="btn btn-primary btn-sm flex-grow-1 py-2"
+                                                            id="loginBtn">
+                                                        <i class="bi bi-box-arrow-in-right me-2"></i>1. Boss登录
+                                                        <span class="badge bg-light text-dark ms-2" id="loginStatus">待执行</span>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-success btn-sm px-3 py-2"
+                                                            id="loginManualBtn" 
+                                                            title="手动标记为已登录"
+                                                            data-bs-toggle="tooltip"
+                                                            data-bs-placement="top"
+                                                            style="min-width: 45px; min-height: 38px; position: relative; z-index: 1;">
+                                                        <i class="bi bi-check-lg" style="pointer-events: none;"></i>
+                                                    </button>
+                                                </div>
                                                 
                                                 <!-- 步骤2: 采集岗位 -->
                                                 <button type="button" class="btn btn-info btn-sm w-100 py-2 mb-1"
@@ -630,7 +632,7 @@
                                             </tr>
                                             <tr v-if="config.cityCode">
                                                 <td class="text-muted">工作城市</td>
-                                                <td>{{ safe(config.cityCode) }}</td>
+                                                <td>{{ mapCityCodesToNames(config.cityCode) || '-' }}</td>
                                             </tr>
                                             <tr v-if="config.experience">
                                                 <td class="text-muted">工作经验</td>
@@ -674,13 +676,7 @@
                                                     <span v-else class="badge bg-secondary">关闭</span>
                                                 </td>
                                             </tr>
-                                            <tr>
-                                                <td class="text-muted">关键词智能匹配</td>
-                                                <td>
-                                                    <span v-if="config.keyFilter" class="badge bg-success">开启</span>
-                                                    <span v-else class="badge bg-secondary">关闭</span>
-                                                </td>
-                                            </tr>
+                                            
                                             <tr>
                                                 <td class="text-muted">过滤黑名单岗位</td>
                                                 <td>
@@ -1335,25 +1331,6 @@
                                                 </label>
                                             </div>
 
-                                            <div class="form-check mb-2">
-                                                <input class="form-check-input" type="checkbox" id="job51SmartFilterCheckBox">
-                                                <label class="form-check-label fw-semibold small" for="job51SmartFilterCheckBox">
-                                                    智能职位过滤
-                                                    <i class="bi bi-question-circle text-muted ms-1"
-                                                       data-bs-toggle="tooltip"
-                                                       title="开启后将根据设定的条件智能过滤职位"></i>
-                                                </label>
-                                            </div>
-
-                                            <div class="form-check mb-2">
-                                                <input class="form-check-input" type="checkbox" id="job51KeywordMatchCheckBox">
-                                                <label class="form-check-label fw-semibold small" for="job51KeywordMatchCheckBox">
-                                                    关键词匹配
-                                                    <i class="bi bi-question-circle text-muted ms-1"
-                                                       data-bs-toggle="tooltip"
-                                                       title="开启后将根据设定的关键词智能匹配职位要求"></i>
-                                                </label>
-                                            </div>
 
                                             <div class="form-check mb-2">
                                                 <input class="form-check-input" type="checkbox" id="job51BlacklistFilterCheckBox">
@@ -1416,8 +1393,8 @@
                                                 </div>
                                                 <div class="col-6">
                                                     <button type="button" class="btn btn-outline-success btn-sm w-100 py-2"
-                                                            id="job51TestConfigBtn">
-                                                        <i class="bi bi-play-circle me-2"></i>测试配置
+                                                            id="job51BackupDataBtn">
+                                                        <i class="bi bi-database me-2"></i>数据库备份
                                                     </button>
                                                 </div>
                                             </div>
@@ -1429,11 +1406,21 @@
                                                 </h6>
                                                 
                                                 <!-- 步骤1: 登录 -->
-                                                <button type="button" class="btn btn-primary btn-sm w-100 py-2 mb-1"
-                                                        id="job51LoginBtn">
-                                                    <i class="bi bi-box-arrow-in-right me-2"></i>1. 51job登录
-                                                    <span class="badge bg-light text-dark ms-2" id="job51LoginStatus">待执行</span>
-                                                </button>
+                                                <div class="d-flex gap-1 mb-1">
+                                                    <button type="button" class="btn btn-primary btn-sm flex-grow-1 py-2"
+                                                            id="job51LoginBtn">
+                                                        <i class="bi bi-box-arrow-in-right me-2"></i>1. 51job登录
+                                                        <span class="badge bg-light text-dark ms-2" id="job51LoginStatus">待执行</span>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-success btn-sm px-3 py-2"
+                                                            id="job51LoginManualBtn" 
+                                                            title="手动标记为已登录"
+                                                            data-bs-toggle="tooltip"
+                                                            data-bs-placement="top"
+                                                            style="min-width: 45px; min-height: 38px; position: relative; z-index: 1;">
+                                                        <i class="bi bi-check-lg" style="pointer-events: none;"></i>
+                                                    </button>
+                                                </div>
                                                 
                                                 <!-- 步骤2: 采集职位 -->
                                                 <button type="button" class="btn btn-info btn-sm w-100 py-2 mb-1"
@@ -1471,7 +1458,7 @@
                 </div>
                 <div class="tab-pane fade" id="job51-records-pane" role="tabpanel" aria-labelledby="job51-records-tab">
                     <div class="card shadow-lg">
-                        <div class="card-header bg-white border-0 d-flex align-items-center justify-content之间">
+                        <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between">
                             <h5 class="mb-0 text-dark"><i class="bi bi-journal-text me-2 text-primary"></i>岗位明细</h5>
                             <div class="d-flex gap-2">
                                 <input type="text" class="form-control form-control-sm" id="job51RecordKeyword"

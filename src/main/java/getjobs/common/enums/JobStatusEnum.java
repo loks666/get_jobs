@@ -8,7 +8,7 @@ import lombok.Getter;
  */
 @Getter
 public enum JobStatusEnum {
-    PENDING(1, "待处理"),
+    PENDING(0, "待处理"),
     FILTERED(2, "已过滤"),
     DELIVERED_SUCCESS(3, "投递成功"),
     DELIVERED_FAILED(4, "投递失败");
