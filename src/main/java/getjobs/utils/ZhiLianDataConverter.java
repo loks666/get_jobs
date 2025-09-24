@@ -2,6 +2,7 @@ package getjobs.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import getjobs.common.enums.RecruitmentPlatformEnum;
 import getjobs.modules.zhilian.dto.ZhiLianApiResponse;
 import getjobs.repository.entity.JobEntity;
 import lombok.extern.slf4j.Slf4j;
@@ -90,7 +91,7 @@ public class ZhiLianDataConverter {
             }
 
             // 系统信息
-            jobEntity.setPlatform("zhilian");
+            jobEntity.setPlatform(RecruitmentPlatformEnum.ZHILIAN_ZHAOPIN.getPlatformCode());
             jobEntity.setEncryptJobId(String.valueOf(jobItem.getJobId()));
             jobEntity.setEncryptHrId(jobItem.getStaffCard() != null ? 
                 String.valueOf(jobItem.getStaffCard().getId()) : null);

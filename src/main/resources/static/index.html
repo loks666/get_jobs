@@ -1045,7 +1045,296 @@
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="zhilian-config-pane" role="tabpanel"
                      aria-labelledby="zhilian-config-tab">
-                    <div class="alert alert-info">智联招聘配置即将上线，敬请期待。</div>
+                    <div class="row g-2" style="height: calc(100vh - 200px);">
+                        <!-- Left Panel: Basic Configuration -->
+                        <div class="col-lg-6">
+                            <div class="card shadow-lg h-100">
+                                <div class="card-header bg-white border-0 py-2">
+                                    <h6 class="mb-0 text-dark">
+                                        <i class="bi bi-gear-fill me-2 text-primary"></i>基本配置
+                                    </h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="d-flex flex-column h-100">
+
+                                        <!-- Search Configuration Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-primary mb-2">
+                                                <i class="bi bi-search me-2"></i>搜索条件
+                                            </h6>
+
+                                            <!-- Keywords -->
+                                            <div class="mb-2">
+                                                <label for="zhilianKeywordsField" class="form-label fw-semibold small">
+                                                    搜索关键词
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="输入职位搜索关键词，多个关键词请用英文逗号分隔，例如：Java,Spring,后端"></i>
+                                                </label>
+                                                <input type="text" class="form-control form-control-sm" id="zhilianKeywordsField"
+                                                       placeholder="Java, Spring Boot, 微服务">
+                                            </div>
+
+                                            <!-- Industry -->
+                                            <div class="mb-2">
+                                                <label for="zhilianIndustryField" class="form-label fw-semibold small">
+                                                    目标行业
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="选择目标公司所属行业，可多选"></i>
+                                                </label>
+                                                <select class="form-select form-select-sm" id="zhilianIndustryField" multiple>
+                                                    <option value="">请选择行业</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- City -->
+                                            <div class="mb-2">
+                                                <label for="zhilianCityCodeField" class="form-label fw-semibold small">
+                                                    工作城市
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="从字典中选择工作城市，支持模糊检索；可多选"></i>
+                                                </label>
+                                                <div class="dropdown w-100">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button"
+                                                            id="zhilianCityDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        选择城市
+                                                    </button>
+                                                    <div class="dropdown-menu p-2 w-100" aria-labelledby="zhilianCityDropdownBtn" style="min-width: 100%;">
+                                                        <input type="text" class="form-control form-control-sm mb-2" id="zhilianCitySearchField"
+                                                               placeholder="输入城市名或编码进行筛选...">
+                                                        <div id="zhilianCityDropdownList" style="max-height: 240px; overflow: auto;"></div>
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted d-block mt-1" id="zhilianCitySelectionSummary">未选择</small>
+                                                <select class="form-select form-select-sm d-none" id="zhilianCityCodeField" multiple></select>
+                                            </div>
+                                        </div>
+
+                                        <!-- Job Requirements Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-primary mb-2">
+                                                <i class="bi bi-clipboard-check me-2"></i>职位要求
+                                            </h6>
+
+                                            <div class="row g-2">
+                                                <!-- Experience -->
+                                                <div class="col-md-6">
+                                                    <label for="zhilianExperienceComboBox" class="form-label fw-semibold small">
+                                                        工作经验
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择您的工作年限区间"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="zhilianExperienceComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Job Type -->
+                                                <div class="col-md-6">
+                                                    <label for="zhilianJobTypeComboBox" class="form-label fw-semibold small">
+                                                        求职类型
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望的工作性质，如全职、兼职等"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="zhilianJobTypeComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Salary Range -->
+                                                <div class="col-md-6">
+                                                    <label for="zhilianSalaryComboBox" class="form-label fw-semibold small">
+                                                        薪资范围
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望的月薪范围"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="zhilianSalaryComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Education -->
+                                                <div class="col-md-6">
+                                                    <label for="zhilianDegreeComboBox" class="form-label fw-semibold small">
+                                                        学历要求
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择您的最高学历"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="zhilianDegreeComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Company Scale -->
+                                                <div class="col-md-6">
+                                                    <label for="zhilianScaleComboBox" class="form-label fw-semibold small">
+                                                        公司规模
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望的公司人员规模"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="zhilianScaleComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Company Nature -->
+                                                <div class="col-md-6">
+                                                    <label for="zhilianCompanyNatureComboBox" class="form-label fw-semibold small">
+                                                        公司性质
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望公司的性质，如国企、外企、民企等"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="zhilianCompanyNatureComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Settings & AI Configuration -->
+                        <div class="col-lg-6">
+                            <div class="card shadow-lg h-100">
+                                <div class="card-header bg-white border-0 py-2">
+                                    <h6 class="mb-0 text-dark">
+                                        <i class="bi bi-cpu me-2 text-success"></i>智能设置
+                                    </h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="d-flex flex-column h-100">
+
+                                        <!-- Feature Toggles Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-info mb-2">
+                                                <i class="bi bi-toggle-on me-2"></i>功能开关
+                                            </h6>
+
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="zhilianBlacklistFilterCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="zhilianBlacklistFilterCheckBox">
+                                                    过滤黑名单职位
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将根据黑名单关键词过滤不想要的职位"></i>
+                                                </label>
+                                            </div>
+
+                                            <!-- Blacklist Keywords Config -->
+                                            <div class="mb-2">
+                                                <label for="zhilianBlacklistKeywordsTextArea" class="form-label fw-semibold small">
+                                                    黑名单关键词配置
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="请输入黑名单关键词，使用英文逗号或换行分隔；示例：外包, 中介, 驻场"></i>
+                                                </label>
+                                                <textarea class="form-control form-control-sm" id="zhilianBlacklistKeywordsTextArea" rows="2"
+                                                          placeholder="外包, 中介, 驻场"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <!-- AI Configuration Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-success mb-2">
+                                                <i class="bi bi-robot me-2"></i>AI智能配置
+                                            </h6>
+
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="zhilianEnableAIJobMatchCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="zhilianEnableAIJobMatchCheckBox">
+                                                    AI职位匹配检测
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将使用AI智能分析职位描述，检测职位与期望的匹配度"></i>
+                                                </label>
+                                            </div>
+
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="d-grid gap-2 mt-auto">
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2"
+                                                            id="zhilianSaveConfigBtn">
+                                                        <i class="bi bi-save me-2"></i>保存配置
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-success btn-sm w-100 py-2"
+                                                            id="zhilianBackupDataBtn">
+                                                        <i class="bi bi-database me-2"></i>数据库备份
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 任务执行按钮组 -->
+                                            <div class="border-top pt-2">
+                                                <h6 class="text-muted mb-2 small">
+                                                    <i class="bi bi-list-ol me-2"></i>任务执行步骤
+                                                </h6>
+                                                
+                                                <!-- 步骤1: 登录 -->
+                                                <div class="d-flex gap-1 mb-1">
+                                                    <button type="button" class="btn btn-primary btn-sm flex-grow-1 py-2"
+                                                            id="zhilianLoginBtn">
+                                                        <i class="bi bi-box-arrow-in-right me-2"></i>1. 智联招聘登录
+                                                        <span class="badge bg-light text-dark ms-2" id="zhilianLoginStatus">待执行</span>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-success btn-sm px-3 py-2"
+                                                            id="zhilianLoginManualBtn" 
+                                                            title="手动标记为已登录"
+                                                            data-bs-toggle="tooltip"
+                                                            data-bs-placement="top"
+                                                            style="min-width: 45px; min-height: 38px; position: relative; z-index: 1;">
+                                                        <i class="bi bi-check-lg" style="pointer-events: none;"></i>
+                                                    </button>
+                                                </div>
+                                                
+                                                <!-- 步骤2: 采集职位 -->
+                                                <button type="button" class="btn btn-info btn-sm w-100 py-2 mb-1"
+                                                        id="zhilianCollectBtn" disabled>
+                                                    <i class="bi bi-collection me-2"></i>2. 采集职位
+                                                    <span class="badge bg-light text-dark ms-2" id="zhilianCollectStatus">等待登录</span>
+                                                </button>
+                                                
+                                                <!-- 步骤3: 过滤职位 -->
+                                                <button type="button" class="btn btn-warning btn-sm w-100 py-2 mb-1"
+                                                        id="zhilianFilterBtn" disabled>
+                                                    <i class="bi bi-funnel me-2"></i>3. 过滤职位
+                                                    <span class="badge bg-light text-dark ms-2" id="zhilianFilterStatus">等待登录</span>
+                                                </button>
+                                                
+                                                <!-- 步骤4: 投递职位 -->
+                                                <button type="button" class="btn btn-success btn-sm w-100 py-2 mb-1"
+                                                        id="zhilianApplyBtn" disabled>
+                                                    <i class="bi bi-rocket-takeoff me-2"></i>4. 投递职位
+                                                    <span class="badge bg-light text-dark ms-2" id="zhilianApplyStatus">等待登录</span>
+                                                </button>
+                                                
+                                                <!-- 重置按钮 -->
+                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100"
+                                                        id="zhilianResetTasksBtn">
+                                                    <i class="bi bi-arrow-clockwise me-1"></i>重置任务流程
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="tab-pane fade" id="zhilian-records-pane" role="tabpanel"
                      aria-labelledby="zhilian-records-tab">
@@ -1057,38 +1346,252 @@
                                        placeholder="岗位/公司/HR关键词">
                                 <button class="btn btn-sm btn-outline-primary" id="zhilianRecordSearchBtn"><i
                                         class="bi bi-search"></i></button>
+                                <button class="btn btn-sm btn-outline-secondary" id="zhilianRecordRefreshBtn"><i
+                                        class="bi bi-arrow-clockwise"></i></button>
                             </div>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead>
-                                    <tr>
-                                        <th>岗位</th>
-                                        <th>公司</th>
-                                        <th>城市</th>
-                                        <th>薪资</th>
-                                        <th>投递时间</th>
-                                        <th>投递状态</th>
-                                        <th>HR活跃度</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="zhilianRecordTbody">
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted">暂无数据</td>
-                                    </tr>
-                                    </tbody>
+                            <!-- Vue应用挂载点 -->
+                            <div id="zhilianRecordsVueApp">
+                                <div v-if="loading" class="text-center text-muted py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                    <p class="mt-2">加载中...</p>
+                                </div>
+                                <div v-else-if="error" class="alert alert-danger" role="alert">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>{{ error }}
+                                </div>
+                                <div v-else>
+                                    <!-- 统计信息 -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <div class="stats-card">
+                                                <h6>{{ totalElements }}</h6>
+                                                <small>总岗位数</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stats-card">
+                                                <h6>{{ records.length }}</h6>
+                                                <small>当前页</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stats-card">
+                                                <h6>{{ totalPages }}</h6>
+                                                <small>总页数</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stats-card">
+                                                <h6>{{ currentPage + 1 }}</h6>
+                                                <small>当前页</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 表格 -->
+                                    <div class="table-responsive job-records-table" style="max-height: 600px; overflow-y: auto;">
+                                        <table class="table table-hover align-middle table-striped">
+                                            <thead class="table-dark sticky-top">
+                                            <tr>
+                                                <th style="min-width: 140px;">岗位信息</th>
+                                                <th style="min-width: 120px;">公司信息</th>
+                                                <th style="min-width: 100px;">工作地点</th>
+                                                <th style="min-width: 100px;">薪资待遇</th>
+                                                <th style="min-width: 120px;">职位要求</th>
+                                                <th style="min-width: 100px;">技能标签</th>
+                                                <th style="min-width: 120px;">HR信息</th>
+                                                <th style="min-width: 100px;">公司福利</th>
+                                                <th style="min-width: 100px;">投递状态</th>
+                                                <th style="min-width: 140px;">过滤原因</th>
+                                                <th style="min-width: 120px;">操作</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr v-if="records.length === 0">
+                                                <td colspan="11" class="empty-state">
+                                                    <i class="bi bi-inbox"></i>
+                                                    <h5>暂无数据</h5>
+                                                    <p>请先执行岗位采集任务</p>
+                                                </td>
+                                            </tr>
+                                            <tr v-for="job in records" :key="job.id" class="job-row">
+                                                <!-- 岗位信息 -->
+                                                <td>
+                                                    <div class="job-title">{{ job.jobTitle }}</div>
+                                                    <div class="job-labels">
+                                                        <span v-for="label in parseArray(job.jobLabels)" :key="label" 
+                                                              class="badge bg-light text-dark">{{ label }}</span>
+                                                    </div>
+                                                    <div class="job-platform">
+                                                        <span class="badge bg-info">{{ job.platform }}</span>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 公司信息 -->
+                                                <td>
+                                                    <div class="company-name">{{ job.companyName }}</div>
+                                                    <div class="company-info">
+                                                        <div><i class="bi bi-building me-1"></i>{{ job.companyIndustry }}</div>
+                                                        <div><i class="bi bi-people me-1"></i>{{ job.companyScale }}</div>
+                                                        <div><i class="bi bi-graph-up me-1"></i>{{ job.companyStage }}</div>
+                                                    </div>
+                                                    <div class="company-logo" v-if="job.companyLogo">
+                                                        <img :src="job.companyLogo" class="company-logo-img" :alt="job.companyName">
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 工作地点 -->
+                                                <td>
+                                                    <div class="location-city">{{ job.workCity }}</div>
+                                                    <div class="location-details">
+                                                        <div><i class="bi bi-geo-alt me-1"></i>{{ job.workArea }}</div>
+                                                        <div v-if="job.businessDistrict"><i class="bi bi-building me-1"></i>{{ job.businessDistrict }}</div>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 薪资待遇 -->
+                                                <td>
+                                                    <div class="salary-desc">{{ job.salaryDesc }}</div>
+                                                    <div class="job-requirements">
+                                                        <div><i class="bi bi-clock me-1"></i>{{ job.jobExperience }}</div>
+                                                        <div><i class="bi bi-mortarboard me-1"></i>{{ job.jobDegree }}</div>
+                                                    </div>
+                                                    <div class="job-type" v-if="job.jobType !== undefined">
+                                                        <span class="badge bg-secondary">{{ getJobTypeText(job.jobType) }}</span>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 职位要求 -->
+                                                <td>
+                                                    <div class="job-description" v-if="job.jobDescription">
+                                                        {{ truncateText(job.jobDescription, 80) }}
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 技能标签 -->
+                                                <td>
+                                                    <div class="skills-container">
+                                                        <span v-for="skill in parseArray(job.skills).slice(0, 4)" :key="skill" 
+                                                              class="badge bg-secondary">{{ skill }}</span>
+                                                        <span v-if="parseArray(job.skills).length > 4" class="badge bg-light text-dark">
+                                                            +{{ parseArray(job.skills).length - 4 }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="skill-count" v-if="parseArray(job.skills).length > 0">
+                                                        <small class="text-muted">共{{ parseArray(job.skills).length }}项技能</small>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- HR信息 -->
+                                                <td>
+                                                    <div class="hr-info">
+                                                        <img v-if="job.hrAvatar" :src="job.hrAvatar" 
+                                                             class="hr-avatar" :alt="job.hrName">
+                                                        <div class="hr-name">{{ job.hrName }}</div>
+                                                    </div>
+                                                    <div class="hr-details">
+                                                        <div><i class="bi bi-person-badge me-1"></i>{{ job.hrTitle }}</div>
+                                                        <div class="hr-status">
+                                                            <span :class="job.hrOnline ? 'text-success' : 'text-muted'">
+                                                                <i class="bi bi-circle-fill"></i>
+                                                                {{ job.hrOnline ? '在线' : '离线' }}
+                                                            </span>
+                                                        </div>
+                                                        <div v-if="job.hrCertLevel" class="hr-cert">
+                                                            <span class="badge bg-warning">认证{{ job.hrCertLevel }}级</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 公司福利 -->
+                                                <td>
+                                                    <div class="welfare-container" v-if="parseArray(job.welfareList).length > 0">
+                                                        <span v-for="welfare in parseArray(job.welfareList).slice(0, 3)" :key="welfare" 
+                                                              class="badge bg-success">{{ welfare }}</span>
+                                                        <span v-if="parseArray(job.welfareList).length > 3" class="badge bg-light text-dark">
+                                                            +{{ parseArray(job.welfareList).length - 3 }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="welfare-count" v-if="parseArray(job.welfareList).length > 0">
+                                                        <small class="text-muted">共{{ parseArray(job.welfareList).length }}项福利</small>
+                                                    </div>
+                                                    <div class="no-welfare" v-else>
+                                                        <small class="text-muted">暂无福利信息</small>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 投递状态 -->
+                                                <td>
+                                                    <div :class="getStatusInfo(job.status).class">
+                                                        {{ getStatusInfo(job.status).text }}
+                                                    </div>
+                                                    <div class="status-time">
+                                                        <div><i class="bi bi-calendar me-1"></i>{{ formatDateTime(job.createdAt) }}</div>
+                                                        <div v-if="job.updatedAt"><i class="bi bi-clock me-1"></i>{{ formatDateTime(job.updatedAt) }}</div>
+                                                    </div>
+                                                    <div class="job-flags" v-if="job.isFavorite || job.isOptimal">
+                                                        <span v-if="job.isFavorite" class="badge bg-danger me-1">收藏</span>
+                                                        <span v-if="job.isOptimal" class="badge bg-warning">优选</span>
+                                                    </div>
+                                                </td>
+
+                                                <!-- 过滤原因 -->
+                                                <td>
+                                                    <div v-if="job.filterReason" :title="job.filterReason">
+                                                        {{ truncateText(job.filterReason, 60) }}
+                                                    </div>
+                                                    <div v-else class="text-muted">
+                                                        -
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 操作 -->
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <button class="btn btn-outline-primary btn-sm" 
+                                                                @click="viewJobDetail(job)" title="查看详情">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-info btn-sm" 
+                                                                @click="copyJobUrl(job)" title="复制链接">
+                                                            <i class="bi bi-link-45deg"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-success btn-sm" 
+                                                                @click="toggleFavorite(job)" 
+                                                                :class="job.isFavorite ? 'active' : ''" title="收藏">
+                                                            <i class="bi bi-heart"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-warning btn-sm" 
+                                                                @click="viewCompanyInfo(job)" title="公司信息">
+                                                            <i class="bi bi-building"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            </tbody>
                                 </table>
                             </div>
-                            <nav>
-                                <ul class="pagination justify-content-center" id="zhilianRecordPagination">
-                                    <li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>
-                                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                    <li class="page-item"><a class="page-link" href="#">下一页</a></li>
-                                </ul>
-                            </nav>
+                                    
+                                    <!-- 分页 -->
+                                    <nav v-if="totalPages > 1">
+                                        <ul class="pagination justify-content-center">
+                                            <li class="page-item" :class="{ disabled: currentPage === 0 }">
+                                                <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">上一页</a>
+                                            </li>
+                                            <li v-for="page in visiblePages" :key="page" 
+                                                class="page-item" :class="{ active: page === currentPage }">
+                                                <a class="page-link" href="#" @click.prevent="goToPage(page)">{{ page + 1 }}</a>
+                                            </li>
+                                            <li class="page-item" :class="{ disabled: currentPage === totalPages - 1 }">
+                                                <a class="page-link" href="#" @click.prevent="goToPage(currentPage + 1)">下一页</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1679,6 +2182,8 @@
 <script src="js/views/boss-config-form.js"></script>
 <script src="js/views/boss-config-readonly.js"></script>
 <script src="js/views/boss-records-vue.js"></script>
+<script src="js/views/zhilian-config-form.js"></script>
+<script src="js/views/zhilian-records-vue.js"></script>
 <script src="js/views/job51-config-form.js"></script>
 <script src="js/views/job51-records-vue.js"></script>
 <!-- App Entrypoint -->

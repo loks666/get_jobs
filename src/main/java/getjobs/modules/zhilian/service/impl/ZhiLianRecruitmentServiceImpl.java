@@ -129,12 +129,12 @@ public class ZhiLianRecruitmentServiceImpl implements RecruitmentService {
         
         try {
             page.navigate(searchUrl);
-            
             // 等待页面加载
             page.waitForLoadState();
-            
-          
-            
+            int pageNumber = 1;
+            while (ZhiLianElementLocators.clickPageNumber(page, pageNumber)){
+                pageNumber++;
+            }
         } catch (Exception e) {
             log.error("采集城市: {}, 关键词: {} 的职位失败", cityCode, keyword, e);
         }
