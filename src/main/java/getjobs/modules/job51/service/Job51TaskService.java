@@ -137,12 +137,6 @@ public class Job51TaskService {
             List<JobDTO> searchJobDTOS = job51Service.collectJobs(config);
             allJobDTOS.addAll(searchJobDTOS);
 
-            // 采集推荐岗位（如果配置开启）
-            if (config.getRecommendJobs()) {
-                List<JobDTO> recommendJobDTOS = job51Service.collectRecommendJobs(config);
-                allJobDTOS.addAll(recommendJobDTOS);
-            }
-
             // 保存到数据库
             int savedCount = 0;
             if (!allJobDTOS.isEmpty()) {
@@ -193,8 +187,9 @@ public class Job51TaskService {
 
             RecruitmentService job51Service = serviceFactory.getService(RecruitmentPlatformEnum.JOB_51);
 
-            // 直接从数据库查询所有职位实体
-            List<JobEntity> allJobEntities = jobService.findAllJobEntitiesByPlatform("51job");
+            // 直接从数据库查询51job平台的所有职位实体
+            List<JobEntity> allJobEntities = jobService.findAllJobEntitiesByPlatform(
+                    RecruitmentPlatformEnum.JOB_51.getPlatformCode());
             if (allJobEntities == null || allJobEntities.isEmpty()) {
                 throw new IllegalArgumentException("数据库中未找到职位数据或职位数据为空");
             }
@@ -280,10 +275,12 @@ public class Job51TaskService {
             log.info("开始执行51job岗位投递操作，任务ID: {}, 实际投递: {}",
                     taskId, enableActualDelivery);
 
-            // 从数据库获取待处理状态的岗位记录
-            List<JobEntity> jobEntities = jobRepository.findByStatus(JobStatusEnum.PENDING.getCode());
+            // 从数据库获取待处理状态的51job平台岗位记录
+            List<JobEntity> jobEntities = jobRepository.findByStatusAndPlatform(
+                    JobStatusEnum.PENDING.getCode(), 
+                    RecruitmentPlatformEnum.JOB_51.getPlatformCode());
             if (jobEntities == null || jobEntities.isEmpty()) {
-                throw new IllegalArgumentException("未找到可投递的岗位记录，数据库中没有待处理状态的岗位");
+                throw new IllegalArgumentException("未找到可投递的51job岗位记录，数据库中没有待处理状态的51job岗位");
             }
 
             // 转换为JobDTO

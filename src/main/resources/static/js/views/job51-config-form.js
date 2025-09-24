@@ -93,8 +93,7 @@ class Job51ConfigForm {
             'job51ExperienceComboBox',
             'job51JobTypeComboBox',
             'job51SalaryComboBox',
-            'job51DegreeComboBox',
-            'job51CoverLetterTextArea'
+            'job51DegreeComboBox'
         ];
 
         requiredFields.forEach(fieldId => {
@@ -170,9 +169,6 @@ class Job51ConfigForm {
             scale: document.getElementById('job51ScaleComboBox')?.value || '',
             companyNature: document.getElementById('job51CompanyNatureComboBox')?.value || '',
             
-            // 简历配置
-            resumeContent: document.getElementById('job51ResumeContentTextArea')?.value || '',
-            coverLetter: document.getElementById('job51CoverLetterTextArea')?.value || '',
             
             // 功能开关
             autoApply: document.getElementById('job51AutoApplyCheckBox')?.checked || false,
@@ -180,8 +176,7 @@ class Job51ConfigForm {
             blacklistKeywords: document.getElementById('job51BlacklistKeywordsTextArea')?.value || '',
             
             // AI配置
-            enableAIJobMatch: document.getElementById('job51EnableAIJobMatchCheckBox')?.checked || false,
-            enableAICoverLetter: document.getElementById('job51EnableAICoverLetterCheckBox')?.checked || false
+            enableAIJobMatch: document.getElementById('job51EnableAIJobMatchCheckBox')?.checked || false
         };
 
         localStorage.setItem('job51Config', JSON.stringify(this.config));
@@ -349,13 +344,10 @@ class Job51ConfigForm {
             degree: 'job51DegreeComboBox',
             scale: 'job51ScaleComboBox',
             companyNature: 'job51CompanyNatureComboBox',
-            resumeContent: 'job51ResumeContentTextArea',
-            coverLetter: 'job51CoverLetterTextArea',
             autoApply: 'job51AutoApplyCheckBox',
             blacklistFilter: 'job51BlacklistFilterCheckBox',
             blacklistKeywords: 'job51BlacklistKeywordsTextArea',
-            enableAIJobMatch: 'job51EnableAIJobMatchCheckBox',
-            enableAICoverLetter: 'job51EnableAICoverLetterCheckBox'
+            enableAIJobMatch: 'job51EnableAIJobMatchCheckBox'
         };
         return fieldMap[key] || key;
     }
@@ -742,7 +734,7 @@ class Job51ConfigForm {
                 enableActualDelivery: enableActualDelivery
             };
 
-            const response = await fetch('/api/job51/task/apply', {
+            const response = await fetch('/api/job51/task/deliver', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(request)
@@ -784,13 +776,10 @@ class Job51ConfigForm {
             degree: document.getElementById('job51DegreeComboBox')?.value || '',
             scale: document.getElementById('job51ScaleComboBox')?.value || '',
             companyNature: document.getElementById('job51CompanyNatureComboBox')?.value || '',
-            resumeContent: document.getElementById('job51ResumeContentTextArea')?.value || '',
-            coverLetter: document.getElementById('job51CoverLetterTextArea')?.value || '',
             autoApply: document.getElementById('job51AutoApplyCheckBox')?.checked || false,
             blacklistFilter: document.getElementById('job51BlacklistFilterCheckBox')?.checked || false,
             blacklistKeywords: document.getElementById('job51BlacklistKeywordsTextArea')?.value || '',
-            enableAIJobMatch: document.getElementById('job51EnableAIJobMatchCheckBox')?.checked || false,
-            enableAICoverLetter: document.getElementById('job51EnableAICoverLetterCheckBox')?.checked || false
+            enableAIJobMatch: document.getElementById('job51EnableAIJobMatchCheckBox')?.checked || false
         };
     }
 
@@ -802,8 +791,7 @@ class Job51ConfigForm {
             'job51ExperienceComboBox',
             'job51JobTypeComboBox',
             'job51SalaryComboBox',
-            'job51DegreeComboBox',
-            'job51CoverLetterTextArea'
+            'job51DegreeComboBox'
         ];
 
         let isValid = true;

@@ -1268,36 +1268,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- Resume Configuration Card -->
-                                        <div class="config-card mb-2">
-                                            <h6 class="card-title text-primary mb-2">
-                                                <i class="bi bi-file-earmark-text me-2"></i>简历配置
-                                            </h6>
-
-                                            <!-- Resume Content -->
-                                            <div class="mb-2">
-                                                <label for="job51ResumeContentTextArea" class="form-label fw-semibold small">
-                                                    简历内容摘要
-                                                    <i class="bi bi-question-circle text-muted ms-1"
-                                                       data-bs-toggle="tooltip"
-                                                       title="设置详细的简历内容，包括个人信息、技能、工作经历、项目经验等"></i>
-                                                </label>
-                                                <textarea class="form-control form-control-sm" id="job51ResumeContentTextArea" rows="3"
-                                                          placeholder="在此输入详细的简历内容..."></textarea>
-                                            </div>
-
-                                            <!-- Cover Letter -->
-                                            <div class="mb-2">
-                                                <label for="job51CoverLetterTextArea" class="form-label fw-semibold small">
-                                                    求职信内容
-                                                    <i class="bi bi-question-circle text-muted ms-1"
-                                                       data-bs-toggle="tooltip"
-                                                       title="设置求职信内容，用于向HR展示您的求职意向"></i>
-                                                </label>
-                                                <textarea class="form-control form-control-sm" id="job51CoverLetterTextArea" rows="2"
-                                                          placeholder="您好，我对贵公司的职位很感兴趣..."></textarea>
-                                            </div>
-                                        </div>
 
                                     </div>
                                 </div>
@@ -1321,15 +1291,8 @@
                                                 <i class="bi bi-toggle-on me-2"></i>功能开关
                                             </h6>
 
-                                            <div class="form-check mb-2">
-                                                <input class="form-check-input" type="checkbox" id="job51AutoApplyCheckBox">
-                                                <label class="form-check-label fw-semibold small" for="job51AutoApplyCheckBox">
-                                                    自动投递简历
-                                                    <i class="bi bi-question-circle text-muted ms-1"
-                                                       data-bs-toggle="tooltip"
-                                                       title="开启后将自动投递简历到匹配的职位"></i>
-                                                </label>
-                                            </div>
+                                            
+                                            
 
 
                                             <div class="form-check mb-2">
@@ -1371,15 +1334,6 @@
                                                 </label>
                                             </div>
 
-                                            <div class="form-check mb-2">
-                                                <input class="form-check-input" type="checkbox" id="job51EnableAICoverLetterCheckBox">
-                                                <label class="form-check-label fw-semibold small" for="job51EnableAICoverLetterCheckBox">
-                                                    AI智能求职信
-                                                    <i class="bi bi-question-circle text-muted ms-1"
-                                                       data-bs-toggle="tooltip"
-                                                       title="开启后将使用AI智能生成个性化的求职信内容，提高HR回复率"></i>
-                                                </label>
-                                            </div>
                                         </div>
 
                                         <!-- Action Buttons -->
@@ -1465,38 +1419,252 @@
                                        placeholder="岗位/公司/HR关键词">
                                 <button class="btn btn-sm btn-outline-primary" id="job51RecordSearchBtn"><i
                                         class="bi bi-search"></i></button>
+                                <button class="btn btn-sm btn-outline-secondary" id="job51RecordRefreshBtn"><i
+                                        class="bi bi-arrow-clockwise"></i></button>
                             </div>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead>
-                                    <tr>
-                                        <th>岗位</th>
-                                        <th>公司</th>
-                                        <th>城市</th>
-                                        <th>薪资</th>
-                                        <th>投递时间</th>
-                                        <th>投递状态</th>
-                                        <th>HR活跃度</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="job51RecordTbody">
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted">暂无数据</td>
-                                    </tr>
-                                    </tbody>
-                                </table>
+                            <!-- Vue应用挂载点 -->
+                            <div id="job51RecordsVueApp">
+                                <div v-if="loading" class="text-center text-muted py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                    <p class="mt-2">加载中...</p>
+                                </div>
+                                <div v-else-if="error" class="alert alert-danger" role="alert">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>{{ error }}
+                                </div>
+                                <div v-else>
+                                    <!-- 统计信息 -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <div class="stats-card">
+                                                <h6>{{ totalElements }}</h6>
+                                                <small>总岗位数</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stats-card">
+                                                <h6>{{ records.length }}</h6>
+                                                <small>当前页</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stats-card">
+                                                <h6>{{ totalPages }}</h6>
+                                                <small>总页数</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stats-card">
+                                                <h6>{{ currentPage + 1 }}</h6>
+                                                <small>当前页</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 表格 -->
+                                    <div class="table-responsive job-records-table" style="max-height: 600px; overflow-y: auto;">
+                                        <table class="table table-hover align-middle table-striped">
+                                            <thead class="table-dark sticky-top">
+                                            <tr>
+                                                <th style="min-width: 140px;">岗位信息</th>
+                                                <th style="min-width: 120px;">公司信息</th>
+                                                <th style="min-width: 100px;">工作地点</th>
+                                                <th style="min-width: 100px;">薪资待遇</th>
+                                                <th style="min-width: 120px;">职位要求</th>
+                                                <th style="min-width: 100px;">技能标签</th>
+                                                <th style="min-width: 120px;">HR信息</th>
+                                                <th style="min-width: 100px;">公司福利</th>
+                                                <th style="min-width: 100px;">投递状态</th>
+                                                <th style="min-width: 140px;">过滤原因</th>
+                                                <th style="min-width: 120px;">操作</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr v-if="records.length === 0">
+                                                <td colspan="11" class="empty-state">
+                                                    <i class="bi bi-inbox"></i>
+                                                    <h5>暂无数据</h5>
+                                                    <p>请先执行岗位采集任务</p>
+                                                </td>
+                                            </tr>
+                                            <tr v-for="job in records" :key="job.id" class="job-row">
+                                                <!-- 岗位信息 -->
+                                                <td>
+                                                    <div class="job-title">{{ job.jobTitle }}</div>
+                                                    <div class="job-labels">
+                                                        <span v-for="label in parseArray(job.jobLabels)" :key="label" 
+                                                              class="badge bg-light text-dark">{{ label }}</span>
+                                                    </div>
+                                                    <div class="job-platform">
+                                                        <span class="badge bg-info">{{ job.platform }}</span>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 公司信息 -->
+                                                <td>
+                                                    <div class="company-name">{{ job.companyName }}</div>
+                                                    <div class="company-info">
+                                                        <div><i class="bi bi-building me-1"></i>{{ job.companyIndustry }}</div>
+                                                        <div><i class="bi bi-people me-1"></i>{{ job.companyScale }}</div>
+                                                        <div><i class="bi bi-graph-up me-1"></i>{{ job.companyStage }}</div>
+                                                    </div>
+                                                    <div class="company-logo" v-if="job.companyLogo">
+                                                        <img :src="job.companyLogo" class="company-logo-img" :alt="job.companyName">
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 工作地点 -->
+                                                <td>
+                                                    <div class="location-city">{{ job.workCity }}</div>
+                                                    <div class="location-details">
+                                                        <div><i class="bi bi-geo-alt me-1"></i>{{ job.workArea }}</div>
+                                                        <div v-if="job.businessDistrict"><i class="bi bi-building me-1"></i>{{ job.businessDistrict }}</div>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 薪资待遇 -->
+                                                <td>
+                                                    <div class="salary-desc">{{ job.salaryDesc }}</div>
+                                                    <div class="job-requirements">
+                                                        <div><i class="bi bi-clock me-1"></i>{{ job.jobExperience }}</div>
+                                                        <div><i class="bi bi-mortarboard me-1"></i>{{ job.jobDegree }}</div>
+                                                    </div>
+                                                    <div class="job-type" v-if="job.jobType !== undefined">
+                                                        <span class="badge bg-secondary">{{ getJobTypeText(job.jobType) }}</span>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 职位要求 -->
+                                                <td>
+                                                    <div class="job-description" v-if="job.jobDescription">
+                                                        {{ truncateText(job.jobDescription, 80) }}
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 技能标签 -->
+                                                <td>
+                                                    <div class="skills-container">
+                                                        <span v-for="skill in parseArray(job.skills).slice(0, 4)" :key="skill" 
+                                                              class="badge bg-secondary">{{ skill }}</span>
+                                                        <span v-if="parseArray(job.skills).length > 4" class="badge bg-light text-dark">
+                                                            +{{ parseArray(job.skills).length - 4 }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="skill-count" v-if="parseArray(job.skills).length > 0">
+                                                        <small class="text-muted">共{{ parseArray(job.skills).length }}项技能</small>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- HR信息 -->
+                                                <td>
+                                                    <div class="hr-info">
+                                                        <img v-if="job.hrAvatar" :src="job.hrAvatar" 
+                                                             class="hr-avatar" :alt="job.hrName">
+                                                        <div class="hr-name">{{ job.hrName }}</div>
+                                                    </div>
+                                                    <div class="hr-details">
+                                                        <div><i class="bi bi-person-badge me-1"></i>{{ job.hrTitle }}</div>
+                                                        <div class="hr-status">
+                                                            <span :class="job.hrOnline ? 'text-success' : 'text-muted'">
+                                                                <i class="bi bi-circle-fill"></i>
+                                                                {{ job.hrOnline ? '在线' : '离线' }}
+                                                            </span>
+                                                        </div>
+                                                        <div v-if="job.hrCertLevel" class="hr-cert">
+                                                            <span class="badge bg-warning">认证{{ job.hrCertLevel }}级</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 公司福利 -->
+                                                <td>
+                                                    <div class="welfare-container" v-if="parseArray(job.welfareList).length > 0">
+                                                        <span v-for="welfare in parseArray(job.welfareList).slice(0, 3)" :key="welfare" 
+                                                              class="badge bg-success">{{ welfare }}</span>
+                                                        <span v-if="parseArray(job.welfareList).length > 3" class="badge bg-light text-dark">
+                                                            +{{ parseArray(job.welfareList).length - 3 }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="welfare-count" v-if="parseArray(job.welfareList).length > 0">
+                                                        <small class="text-muted">共{{ parseArray(job.welfareList).length }}项福利</small>
+                                                    </div>
+                                                    <div class="no-welfare" v-else>
+                                                        <small class="text-muted">暂无福利信息</small>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 投递状态 -->
+                                                <td>
+                                                    <div :class="getStatusInfo(job.status).class">
+                                                        {{ getStatusInfo(job.status).text }}
+                                                    </div>
+                                                    <div class="status-time">
+                                                        <div><i class="bi bi-calendar me-1"></i>{{ formatDateTime(job.createdAt) }}</div>
+                                                        <div v-if="job.updatedAt"><i class="bi bi-clock me-1"></i>{{ formatDateTime(job.updatedAt) }}</div>
+                                                    </div>
+                                                    <div class="job-flags" v-if="job.isFavorite || job.isOptimal">
+                                                        <span v-if="job.isFavorite" class="badge bg-danger me-1">收藏</span>
+                                                        <span v-if="job.isOptimal" class="badge bg-warning">优选</span>
+                                                    </div>
+                                                </td>
+
+                                                <!-- 过滤原因 -->
+                                                <td>
+                                                    <div v-if="job.filterReason" :title="job.filterReason">
+                                                        {{ truncateText(job.filterReason, 60) }}
+                                                    </div>
+                                                    <div v-else class="text-muted">
+                                                        -
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- 操作 -->
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <button class="btn btn-outline-primary btn-sm" 
+                                                                @click="viewJobDetail(job)" title="查看详情">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-info btn-sm" 
+                                                                @click="copyJobUrl(job)" title="复制链接">
+                                                            <i class="bi bi-link-45deg"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-success btn-sm" 
+                                                                @click="toggleFavorite(job)" 
+                                                                :class="job.isFavorite ? 'active' : ''" title="收藏">
+                                                            <i class="bi bi-heart"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-warning btn-sm" 
+                                                                @click="viewCompanyInfo(job)" title="公司信息">
+                                                            <i class="bi bi-building"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- 分页 -->
+                                    <nav v-if="totalPages > 1">
+                                        <ul class="pagination justify-content-center">
+                                            <li class="page-item" :class="{ disabled: currentPage === 0 }">
+                                                <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">上一页</a>
+                                            </li>
+                                            <li v-for="page in visiblePages" :key="page" 
+                                                class="page-item" :class="{ active: page === currentPage }">
+                                                <a class="page-link" href="#" @click.prevent="goToPage(page)">{{ page + 1 }}</a>
+                                            </li>
+                                            <li class="page-item" :class="{ disabled: currentPage === totalPages - 1 }">
+                                                <a class="page-link" href="#" @click.prevent="goToPage(currentPage + 1)">下一页</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
                             </div>
-                            <nav>
-                                <ul class="pagination justify-content-center" id="job51RecordPagination">
-                                    <li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>
-                                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                    <li class="page-item"><a class="page-link" href="#">下一页</a></li>
-                                </ul>
-                            </nav>
                         </div>
                     </div>
                 </div>
@@ -1512,6 +1680,7 @@
 <script src="js/views/boss-config-readonly.js"></script>
 <script src="js/views/boss-records-vue.js"></script>
 <script src="js/views/job51-config-form.js"></script>
+<script src="js/views/job51-records-vue.js"></script>
 <!-- App Entrypoint -->
 <script src="js/app.js"></script>
 

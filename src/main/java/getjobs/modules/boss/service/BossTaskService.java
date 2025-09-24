@@ -277,13 +277,15 @@ public class BossTaskService {
         taskStartTimeMap.put(taskId, new Date());
 
         try {
-            log.info("开始执行岗位投递操作，任务ID: {}, 实际投递: {}",
+            log.info("开始执行BOSS直聘岗位投递操作，任务ID: {}, 实际投递: {}",
                     taskId, enableActualDelivery);
 
-            // 从数据库获取待处理状态的岗位记录
-            List<JobEntity> jobEntities = jobRepository.findByStatus(JobStatusEnum.PENDING.getCode());
+            // 从数据库获取待处理状态的BOSS直聘平台岗位记录
+            List<JobEntity> jobEntities = jobRepository.findByStatusAndPlatform(
+                    JobStatusEnum.PENDING.getCode(), 
+                    "BOSS直聘");
             if (jobEntities == null || jobEntities.isEmpty()) {
-                throw new IllegalArgumentException("未找到可投递的岗位记录，数据库中没有待处理状态的岗位");
+                throw new IllegalArgumentException("未找到可投递的BOSS直聘岗位记录，数据库中没有待处理状态的BOSS直聘岗位");
             }
 
             // 转换为JobDTO
@@ -326,11 +328,11 @@ public class BossTaskService {
 
             taskStatusMap.put(taskId, TaskStatus.COMPLETED);
 
-            log.info("岗位投递操作完成，任务ID: {}, 处理 {} 个岗位", taskId, deliveredCount);
+            log.info("BOSS直聘岗位投递操作完成，任务ID: {}, 处理 {} 个岗位", taskId, deliveredCount);
             return result;
 
         } catch (Exception e) {
-            log.error("岗位投递操作执行失败，任务ID: {}", taskId, e);
+            log.error("BOSS直聘岗位投递操作执行失败，任务ID: {}", taskId, e);
             taskStatusMap.put(taskId, TaskStatus.FAILED);
 
             DeliveryResult result = new DeliveryResult();

@@ -325,23 +325,6 @@ public class BossApiMonitorService {
         }
     }
 
-    /**
-     * 测试token刷新功能
-     * 用于验证token刷新机制是否正常工作
-     * 
-     * @return 是否成功刷新token
-     */
-    public boolean testTokenRefresh() {
-        log.info("开始测试token刷新功能");
-        boolean result = refreshTokenByVisitingZhipin();
-        if (result) {
-            log.info("token刷新测试成功");
-        } else {
-            log.error("token刷新测试失败");
-        }
-        return result;
-    }
-
 
     /**
      * 解析职位明细数据并更新到数据库

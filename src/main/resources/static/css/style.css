@@ -740,6 +740,17 @@ body {
 .empty-state i {
     font-size: 48px;
     margin-bottom: 16px;
+    color: #a0aec0;
+}
+
+.empty-state h5 {
+    margin-bottom: 8px;
+    color: #4a5568;
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
     opacity: 0.5;
 }
 
@@ -756,6 +767,38 @@ body {
 /* 新增字段样式 */
 .job-status {
     margin-top: 4px;
+}
+
+.location-coordinates {
+    margin-top: 4px;
+    font-size: 11px;
+}
+
+.industry-code {
+    margin-top: 4px;
+    font-size: 11px;
+}
+
+.job-extra-info {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.job-extra-info small {
+    font-size: 10px;
+    color: #718096;
+}
+
+.platform-info {
+    margin-top: 4px;
+    font-size: 11px;
+}
+
+.remark-info {
+    margin-top: 4px;
+    font-size: 11px;
 }
 
 .company-logo-img {
@@ -896,5 +939,187 @@ body {
     .job-flags .badge {
         font-size: 7px;
         padding: 1px 2px;
+    }
+}
+
+/* 51job详细表格样式 */
+.job-title {
+    line-height: 1.3;
+}
+
+.job-title a {
+    color: #0066cc;
+    font-weight: 600;
+}
+
+.job-title a:hover {
+    color: #004499;
+    text-decoration: underline;
+}
+
+.encrypt-ids {
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+.status-badges .badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+}
+
+.company-details {
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+.company-details i {
+    color: #6c757d;
+}
+
+.location-city {
+    color: #495057;
+    font-weight: 500;
+}
+
+.coordinates {
+    font-size: 0.7rem;
+    color: #6c757d;
+}
+
+.salary-desc {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.work-schedule {
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+.requirements {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.skills-container .badge {
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+}
+
+.job-labels .badge {
+    font-size: 0.7rem;
+    border: 1px solid #0d6efd;
+    color: #0d6efd;
+    background-color: transparent;
+}
+
+.hr-info {
+    display: flex;
+    align-items: center;
+}
+
+.hr-avatar {
+    flex-shrink: 0;
+}
+
+.hr-name {
+    font-weight: 500;
+}
+
+.hr-details {
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+.hr-status i {
+    font-size: 0.6rem;
+}
+
+.company-tags .badge {
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+}
+
+.welfare-list .badge {
+    font-size: 0.7rem;
+    border: 1px solid #198754;
+    color: #198754;
+    background-color: transparent;
+}
+
+.status-flags .badge {
+    font-size: 0.7rem;
+    margin-bottom: 2px;
+}
+
+.platform-info .badge {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.time-info {
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+.time-info strong {
+    color: #495057;
+    font-size: 0.8rem;
+}
+
+.extended-info {
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+.remark {
+    background-color: #f8f9fa;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border-left: 3px solid #6c757d;
+}
+
+.action-buttons .btn {
+    width: 32px;
+    height: 28px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-buttons .btn i {
+    font-size: 0.8rem;
+}
+
+/* 表格响应式优化 */
+@media (max-width: 1400px) {
+    .job-description,
+    .job-requirements {
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .extended-info .remark {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 1200px) {
+    .encrypt-ids,
+    .coordinates,
+    .cert-level,
+    .tag-count,
+    .skill-count {
+        display: none;
+    }
+    
+    .action-buttons .btn:nth-child(n+4) {
+        display: none;
     }
 }

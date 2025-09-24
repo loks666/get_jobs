@@ -243,9 +243,8 @@ public class JobService {
     public List<JobEntity> findAllJobEntitiesByPlatform(String platform) {
         try {
             if (platform != null && !platform.trim().isEmpty()) {
-                return jobRepository.findAll().stream()
-                        .filter(job -> platform.equalsIgnoreCase(job.getPlatform()))
-                        .collect(Collectors.toList());
+                // 使用数据库级别的查询，避免在内存中过滤大量数据
+                return jobRepository.findByPlatform(platform);
             } else {
                 return jobRepository.findAll();
             }

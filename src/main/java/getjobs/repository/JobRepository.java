@@ -90,4 +90,21 @@ public interface JobRepository extends JpaRepository<JobEntity, Long> {
      * @return 岗位数量
      */
     long countByPlatformAndCreatedAtBetween(String platform, LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * 根据状态和平台查找职位
+     *
+     * @param status   状态值
+     * @param platform 平台名称
+     * @return 职位实体列表
+     */
+    List<JobEntity> findByStatusAndPlatform(Integer status, String platform);
+
+    /**
+     * 根据平台查找职位
+     *
+     * @param platform 平台名称
+     * @return 职位实体列表
+     */
+    List<JobEntity> findByPlatform(String platform);
 }

@@ -18,7 +18,8 @@ public interface RecruitmentService {
 
     /**
      * 获取当前服务支持的招聘平台
-     * 
+     *
+     *
      * @return 招聘平台枚举
      */
     RecruitmentPlatformEnum getPlatform();

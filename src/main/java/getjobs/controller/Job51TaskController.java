@@ -215,33 +215,6 @@ public class Job51TaskController {
         }
     }
 
-    /**
-     * 清理任务数据接口
-     * DELETE /api/job51/task/{taskId}
-     * 
-     * @param taskId 任务ID
-     * @return 清理结果
-     */
-    @DeleteMapping("/{taskId}")
-    public ResponseEntity<Map<String, Object>> clearTask(@PathVariable String taskId) {
-        try {
-            job51TaskService.clearTaskData(taskId);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "任务数据清理成功");
-
-            log.info("任务数据清理成功，任务ID: {}", taskId);
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            log.error("清理任务数据异常，任务ID: {}", taskId, e);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "清理异常: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(response);
-        }
-    }
 
     // 请求DTO类
     public static class FilterRequest {
