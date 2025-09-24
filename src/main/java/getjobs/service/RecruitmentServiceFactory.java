@@ -3,6 +3,7 @@ package getjobs.service;
 import getjobs.common.enums.RecruitmentPlatformEnum;
 import getjobs.modules.boss.service.impl.BossRecruitmentServiceImpl;
 import getjobs.modules.job51.service.impl.Job51RecruitmentServiceImpl;
+import getjobs.modules.zhilian.service.impl.ZhiLianRecruitmentServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -27,11 +28,14 @@ public class RecruitmentServiceFactory {
 
     private final BossRecruitmentServiceImpl bossRecruitmentService;
     private final Job51RecruitmentServiceImpl job51RecruitmentService;
+    private final ZhiLianRecruitmentServiceImpl zhiLianRecruitmentService;
 
     public RecruitmentServiceFactory(BossRecruitmentServiceImpl bossRecruitmentService,
-            Job51RecruitmentServiceImpl job51RecruitmentService) {
+            Job51RecruitmentServiceImpl job51RecruitmentService,
+            ZhiLianRecruitmentServiceImpl zhiLianRecruitmentService) {
         this.bossRecruitmentService = bossRecruitmentService;
         this.job51RecruitmentService = job51RecruitmentService;
+        this.zhiLianRecruitmentService = zhiLianRecruitmentService;
     }
 
     @PostConstruct
@@ -39,9 +43,7 @@ public class RecruitmentServiceFactory {
         // 初始化各平台服务
         serviceMap.put(RecruitmentPlatformEnum.BOSS_ZHIPIN, bossRecruitmentService);
         serviceMap.put(RecruitmentPlatformEnum.JOB_51, job51RecruitmentService);
-        // TODO: 后续可以添加其他平台的实现
-        // serviceMap.put(RecruitmentPlatformEnum.ZHILIAN_ZHAOPIN,
-        // zhilianRecruitmentService);
+        serviceMap.put(RecruitmentPlatformEnum.ZHILIAN_ZHAOPIN, zhiLianRecruitmentService);
 
         log.info("招聘服务工厂初始化完成，支持平台: {}", serviceMap.keySet());
     }

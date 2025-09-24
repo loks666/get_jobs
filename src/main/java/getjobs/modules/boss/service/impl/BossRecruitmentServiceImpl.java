@@ -39,10 +39,10 @@ import static getjobs.modules.boss.BossElementLocators.*;
 
 /**
  * Boss直聘招聘服务实现类
- * 
+ *
  * @author loks666
- *         项目链接: <a href=
- *         "https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
+ * 项目链接: <a href=
+ * "https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  */
 @Slf4j
 @Service
@@ -58,7 +58,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     private final JobFilterService jobFilterService;
 
     public BossRecruitmentServiceImpl(ConfigService configService, BossApiMonitorService bossApiMonitorService,
-            JobRepository jobRepository, JobFilterService jobFilterService) {
+                                      JobRepository jobRepository, JobFilterService jobFilterService) {
         this.configService = configService;
         this.bossApiMonitorService = bossApiMonitorService;
         this.jobRepository = jobRepository;
@@ -105,7 +105,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     public List<JobDTO> collectJobs(ConfigDTO config) {
         log.info("开始Boss直聘岗位采集");
         List<JobDTO> allJobDTOS = new ArrayList<>();
-        
+
         // 记录采集开始时间，用于统计新增岗位数量
         LocalDateTime collectionStartTime = LocalDateTime.now();
 
@@ -131,7 +131,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
                     "boss", collectionStartTime, collectionEndTime);
 
             log.info("Boss直聘岗位采集完成，共采集{}个岗位", collectedJobCount);
-            
+
             // 返回空集合，实际岗位数据已通过监控服务入库
             return allJobDTOS;
         } catch (Exception e) {
@@ -144,7 +144,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
     public List<JobDTO> collectRecommendJobs(ConfigDTO config) {
         log.info("开始Boss直聘推荐岗位采集");
         List<JobDTO> recommendJobDTOS = new ArrayList<>();
-        
+
         // 记录采集开始时间，用于统计新增岗位数量
         LocalDateTime collectionStartTime = LocalDateTime.now();
 
@@ -180,7 +180,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
                     log.info("推荐岗位加载，总计: {}", totalJobs);
                 }
             }
-            
+
             // 等待一段时间确保所有API响应都被处理完毕
             try {
                 Thread.sleep(3000); // 等待3秒
@@ -194,7 +194,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
                     "boss", collectionStartTime, collectionEndTime);
 
             log.info("Boss直聘推荐岗位采集完成，共采集{}个岗位", collectedJobCount);
-            
+
         } catch (Exception e) {
             log.error("Boss直聘推荐岗位采集失败", e);
         }
@@ -211,10 +211,10 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
             log.warn("数据库中未找到boss平台配置，跳过过滤");
             return jobDTOS;
         }
-        
+
         // 将ConfigEntity转换为ConfigDTO
         ConfigDTO dbConfig = convertConfigEntityToDTO(configEntity);
-        
+
         return jobFilterService.filterJobs(jobDTOS, dbConfig);
     }
 
@@ -410,7 +410,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
 
         // 点击所有岗位卡片以触发详情API调用，让监控服务获取更多岗位信息
         BossElementLocators.clickAllJobCards(page, 5000);
-        
+
         log.info("城市: {}，关键词: {} 的岗位采集操作完成，实际数据由监控服务自动入库", cityCode, keyword);
     }
 
@@ -419,7 +419,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
      */
     private String getSearchUrl(String cityCode, ConfigDTO config) {
         return GEEK_JOB_URL +
-        // 城市参数：指定搜索的城市代码
+                // 城市参数：指定搜索的城市代码
                 JobUtils.appendParam("city", cityCode) +
                 // 职位类型参数：指定搜索的职位类型代码（如：全职、兼职、实习等）
                 JobUtils.appendParam("jobType", config.getJobType()) +
@@ -626,7 +626,7 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
                 if (imageFile.exists() && imageFile.isFile()) {
                     Locator fileInput = jobPage.locator(IMAGE_UPLOAD);
                     if (fileInput.isVisible()) {
-                        fileInput.setInputFiles(new Path[] { Paths.get(imageFile.getPath()) });
+                        fileInput.setInputFiles(new Path[]{Paths.get(imageFile.getPath())});
                         Locator imageSendBtn = jobPage.locator(".image-uploader-btn");
                         if (imageSendBtn.isVisible(new Locator.IsVisibleOptions().setTimeout(2000.0))) {
                             imageSendBtn.click();
@@ -882,32 +882,11 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
         } catch (Exception ignored) {
         }
 
-        log.info("等待扫码登录");
-
-        // Locator scanButton = page.locator(LOGIN_SCAN_SWITCH);
-        // boolean scanButtonVisible = scanButton.isVisible(new
-        // Locator.IsVisibleOptions().setTimeout(30000.0));
-        // if (!scanButtonVisible) {
-        // log.warn("扫码登录：未找到二维码登录按钮");
-        // return false;
-        // }
-
         boolean login = false;
-        long startTime = System.currentTimeMillis();
-        final long TIMEOUT = 10 * 60 * 1000; // 10分钟
 
-        Scanner scanner = new Scanner(System.in);
-
-        boolean loginSuccess = page.locator(LOGIN_SUCCESS_HEADER)
-                .isVisible(new Locator.IsVisibleOptions().setTimeout(2000.0));
+        boolean loginSuccess;
 
         while (!login) {
-            long elapsed = System.currentTimeMillis() - startTime;
-            if (elapsed >= TIMEOUT) {
-                log.warn("扫码登录：超过10分钟未完成登录，程序退出");
-                System.exit(1);
-            }
-
             try {
                 // scanButton.click();
                 loginSuccess = page.locator(LOGIN_SUCCESS_HEADER)
@@ -916,11 +895,6 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
                 if (loginSuccess) {
                     login = true;
                     log.info("登录成功，保存Cookie");
-                } else {
-                    boolean userInput = waitForUserInputOrTimeout(scanner);
-                    if (userInput) {
-                        log.debug("检测到用户输入，继续尝试登录");
-                    }
                 }
             } catch (Exception e) {
                 loginSuccess = page.locator(LOGIN_SUCCESS_HEADER)
