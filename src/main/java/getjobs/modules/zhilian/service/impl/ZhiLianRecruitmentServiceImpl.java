@@ -133,48 +133,7 @@ public class ZhiLianRecruitmentServiceImpl implements RecruitmentService {
             // 等待页面加载
             page.waitForLoadState();
             
-            // 检查是否存在职位
-            if (ZhiLianElementLocators.hasJobList(page)) {
-                // 滚动加载所有职位
-                int totalJobs = ZhiLianElementLocators.scrollLoadMoreJobs(page);
-                log.info("页面职位加载完成，总计: {}", totalJobs);
-                
-                // 解析页面中的所有职位
-                List<JobDTO> pageJobs = ZhiLianElementLocators.parseJobsFromPage(page);
-                jobDTOS.addAll(pageJobs);
-                
-                // 点击所有职位卡片以获取更多详情
-                ZhiLianElementLocators.clickAllJobCards(page, 1000);
-                
-                // 处理分页 - 采集更多页面的职位
-                int currentPage = 1;
-                int maxPages = 10; // 限制最大页数
-                
-                while (currentPage < maxPages && ZhiLianElementLocators.clickNextPage(page)) {
-                    currentPage++;
-                    log.info("正在采集第{}页", currentPage);
-                    
-                    // 等待页面加载
-                    PlaywrightUtil.sleep(3);
-                    
-                    if (ZhiLianElementLocators.hasJobList(page)) {
-                        // 滚动加载当前页职位
-                        ZhiLianElementLocators.scrollLoadMoreJobs(page);
-                        
-                        // 解析当前页职位
-                        List<JobDTO> currentPageJobs = ZhiLianElementLocators.parseJobsFromPage(page);
-                        jobDTOS.addAll(currentPageJobs);
-                        
-                        // 点击职位卡片
-                        ZhiLianElementLocators.clickAllJobCards(page, 1000);
-                    }
-                    
-                    // 页面间隔
-                    PlaywrightUtil.sleep(2);
-                }
-            } else {
-                log.warn("未找到职位列表，可能需要登录或页面加载失败");
-            }
+          
             
         } catch (Exception e) {
             log.error("采集城市: {}, 关键词: {} 的职位失败", cityCode, keyword, e);

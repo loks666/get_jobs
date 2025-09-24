@@ -888,7 +888,6 @@ public class BossRecruitmentServiceImpl implements RecruitmentService {
 
         while (!login) {
             try {
-                // scanButton.click();
                 loginSuccess = page.locator(LOGIN_SUCCESS_HEADER)
                         .isVisible(new Locator.IsVisibleOptions().setTimeout(2000.0));
 
