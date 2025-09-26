@@ -83,8 +83,49 @@ public class ZhilianDictProviderImpl implements DictProvider {
 
                     // 处理职位类别
                     if (data.position() != null) {
-                        groups.add(new DictGroup(DictGroupKey.JOB_TYPE.key(),
+                        groups.add(new DictGroup(DictGroupKey.PART_TIME.key(),
                                 flattenPositionItems(data.position())));
+                    }
+
+                    // 处理工作经验
+                    if (data.workExpType() != null) {
+                        groups.add(new DictGroup(DictGroupKey.EXPERIENCE.key(),
+                                data.workExpType().stream()
+                                        .filter(item -> item.deleted() == null || !item.deleted())
+                                        .filter(item -> item.code() != null && !item.code().equals("-1")) // 过滤掉"不限"选项
+                                        .map(item -> new DictItem(item.code(), item.name()))
+                                        .collect(Collectors.toList())));
+                    }
+
+                    // 处理求职类型
+                    if (data.jobStatus() != null) {
+                        groups.add(new DictGroup(DictGroupKey.JOB_TYPE.key(),
+                                data.jobStatus().stream()
+                                        .filter(item -> item.deleted() == null || !item.deleted())
+                                        .filter(item -> item.code() != null && !item.code().equals("-1")) // 过滤掉"不限"选项
+                                        .map(item -> new DictItem(item.code(), item.name()))
+                                        .collect(Collectors.toList())));
+                    }
+
+                    // 处理学历要求
+                    if (data.educationType() != null) {
+                        groups.add(new DictGroup(DictGroupKey.DEGREE.key(),
+                                data.educationType().stream()
+                                        .filter(item -> item.deleted() == null || !item.deleted())
+                                        .filter(item -> item.code() != null && !item.code().equals("-1")) // 过滤掉"不限"选项
+                                        .map(item -> new DictItem(item.code(), item.name()))
+                                        .collect(Collectors.toList())));
+                    }
+
+                    // 处理公司规模
+                    if (data.companySize() != null) {
+                        groups.add(new DictGroup(DictGroupKey.SCALE.key(),
+                                data.companySize().stream()
+                                        .filter(item -> item.deleted() == null || !item.deleted())
+                                        .filter(item -> item.code() != null && !item.code().equals("-1")) // 过滤掉"不限"选项
+                                        .filter(item -> !item.name().trim().isEmpty()) // 过滤掉名称为空的选项（如"保密"选项）
+                                        .map(item -> new DictItem(item.code(), item.name()))
+                                        .collect(Collectors.toList())));
                     }
                 }
             }
@@ -130,18 +171,18 @@ public class ZhilianDictProviderImpl implements DictProvider {
     private DictItem parseSalaryItem(ZhilianDictItem item) {
         String code = item.code();
         String name = item.name();
-        
+
         // 解析薪资范围，格式如 "4001,6000" 或 "0000,9999999"
         Integer lowSalary = null;
         Integer highSalary = null;
-        
+
         if (code != null && code.contains(",")) {
             try {
                 String[] parts = code.split(",");
                 if (parts.length == 2) {
                     int low = Integer.parseInt(parts[0]);
                     int high = Integer.parseInt(parts[1]);
-                    
+
                     // 处理特殊情况：不限薪资
                     if (low == 0 && high == 9999999) {
                         // 不限薪资不设置范围
@@ -161,7 +202,7 @@ public class ZhilianDictProviderImpl implements DictProvider {
                 log.debug("解析薪资范围失败: {}", code);
             }
         }
-        
+
         return new DictItem(code, name, lowSalary, highSalary);
     }
 
@@ -170,21 +211,21 @@ public class ZhilianDictProviderImpl implements DictProvider {
      */
     private List<DictItem> flattenPositionItems(List<ZhilianDictItem> positions) {
         List<DictItem> result = new ArrayList<>();
-        
+
         for (ZhilianDictItem position : positions) {
             if (position.deleted() == null || !position.deleted()) {
                 // 添加主分类
                 if (position.code() != null) {
                     result.add(new DictItem(position.code(), position.name()));
                 }
-                
+
                 // 递归添加子分类
                 if (position.sublist() != null && !position.sublist().isEmpty()) {
                     result.addAll(flattenPositionItems(position.sublist()));
                 }
             }
         }
-        
+
         return result;
     }
 }

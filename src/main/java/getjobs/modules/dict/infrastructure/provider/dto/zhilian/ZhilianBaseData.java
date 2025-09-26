@@ -12,6 +12,9 @@ public record ZhilianBaseData(
         @JsonProperty("salaryType") List<ZhilianDictItem> salaryType,
         @JsonProperty("subway") List<ZhilianSubway> subway,
         @JsonProperty("cityList") List<ZhilianDictItem> cityList,
-        @JsonProperty("position") List<ZhilianDictItem> position
-) {
+        @JsonProperty("position") List<ZhilianDictItem> position,
+        @JsonProperty("workExpType") List<ZhilianDictItem> workExpType,
+        @JsonProperty("jobStatus") List<ZhilianDictItem> jobStatus,
+        @JsonProperty("educationType") List<ZhilianDictItem> educationType,
+        @JsonProperty("companySize") List<ZhilianDictItem> companySize) {
 }

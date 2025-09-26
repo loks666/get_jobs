@@ -274,6 +274,9 @@
                     this.populateForm();
                     
                     localStorage.setItem('bossConfig', JSON.stringify(this.config));
+                    
+                    // 触发配置加载完成事件，通知app.js
+                    this.dispatchConfigLoadedEvent();
                     return;
                 }
                 
@@ -287,6 +290,9 @@
                         // 确保字典数据已加载后再填充表单
                         await this.waitForDictDataReady();
                         this.populateForm();
+                        
+                        // 触发配置加载完成事件，通知app.js
+                        this.dispatchConfigLoadedEvent();
                     } catch (error) {
                         console.warn('本地配置损坏，已清理：' + error.message);
                         localStorage.removeItem('bossConfig');
@@ -304,11 +310,26 @@
                         // 确保字典数据已加载后再填充表单
                         await this.waitForDictDataReady();
                         this.populateForm();
+                        
+                        // 触发配置加载完成事件，通知app.js
+                        this.dispatchConfigLoadedEvent();
                     } catch (error) {
                         console.warn('本地配置损坏，已清理：' + error.message);
                         localStorage.removeItem('bossConfig');
                     }
                 }
+            }
+        }
+
+        // 触发配置加载完成事件，通知app.js
+        dispatchConfigLoadedEvent() {
+            try {
+                console.log('BossConfigForm: 触发配置加载完成事件');
+                window.dispatchEvent(new CustomEvent('bossConfigLoaded', {
+                    detail: { config: this.config }
+                }));
+            } catch (error) {
+                console.error('BossConfigForm: 触发配置事件失败:', error);
             }
         }
 

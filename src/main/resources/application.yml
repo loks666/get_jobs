@@ -9,6 +9,11 @@ spring:
   datasource:
     url: 'jdbc:sqlite:file:memdb1?mode=memory&cache=shared'
     driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1      # 关键：只保留一个连接，防止“看见不同内存库”
+      minimum-idle: 1
+      idle-timeout: 0           # 不回收
+      max-lifetime: 0           # 不重建
     username:
     password:
   sql:

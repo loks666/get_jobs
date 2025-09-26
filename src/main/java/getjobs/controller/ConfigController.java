@@ -63,6 +63,28 @@ public class ConfigController {
         return ResponseEntity.ok(entity);
     }
 
+    @PostMapping("/zhilian")
+    public ResponseEntity<Map<String, Object>> saveZhilianConfig(@RequestBody ConfigDTO dto) {
+        ConfigEntity entity = toEntity(dto);
+        // 自动绑定平台类型为智联招聘
+        entity.setPlatformType(RecruitmentPlatformEnum.ZHILIAN_ZHAOPIN.getPlatformCode());
+        entity = configService.save(entity);
+        ConfigDTO.reload();
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("success", true);
+        resp.put("id", entity.getId());
+        resp.put("platformType", entity.getPlatformType());
+        return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/zhilian")
+    public ResponseEntity<ConfigEntity> loadZhilianConfig() {
+        ConfigEntity entity = configService
+                .loadByPlatformType(RecruitmentPlatformEnum.ZHILIAN_ZHAOPIN.getPlatformCode());
+        return ResponseEntity.ok(entity);
+    }
+
     private ConfigEntity toEntity(ConfigDTO dto) {
         ConfigEntity e = new ConfigEntity();
         e.setSayHi(dto.getSayHi());

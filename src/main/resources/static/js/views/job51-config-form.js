@@ -355,16 +355,32 @@ class Job51ConfigForm {
     // 按顺序加载数据：先字典，后配置
     async loadDataSequentially() {
         try {
-            console.log('开始按顺序加载51job数据：字典 -> 配置');
+            console.log('51job: 开始按顺序加载数据：字典 -> 配置');
+            
             // 先加载字典数据
             await this.loadJob51Dicts();
-            console.log('51job字典数据加载完成，开始加载配置数据');
+            console.log('51job: 字典数据加载完成，开始加载配置数据');
+            
+            // 等待DOM元素完全渲染
+            await this.waitForDOMReady();
+            
             // 再加载配置数据
             await this.loadSavedConfig();
-            console.log('51job配置数据加载完成');
+            console.log('51job: 配置数据加载完成');
         } catch (error) {
             console.error('51job数据加载失败:', error);
         }
+    }
+
+    // 等待DOM元素完全准备就绪
+    async waitForDOMReady() {
+        return new Promise((resolve) => {
+            // 等待一个事件循环，确保所有DOM操作完成
+            setTimeout(() => {
+                console.log('51job: DOM元素准备就绪');
+                resolve();
+            }, 100);
+        });
     }
 
     // 加载51job字典数据
@@ -498,20 +514,45 @@ class Job51ConfigForm {
 
     // 通用方法：将字典渲染到 select
     fillSelect(selectId, items) {
+        console.log(`51job: 填充下拉框 ${selectId}，数据项数量:`, Array.isArray(items) ? items.length : 0);
+        
+        if (!Array.isArray(items) || items.length === 0) {
+            console.warn(`51job: 下拉框 ${selectId} 的数据无效:`, items);
+            return;
+        }
+
         const sel = document.getElementById(selectId);
-        if (!sel || !Array.isArray(items)) return;
+        if (!sel) {
+            console.warn(`51job: 未找到下拉框元素: ${selectId}`);
+            // 延迟重试
+            setTimeout(() => {
+                const retrySel = document.getElementById(selectId);
+                if (retrySel) {
+                    console.log(`51job: 重试填充下拉框 ${selectId}`);
+                    this.fillSelect(selectId, items);
+                }
+            }, 500);
+            return;
+        }
         
-        // 保留第一项"请选择"，其余重建
-        const first = sel.querySelector('option');
-        sel.innerHTML = '';
-        if (first && first.value === '') sel.appendChild(first);
-        
-        items.forEach(it => {
-            const opt = document.createElement('option');
-            opt.value = it.code ?? it.name ?? '';
-            opt.textContent = it.name ?? String(it.code ?? '');
-            sel.appendChild(opt);
-        });
+        try {
+            // 保留第一项"请选择"，其余重建
+            const first = sel.querySelector('option');
+            sel.innerHTML = '';
+            if (first && first.value === '') sel.appendChild(first);
+            
+            items.forEach(it => {
+                const opt = document.createElement('option');
+                opt.value = it.code ?? it.name ?? '';
+                opt.textContent = it.name ?? String(it.code ?? '');
+                sel.appendChild(opt);
+            });
+            
+            console.log(`51job: 下拉框 ${selectId} 填充完成，共 ${items.length} 项`);
+            
+        } catch (error) {
+            console.error(`51job: 填充下拉框 ${selectId} 时出错:`, error);
+        }
     }
 
     // 更新城市选择摘要
