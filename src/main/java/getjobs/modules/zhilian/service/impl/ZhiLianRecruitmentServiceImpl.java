@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 智联招聘服务实现类
@@ -92,7 +93,38 @@ public class ZhiLianRecruitmentServiceImpl implements RecruitmentService {
 
     @Override
     public int deliverJobs(List<JobDTO> jobDTOS, ConfigDTO config) {
-        return 0;
+        log.info("开始执行智联招聘岗位投递操作，待投递岗位数量: {}", jobDTOS.size());
+        AtomicInteger successCount = new AtomicInteger(0);
+
+        // 在新标签页中打开岗位详情
+        try (Page jobPage = PlaywrightUtil.getPageObject().context().newPage()) {
+            for (JobDTO jobDTO : jobDTOS) {
+                try {
+                    log.info("正在投递岗位: {}", jobDTO.getJobName());
+                    jobPage.navigate(jobDTO.getHref());
+                    jobPage.waitForLoadState(); // 等待页面加载
+
+                    // 执行投递
+                    if (ZhiLianElementLocators.clickSummaryApplyButton(jobPage)) {
+                        log.info("岗位投递成功: {}", jobDTO.getJobName());
+                        successCount.getAndIncrement();
+                    } else {
+                        log.warn("岗位投递失败或已投递: {}", jobDTO.getJobName());
+                    }
+
+                    // 添加3-5秒随机延迟，避免投递过快
+                    PlaywrightUtil.randomSleep(3, 5);
+
+                } catch (Exception e) {
+                    log.error("投递岗位 {} 时发生异常: {}", jobDTO.getJobName(), e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("智联招聘岗位投递过程中发生严重错误", e);
+        }
+
+        log.info("智联招聘岗位投递完成，成功投递 {} 个岗位", successCount.get());
+        return successCount.get();
     }
 
     @Override

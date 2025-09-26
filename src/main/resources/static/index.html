@@ -47,6 +47,12 @@
                             <i class="bi bi-clipboard2-data me-1"></i>51job
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="liepin-tab" data-bs-toggle="tab" data-bs-target="#liepin-pane"
+                                type="button" role="tab" aria-controls="liepin-pane" aria-selected="false">
+                            <i class="bi bi-award-fill me-1"></i>猎聘
+                        </button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -2174,7 +2180,156 @@
             </div>
         </div>
 
-        
+        <!-- 猎聘 -->
+        <div class="tab-pane fade" id="liepin-pane" role="tabpanel" aria-labelledby="liepin-tab">
+            <ul class="nav nav-pills mb-3" id="liepin-subtabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="liepin-config-tab" data-bs-toggle="tab"
+                            data-bs-target="#liepin-config-pane" type="button" role="tab"
+                            aria-controls="liepin-config-pane" aria-selected="true">配置
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="liepin-records-tab" data-bs-toggle="tab"
+                            data-bs-target="#liepin-records-pane" type="button" role="tab"
+                            aria-controls="liepin-records-pane" aria-selected="false">岗位明细
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="liepin-config-pane" role="tabpanel"
+                     aria-labelledby="liepin-config-tab">
+                    <div class="row g-2" style="height: calc(100vh - 200px);">
+                        <!-- Left Panel: Basic Configuration -->
+                        <div class="col-lg-6">
+                            <div class="card shadow-lg h-100">
+                                <div class="card-header bg-white border-0 py-2">
+                                    <h6 class="mb-0 text-dark">
+                                        <i class="bi bi-gear-fill me-2 text-primary"></i>基本配置
+                                    </h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="d-flex flex-column h-100">
+
+                                        <!-- Search Configuration Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-primary mb-2">
+                                                <i class="bi bi-search me-2"></i>搜索条件
+                                            </h6>
+
+                                            <!-- Keywords -->
+                                            <div class="mb-2">
+                                                <label for="liepinKeywordsField" class="form-label fw-semibold small">
+                                                    搜索关键词
+                                                </label>
+                                                <input type="text" class="form-control form-control-sm" id="liepinKeywordsField"
+                                                       placeholder="Java, Spring Boot, 微服务">
+                                            </div>
+
+                                            <!-- City -->
+                                            <div class="mb-2">
+                                                <label for="liepinCityCodeField" class="form-label fw-semibold small">
+                                                    工作城市
+                                                </label>
+                                                <div class="dropdown w-100">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button"
+                                                            id="liepinCityDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        选择城市
+                                                    </button>
+                                                    <div class="dropdown-menu p-2 w-100" aria-labelledby="liepinCityDropdownBtn" style="min-width: 100%;">
+                                                        <input type="text" class="form-control form-control-sm mb-2" id="liepinCitySearchField"
+                                                               placeholder="输入城市名或编码进行筛选...">
+                                                        <div id="liepinCityDropdownList" style="max-height: 240px; overflow: auto;"></div>
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted d-block mt-1" id="liepinCitySelectionSummary">未选择</small>
+                                                <select class="form-select form-select-sm d-none" id="liepinCityCodeField" multiple></select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Settings & AI Configuration -->
+                        <div class="col-lg-6">
+                            <div class="card shadow-lg h-100">
+                                <div class="card-header bg-white border-0 py-2">
+                                    <h6 class="mb-0 text-dark">
+                                        <i class="bi bi-cpu me-2 text-success"></i>智能设置
+                                    </h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="d-flex flex-column h-100">
+                                        <!-- Action Buttons -->
+                                        <div class="d-grid gap-2 mt-auto">
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2"
+                                                            id="liepinSaveConfigBtn">
+                                                        <i class="bi bi-save me-2"></i>保存配置
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-success btn-sm w-100 py-2"
+                                                            id="liepinBackupDataBtn">
+                                                        <i class="bi bi-database me-2"></i>数据库备份
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 任务执行按钮组 -->
+                                            <div class="border-top pt-2">
+                                                <h6 class="text-muted mb-2 small">
+                                                    <i class="bi bi-list-ol me-2"></i>任务执行步骤
+                                                </h6>
+                                                
+                                                <div class="d-flex gap-1 mb-1">
+                                                    <button type="button" class="btn btn-primary btn-sm flex-grow-1 py-2"
+                                                            id="liepinLoginBtn">
+                                                        <i class="bi bi-box-arrow-in-right me-2"></i>1. 猎聘登录
+                                                        <span class="badge bg-light text-dark ms-2" id="liepinLoginStatus">待执行</span>
+                                                    </button>
+                                                </div>
+                                                
+                                                <button type="button" class="btn btn-info btn-sm w-100 py-2 mb-1"
+                                                        id="liepinCollectBtn" disabled>
+                                                    <i class="bi bi-collection me-2"></i>2. 采集职位
+                                                    <span class="badge bg-light text-dark ms-2" id="liepinCollectStatus">等待登录</span>
+                                                </button>
+                                                
+                                                <button type="button" class="btn btn-warning btn-sm w-100 py-2 mb-1"
+                                                        id="liepinFilterBtn" disabled>
+                                                    <i class="bi bi-funnel me-2"></i>3. 过滤职位
+                                                    <span class="badge bg-light text-dark ms-2" id="liepinFilterStatus">等待登录</span>
+                                                </button>
+                                                
+                                                <button type="button" class="btn btn-success btn-sm w-100 py-2 mb-1"
+                                                        id="liepinApplyBtn" disabled>
+                                                    <i class="bi bi-rocket-takeoff me-2"></i>4. 投递职位
+                                                    <span class="badge bg-light text-dark ms-2" id="liepinApplyStatus">等待登录</span>
+                                                </button>
+                                                
+                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100"
+                                                        id="liepinResetTasksBtn">
+                                                    <i class="bi bi-arrow-clockwise me-1"></i>重置任务流程
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="liepin-records-pane" role="tabpanel"
+                     aria-labelledby="liepin-records-tab">
+                    <div id="liepinRecordsVueApp">
+                        <!-- Vue app for liepin records -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -2193,6 +2348,8 @@
 <script src="js/views/zhilian-records-vue.js"></script>
 <script src="js/views/job51-config-form.js"></script>
 <script src="js/views/job51-records-vue.js"></script>
+<script src="js/views/liepin-config-form.js"></script>
+<script src="js/views/liepin-records-vue.js"></script>
 <!-- App Entrypoint -->
 <script src="js/app.js"></script>
 

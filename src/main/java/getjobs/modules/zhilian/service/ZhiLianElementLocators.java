@@ -47,6 +47,9 @@ public class ZhiLianElementLocators {
     /** 退出按钮 */
     public static final String LOGOUT_BUTTON = "a#logout";
 
+    /** 详情页的立即投递按钮 */
+    public static final String SUMMARY_APPLY_BUTTON = "div.summary-plane__action button.a-button";
+
     // ==================== 职位采集方法 ====================
 
     /**
@@ -320,6 +323,48 @@ public class ZhiLianElementLocators {
             
         } catch (Exception e) {
             log.error("投递失败", e);
+            return false;
+        }
+    }
+
+    /**
+     * 点击详情页的“立即投递”按钮
+     *
+     * @param page Playwright页面对象
+     * @return true表示点击成功，false表示失败
+     */
+    public static boolean clickSummaryApplyButton(Page page) {
+        try {
+            // 等待按钮出现
+            try {
+                page.waitForSelector(SUMMARY_APPLY_BUTTON, new Page.WaitForSelectorOptions().setTimeout(5000));
+            } catch (Exception e) {
+                log.warn("等待“立即投递”按钮超时(5秒)，按钮可能不存在: {}", e.getMessage());
+                return false;
+            }
+
+            Locator applyButton = page.locator(SUMMARY_APPLY_BUTTON).filter(new Locator.FilterOptions().setHasText("立即投递"));
+
+            if (applyButton.count() == 0) {
+                log.error("未找到“立即投递”按钮");
+                return false;
+            }
+
+            // 确保元素可见
+            applyButton.scrollIntoViewIfNeeded();
+
+            // 点击按钮
+            applyButton.click();
+
+            log.info("成功点击“立即投递”按钮");
+
+            // 等待一小段时间
+            page.waitForTimeout(1000);
+
+            return true;
+
+        } catch (Exception e) {
+            log.error("点击“立即投递”按钮时发生错误: {}", e.getMessage());
             return false;
         }
     }
