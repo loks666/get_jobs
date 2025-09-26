@@ -13,7 +13,7 @@
                 self.loadJobDetails('Boss直聘', 'boss', 0);
             });
             document.getElementById('zhilian-records-tab')?.addEventListener('shown.bs.tab', function () {
-                self.loadJobDetails('智联招聘', 'zhilian', 0);
+                self.loadJobDetails('zhilian', 'zhilian', 0);
             });
             document.getElementById('job51-records-tab')?.addEventListener('shown.bs.tab', function () {
                 self.loadJobDetails('51job', 'job51', 0);
@@ -23,7 +23,7 @@
                 this.loadJobDetails('Boss直聘', 'boss', 0);
             });
             document.getElementById('zhilianRecordSearchBtn')?.addEventListener('click', () => {
-                this.loadJobDetails('智联招聘', 'zhilian', 0);
+                this.loadJobDetails('zhilian', 'zhilian', 0);
             });
             document.getElementById('job51RecordSearchBtn')?.addEventListener('click', () => {
                 this.loadJobDetails('51job', 'job51', 0);

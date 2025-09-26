@@ -28,7 +28,6 @@ import java.util.Scanner;
 public class ZhiLianRecruitmentServiceImpl implements RecruitmentService {
 
     private static final String HOME_URL = RecruitmentPlatformEnum.ZHILIAN_ZHAOPIN.getHomeUrl();
-    private static final String LOGIN_URL = "https://passport.zhaopin.com/login";
     private static final String SEARCH_JOB_URL = "https://www.zhaopin.com/sou?";
     // https://www.zhaopin.com/sou?el=4&we=0510&et=2&sl=15001,25000&jl=763&kw=java
     @Override
@@ -223,7 +222,8 @@ public class ZhiLianRecruitmentServiceImpl implements RecruitmentService {
         Page page = PlaywrightUtil.getPageObject();
         
         try {
-            page.navigate(LOGIN_URL);
+            // 直接首页登录即可，不需要单独使用登录页
+            page.navigate(HOME_URL);
             PlaywrightUtil.sleep(3);
             
             log.info("等待用户手动登录...");
@@ -235,7 +235,7 @@ public class ZhiLianRecruitmentServiceImpl implements RecruitmentService {
             while (!loginSuccess) {
                 try {
                     // 检查登录状态
-                    if (!ZhiLianElementLocators.isUserLoggedIn(page)) {
+                    if (ZhiLianElementLocators.isUserLoggedIn(page)) {
                         loginSuccess = true;
                         log.info("登录成功");
                     }

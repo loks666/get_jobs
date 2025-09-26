@@ -75,24 +75,26 @@ public class PlaywrightUtil {
         // 启动Playwright
         PLAYWRIGHT = Playwright.create();
 
+        List<String> args = List.of(
+                "--disable-blink-features=AutomationControlled", // 禁用自动化控制特征
+                "--disable-web-security", // 禁用web安全
+                "--disable-features=VizDisplayCompositor", // 禁用一些特征
+                "--disable-dev-shm-usage", // 禁用/dev/shm使用
+                "--no-sandbox", // 禁用沙箱
+                "--disable-extensions", // 禁用扩展
+                "--disable-plugins", // 禁用插件
+                "--disable-default-apps", // 禁用默认应用
+                "--disable-background-timer-throttling", // 禁用后台定时器限制
+                "--disable-renderer-backgrounding", // 禁用渲染器后台处理
+                "--disable-backgrounding-occluded-windows", // 禁用隐藏窗口后台处理
+                "--disable-ipc-flooding-protection" // 禁用IPC洪水保护
+        );
+
         // 创建浏览器实例
         BROWSER = PLAYWRIGHT.chromium().launch(new BrowserType.LaunchOptions()
                 .setHeadless(false) // 非无头模式，可视化调试
                 .setSlowMo(50) // 放慢操作速度，便于调试
-                .setArgs(List.of(
-                        "--disable-blink-features=AutomationControlled", // 禁用自动化控制特征
-                        "--disable-web-security", // 禁用web安全
-                        "--disable-features=VizDisplayCompositor", // 禁用一些特征
-                        "--disable-dev-shm-usage", // 禁用/dev/shm使用
-                        "--no-sandbox", // 禁用沙箱
-                        "--disable-extensions", // 禁用扩展
-                        "--disable-plugins", // 禁用插件
-                        "--disable-default-apps", // 禁用默认应用
-                        "--disable-background-timer-throttling", // 禁用后台定时器限制
-                        "--disable-renderer-backgrounding", // 禁用渲染器后台处理
-                        "--disable-backgrounding-occluded-windows", // 禁用隐藏窗口后台处理
-                        "--disable-ipc-flooding-protection" // 禁用IPC洪水保护
-                )));
+                .setArgs(List.of()));
 
         // 随机选择User-Agent
         Random random = new Random();
@@ -104,7 +106,7 @@ public class PlaywrightUtil {
                 .setJavaScriptEnabled(true)
                 .setBypassCSP(true)
                 .setPermissions(List.of("geolocation", "notifications")) // 添加一些常见权限
-                .setExtraHTTPHeaders(createHeaders())
+//                .setExtraHTTPHeaders(createHeaders())
                 .setLocale("zh-CN")
                 .setTimezoneId("Asia/Shanghai"));
 
@@ -113,44 +115,44 @@ public class PlaywrightUtil {
         PAGE.setDefaultTimeout(DEFAULT_TIMEOUT);
 
         // 注入反检测JavaScript代码
-        PAGE.addInitScript("""
-            // 移除webdriver属性
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => undefined,
-            });
-            
-            // 重写plugins属性
-            Object.defineProperty(navigator, 'plugins', {
-                get: () => [1, 2, 3, 4, 5],
-            });
-            
-            // 重写languages属性
-            Object.defineProperty(navigator, 'languages', {
-                get: () => ['zh-CN', 'zh', 'en'],
-            });
-            
-            // 重写permissions查询
-            const originalQuery = window.navigator.permissions.query;
-            window.navigator.permissions.query = (parameters) => (
-                parameters.name === 'notifications' ?
-                    Promise.resolve({ state: Notification.permission }) :
-                    originalQuery(parameters)
-            );
-            
-            // 隐藏Chrome automation扩展
-            window.chrome = {
-                runtime: {},
-            };
-            
-            // 重写Object.getOwnPropertyDescriptor
-            const getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
-            Object.getOwnPropertyDescriptor = function(obj, prop) {
-                if (prop === 'webdriver') {
-                    return undefined;
-                }
-                return getOwnPropertyDescriptor(obj, prop);
-            };
-        """);
+//        PAGE.addInitScript("""
+//            // 移除webdriver属性
+//            Object.defineProperty(navigator, 'webdriver', {
+//                get: () => undefined,
+//            });
+//
+//            // 重写plugins属性
+//            Object.defineProperty(navigator, 'plugins', {
+//                get: () => [1, 2, 3, 4, 5],
+//            });
+//
+//            // 重写languages属性
+//            Object.defineProperty(navigator, 'languages', {
+//                get: () => ['zh-CN', 'zh', 'en'],
+//            });
+//
+//            // 重写permissions查询
+//            const originalQuery = window.navigator.permissions.query;
+//            window.navigator.permissions.query = (parameters) => (
+//                parameters.name === 'notifications' ?
+//                    Promise.resolve({ state: Notification.permission }) :
+//                    originalQuery(parameters)
+//            );
+//
+//            // 隐藏Chrome automation扩展
+//            window.chrome = {
+//                runtime: {},
+//            };
+//
+//            // 重写Object.getOwnPropertyDescriptor
+//            const getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+//            Object.getOwnPropertyDescriptor = function(obj, prop) {
+//                if (prop === 'webdriver') {
+//                    return undefined;
+//                }
+//                return getOwnPropertyDescriptor(obj, prop);
+//            };
+//        """);
 
         // 启用JavaScript捕获控制台日志（用于调试）
         PAGE.onConsoleMessage(message -> {
