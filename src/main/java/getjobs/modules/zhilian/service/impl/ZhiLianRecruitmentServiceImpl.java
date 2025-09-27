@@ -1,5 +1,7 @@
 package getjobs.modules.zhilian.service.impl;
 
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import getjobs.common.dto.ConfigDTO;
 import getjobs.common.enums.RecruitmentPlatformEnum;
@@ -96,21 +98,43 @@ public class ZhiLianRecruitmentServiceImpl implements RecruitmentService {
         log.info("开始执行智联招聘岗位投递操作，待投递岗位数量: {}", jobDTOS.size());
         AtomicInteger successCount = new AtomicInteger(0);
 
-        // 在新标签页中打开岗位详情
-        try (Page jobPage = PlaywrightUtil.getPageObject().context().newPage()) {
+        // 为投递任务创建一个独立的、隔离的浏览器上下文，防止与其他操作冲突
+        Browser.NewContextOptions contextOptions = new Browser.NewContextOptions()
+                .setUserAgent(PlaywrightUtil.getRandomUserAgent())
+                .setJavaScriptEnabled(true)
+                .setBypassCSP(true)
+                .setLocale("zh-CN")
+                .setTimezoneId("Asia/Shanghai");
+
+        try (BrowserContext deliveryContext = PlaywrightUtil.getBrowser().newContext(contextOptions);
+             Page jobPage = deliveryContext.newPage()) {
+
+            jobPage.setDefaultTimeout(30000); // 为新页面设置默认超时
+
             for (JobDTO jobDTO : jobDTOS) {
                 try {
                     log.info("正在投递岗位: {}", jobDTO.getJobName());
                     jobPage.navigate(jobDTO.getHref());
                     jobPage.waitForLoadState(); // 等待页面加载
 
-                    // 执行投递
-                    if (ZhiLianElementLocators.clickSummaryApplyButton(jobPage)) {
-                        log.info("岗位投递成功: {}", jobDTO.getJobName());
-                        successCount.getAndIncrement();
-                    } else {
-                        log.warn("岗位投递失败或已投递: {}", jobDTO.getJobName());
+
+                    // 投递完成会打开新页签，需要关闭新页签
+                    Page popup = jobPage.waitForPopup(() -> {
+                        // 执行投递
+                        if (ZhiLianElementLocators.clickSummaryApplyButton(jobPage)) {
+                            log.info("岗位投递成功: {}", jobDTO.getJobName());
+                            successCount.getAndIncrement();
+                        } else {
+                            log.warn("岗位投递失败或已投递: {}", jobDTO.getJobName());
+                        }
+                    });
+
+                    if (popup != null) {
+                        popup.waitForLoadState();       // 可选：等加载稳定
+                        // TODO: 可根据 URL/标题做一次校验，确认是“投递成功”页
+                        popup.close();                  // 关闭新页签
                     }
+
 
                     // 添加3-5秒随机延迟，避免投递过快
                     PlaywrightUtil.randomSleep(3, 5);

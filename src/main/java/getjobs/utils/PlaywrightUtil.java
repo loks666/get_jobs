@@ -69,6 +69,15 @@ public class PlaywrightUtil {
     }
 
     /**
+     * 获取随机User-Agent
+     * @return 随机User-Agent字符串
+     */
+    public static String getRandomUserAgent() {
+        Random random = new Random();
+        return USER_AGENTS[random.nextInt(USER_AGENTS.length)];
+    }
+
+    /**
      * 初始化Playwright及浏览器实例
      */
     public static void init() {
@@ -96,9 +105,8 @@ public class PlaywrightUtil {
                 .setSlowMo(50) // 放慢操作速度，便于调试
                 .setArgs(List.of()));
 
-        // 随机选择User-Agent
-        Random random = new Random();
-        String randomUserAgent = USER_AGENTS[random.nextInt(USER_AGENTS.length)];
+    // 随机选择User-Agent
+    String randomUserAgent = getRandomUserAgent();
         
         // 创建浏览器上下文，增强伪装设置
         CONTEXT = BROWSER.newContext(new Browser.NewContextOptions()
@@ -453,6 +461,15 @@ public class PlaywrightUtil {
      */
     public static Page getPageObject() {
         return PAGE;
+    }
+
+    /**
+     * 获取Browser对象
+     *
+     * @return Browser对象
+     */
+    public static Browser getBrowser() {
+        return BROWSER;
     }
 
     /**

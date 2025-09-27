@@ -10,10 +10,10 @@ import getjobs.service.JobService;
 import getjobs.service.PlaywrightManager;
 import getjobs.service.RecruitmentService;
 import getjobs.service.RecruitmentServiceFactory;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
