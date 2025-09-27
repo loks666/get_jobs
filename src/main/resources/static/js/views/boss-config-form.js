@@ -58,6 +58,14 @@
                 this.resetTaskFlow();
             });
 
+            document.getElementById('sendImgResumeCheckBox')?.addEventListener('change', (event) => {
+                const resumeField = document.getElementById('resumeImagePathField');
+                if (resumeField && !event.target.checked) {
+                    // If unchecked, remove validation state
+                    resumeField.classList.remove('is-invalid', 'is-valid');
+                }
+            });
+
             this.bindFormValidation();
             this.bindAdvancedConfig();
         }
@@ -66,7 +74,6 @@
             const requiredFields = [
                 'keywordsField',
                 'cityCodeField',
-                'resumeImagePathField',
                 'sayHiTextArea'
             ];
             requiredFields.forEach(fieldId => {
@@ -755,7 +762,6 @@
             const requiredFields = [
                 'keywordsField',
                 'cityCodeField',
-                'resumeImagePathField',
                 'sayHiTextArea'
             ];
             let isValid = true;
@@ -765,6 +771,21 @@
                     isValid = false;
                 }
             });
+
+            // Conditionally validate resumeImagePathField
+            const sendImgResume = document.getElementById('sendImgResumeCheckBox').checked;
+            const resumeField = document.getElementById('resumeImagePathField');
+            if (sendImgResume) {
+                if (resumeField && !this.validateField(resumeField)) {
+                    isValid = false;
+                }
+            } else {
+                // If not sending image resume, ensure the field is not marked as invalid
+                if (resumeField) {
+                    resumeField.classList.remove('is-invalid');
+                }
+            }
+
             return isValid && this.validateSalaryRange() ;
         }
 
