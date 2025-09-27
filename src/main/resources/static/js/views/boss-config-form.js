@@ -7,6 +7,12 @@
             this.config = {};
             this.isRunning = false;
             this.dictDataLoaded = false; // 字典数据加载状态标志
+            this.taskStates = {
+                loginTaskId: null,
+                collectTaskId: null,
+                filterTaskId: null,
+                applyTaskId: null
+            };
             this.init();
         }
 
@@ -31,9 +37,35 @@
             document.getElementById('backupDataBtn')?.addEventListener('click', () => {
                 this.handleBackupData();
             });
-            document.getElementById('startDeliveryBtn')?.addEventListener('click', () => {
-                this.handleStartOnly();
+
+            // 任务执行按钮
+            document.getElementById('loginBtn')?.addEventListener('click', () => {
+                this.handleLogin();
             });
+            document.getElementById('loginManualBtn')?.addEventListener('click', () => {
+                this.handleManualLogin();
+            });
+            document.getElementById('collectBtn')?.addEventListener('click', () => {
+                this.handleCollect();
+            });
+            document.getElementById('filterBtn')?.addEventListener('click', () => {
+                this.handleFilter();
+            });
+            document.getElementById('deliverBtn')?.addEventListener('click', () => {
+                this.handleApply();
+            });
+            document.getElementById('resetTasksBtn')?.addEventListener('click', () => {
+                this.resetTaskFlow();
+            });
+
+            document.getElementById('sendImgResumeCheckBox')?.addEventListener('change', (event) => {
+                const resumeField = document.getElementById('resumeImagePathField');
+                if (resumeField && !event.target.checked) {
+                    // If unchecked, remove validation state
+                    resumeField.classList.remove('is-invalid', 'is-valid');
+                }
+            });
+
             this.bindFormValidation();
             this.bindAdvancedConfig();
         }
@@ -42,7 +74,6 @@
             const requiredFields = [
                 'keywordsField',
                 'cityCodeField',
-                'resumeImagePathField',
                 'sayHiTextArea'
             ];
             requiredFields.forEach(fieldId => {
@@ -731,7 +762,6 @@
             const requiredFields = [
                 'keywordsField',
                 'cityCodeField',
-                'resumeImagePathField',
                 'sayHiTextArea'
             ];
             let isValid = true;
@@ -741,6 +771,21 @@
                     isValid = false;
                 }
             });
+
+            // Conditionally validate resumeImagePathField
+            const sendImgResume = document.getElementById('sendImgResumeCheckBox').checked;
+            const resumeField = document.getElementById('resumeImagePathField');
+            if (sendImgResume) {
+                if (resumeField && !this.validateField(resumeField)) {
+                    isValid = false;
+                }
+            } else {
+                // If not sending image resume, ensure the field is not marked as invalid
+                if (resumeField) {
+                    resumeField.classList.remove('is-invalid');
+                }
+            }
+
             return isValid && this.validateSalaryRange() ;
         }
 
@@ -789,6 +834,274 @@
                 startBtn.classList.add('success-flash');
                 setTimeout(() => startBtn.classList.remove('success-flash'), 600);
             }
+        }
+
+        // 处理登录
+        async handleLogin() {
+            if (!this.validateRequiredFields()) {
+                CommonUtils.showAlertModal('验证失败', '请先完善必填项');
+                return;
+            }
+
+            this.updateButtonState('loginBtn', 'loginStatus', '执行中...', true);
+
+            try {
+                const config = this.getCurrentConfig();
+                const response = await fetch('/api/boss/task/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    this.taskStates.loginTaskId = result.taskId;
+                    this.updateButtonState('loginBtn', 'loginStatus', '登录成功', false, 'success');
+                    this.enableNextStep('collectBtn', 'collectStatus', '可开始采集');
+                    this.enableNextStep('filterBtn', 'filterStatus', '可开始过滤');
+                    this.enableNextStep('deliverBtn', 'deliverStatus', '可开始投递');
+                    CommonUtils.showToast('Boss登录成功！');
+                } else {
+                    this.updateButtonState('loginBtn', 'loginStatus', '登录失败', false, 'danger');
+                    CommonUtils.showToast(result.message || '登录失败', 'danger');
+                }
+            } catch (error) {
+                this.updateButtonState('loginBtn', 'loginStatus', '登录失败', false, 'danger');
+                CommonUtils.showToast('登录接口调用失败: ' + error.message, 'danger');
+            }
+        }
+
+        // 手动确认登录
+        handleManualLogin() {
+            this.taskStates.loginTaskId = 'manual_login_' + Date.now();
+            this.updateButtonState('loginBtn', 'loginStatus', '登录成功', false, 'success');
+            this.enableNextStep('collectBtn', 'collectStatus', '可开始采集');
+            this.enableNextStep('filterBtn', 'filterStatus', '可开始过滤');
+            this.enableNextStep('deliverBtn', 'deliverStatus', '可开始投递');
+            CommonUtils.showToast('已手动标记为登录状态', 'success');
+        }
+
+        // 处理采集
+        async handleCollect() {
+            if (!this.taskStates.loginTaskId) {
+                CommonUtils.showAlertModal('操作提示', '请先完成登录步骤');
+                return;
+            }
+
+            this.updateButtonState('collectBtn', 'collectStatus', '采集中...', true);
+
+            try {
+                const config = this.getCurrentConfig();
+                const response = await fetch('/api/boss/task/collect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    this.taskStates.collectTaskId = result.taskId;
+                    this.updateButtonState('collectBtn', 'collectStatus', `采集完成(${result.jobCount}个职位)`, false, 'success');
+                    CommonUtils.showToast(`采集完成，共找到 ${result.jobCount} 个职位！`);
+                } else {
+                    this.updateButtonState('collectBtn', 'collectStatus', '采集失败', false, 'danger');
+                    CommonUtils.showToast(result.message || '采集失败', 'danger');
+                }
+            } catch (error) {
+                this.updateButtonState('collectBtn', 'collectStatus', '采集失败', false, 'danger');
+                CommonUtils.showToast('采集接口调用失败: ' + error.message, 'danger');
+            }
+        }
+
+        // 处理过滤
+        async handleFilter() {
+            if (!this.taskStates.loginTaskId) {
+                CommonUtils.showAlertModal('操作提示', '请先完成登录步骤');
+                return;
+            }
+
+            this.updateButtonState('filterBtn', 'filterStatus', '过滤中...', true);
+
+            try {
+                const config = this.getCurrentConfig();
+                const request = {
+                    collectTaskId: this.taskStates.collectTaskId,
+                    config: config
+                };
+
+                const response = await fetch('/api/boss/task/filter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    this.taskStates.filterTaskId = result.taskId;
+                    this.updateButtonState('filterBtn', 'filterStatus', `过滤完成(${result.originalCount}→${result.filteredCount})`, false, 'success');
+                    CommonUtils.showToast(`过滤完成，从 ${result.originalCount} 个职位中筛选出 ${result.filteredCount} 个！`);
+                } else {
+                    this.updateButtonState('filterBtn', 'filterStatus', '过滤失败', false, 'danger');
+                    CommonUtils.showToast(result.message || '过滤失败', 'danger');
+                }
+            } catch (error) {
+                this.updateButtonState('filterBtn', 'filterStatus', '过滤失败', false, 'danger');
+                CommonUtils.showToast('过滤接口调用失败: ' + error.message, 'danger');
+            }
+        }
+
+        // 处理投递
+        async handleApply() {
+            if (!this.taskStates.loginTaskId) {
+                CommonUtils.showAlertModal('操作提示', '请先完成登录步骤');
+                return;
+            }
+
+            CommonUtils.showConfirmModal(
+                '投递确认',
+                '是否执行实际投递？\n点击"确定"将真实投递简历\n点击"取消"将仅模拟投递',
+                () => this.executeApply(true),
+                () => this.executeApply(false)
+            );
+        }
+
+        // 执行投递
+        async executeApply(enableActualDelivery) {
+            this.updateButtonState('deliverBtn', 'deliverStatus', '投递中...', true);
+
+            try {
+                const config = this.getCurrentConfig();
+                const request = {
+                    filterTaskId: this.taskStates.filterTaskId,
+                    config: config,
+                    enableActualDelivery: enableActualDelivery
+                };
+
+                const response = await fetch('/api/boss/task/deliver', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    this.taskStates.applyTaskId = result.taskId;
+                    const deliveryType = result.actualDelivery ? '实际投递' : '模拟投递';
+                    this.updateButtonState('deliverBtn', 'deliverStatus', `${deliveryType}完成(${result.appliedCount}/${result.totalCount})`, false, 'success');
+                    CommonUtils.showToast(`${deliveryType}完成！处理了 ${result.appliedCount} 个职位`);
+                } else {
+                    this.updateButtonState('deliverBtn', 'deliverStatus', '投递失败', false, 'danger');
+                    CommonUtils.showToast(result.message || '投递失败', 'danger');
+                }
+            } catch (error) {
+                this.updateButtonState('deliverBtn', 'deliverStatus', '投递失败', false, 'danger');
+                CommonUtils.showToast('投递接口调用失败: ' + error.message, 'danger');
+            }
+        }
+
+        // 获取当前配置
+        getCurrentConfig() {
+            const getMultiSelectValues = (selectId) => {
+                const el = document.getElementById(selectId);
+                if (!el) return '';
+                return Array.from(el.selectedOptions).map(o => o.value).filter(Boolean).join(',');
+            };
+
+            return {
+                keywords: document.getElementById('keywordsField')?.value || '',
+                industry: document.getElementById('industryField')?.value || '',
+                cityCode: getMultiSelectValues('cityCodeField'),
+                experience: document.getElementById('experienceComboBox')?.value || '',
+                jobType: document.getElementById('jobTypeComboBox')?.value || '',
+                salary: document.getElementById('salaryComboBox')?.value || '',
+                degree: document.getElementById('degreeComboBox')?.value || '',
+                scale: document.getElementById('scaleComboBox')?.value || '',
+                stage: document.getElementById('stageComboBox')?.value || '',
+                expectedSalary: [
+                    document.getElementById('minSalaryField')?.value || '0',
+                    document.getElementById('maxSalaryField')?.value || '0'
+                ],
+                resumeImagePath: document.getElementById('resumeImagePathField')?.value || '',
+                resumeContent: document.getElementById('resumeContentTextArea')?.value || '',
+                sayHi: document.getElementById('sayHiTextArea')?.value || '',
+                filterDeadHR: document.getElementById('filterDeadHRCheckBox')?.checked || false,
+                sendImgResume: document.getElementById('sendImgResumeCheckBox')?.checked || false,
+                recommendJobs: document.getElementById('recommendJobsCheckBox')?.checked || false,
+                enableBlacklistFilter: document.getElementById('enableBlacklistFilterCheckBox')?.checked || false,
+                blacklistKeywords: document.getElementById('blacklistKeywordsTextArea')?.value || '',
+                enableAIJobMatchDetection: document.getElementById('enableAIJobMatchDetectionCheckBox')?.checked || false,
+                enableAIGreeting: document.getElementById('enableAIGreetingCheckBox')?.checked || false,
+                checkStateOwned: document.getElementById('checkStateOwnedCheckBox')?.checked || false,
+                deadStatus: Array.from(document.querySelectorAll('#deadStatusContainer .fw-semibold')).map(el => el.textContent.trim())
+            };
+        }
+
+        // 更新按钮状态
+        updateButtonState(buttonId, statusId, statusText, isLoading, statusType = 'warning') {
+            const button = document.getElementById(buttonId);
+            const status = document.getElementById(statusId);
+
+            if (button) {
+                button.disabled = isLoading;
+            }
+
+            if (status) {
+                status.textContent = statusText;
+                const statusClasses = {
+                    'warning': 'badge bg-warning text-dark ms-2',
+                    'success': 'badge bg-success text-white ms-2',
+                    'danger': 'badge bg-danger text-white ms-2',
+                    'info': 'badge bg-info text-white ms-2',
+                    'default': 'badge bg-light text-dark ms-2'
+                };
+                status.className = statusClasses[statusType] || statusClasses['default'];
+            }
+        }
+
+        // 启用下一步按钮
+        enableNextStep(buttonId, statusId, statusText) {
+            const button = document.getElementById(buttonId);
+            const status = document.getElementById(statusId);
+
+            if (button) {
+                button.disabled = false;
+            }
+
+            if (status) {
+                status.textContent = statusText;
+                status.className = 'badge bg-info text-dark ms-2';
+            }
+        }
+
+        // 重置任务流程
+        resetTaskFlow() {
+            CommonUtils.showConfirmModal(
+                '重置确认',
+                '确定要重置任务流程吗？这将清除所有任务状态。',
+                () => {
+                    this.taskStates = {
+                        loginTaskId: null,
+                        collectTaskId: null,
+                        filterTaskId: null,
+                        applyTaskId: null
+                    };
+
+                    this.updateButtonState('loginBtn', 'loginStatus', '待执行', false, 'default');
+                    this.updateButtonState('collectBtn', 'collectStatus', '等待登录', true, 'default');
+                    this.updateButtonState('filterBtn', 'filterStatus', '等待登录', true, 'default');
+                    this.updateButtonState('deliverBtn', 'deliverStatus', '等待登录', true, 'default');
+
+                    document.getElementById('collectBtn').disabled = true;
+                    document.getElementById('filterBtn').disabled = true;
+                    document.getElementById('deliverBtn').disabled = true;
+
+                    CommonUtils.showToast('任务流程已重置', 'info');
+                }
+            );
         }
 
         // 加载Boss字典数据

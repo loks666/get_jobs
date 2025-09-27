@@ -17,7 +17,8 @@ public enum DictGroupKey {
     PART_TIME("partTimeList", "兼职类型"),
     DEGREE("degreeList", "学历"),
     JOB_TYPE("jobTypeList", "工作类型"),
-    INDUSTRY("industryList", "行业类别");
+    INDUSTRY("industryList", "行业类别"),
+    PUBTIMES("pubTimes","招聘活跃度");
 
     private final String key;
     private final String description;

@@ -317,7 +317,7 @@
                                             <!-- Resume Image Path -->
                                             <div class="mb-2">
                                                 <label for="resumeImagePathField" class="form-label fw-semibold small">
-                                                    简历图片路径
+                                                    简历图片路径 <span class="text-muted">(可选)</span>
                                                     <i class="bi bi-question-circle text-muted ms-1"
                                                        data-bs-toggle="tooltip"
                                                        title="设置简历图片的完整文件路径，支持常见图片格式（jpg、png、gif等）"></i>
@@ -2246,6 +2246,106 @@
                                                 <select class="form-select form-select-sm d-none" id="liepinCityCodeField" multiple></select>
                                             </div>
                                         </div>
+
+                                        <!-- Job Requirements Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-primary mb-2">
+                                                <i class="bi bi-clipboard-check me-2"></i>职位要求
+                                            </h6>
+
+                                            <div class="row g-2">
+                                                <!-- Experience -->
+                                                <div class="col-md-6">
+                                                    <label for="liepinExperienceComboBox" class="form-label fw-semibold small">
+                                                        工作经验
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择您的工作年限区间"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="liepinExperienceComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Job Type -->
+                                                <div class="col-md-6">
+                                                    <label for="liepinJobTypeComboBox" class="form-label fw-semibold small">
+                                                        求职类型
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望的工作性质，如全职、兼职等"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="liepinJobTypeComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Salary Range -->
+                                                <div class="col-md-6">
+                                                    <label for="liepinSalaryComboBox" class="form-label fw-semibold small">
+                                                        薪资范围
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望的月薪范围"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="liepinSalaryComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Education -->
+                                                <div class="col-md-6">
+                                                    <label for="liepinDegreeComboBox" class="form-label fw-semibold small">
+                                                        学历要求
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择您的最高学历"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="liepinDegreeComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Company Scale -->
+                                                <div class="col-md-6">
+                                                    <label for="liepinScaleComboBox" class="form-label fw-semibold small">
+                                                        公司规模
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望的公司人员规模"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="liepinScaleComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Company Nature -->
+                                                <div class="col-md-6">
+                                                    <label for="liepinCompanyNatureComboBox" class="form-label fw-semibold small">
+                                                        公司性质
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择期望公司的性质，如国企、外企、民企等"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="liepinCompanyNatureComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Recruiter Activity -->
+                                                <div class="col-md-6">
+                                                    <label for="liepinRecruiterActivityComboBox" class="form-label fw-semibold small">
+                                                        招聘者活跃
+                                                        <i class="bi bi-question-circle text-muted ms-1"
+                                                           data-bs-toggle="tooltip"
+                                                           title="选择招聘者活跃度"></i>
+                                                    </label>
+                                                    <select class="form-select form-select-sm" id="liepinRecruiterActivityComboBox">
+                                                        <option value="">请选择</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2261,6 +2361,52 @@
                                 </div>
                                 <div class="card-body p-3">
                                     <div class="d-flex flex-column h-100">
+                                        <!-- Feature Toggles Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-info mb-2">
+                                                <i class="bi bi-toggle-on me-2"></i>功能开关
+                                            </h6>
+
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="liepinBlacklistFilterCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="liepinBlacklistFilterCheckBox">
+                                                    过滤黑名单职位
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将根据黑名单关键词过滤不想要的职位"></i>
+                                                </label>
+                                            </div>
+
+                                            <!-- Blacklist Keywords Config -->
+                                            <div class="mb-2">
+                                                <label for="liepinBlacklistKeywordsTextArea" class="form-label fw-semibold small">
+                                                    黑名单关键词配置
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="请输入黑名单关键词，使用英文逗号或换行分隔；示例：外包, 中介, 驻场"></i>
+                                                </label>
+                                                <textarea class="form-control form-control-sm" id="liepinBlacklistKeywordsTextArea" rows="2"
+                                                          placeholder="外包, 中介, 驻场"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <!-- AI Configuration Card -->
+                                        <div class="config-card mb-2">
+                                            <h6 class="card-title text-success mb-2">
+                                                <i class="bi bi-robot me-2"></i>AI智能配置
+                                            </h6>
+
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="liepinEnableAIJobMatchCheckBox">
+                                                <label class="form-check-label fw-semibold small" for="liepinEnableAIJobMatchCheckBox">
+                                                    AI职位匹配检测
+                                                    <i class="bi bi-question-circle text-muted ms-1"
+                                                       data-bs-toggle="tooltip"
+                                                       title="开启后将使用AI智能分析职位描述，检测职位与期望的匹配度"></i>
+                                                </label>
+                                            </div>
+
+                                        </div>
                                         <!-- Action Buttons -->
                                         <div class="d-grid gap-2 mt-auto">
                                             <div class="row g-2">

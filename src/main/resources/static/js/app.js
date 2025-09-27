@@ -212,15 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 初始化猎聘配置表单
-    if (window.Views && window.Views.LiepinConfigForm) {
-        window.liepinConfigApp = new window.Views.LiepinConfigForm();
-    }
-
-    // 初始化猎聘相关功能
-    if (document.getElementById('liepin-config-pane')) {
-        console.log('Initializing Liepin module');
-        initLiepinConfigForm();
-        initLiepinRecordsVue();
+    if (window.LiepinConfigForm) {
+        window.liepinConfigApp = new LiepinConfigForm();
     }
 
     // Boss字典加载逻辑已移至 Views.BossConfigForm 中
@@ -426,73 +419,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function initLiepinConfigForm() {
-    const saveBtn = document.getElementById('liepinSaveConfigBtn');
-    const loginBtn = document.getElementById('liepinLoginBtn');
-    const collectBtn = document.getElementById('liepinCollectBtn');
-    const filterBtn = document.getElementById('liepinFilterBtn');
-    const applyBtn = document.getElementById('liepinApplyBtn');
-
-    saveBtn.addEventListener('click', () => {
-        const config = {
-            keywords: document.getElementById('liepinKeywordsField').value,
-            cityCode: Array.from(document.getElementById('liepinCityCodeField').selectedOptions).map(opt => opt.value)
-        };
-        fetch('/api/config/liepin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config)
-        }).then(() => CommonUtils.showToast('配置已保存', 'success'));
-    });
-
-    loginBtn.addEventListener('click', () => {
-        fetch('/api/liepin/task/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    CommonUtils.showToast('登录成功', 'success');
-                    collectBtn.disabled = false;
-                    filterBtn.disabled = false;
-                    applyBtn.disabled = false;
-                } else {
-                    CommonUtils.showToast('登录失败: ' + data.message, 'danger');
-                }
-            });
-    });
-
-    collectBtn.addEventListener('click', () => {
-        const config = {
-            keywords: document.getElementById('liepinKeywordsField').value,
-            cityCode: Array.from(document.getElementById('liepinCityCodeField').selectedOptions).map(opt => opt.value)
-        };
-        fetch('/api/liepin/task/collect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) })
-            .then(res => res.json())
-            .then(data => CommonUtils.showToast(`采集到 ${data.jobCount} 个岗位`, 'info'));
-    });
-
-    filterBtn.addEventListener('click', () => {
-        const config = {
-            keywords: document.getElementById('liepinKeywordsField').value,
-            cityCode: Array.from(document.getElementById('liepinCityCodeField').selectedOptions).map(opt => opt.value)
-        };
-        fetch('/api/liepin/task/filter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config }) })
-            .then(res => res.json())
-            .then(data => CommonUtils.showToast(`过滤后剩余 ${data.filteredCount} 个岗位`, 'info'));
-    });
-
-    applyBtn.addEventListener('click', () => {
-        const config = {
-            keywords: document.getElementById('liepinKeywordsField').value,
-            cityCode: Array.from(document.getElementById('liepinCityCodeField').selectedOptions).map(opt => opt.value)
-        };
-        fetch('/api/liepin/task/deliver', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config, enableActualDelivery: true }) })
-            .then(res => res.json())
-            .then(data => CommonUtils.showToast(`投递了 ${data.deliveredCount} 个岗位`, 'success'));
-    });
-}
-
-function initLiepinRecordsVue() {
-    // Vue app for liepin records
-}
 
 // 注意：不要重复创建Vue应用，已在上面的DOMContentLoaded中创建
