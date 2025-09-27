@@ -1,22 +1,16 @@
 package getjobs.modules.dict.infrastructure.provider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.microsoft.playwright.Page;
-import com.microsoft.playwright.options.LoadState;
 import getjobs.common.enums.RecruitmentPlatformEnum;
+import getjobs.config.Job51DictConfig;
 import getjobs.modules.dict.api.DictBundle;
 import getjobs.modules.dict.api.DictGroup;
 import getjobs.modules.dict.api.DictGroupKey;
 import getjobs.modules.dict.api.DictItem;
 import getjobs.modules.dict.domain.DictProvider;
+import getjobs.modules.dict.infrastructure.provider.dto.job51.DictJsonResponse;
 import getjobs.modules.dict.infrastructure.provider.dto.job51.Job51CityGroup;
 import getjobs.modules.dict.infrastructure.provider.dto.job51.Job51Response;
-import getjobs.modules.dict.infrastructure.provider.dto.job51.DictJsonResponse;
-import getjobs.modules.dict.infrastructure.provider.dto.ConditionsData;
-import getjobs.modules.dict.infrastructure.provider.dto.ConditionItem;
-import getjobs.modules.dict.infrastructure.provider.dto.SalaryItem;
-import getjobs.modules.job51.service.Job51ElementLocators;
-import getjobs.config.Job51DictConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -24,7 +18,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -32,9 +25,6 @@ import java.util.Set;
 public class Job51DictProviderImpl implements DictProvider {
 
     private final String cityJsonUrl = "https://js.51jobcdn.com/in/js/2023/dd/dd_city.json";
-
-    // Job51搜索页面URL，用于获取筛选条件数据
-    private final String searchPageUrl = "https://we.51job.com/pc/search";
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -94,195 +84,6 @@ public class Job51DictProviderImpl implements DictProvider {
         return new DictBundle(RecruitmentPlatformEnum.JOB_51, groups);
     }
 
-
-    /**
-     * 通过playwright获取页面筛选条件数据的方法
-     * 访问 https://we.51job.com/pc/search 页面，解析筛选条件数据
-     *
-     * @param page Playwright页面对象
-     * @return 条件数据，如果获取失败则返回null
-     */
-    public ConditionsData fetchConditionsFromPage(Page page) {
-        try {
-            // 访问Job51搜索页面
-            page.navigate(searchPageUrl);
-            page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-
-            // 等待筛选条件加载完成
-            page.waitForSelector("div.j_filter");
-
-            // 使用Job51ElementLocators获取页面筛选条件
-            Map<String, List<Job51ElementLocators.FilterOption>> filterOptions = Job51ElementLocators
-                    .getFilterOptions(page);
-
-            // 解析筛选条件并构建条件数据
-            ConditionsData conditionsData = parseFilterOptionsToConditionsData(filterOptions);
-
-            log.info("成功通过playwright获取Job51页面筛选条件数据");
-            return conditionsData;
-
-        } catch (Exception e) {
-            log.error("通过playwright获取Job51页面筛选条件数据失败: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * 将页面筛选条件解析为ConditionsData对象
-     *
-     * @param filterOptions 页面筛选条件映射
-     * @return ConditionsData对象
-     */
-    private ConditionsData parseFilterOptionsToConditionsData(
-            Map<String, List<Job51ElementLocators.FilterOption>> filterOptions) {
-        List<ConditionItem> payTypeList = new ArrayList<>();
-        List<ConditionItem> experienceList = new ArrayList<>();
-        List<SalaryItem> salaryList = new ArrayList<>();
-        List<ConditionItem> stageList = new ArrayList<>();
-        List<ConditionItem> companyNatureList = new ArrayList<>();
-        List<ConditionItem> scaleList = new ArrayList<>();
-        List<ConditionItem> partTimeList = new ArrayList<>();
-        List<ConditionItem> degreeList = new ArrayList<>();
-        List<ConditionItem> jobTypeList = new ArrayList<>();
-
-        for (Map.Entry<String, List<Job51ElementLocators.FilterOption>> entry : filterOptions.entrySet()) {
-            String label = entry.getKey();
-            List<Job51ElementLocators.FilterOption> options = entry.getValue();
-
-            // 根据label分类处理不同的条件
-            switch (label) {
-                case "月薪范围：" -> {
-                    for (Job51ElementLocators.FilterOption option : options) {
-                        String text = option.getText();
-                        // 解析薪资范围，提取最低和最高薪资
-                        Integer lowSalary = parseSalaryLow(text);
-                        Integer highSalary = parseSalaryHigh(text);
-                        salaryList.add(new SalaryItem(text, text, lowSalary, highSalary));
-                    }
-                }
-                case "工作年限：" -> {
-                    for (Job51ElementLocators.FilterOption option : options) {
-                        String text = option.getText();
-                        experienceList.add(new ConditionItem(text, text));
-                    }
-                }
-                case "学历要求：" -> {
-                    for (Job51ElementLocators.FilterOption option : options) {
-                        String text = option.getText();
-                        degreeList.add(new ConditionItem(text, text));
-                    }
-                }
-                case "公司性质：" -> {
-                    for (Job51ElementLocators.FilterOption option : options) {
-                        String text = option.getText();
-                        companyNatureList.add(new ConditionItem(text, text));
-                    }
-                }
-                case "公司规模：" -> {
-                    for (Job51ElementLocators.FilterOption option : options) {
-                        String text = option.getText();
-                        scaleList.add(new ConditionItem(text, text));
-                    }
-                }
-                case "工作类型：" -> {
-                    for (Job51ElementLocators.FilterOption option : options) {
-                        String text = option.getText();
-                        jobTypeList.add(new ConditionItem(text, text));
-                    }
-                }
-                default -> {
-                    // 其他未分类的条件，可以根据需要添加
-                    log.debug("未处理的筛选条件: {}", label);
-                }
-            }
-        }
-
-        return new ConditionsData(
-                payTypeList.isEmpty() ? null : payTypeList,
-                experienceList.isEmpty() ? null : experienceList,
-                salaryList.isEmpty() ? null : salaryList,
-                stageList.isEmpty() ? null : stageList,
-                companyNatureList.isEmpty() ? null : companyNatureList,
-                scaleList.isEmpty() ? null : scaleList,
-                partTimeList.isEmpty() ? null : partTimeList,
-                degreeList.isEmpty() ? null : degreeList,
-                jobTypeList.isEmpty() ? null : jobTypeList);
-    }
-
-    /**
-     * 解析薪资文本，提取最低薪资
-     *
-     * @param salaryText 薪资文本，如"3-5千"、"5万以上"
-     * @return 最低薪资（单位：元），如果无法解析则返回null
-     */
-    private Integer parseSalaryLow(String salaryText) {
-        try {
-            if (salaryText.contains("以下") || salaryText.contains("以下")) {
-                // 如"3千以下"
-                String number = salaryText.replaceAll("[^0-9]", "");
-                return Integer.parseInt(number) * 1000;
-            } else if (salaryText.contains("-")) {
-                // 如"3-5千"
-                String[] parts = salaryText.split("-");
-                String lowPart = parts[0].replaceAll("[^0-9]", "");
-                String unit = parts[1].replaceAll("[0-9]", "");
-                int multiplier = getSalaryMultiplier(unit);
-                return Integer.parseInt(lowPart) * multiplier;
-            } else if (salaryText.contains("以上")) {
-                // 如"5万以上"
-                String number = salaryText.replaceAll("[^0-9]", "");
-                String unit = salaryText.replaceAll("[0-9]", "");
-                int multiplier = getSalaryMultiplier(unit);
-                return Integer.parseInt(number) * multiplier;
-            }
-        } catch (Exception e) {
-            log.debug("解析薪资失败: {}", salaryText);
-        }
-        return null;
-    }
-
-    /**
-     * 解析薪资文本，提取最高薪资
-     *
-     * @param salaryText 薪资文本，如"3-5千"、"5万以上"
-     * @return 最高薪资（单位：元），如果无法解析则返回null
-     */
-    private Integer parseSalaryHigh(String salaryText) {
-        try {
-            if (salaryText.contains("以下")) {
-                // 如"3千以下"，最高薪资为0
-                return 0;
-            } else if (salaryText.contains("-")) {
-                // 如"3-5千"
-                String[] parts = salaryText.split("-");
-                String highPart = parts[1].replaceAll("[^0-9]", "");
-                String unit = parts[1].replaceAll("[0-9]", "");
-                int multiplier = getSalaryMultiplier(unit);
-                return Integer.parseInt(highPart) * multiplier;
-            } else if (salaryText.contains("以上")) {
-                // 如"5万以上"，最高薪资为null（无上限）
-                return null;
-            }
-        } catch (Exception e) {
-            log.debug("解析薪资失败: {}", salaryText);
-        }
-        return null;
-    }
-
-    /**
-     * 根据单位获取薪资倍数
-     *
-     * @param unit 单位文本，如"千"、"万"
-     * @return 倍数
-     */
-    private int getSalaryMultiplier(String unit) {
-        if (unit.contains("万")) {
-            return 10000;
-        } else if (unit.contains("千")) {
-            return 1000;
-        }
-        return 1;
-    }
 
     /**
      * 直接从application.yml配置中读取dict-json并解析字典数据

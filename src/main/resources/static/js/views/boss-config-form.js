@@ -36,7 +36,6 @@
             });
             this.bindFormValidation();
             this.bindAdvancedConfig();
-            this.bindAutoSave();
         }
 
         bindFormValidation() {
@@ -231,6 +230,8 @@
                 await this.loadSavedConfig();
                 console.log('BossConfigForm: 配置数据加载完成');
                 
+                // 在所有数据加载并填充表单后，再绑定自动保存
+                this.bindAutoSave();
             } catch (error) {
                 console.error('BossConfigForm: 数据加载失败:', error);
             }
