@@ -16,17 +16,6 @@ class BossConfigApp {
 
     // 绑定事件
     bindEvents() {
-        // 保存配置按钮
-        const saveConfigBtn = document.getElementById('saveConfigBtn');
-        if (saveConfigBtn) {
-            saveConfigBtn.addEventListener('click', () => {
-                this.handleSaveOnly();
-            });
-            console.log('已绑定保存配置按钮事件');
-        } else {
-            console.warn('未找到保存配置按钮元素');
-        }
-
         // 数据库备份按钮
         const backupDataBtn = document.getElementById('backupDataBtn');
         if (backupDataBtn) {

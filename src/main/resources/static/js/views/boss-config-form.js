@@ -203,8 +203,7 @@
                 recommendJobs: document.getElementById('recommendJobsCheckBox').checked,
                 enableAIJobMatchDetection: document.getElementById('enableAIJobMatchDetectionCheckBox').checked,
                 enableAIGreeting: document.getElementById('enableAIGreetingCheckBox').checked,
-                checkStateOwned: document.getElementById('checkStateOwnedCheckBox').checked,
-                waitTime: document.getElementById('waitTimeField').value
+                checkStateOwned: document.getElementById('checkStateOwnedCheckBox').checked
             };
             localStorage.setItem('bossConfig', JSON.stringify(this.config));
             try {
@@ -1027,5 +1026,3 @@
     // 导出为全局可用类，由 app.js 统一初始化
     window.Views.BossConfigForm = BossConfigApp;
 })();
-
-
