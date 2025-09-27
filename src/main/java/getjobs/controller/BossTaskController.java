@@ -23,8 +23,11 @@ import java.util.Map;
 @RequestMapping("/api/boss/task")
 public class BossTaskController {
 
-    @Autowired
-    private BossTaskService bossTaskService;
+    private final BossTaskService bossTaskService;
+
+    public BossTaskController(BossTaskService bossTaskService) {
+        this.bossTaskService = bossTaskService;
+    }
 
     /**
      * 1. 登录接口

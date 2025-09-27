@@ -113,7 +113,7 @@ public class Job51DictProviderImpl implements DictProvider {
 
             // 处理行业字典
             if (resultBody.getIndustry() != null) {
-                groups.add(new DictGroup("industryList",
+                groups.add(new DictGroup(DictGroupKey.INDUSTRY.key(),
                         resultBody.getIndustry().stream()
                                 .map(item -> new DictItem(item.getId(), item.getValue()))
                                 .toList()));

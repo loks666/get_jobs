@@ -99,11 +99,37 @@ public class LiepinDictProviderImpl implements DictProvider {
             }
 
             if (data.getIndustries() != null) {
-                groups.add(new DictGroup("industryList",
+                groups.add(new DictGroup(DictGroupKey.INDUSTRY.key(),
                         data.getIndustries().stream()
                                 .map(item -> new DictItem(item.getCode(), item.getName()))
                                 .collect(Collectors.toList())));
             }
+
+
+            // 处理工作性质字典
+            if (data.getJobKinds() != null) {
+                groups.add(new DictGroup(DictGroupKey.JOB_TYPE.key(),
+                        data.getJobKinds().stream()
+                                .map(item -> new DictItem(item.getCode(), item.getName()))
+                                .toList()));
+            }
+
+            // 融资阶段
+            if (data.getFinanceStages() != null) {
+                groups.add(new DictGroup(DictGroupKey.STAGE.key(),
+                        data.getFinanceStages().stream()
+                                .map(item -> new DictItem(String.valueOf(item.getCode()), item.getName()))
+                                .collect(Collectors.toList())));
+            }
+
+            // 招聘者活跃度
+            if (data.getPubTimes() != null) {
+                groups.add(new DictGroup(DictGroupKey.PUBTIMES.key(),
+                        data.getPubTimes().stream()
+                                .map(item -> new DictItem(String.valueOf(item.getCode()), item.getName()))
+                                .collect(Collectors.toList())));
+            }
+
 
             log.info("成功从配置中解析出{}个猎聘字典组", groups.size());
 

@@ -1,7 +1,8 @@
-// 猎聘配置表单管理类
+// liepin配置表单管理类
 class LiepinConfigForm {
     constructor() {
         this.config = {};
+        this.isRunning = false;
         this.taskStates = {
             loginTaskId: null,
             collectTaskId: null,
@@ -27,7 +28,6 @@ class LiepinConfigForm {
     bindEvents() {
         document.getElementById('liepinSaveConfigBtn')?.addEventListener('click', () => this.handleSaveConfig());
         document.getElementById('liepinBackupDataBtn')?.addEventListener('click', () => this.handleBackupData());
-
         document.getElementById('liepinLoginBtn')?.addEventListener('click', () => this.handleLogin());
         document.getElementById('liepinCollectBtn')?.addEventListener('click', () => this.handleCollect());
         document.getElementById('liepinFilterBtn')?.addEventListener('click', () => this.handleFilter());
@@ -39,115 +39,118 @@ class LiepinConfigForm {
 
     bindAutoSave() {
         const formElements = document.querySelectorAll('#liepin-config-pane input, #liepin-config-pane select, #liepin-config-pane textarea');
-        formElements.forEach(el => el.addEventListener('change', () => this.saveConfig()));
-    }
-
-    getMultiValues(selectId) {
-        const el = document.getElementById(selectId);
-        if (!el) return '';
-        return Array.from(el.selectedOptions).map(o => o.value).filter(Boolean).join(',');
-    }
-
-    getCurrentConfig() {
-        return {
-            keywords: document.getElementById('liepinKeywordsField')?.value || '',
-            cityCode: this.getMultiValues('liepinCityCodeField'),
-        };
+        formElements.forEach(element => {
+            element.addEventListener('change', () => {
+                this.saveConfig();
+            });
+        });
     }
 
     saveConfig() {
-        this.config = this.getCurrentConfig();
+        const getMultiSelectValues = (selectId) => {
+            const el = document.getElementById(selectId);
+            if (!el) return '';
+            return Array.from(el.selectedOptions).map(o => o.value).filter(Boolean).join(',');
+        };
+
+        this.config = {
+            keywords: document.getElementById('liepinKeywordsField')?.value || '',
+            cityCode: getMultiSelectValues('liepinCityCodeField'),
+            experience: document.getElementById('liepinExperienceComboBox')?.value || '',
+            jobType: document.getElementById('liepinJobTypeComboBox')?.value || '',
+            salary: document.getElementById('liepinSalaryComboBox')?.value || '',
+            degree: document.getElementById('liepinDegreeComboBox')?.value || '',
+            scale: document.getElementById('liepinScaleComboBox')?.value || '',
+            companyNature: document.getElementById('liepinCompanyNatureComboBox')?.value || '',
+            recruiterActivity: document.getElementById('liepinRecruiterActivityComboBox')?.value || '',
+            blacklistFilter: document.getElementById('liepinBlacklistFilterCheckBox')?.checked || false,
+            blacklistKeywords: document.getElementById('liepinBlacklistKeywordsTextArea')?.value || '',
+            enableAIJobMatch: document.getElementById('liepinEnableAIJobMatchCheckBox')?.checked || false
+        };
+
         localStorage.setItem('liepinConfig', JSON.stringify(this.config));
+
         try {
             fetch('/api/config/liepin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this.config)
             }).then(() => {}).catch(() => {});
-        } catch (_) {}
+        } catch (e) {}
     }
 
     async loadSavedConfig() {
         try {
             const res = await fetch('/api/config/liepin');
             if (!res.ok) throw new Error('HTTP ' + res.status);
-            const ct = res.headers.get('content-type') || '';
-            let data;
-            if (ct.includes('application/json')) data = await res.json();
-            else {
-                const text = await res.text();
-                const snippet = (text || '').slice(0, 80);
-                throw new Error('返回非JSON：' + snippet);
-            }
+            const data = await res.json();
             if (data && typeof data === 'object' && Object.keys(data).length) {
                 this.config = data;
                 this.populateForm();
                 localStorage.setItem('liepinConfig', JSON.stringify(this.config));
                 return;
             }
-            const saved = localStorage.getItem('liepinConfig');
-            if (saved) {
-                try {
-                    this.config = JSON.parse(saved);
-                    this.populateForm();
-                } catch (e) {
-                    localStorage.removeItem('liepinConfig');
-                }
-            }
-        } catch (_) {
-            const saved = localStorage.getItem('liepinConfig');
-            if (saved) {
-                try {
-                    this.config = JSON.parse(saved);
-                    this.populateForm();
-                } catch (e) {
-                    localStorage.removeItem('liepinConfig');
-                }
+        } catch (err) {
+            console.warn('Liepin backend config read failed: ' + (err?.message || 'Unknown error'));
+        }
+
+        const savedConfig = localStorage.getItem('liepinConfig');
+        if (savedConfig) {
+            try {
+                this.config = JSON.parse(savedConfig);
+                this.populateForm();
+            } catch (error) {
+                console.warn('Liepin local config corrupted, cleared: ' + error.message);
+                localStorage.removeItem('liepinConfig');
             }
         }
     }
 
-    getFieldId(key) {
-        const map = {
-            keywords: 'liepinKeywordsField',
-            cityCode: 'liepinCityCodeField',
-        };
-        return map[key] || key;
-    }
-
     populateForm() {
         Object.keys(this.config).forEach(key => {
-            const el = document.getElementById(this.getFieldId(key));
-            if (!el) return;
-            if (el.type === 'checkbox') el.checked = !!this.config[key];
-            else {
-                let value = this.config[key];
-                if (Array.isArray(value)) value = value.join(',');
-                el.value = value || '';
+            const element = document.getElementById(this.getFieldId(key));
+            if (element) {
+                if (element.type === 'checkbox') {
+                    element.checked = this.config[key];
+                } else {
+                    let value = this.config[key];
+                    if (Array.isArray(value)) {
+                        value = value.join(',');
+                    }
+                    element.value = value || '';
+                }
             }
         });
 
         try {
-            let cityStr = '';
-            if (Array.isArray(this.config.cityCode)) cityStr = this.config.cityCode.join(',');
-            else cityStr = this.config.cityCode || '';
-            const codes = cityStr.split(',').map(s => s.trim()).filter(Boolean);
+            let cityCodeStr = Array.isArray(this.config.cityCode) ? this.config.cityCode.join(',') : (this.config.cityCode || '');
+            const codes = cityCodeStr.split(',').map(s => s.trim()).filter(Boolean);
             const citySelect = document.getElementById('liepinCityCodeField');
             if (citySelect && codes.length) {
-                Array.from(citySelect.options).forEach(opt => { opt.selected = codes.includes(opt.value); });
-                const list = document.getElementById('liepinCityDropdownList');
-                const btn = document.getElementById('liepinCityDropdownBtn');
-                const summary = document.getElementById('liepinCitySelectionSummary');
-                const set = new Set(codes);
-                if (list) list.querySelectorAll('input[type="checkbox"]').forEach(chk => chk.checked = set.has(chk.value));
-                if (btn && summary) {
-                    const values = Array.from(citySelect.selectedOptions).map(o => o.textContent || '').filter(Boolean);
-                    if (values.length === 0) { btn.textContent = '选择城市'; summary.textContent = '未选择'; }
-                    else if (values.length <= 2) { const text = values.join('、'); btn.textContent = text; summary.textContent = `已选 ${values.length} 项：${text}`; }
-                    else { btn.textContent = `已选 ${values.length} 项`; summary.textContent = `已选 ${values.length} 项`; }
-                }
+                Array.from(citySelect.options).forEach(opt => {
+                    opt.selected = codes.includes(opt.value);
+                });
+                this.updateCitySummary();
             }
         } catch (_) {}
+    }
+
+    getFieldId(key) {
+        const fieldMap = {
+            keywords: 'liepinKeywordsField',
+            cityCode: 'liepinCityCodeField',
+            experience: 'liepinExperienceComboBox',
+            jobType: 'liepinJobTypeComboBox',
+            salary: 'liepinSalaryComboBox',
+            degree: 'liepinDegreeComboBox',
+            scale: 'liepinScaleComboBox',
+            companyNature: 'liepinCompanyNatureComboBox',
+            recruiterActivity: 'liepinRecruiterActivityComboBox',
+            blacklistFilter: 'liepinBlacklistFilterCheckBox',
+            blacklistKeywords: 'liepinBlacklistKeywordsTextArea',
+            enableAIJobMatch: 'liepinEnableAIJobMatchCheckBox'
+        };
+        return fieldMap[key] || `liepin${key.charAt(0).toUpperCase() + key.slice(1)}Field`;
     }
 
     async loadDataSequentially() {
@@ -155,43 +158,47 @@ class LiepinConfigForm {
             await this.loadLiepinDicts();
             await this.waitForDOMReady();
             await this.loadSavedConfig();
-        } catch (e) {
-            console.warn('猎聘数据加载失败:', e?.message || e);
+        } catch (error) {
+            console.error('Liepin data loading failed:', error);
         }
     }
 
     async waitForDOMReady() {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve();
-            }, 100);
-        });
+        return new Promise(resolve => setTimeout(resolve, 100));
     }
 
     async loadLiepinDicts() {
-        const res = await fetch('/dicts/LIEPIN');
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        if (!data || !Array.isArray(data.groups)) return;
-        const groupMap = new Map();
-        data.groups.forEach(g => groupMap.set(g.key, Array.isArray(g.items) ? g.items : []));
-        this.renderCitySelection(groupMap.get('cityList') || []);
+        try {
+            const res = await fetch('/dicts/LIEPIN');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (!data || !Array.isArray(data.groups)) {
+                console.warn('Liepin dict data structure incorrect:', data);
+                return;
+            }
+
+            const groupMap = new Map();
+            data.groups.forEach(g => groupMap.set(g.key, g.items || []));
+
+            this.renderCitySelection(groupMap.get('cityList') || []);
+            this.fillSelect('liepinExperienceComboBox', groupMap.get('experienceList'));
+            this.fillSelect('liepinJobTypeComboBox', groupMap.get('jobTypeList'));
+            this.fillSelect('liepinSalaryComboBox', groupMap.get('salaryList'));
+            this.fillSelect('liepinDegreeComboBox', groupMap.get('degreeList'));
+            this.fillSelect('liepinScaleComboBox', groupMap.get('scaleList'));
+            this.fillSelect('liepinCompanyNatureComboBox', groupMap.get('companyNatureList'));
+            this.fillSelect('liepinRecruiterActivityComboBox', groupMap.get('recruiterActivityList'));
+
+        } catch (e) {
+            console.warn('Loading Liepin dicts failed:', e?.message || e);
+            throw e;
+        }
     }
 
     renderCitySelection(cityItems) {
         const citySelect = document.getElementById('liepinCityCodeField');
         const citySearch = document.getElementById('liepinCitySearchField');
         const cityListContainer = document.getElementById('liepinCityDropdownList');
-        const cityDropdownBtn = document.getElementById('liepinCityDropdownBtn');
-        const citySummary = document.getElementById('liepinCitySelectionSummary');
-
-        const updateCitySummary = () => {
-            if (!citySelect || !cityDropdownBtn || !citySummary) return;
-            const values = Array.from(citySelect.selectedOptions).map(o => o.textContent);
-            if (values.length === 0) { cityDropdownBtn.textContent = '选择城市'; citySummary.textContent = '未选择'; }
-            else if (values.length <= 2) { const text = values.join('、'); cityDropdownBtn.textContent = text; citySummary.textContent = `已选 ${values.length} 项：${text}`; }
-            else { cityDropdownBtn.textContent = `已选 ${values.length} 项`; citySummary.textContent = `已选 ${values.length} 项`; }
-        };
 
         const renderCityOptions = (list) => {
             if (!citySelect) return;
@@ -199,13 +206,13 @@ class LiepinConfigForm {
             citySelect.innerHTML = '';
             list.forEach(it => {
                 const value = it.code ?? '';
-                const label = `${it.name ?? ''}${it.code ? ' (' + it.code + ')' : ''}`;
                 const opt = document.createElement('option');
                 opt.value = value;
-                opt.textContent = label;
+                opt.textContent = `${it.name ?? ''}${it.code ? ' (' + it.code + ')' : ''}`;
                 if (selected.has(value)) opt.selected = true;
                 citySelect.appendChild(opt);
             });
+
             if (cityListContainer) {
                 cityListContainer.innerHTML = '';
                 list.forEach(it => {
@@ -214,30 +221,58 @@ class LiepinConfigForm {
                     const item = document.createElement('div');
                     item.className = 'form-check mb-1';
                     const id = `liepin_city_chk_${value}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
-                    item.innerHTML = `
-                        <input class="form-check-input" type="checkbox" value="${value}" id="${id}" ${selected.has(value) ? 'checked' : ''}>
-                        <label class="form-check-label small" for="${id}">${label}</label>
-                    `;
-                    const checkbox = item.querySelector('input[type="checkbox"]');
-                    checkbox.addEventListener('change', () => {
-                        const option = Array.from(citySelect.options).find(o => o.value === value);
-                        if (option) option.selected = checkbox.checked;
-                        updateCitySummary();
+                    item.innerHTML = `<input class="form-check-input" type="checkbox" value="${value}" id="${id}" ${selected.has(value) ? 'checked' : ''}><label class="form-check-label small" for="${id}">${label}</label>`;
+                    item.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
+                        const option = Array.from(citySelect.options).find(o => o.value === e.target.value);
+                        if (option) option.selected = e.target.checked;
+                        this.updateCitySummary();
                     });
                     cityListContainer.appendChild(item);
                 });
             }
-            updateCitySummary();
+            this.updateCitySummary();
         };
 
         renderCityOptions(cityItems);
-        if (citySearch) {
-            citySearch.addEventListener('input', () => {
-                const kw = (citySearch.value || '').trim().toLowerCase();
-                if (!kw) { renderCityOptions(cityItems); return; }
-                const filtered = cityItems.filter(it => String(it.name || '').toLowerCase().includes(kw) || String(it.code || '').toLowerCase().includes(kw));
-                renderCityOptions(filtered);
-            });
+        citySearch?.addEventListener('input', () => {
+            const kw = citySearch.value.trim().toLowerCase();
+            const filtered = kw ? cityItems.filter(it => String(it.name || '').toLowerCase().includes(kw) || String(it.code || '').toLowerCase().includes(kw)) : cityItems;
+            renderCityOptions(filtered);
+        });
+    }
+
+    fillSelect(selectId, items) {
+        if (!Array.isArray(items) || items.length === 0) return;
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        const first = sel.querySelector('option');
+        sel.innerHTML = '';
+        if (first && first.value === '') sel.appendChild(first);
+        items.forEach(it => {
+            const opt = document.createElement('option');
+            opt.value = it.code ?? it.name ?? '';
+            opt.textContent = it.name ?? String(it.code ?? '');
+            sel.appendChild(opt);
+        });
+    }
+
+    updateCitySummary() {
+        const citySelect = document.getElementById('liepinCityCodeField');
+        const cityDropdownBtn = document.getElementById('liepinCityDropdownBtn');
+        const citySummary = document.getElementById('liepinCitySelectionSummary');
+        if (!citySelect || !cityDropdownBtn || !citySummary) return;
+
+        const values = Array.from(citySelect.selectedOptions).map(o => o.textContent);
+        if (values.length === 0) {
+            cityDropdownBtn.textContent = '选择城市';
+            citySummary.textContent = '未选择';
+        } else if (values.length <= 2) {
+            const text = values.join('、');
+            cityDropdownBtn.textContent = text;
+            citySummary.textContent = `已选 ${values.length} 项：${text}`;
+        } else {
+            cityDropdownBtn.textContent = `已选 ${values.length} 项`;
+            citySummary.textContent = `已选 ${values.length} 项`;
         }
     }
 
@@ -247,20 +282,32 @@ class LiepinConfigForm {
     }
 
     handleBackupData() {
-        const btn = document.getElementById('liepinBackupDataBtn');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>备份中...'; }
-        fetch('/api/backup/export', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-            .then(r => r.json())
-            .then(d => { if (d.success) this.showToast('数据库备份成功', 'success'); else this.showToast('数据库备份失败: ' + d.message, 'danger'); })
-            .catch(e => { this.showToast('数据库备份失败: ' + e.message, 'danger'); })
-            .finally(() => { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-database me-2"></i>数据库备份'; } });
+        const backupBtn = document.getElementById('liepinBackupDataBtn');
+        if (backupBtn) {
+            backupBtn.disabled = true;
+            backupBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>备份中...';
+        }
+        fetch('/api/backup/export', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                this.showToast(data.success ? '数据库备份成功' : '数据库备份失败: ' + data.message, data.success ? 'success' : 'danger');
+            })
+            .catch(error => this.showToast('数据库备份失败: ' + error.message, 'danger'))
+            .finally(() => {
+                if (backupBtn) {
+                    backupBtn.disabled = false;
+                    backupBtn.innerHTML = '<i class="bi bi-database me-2"></i>数据库备份';
+                }
+            });
     }
 
     async handleLogin() {
         this.updateButtonState('liepinLoginBtn', 'liepinLoginStatus', '执行中...', true);
         try {
             const response = await fetch('/api/liepin/task/login', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.getCurrentConfig())
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.getCurrentConfig())
             });
             const result = await response.json();
             if (result.success) {
@@ -274,18 +321,23 @@ class LiepinConfigForm {
                 this.updateButtonState('liepinLoginBtn', 'liepinLoginStatus', '登录失败', false);
                 this.showToast(result.message || '登录失败', 'danger');
             }
-        } catch (e) {
+        } catch (error) {
             this.updateButtonState('liepinLoginBtn', 'liepinLoginStatus', '登录失败', false);
-            this.showToast('登录接口调用失败: ' + e.message, 'danger');
+            this.showToast('登录接口调用失败: ' + error.message, 'danger');
         }
     }
 
     async handleCollect() {
-        if (!this.taskStates.loginTaskId) { this.showAlertModal('操作提示', '请先完成登录步骤'); return; }
+        if (!this.taskStates.loginTaskId) {
+            this.showAlertModal('操作提示', '请先完成登录步骤');
+            return;
+        }
         this.updateButtonState('liepinCollectBtn', 'liepinCollectStatus', '采集中...', true);
         try {
             const response = await fetch('/api/liepin/task/collect', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.getCurrentConfig())
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.getCurrentConfig())
             });
             const result = await response.json();
             if (result.success) {
@@ -296,18 +348,25 @@ class LiepinConfigForm {
                 this.updateButtonState('liepinCollectBtn', 'liepinCollectStatus', '采集失败', false);
                 this.showToast(result.message || '采集失败', 'danger');
             }
-        } catch (e) {
+        } catch (error) {
             this.updateButtonState('liepinCollectBtn', 'liepinCollectStatus', '采集失败', false);
-            this.showToast('采集接口调用失败: ' + e.message, 'danger');
+            this.showToast('采集接口调用失败: ' + error.message, 'danger');
         }
     }
 
     async handleFilter() {
-        if (!this.taskStates.loginTaskId) { this.showAlertModal('操作提示', '请先完成登录步骤'); return; }
+        if (!this.taskStates.loginTaskId) {
+            this.showAlertModal('操作提示', '请先完成登录步骤');
+            return;
+        }
         this.updateButtonState('liepinFilterBtn', 'liepinFilterStatus', '过滤中...', true);
         try {
             const request = { collectTaskId: this.taskStates.collectTaskId, config: this.getCurrentConfig() };
-            const response = await fetch('/api/liepin/task/filter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
+            const response = await fetch('/api/liepin/task/filter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request)
+            });
             const result = await response.json();
             if (result.success) {
                 this.taskStates.filterTaskId = result.taskId;
@@ -317,22 +376,29 @@ class LiepinConfigForm {
                 this.updateButtonState('liepinFilterBtn', 'liepinFilterStatus', '过滤失败', false);
                 this.showToast(result.message || '过滤失败', 'danger');
             }
-        } catch (e) {
+        } catch (error) {
             this.updateButtonState('liepinFilterBtn', 'liepinFilterStatus', '过滤失败', false);
-            this.showToast('过滤接口调用失败: ' + e.message, 'danger');
+            this.showToast('过滤接口调用失败: ' + error.message, 'danger');
         }
     }
 
-    async handleApply() {
-        if (!this.taskStates.loginTaskId) { this.showAlertModal('操作提示', '请先完成登录步骤'); return; }
-        this.showConfirmModal('投递确认', '是否执行实际投递？\n点击"确定"将真实投递简历\n点击"取消"将仅模拟投递', () => this.executeApply(true), () => this.executeApply(false));
+    handleApply() {
+        if (!this.taskStates.loginTaskId) {
+            this.showAlertModal('操作提示', '请先完成登录步骤');
+            return;
+        }
+        this.showConfirmModal('投递确认', '是否执行实际投递？', () => this.executeApply(true), () => this.executeApply(false));
     }
 
     async executeApply(enableActualDelivery) {
         this.updateButtonState('liepinApplyBtn', 'liepinApplyStatus', '投递中...', true);
         try {
             const request = { filterTaskId: this.taskStates.filterTaskId, config: this.getCurrentConfig(), enableActualDelivery };
-            const response = await fetch('/api/liepin/task/deliver', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
+            const response = await fetch('/api/liepin/task/deliver', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request)
+            });
             const result = await response.json();
             if (result.success) {
                 this.taskStates.applyTaskId = result.taskId;
@@ -343,10 +409,39 @@ class LiepinConfigForm {
                 this.updateButtonState('liepinApplyBtn', 'liepinApplyStatus', '投递失败', false);
                 this.showToast(result.message || '投递失败', 'danger');
             }
-        } catch (e) {
+        } catch (error) {
             this.updateButtonState('liepinApplyBtn', 'liepinApplyStatus', '投递失败', false);
-            this.showToast('投递接口调用失败: ' + e.message, 'danger');
+            this.showToast('投递接口调用失败: ' + error.message, 'danger');
         }
+    }
+
+    getCurrentConfig() {
+        const getMultiSelectValues = (selectId) => Array.from(document.getElementById(selectId)?.selectedOptions || []).map(o => o.value).filter(Boolean).join(',');
+        return {
+            keywords: document.getElementById('liepinKeywordsField')?.value || '',
+            cityCode: getMultiSelectValues('liepinCityCodeField'),
+            experience: document.getElementById('liepinExperienceComboBox')?.value || '',
+            jobType: document.getElementById('liepinJobTypeComboBox')?.value || '',
+            salary: document.getElementById('liepinSalaryComboBox')?.value || '',
+            degree: document.getElementById('liepinDegreeComboBox')?.value || '',
+            scale: document.getElementById('liepinScaleComboBox')?.value || '',
+            companyNature: document.getElementById('liepinCompanyNatureComboBox')?.value || '',
+            recruiterActivity: document.getElementById('liepinRecruiterActivityComboBox')?.value || '',
+            blacklistFilter: document.getElementById('liepinBlacklistFilterCheckBox')?.checked || false,
+            blacklistKeywords: document.getElementById('liepinBlacklistKeywordsTextArea')?.value || '',
+            enableAIJobMatch: document.getElementById('liepinEnableAIJobMatchCheckBox')?.checked || false
+        };
+    }
+
+    resetTaskFlow() {
+        this.showConfirmModal('重置确认', '确定要重置任务流程吗？', () => {
+            this.taskStates = { loginTaskId: null, collectTaskId: null, filterTaskId: null, applyTaskId: null };
+            this.updateButtonState('liepinLoginBtn', 'liepinLoginStatus', '待执行', false);
+            this.updateButtonState('liepinCollectBtn', 'liepinCollectStatus', '等待登录', true);
+            this.updateButtonState('liepinFilterBtn', 'liepinFilterStatus', '等待登录', true);
+            this.updateButtonState('liepinApplyBtn', 'liepinApplyStatus', '等待登录', true);
+            this.showToast('任务流程已重置', 'info');
+        });
     }
 
     updateButtonState(buttonId, statusId, statusText, isLoading) {
@@ -355,7 +450,7 @@ class LiepinConfigForm {
         if (button) button.disabled = isLoading;
         if (status) {
             status.textContent = statusText;
-            status.className = isLoading ? 'badge bg-warning text-dark ms-2' : 'badge bg-success text-white ms-2';
+            status.className = `badge ms-2 ${isLoading ? 'bg-warning text-dark' : 'bg-success text-white'}`;
         }
     }
 
@@ -363,57 +458,43 @@ class LiepinConfigForm {
         const button = document.getElementById(buttonId);
         const status = document.getElementById(statusId);
         if (button) button.disabled = false;
-        if (status) { status.textContent = statusText; status.className = 'badge bg-info text-white ms-2'; }
-    }
-
-    resetTaskFlow() {
-        this.showConfirmModal('重置确认', '确定要重置任务流程吗？这将清除所有任务状态。', () => {
-            this.taskStates = { loginTaskId: null, collectTaskId: null, filterTaskId: null, applyTaskId: null };
-            this.updateButtonState('liepinLoginBtn', 'liepinLoginStatus', '待执行', false);
-            this.updateButtonState('liepinCollectBtn', 'liepinCollectStatus', '等待登录', true);
-            this.updateButtonState('liepinFilterBtn', 'liepinFilterStatus', '等待登录', true);
-            this.updateButtonState('liepinApplyBtn', 'liepinApplyStatus', '等待登录', true);
-            const cb = id => { const el = document.getElementById(id); if (el) el.disabled = true; };
-            cb('liepinCollectBtn'); cb('liepinFilterBtn'); cb('liepinApplyBtn');
-            this.showToast('任务流程已重置', 'info');
-        });
+        if (status) {
+            status.textContent = statusText;
+            status.className = 'badge bg-info text-white ms-2';
+        }
     }
 
     showToast(message, variant = 'success') {
-        try {
-            const toastEl = document.getElementById('globalToast');
-            const bodyEl = document.getElementById('globalToastBody');
-            if (!toastEl || !bodyEl) return;
-            bodyEl.textContent = message || '操作成功';
-            const variants = ['success', 'danger', 'warning', 'info', 'primary', 'secondary', 'dark'];
-            variants.forEach(v => toastEl.classList.remove(`text-bg-${v}`));
-            toastEl.classList.add(`text-bg-${variant}`);
-            const toast = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 2000 });
-            toast.show();
-        } catch (_) {}
+        const toastEl = document.getElementById('globalToast');
+        const bodyEl = document.getElementById('globalToastBody');
+        if (!toastEl || !bodyEl) return;
+        bodyEl.textContent = message;
+        toastEl.className = `toast align-items-center text-bg-${variant} border-0`;
+        bootstrap.Toast.getOrCreateInstance(toastEl).show();
     }
 
     showConfirmModal(title, message, onConfirm, onCancel) {
-        const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        const modalEl = document.getElementById('confirmModal');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         document.getElementById('confirmModalLabel').textContent = title;
         document.getElementById('confirmModalBody').textContent = message;
         const okBtn = document.getElementById('confirmModalOk');
         const newOkBtn = okBtn.cloneNode(true);
         okBtn.parentNode.replaceChild(newOkBtn, okBtn);
-        newOkBtn.addEventListener('click', () => { modal.hide(); if (onConfirm) onConfirm(); });
-        modal._element.addEventListener('hidden.bs.modal', () => { if (onCancel) onCancel(); }, { once: true });
+        newOkBtn.addEventListener('click', () => {
+            modal.hide();
+            onConfirm?.();
+        }, { once: true });
+        modalEl.addEventListener('hidden.bs.modal', () => onCancel?.(), { once: true });
         modal.show();
     }
 
     showAlertModal(title, message) {
-        const modal = new bootstrap.Modal(document.getElementById('alertModal'));
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('alertModal'));
         document.getElementById('alertModalLabel').textContent = title;
         document.getElementById('alertModalBody').textContent = message;
         modal.show();
     }
 }
 
-if (!window.Views) {
-    window.Views = {};
-}
-window.Views.LiepinConfigForm = LiepinConfigForm;
+window.LiepinConfigForm = LiepinConfigForm;
