@@ -360,6 +360,15 @@ cd get_jobs
 
 ---
 
+### 🐦‍🔥 一点碎碎念
+- 此项目之初本是我自己用的工具，可不知不觉间，它已经有了茁壮的生命力和影响力。
+- 曾经我也希望我自己的项目能够被更多人使用，可是现在
+- 我更希望，愿终有一天，不会有任何人在使用本项目
+- 愿你我有朝一日，都可以不用再为生计奔波，去追求自己真正热爱的事物
+- 我也努力一点，希望你也可以努力一点，让这一天或许可以早点实现……
+
+---
+
 ### ☕️ Github Star历史
 
 [![Stargazers over time](https://starchart.cc/loks666/get_jobs.svg?background=%23ffffff&axis=%23101010&line=%23e86161)](https://starchart.cc/loks666/get_jobs)
