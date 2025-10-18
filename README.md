@@ -8,22 +8,20 @@
 [![Forks](https://img.shields.io/github/forks/loks666/get_jobs?style=flat&label=%F0%9F%8F%85Forks&labelColor=800080&color=912CEE)](https://github.com/loks666/get_jobs/forks)
 
 </div>
+<div align="center">
 <h2 align="center">黑暗无论多么长，光明迟早总是会来的</h2>
+<p><strong>我知道你心中有煎熬，有焦虑，像一柄长剑悬在头顶，随时可能落下。</strong><br>
+
+长夜再长，也终见天光<br>
+再深的寒冬，也将逢迎春阳<br>
+请记得只要不放弃，天总会亮<br>
+<strong>黎明破晓之时，苦难都将化作勋章</strong></p>
+
 <p align="center">
   <a href="https://trendshift.io/repositories/9608">
     <img src="https://trendshift.io/api/badge/repositories/9608" alt="GitHub Trending">
   </a>
 </p>
-
-<div align="center">
-
-<p><strong>我知道你心中有煎熬，有焦虑，像一柄长剑悬在头顶，随时可能落下。</strong><br>
-
-长夜再长，终见天光。<br>
-再深的寒冬，也抵不过春天的脚步。<br>
-请记得只要不放弃，天总会亮。<br>
-黎明破晓之时，一切苦难都将化作勋章。</p>
-
 </div>
 
 - [如何使用本程序寻找程序兼职岗位?](doc/part_job.md)
@@ -307,6 +305,7 @@ cd get_jobs
 当你的 PR 被成功合并的那一刻，你会明白 —— 所有努力，所有坚持，他们都值得！
 
 待开发列表：
+
 - 51job修改为PlayRight支持
 - 清除所有关于Selenium的依赖
 
