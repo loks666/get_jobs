@@ -3,9 +3,9 @@ package getjobs.service;
 import getjobs.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -42,6 +42,7 @@ public class PlaywrightManager {
                         log.info("Playwright浏览器实例初始化成功");
                     } catch (Exception e) {
                         log.error("Playwright浏览器初始化失败", e);
+                        throw new RuntimeException("Playwright初始化失败", e);
                     }
                 }
             }
@@ -83,19 +84,20 @@ public class PlaywrightManager {
     }
 
     /**
+     * 检查Playwright是否已初始化
+     *
+     * @return 是否已初始化
+     */
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    /**
      * 确保Playwright已初始化
      */
     public void ensureInitialized() {
         if (!initialized) {
-            log.info("正在确保Playwright初始化...");
-            try {
-                PlaywrightUtil.init();
-                initialized = true;
-                log.info("Playwright浏览器实例初始化成功");
-            } catch (Exception e) {
-                log.error("Playwright浏览器初始化失败", e);
-                throw new RuntimeException("Playwright初始化失败", e);
-            }
+            initializePlaywright();
         }
     }
 }
