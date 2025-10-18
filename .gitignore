@@ -3,6 +3,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 config.yaml
+.git-rewrite
 ### IntelliJ IDEA ###
 *.iws
 *.iml
