@@ -11,6 +11,8 @@ config.yaml
 *.sh
 CLAUDE.md
 .claude
+nul
+
 ### Eclipse ###
 .apt_generated
 .classpath
