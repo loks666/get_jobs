@@ -125,14 +125,14 @@ cd get_jobs
       HOOK_URL=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your_key_here
       BASE_URL=https://api.openai.com
       API_KEY=sk-xxx
-      MODEL=gpt-4o-mini
+      MODEL=gpt-5-nano
       ```
     - `HOOK_URL`：企业微信机器人推送的链接
     - `BASE_URL`：直连或中转链接地址
     - `API_KEY`：调用的API KEY
     - `MODEL`：需要使用的模型名称
 
-  > 根据测试，boss直聘在每天所有的岗位投递结束后消耗的额度(gpt-4o-mini)大约在0.06美元(6美分)  
+  > 根据测试，boss直聘在每天所有的岗位投递结束后消耗的额度(gpt-5-nano)大约在0.06美元(6美分)  
   > 左右，代理除了在本项目中可用，也可使用客户端(https://github.com/knowlimit/ChatGPT-NextWeb)进行使用  
   > 在日常生活中使用，所以不会浪费，充值额度1刀起，随用随充  
   > 💥注意！AI代理地址:如云API:https://api.ruyun.fun/
@@ -250,6 +250,16 @@ cd get_jobs
 ---
 
 ## 📑 更新日志
+
+---
+
+* 2025-10-18 14:30:00
+    1. ✨ **内置1494+城市代码和2137+行业代码**：重构城市与行业代码加载方式，从硬编码改为JSON文件动态加载，支持全国所有地区。
+    2. 🗑️ **彻底移除chromedriver依赖**：从Git历史中完全删除chromedriver.exe，项目体积从200MB优化至49MB，减少75%空间占用。
+    3. 🔧 **修复企业微信推送功能**：优化Bot推送配置，支持从resources目录读取.env文件，简化配置流程。
+    4. 🧹 **代码优化与清理**：删除Bark推送冗余代码，移除硬编码的城市枚举，代码更简洁易维护。
+    5. 📋 **行业代码待完善**：city-industry-code.json已包含完整行业数据，后续将支持动态加载（择日更新）。
+    6. 🐛 **修复nul文件问题**：优化bat脚本，解决Windows下产生nul文件的问题。
 
 ---
 
