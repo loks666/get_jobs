@@ -145,7 +145,6 @@ public class BossConfig {
                     String code = codeObj != null ? codeObj.toString() : "";
                     cityCodeMap.put(name, code);
                 }
-                log.info("成功从JSON加载{}个城市代码", cityCodeMap.size());
             }
         } catch (IOException e) {
             log.error("加载城市代码失败: {}", e.getMessage(), e);
