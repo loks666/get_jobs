@@ -197,6 +197,11 @@ public class Boss {
                 if (blackCompanies.stream().anyMatch(bossCompany::contains)) continue;
                 String bossJobTitle = bossTitleInfo[1];
                 if (blackRecruiters.stream().anyMatch(bossJobTitle::contains)) continue;
+                //获取公司工作地址地址
+                String jobArea = safeText(detailBox, "p.job-address-desc");
+                if (!config.getJobAdds().stream().anyMatch(jobArea::contains)){
+                    continue;
+                }
 
                 // 创建Job对象
                 Job job = new Job();

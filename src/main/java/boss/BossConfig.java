@@ -110,6 +110,10 @@ public class BossConfig {
      * HR未上线状态
      */
     private List<String> deadStatus;
+    /**
+     * 期望工作区域
+     */
+    private List<String> jobAdds;
 
     /**
      * 城市代码映射缓存

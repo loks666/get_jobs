@@ -17,6 +17,7 @@ boss:
   enableAI: true # 开启AI检测与自动生成打招呼语
   sendImgResume: false # 是否发送图片简历
   deadStatus: [ "2周内活跃","本月活跃","2月内活跃","半年前活跃" ] # 过滤掉HR状态
+  jobAdds: [ "丰台" ] # 期望工作区域
 
 job51:
   jobArea: [ "上海" ]  #工作地区：目前只有【北京 成都 上海 广州 深圳】
