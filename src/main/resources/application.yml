@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: get_jobs
+  info:
+    app:
+      name: Get Jobs
+      version: 0.0.1-SNAPSHOT
+      description: Automated Job Application Platform
+  banner:
+    charset: UTF-8
+    location: classpath:banner.txt
+  datasource:
+    url: jdbc:sqlite::resource:db/config.db
+    driver-class-name: org.sqlite.JDBC
+  sql:
+    init:
+      mode: never  # 数据库文件已存在，不需要自动初始化
+  output:
+    ansi:
+      enabled: always
+
+# 服务器配置
+server:
+  port: 8888
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){magenta} %clr(%-5level){highlight} %clr(%logger{36}){cyan} %clr(-){faint} %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ./target/logs/job.${LOG_DATE}.log
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+  mapper-locations: classpath*:/mapper/**/*.xml
