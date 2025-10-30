@@ -1,3 +1,11 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Maven (keeping for reference)
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
