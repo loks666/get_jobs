@@ -1,12 +1,11 @@
 package com.getjobs.application.service;
 
-import com.getjobs.worker.boss.Boss;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,6 +25,7 @@ public class BossService {
     /**
      * 任务状态枚举
      */
+    @Getter
     public enum TaskStatus {
         RUNNING("运行中"),
         COMPLETED("已完成"),
@@ -37,10 +37,7 @@ public class BossService {
         TaskStatus(String description) {
             this.description = description;
         }
-        
-        public String getDescription() {
-            return description;
-        }
+
     }
     
     /**
