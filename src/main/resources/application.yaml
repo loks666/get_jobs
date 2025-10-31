@@ -1,6 +1,8 @@
 spring:
   application:
     name: get_jobs
+  profiles:
+    active: dev
   info:
     app:
       name: Get Jobs
@@ -10,8 +12,18 @@ spring:
     charset: UTF-8
     location: classpath:banner.txt
   datasource:
-    url: jdbc:sqlite::resource:db/get-jobs.db
+    url: jdbc:sqlite:./db/config.db
     driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
+      connection-test-query: SELECT 1
+
+    datasource-data:
+      url: jdbc:sqlite:./db/data.db
+      driver-class-name: org.sqlite.JDBC
+      hikari:
+        maximum-pool-size: 1
+        connection-test-query: SELECT 1
   sql:
     init:
       mode: never  # 数据库文件已存在，不需要自动初始化
@@ -36,7 +48,6 @@ logging:
     rollingpolicy:
       file-name-pattern: ./target/logs/get-jobs.%d{yyyy-MM-dd}.log
       max-history: 30
-
 
 mybatis-plus:
   configuration:

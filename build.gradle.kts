@@ -35,6 +35,9 @@ dependencies {
     implementation("com.microsoft.playwright:playwright:1.51.0")
     implementation("com.baomidou:mybatis-plus-boot-starter:3.5.6")
     implementation("org.xerial:sqlite-jdbc:3.45.1.0")
+    // 代码生成器（MyBatis-Plus Generator + Freemarker 模板）
+    implementation("com.baomidou:mybatis-plus-generator:3.5.6")
+    implementation("org.freemarker:freemarker:2.3.32")
     implementation("org.json:json:20231013")
     implementation("io.github.cdimascio:dotenv-java:2.2.0")
     implementation("jakarta.annotation:jakarta.annotation-api:2.1.1")
@@ -67,4 +70,13 @@ tasks.named<BootRun>("bootRun") {
     systemProperty("LOG_DATE", LocalDate.now().toString())
     // 可选：对齐端口
     // systemProperty("server.port", "8888")
+}
+// 注册代码生成任务：根据 SQLite 表结构生成 Entity/Mapper/Service/Controller
+tasks.register<JavaExec>("mpGenerate") {
+    group = "codegen"
+    description = "Generate MyBatis-Plus code from SQLite schema"
+    mainClass.set("com.getjobs.infra.db.config.MpGenerator")
+    classpath = sourceSets["main"].runtimeClasspath
+    // 允许通过 -Ddb.path=... 覆盖数据库路径
+    systemProperty("db.path", file("src/main/resources/db/get-jobs.db").absolutePath)
 }

@@ -1,4 +1,4 @@
-# 🏗️ 《com.getjobs.run.GetJobsApplication 系统概要设计文档（修订版）》
+# 🏗️ 《run.com.getjobs.api.GetJobsApplication 系统概要设计文档（修订版）》
 
 ---
 
@@ -6,7 +6,7 @@
 
 ### 1.1 背景与目标
 
-**com.getjobs.run.GetJobsApplication** 是一个基于 **Spring Boot + Next.js + Playwright** 的自动化智能求职系统，
+**run.com.getjobs.api.GetJobsApplication** 是一个基于 **Spring Boot + Next.js + Playwright** 的自动化智能求职系统，
 用于在多个招聘网站上自动执行岗位搜索、筛选、投递和状态跟踪。
 
 系统提供从「任务创建 → 平台投递 → 结果落库 → 状态回显」的完整闭环。

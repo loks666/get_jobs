@@ -1,4 +1,4 @@
-# com.getjobs.run.GetJobsApplication 改造任务清单（Task）
+# run.com.getjobs.api.GetJobsApplication 改造任务清单（Task）
 
 说明：依据当前代码仓库与《Dsign.md》设计，列出分阶段改造任务，并标记实现状态。
 

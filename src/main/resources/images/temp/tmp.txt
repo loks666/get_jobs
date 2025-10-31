@@ -1,9 +1,0 @@
-### 本项目黑名单：
-
-- QQ:813851861，昵称：the one day 马永豪，山东枣庄
-
-<div style="display: inline-block;">
-    <img src="src/main/resources/images/myh1.png" alt="myh1" width="200" >
-    <img src="src/main/resources/images/myh2.png" alt="myh2" width="200" >
-    <img src="src/main/resources/images/myh3.png" alt="myh3" width="350" >
-</div>

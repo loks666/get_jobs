@@ -1,4 +1,3 @@
-
 ${AnsiColor.BRIGHT_RED}   ______     __         __      __
 ${AnsiColor.BRIGHT_YELLOW}  / ____/__  / /_       / /___  / /_  _____
 ${AnsiColor.BRIGHT_GREEN} / / __/ _ \/ __/  __  / / __ \/ __ \/ ___/
