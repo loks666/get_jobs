@@ -1,4 +1,4 @@
-package com.getjobs;
+package com.getjobs.run;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,7 +14,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 public class GetJobsApplication {
-
     public static void main(String[] args) {
         SpringApplication.run(GetJobsApplication.class, args);
     }
