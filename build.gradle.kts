@@ -71,12 +71,3 @@ tasks.named<BootRun>("bootRun") {
     // 可选：对齐端口
     // systemProperty("server.port", "8888")
 }
-// 注册代码生成任务：根据 SQLite 表结构生成 Entity/Mapper/Service/Controller
-tasks.register<JavaExec>("mpGenerate") {
-    group = "codegen"
-    description = "Generate MyBatis-Plus code from SQLite schema"
-    mainClass.set("com.getjobs.infra.db.config.MpGenerator")
-    classpath = sourceSets["main"].runtimeClasspath
-    // 允许通过 -Ddb.path=... 覆盖数据库路径
-    systemProperty("db.path", file("src/main/resources/db/get-jobs.db").absolutePath)
-}
