@@ -15,9 +15,9 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <div className="main-wrapper">
+        <div className="flex min-h-screen">
           <Sidebar />
-          <main className="main-content">
+          <main className="flex-1 ml-64">
             {children}
           </main>
         </div>

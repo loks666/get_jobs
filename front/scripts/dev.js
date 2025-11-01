@@ -1,24 +1,12 @@
 #!/usr/bin/env node
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { spawn } = require('child_process');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// 从 server.config.js 读取配置并设置环境变量，然后启动 Next.js
 const config = require('../server.config.js');
+process.env.PORT = config.port || 3000;
 
-const PORT = config.port || 3000;
-
-console.log(`Starting Next.js on port ${PORT}...`);
-
-const child = spawn('next', ['dev', '-p', PORT.toString()], {
+// 直接执行 next dev
+require('child_process').spawn('next', ['dev'], {
   stdio: 'inherit',
-  shell: true
-});
-
-child.on('error', (error) => {
-  console.error(`Error: ${error.message}`);
-  process.exit(1);
-});
-
-child.on('exit', (code) => {
-  process.exit(code || 0);
+  shell: true,
+  env: process.env
 });
