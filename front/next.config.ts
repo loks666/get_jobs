@@ -10,11 +10,15 @@ const nextConfig: NextConfig = {
     APP_NAME: serverConfig.app.name,
     APP_VERSION: serverConfig.app.version,
   },
-  
-  // 生产环境配置
-  ...(process.env.NODE_ENV === 'production' && {
-    output: 'standalone',
-  }),
+
+  // 静态导出配置
+  output: 'export',
+  // 输出目录为dist
+  distDir: 'dist',
+  // 禁用图片优化（静态导出不支持）
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;

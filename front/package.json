@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node start-dev.mjs",
     "build": "next build",
+    "build:prod": "next build && node scripts/copy-dist.mjs",
     "start": "node start-prod.mjs",
     "lint": "eslint"
   },

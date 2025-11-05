@@ -12,6 +12,10 @@ target/
 !**/src/test/**/target/
 config.yaml
 .git-rewrite
+
+# Frontend build output
+src/main/resources/dist/
+
 ### IntelliJ IDEA ###
 *.iws
 *.iml

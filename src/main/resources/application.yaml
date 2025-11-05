@@ -33,7 +33,7 @@ spring:
 
 # 服务器配置
 server:
-  port: 8888
+  port: 8888  # 后端 API 固定端口
 
 # 日志配置
 logging:
@@ -41,13 +41,12 @@ logging:
     root: INFO
   pattern:
     console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){magenta} %clr(%-5level){highlight} %clr(%logger{36}){cyan} %clr(-){faint} %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
   file:
-    name: ./target/logs/get-jobs.log   # 当前日志文件，不要日期
+    name: ./target/logs/get-jobs.log
   logback:
     rollingpolicy:
-      file-name-pattern: ./target/logs/get-jobs.%d{yyyy-MM-dd}.log
       max-history: 30
+      max-file-size: 10MB
 
 mybatis-plus:
   configuration:

@@ -86,17 +86,14 @@ public class BossService {
     
     /**
      * 执行Boss的核心逻辑
-     * 将Boss.main()方法的逻辑封装为可调用的方法
+     * 将Boss类的逻辑封装为可调用的方法
+     *
+     * @deprecated 已被 BossJobService 替代，请使用 worker.service.BossJobService
      */
+    @Deprecated
     private void executeBossMainLogic() {
-        try {
-            // 这里调用Boss类的静态方法来执行核心逻辑
-            // 由于Boss.main()是静态方法，我们需要创建一个包装方法
-            com.getjobs.worker.boss.Boss.main(new String[]{});
-        } catch (Exception e) {
-            log.error("执行Boss核心逻辑时发生异常", e);
-            throw new RuntimeException("Boss任务执行失败: " + e.getMessage(), e);
-        }
+        throw new UnsupportedOperationException(
+            "Boss.main() 已被重构为非静态类。请使用 com.getjobs.worker.service.BossJobService 代替。");
     }
     
     /**

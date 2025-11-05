@@ -31,25 +31,26 @@ public class PlaywrightController {
         Map<String, Object> status = new HashMap<>();
         status.put("initialized", playwrightManager.isInitialized());
         status.put("cdpPort", playwrightManager.getCdpPort());
-        status.put("hasPage", playwrightManager.getPage() != null);
+        status.put("hasBossPage", playwrightManager.getBossPage() != null);
         status.put("hasBrowser", playwrightManager.getBrowser() != null);
+        status.put("bossLoggedIn", playwrightManager.isLoggedIn("boss"));
 
         return ResponseEntity.ok(status);
     }
 
     /**
-     * 测试导航功能
+     * 测试Boss导航功能
      */
     @GetMapping("/test-navigate")
     public ResponseEntity<Map<String, String>> testNavigate() {
         try {
-            playwrightManager.getPage().navigate("https://www.baidu.com");
-            String title = playwrightManager.getPage().title();
+            playwrightManager.getBossPage().navigate("https://www.zhipin.com");
+            String title = playwrightManager.getBossPage().title();
 
             Map<String, String> result = new HashMap<>();
             result.put("success", "true");
             result.put("title", title);
-            result.put("url", playwrightManager.getPage().url());
+            result.put("url", playwrightManager.getBossPage().url());
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {

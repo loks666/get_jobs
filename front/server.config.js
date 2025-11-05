@@ -24,10 +24,8 @@ module.exports = {
 
   // API 配置（如果需要在构建时使用）
   api: {
-    // 后端 API 地址
-    baseUrl: process.env.NODE_ENV === 'production'
-      ? 'http://localhost:8888'
-      : 'http://localhost:8888',
+    // 后端 API 地址固定在 8888 端口
+    baseUrl: 'http://localhost:8888',
   },
 
   // 其他自定义配置
