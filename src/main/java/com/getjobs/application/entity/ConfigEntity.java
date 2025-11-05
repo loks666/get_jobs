@@ -1,4 +1,4 @@
-package com.getjobs.application.domain.entity;
+package com.getjobs.application.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -9,11 +9,11 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * AI配置实体类
+ * 配置实体类
  */
 @Data
-@TableName("ai")
-public class AiEntity {
+@TableName("config")
+public class ConfigEntity {
 
     /**
      * 主键ID
@@ -22,16 +22,34 @@ public class AiEntity {
     private Long id;
 
     /**
-     * 技能介绍
+     * 配置键
      */
-    @TableField("introduce")
-    private String introduce;
+    @TableField("config_key")
+    private String configKey;
 
     /**
-     * AI提示词
+     * 配置值
      */
-    @TableField("prompt")
-    private String prompt;
+    @TableField("config_value")
+    private String configValue;
+
+    /**
+     * 配置类型
+     */
+    @TableField("config_type")
+    private String configType;
+
+    /**
+     * 分类
+     */
+    @TableField("category")
+    private String category;
+
+    /**
+     * 描述
+     */
+    @TableField("description")
+    private String description;
 
     /**
      * 创建时间

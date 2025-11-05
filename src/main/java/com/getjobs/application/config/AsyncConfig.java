@@ -1,4 +1,4 @@
-package com.getjobs.application.infra.config;
+package com.getjobs.application.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

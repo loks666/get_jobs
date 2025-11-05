@@ -1,6 +1,6 @@
-package com.getjobs.application.api;
+package com.getjobs.application.controller;
 
-import com.getjobs.application.domain.entity.AiEntity;
+import com.getjobs.application.entity.AiEntity;
 import com.getjobs.application.service.AiConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

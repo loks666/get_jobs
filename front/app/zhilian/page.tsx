@@ -252,7 +252,7 @@ export default function ZhilianPage() {
 
           {/* 图表分析 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 投递趋势 - 折线图 */}
+            {/* 投递趋势 - 柱状图 */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -265,14 +265,14 @@ export default function ZhilianPage() {
                 <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
                   <div className="text-center text-muted-foreground">
                     <BiBarChart className="text-5xl mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">折线图</p>
+                    <p className="text-sm">柱状图</p>
                     <p className="text-xs mt-1">显示每日投递趋势</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* 薪资分布 - 柱状图 */}
+            {/* 薪资分布 - 折线图 */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -285,7 +285,7 @@ export default function ZhilianPage() {
                 <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
                   <div className="text-center text-muted-foreground">
                     <BiBarChart className="text-5xl mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">柱状图</p>
+                    <p className="text-sm">折线图</p>
                     <p className="text-xs mt-1">显示薪资区间分布</p>
                   </div>
                 </div>
@@ -293,34 +293,14 @@ export default function ZhilianPage() {
             </Card>
           </div>
 
-          {/* 投递状态 - 饼状图 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <BiBarChart className="text-primary" />
-                投递状态分布
-              </CardTitle>
-              <CardDescription>各种投递状态的占比情况</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
-                <div className="text-center text-muted-foreground">
-                  <BiBarChart className="text-5xl mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">饼状图</p>
-                  <p className="text-xs mt-1">显示已投递、待回复、已拒绝等状态占比</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 投递岗位列表 */}
+          {/* 岗位数据列表 */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <BiUserCircle className="text-primary" />
-                投递岗位数据
+                岗位数据
               </CardTitle>
-              <CardDescription>最近投递的岗位详细信息</CardDescription>
+              <CardDescription>投递的岗位详细信息</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-lg border">
@@ -328,18 +308,19 @@ export default function ZhilianPage() {
                   <table className="w-full">
                     <thead className="bg-muted/50">
                       <tr className="border-b">
-                        <th className="px-4 py-3 text-left text-sm font-medium">岗位名称</th>
                         <th className="px-4 py-3 text-left text-sm font-medium">公司名称</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">薪资范围</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">投递时间</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">岗位名称</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">薪资</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">岗位要求</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">岗位链接</th>
                         <th className="px-4 py-3 text-left text-sm font-medium">状态</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                        <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                           <BiSearchAlt className="text-4xl mx-auto mb-2 opacity-30" />
-                          <p className="text-sm">暂无投递数据</p>
+                          <p className="text-sm">暂无岗位数据</p>
                           <p className="text-xs mt-1">开始投递后将显示岗位列表</p>
                         </td>
                       </tr>

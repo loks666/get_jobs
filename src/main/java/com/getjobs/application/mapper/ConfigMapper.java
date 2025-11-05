@@ -1,7 +1,7 @@
-package com.getjobs.application.infra.mapper;
+package com.getjobs.application.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.getjobs.application.domain.entity.ConfigEntity;
+import com.getjobs.application.entity.ConfigEntity;
 
 /**
  * 配置Mapper接口

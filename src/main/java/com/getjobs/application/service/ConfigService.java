@@ -1,8 +1,8 @@
 package com.getjobs.application.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.getjobs.application.domain.entity.ConfigEntity;
-import com.getjobs.application.infra.mapper.ConfigMapper;
+import com.getjobs.application.entity.ConfigEntity;
+import com.getjobs.application.mapper.ConfigMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

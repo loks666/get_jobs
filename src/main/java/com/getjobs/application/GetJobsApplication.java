@@ -16,7 +16,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(scanBasePackages = "com.getjobs")
 @EnableScheduling
 @EnableAsync
-@MapperScan("com.getjobs.application.infra.mapper")
+@MapperScan("com.getjobs.application.mapper")
 public class GetJobsApplication {
     public static void main(String[] args) {
         SpringApplication.run(GetJobsApplication.class, args);

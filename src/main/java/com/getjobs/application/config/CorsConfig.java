@@ -1,4 +1,4 @@
-package com.getjobs.application.infra.config;
+package com.getjobs.application.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

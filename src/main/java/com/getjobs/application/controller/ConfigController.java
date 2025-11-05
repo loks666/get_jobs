@@ -1,4 +1,4 @@
-package com.getjobs.application.api;
+package com.getjobs.application.controller;
 
 import com.getjobs.application.service.ConfigService;
 import org.slf4j.Logger;

@@ -1,4 +1,4 @@
-package com.getjobs.application.api;
+package com.getjobs.application.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;

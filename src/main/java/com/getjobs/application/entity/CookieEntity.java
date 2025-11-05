@@ -1,4 +1,4 @@
-package com.getjobs.application.domain.entity;
+package com.getjobs.application.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -9,11 +9,11 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 配置实体类
+ * Cookie实体类
  */
 @Data
-@TableName("config")
-public class ConfigEntity {
+@TableName("cookie")
+public class CookieEntity {
 
     /**
      * 主键ID
@@ -22,34 +22,22 @@ public class ConfigEntity {
     private Long id;
 
     /**
-     * 配置键
+     * 平台名称（boss/zhilian/job51/liepin）
      */
-    @TableField("config_key")
-    private String configKey;
+    @TableField("platform")
+    private String platform;
 
     /**
-     * 配置值
+     * Cookie值
      */
-    @TableField("config_value")
-    private String configValue;
+    @TableField("cookie_value")
+    private String cookieValue;
 
     /**
-     * 配置类型
+     * 备注
      */
-    @TableField("config_type")
-    private String configType;
-
-    /**
-     * 分类
-     */
-    @TableField("category")
-    private String category;
-
-    /**
-     * 描述
-     */
-    @TableField("description")
-    private String description;
+    @TableField("remark")
+    private String remark;
 
     /**
      * 创建时间
