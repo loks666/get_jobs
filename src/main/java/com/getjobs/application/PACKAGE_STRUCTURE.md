@@ -33,7 +33,15 @@ com.getjobs
 │       ├── AsyncConfig.java      # 异步配置
 │       └── CorsConfig.java       # 跨域配置
 │
-└── worker/                         # Worker层（待重构）
+└── worker/                         # Worker层
+    ├── manager/                    # 管理器层
+    │   ├── PlaywrightManager.java  # Playwright实例管理器（Spring Bean）
+    │   └── README.md               # 使用文档
+    │
+    ├── boss/                       # Boss直聘相关
+    ├── liepin/                     # 猎聘相关
+    ├── ai/                         # AI相关
+    └── utils/                      # 工具类
 ```
 
 ## 旧包结构 (已删除)
@@ -70,6 +78,49 @@ com.getjobs
 - ✅ 符合标准的 Spring Boot 项目结构
 - ✅ 减少嵌套层级，提高可读性
 - ✅ 主入口位于顶层包，便于后续模块扩展（如worker包的重构）
+
+## Worker层重构（新增）
+
+### 1. PlaywrightManager
+- **位置**：`com.getjobs.worker.manager.PlaywrightManager`
+- **类型**：Spring管理的单例Bean（@Component）
+- **功能**：
+  - 在应用启动时自动初始化Playwright实例（@PostConstruct）
+  - 在应用关闭时自动释放资源（@PreDestroy）
+  - 自动检测屏幕尺寸并适配浏览器视口
+  - 提供桌面和移动设备浏览器实例
+  - 支持依赖注入到任何Spring Bean
+
+### 2. 主要特性
+- ✅ **自动启动**：无需手动调用init()，Spring Boot启动时自动初始化
+- ✅ **自适应屏幕**：自动检测系统屏幕尺寸（如1920x1080）并适配
+- ✅ **资源管理**：应用关闭时自动释放所有Playwright资源
+- ✅ **依赖注入**：可在Service、Controller等任何地方注入使用
+- ✅ **双模式支持**：同时支持桌面和移动设备浏览器
+
+### 3. 使用示例
+```java
+@Service
+public class JobScraperService {
+    private final PlaywrightManager playwrightManager;
+
+    public JobScraperService(PlaywrightManager playwrightManager) {
+        this.playwrightManager = playwrightManager;
+    }
+
+    public void scrapeJobs() {
+        Page page = playwrightManager.getDesktopPage();
+        page.navigate("https://www.zhipin.com");
+        // 无需手动关闭，Spring会自动管理
+    }
+}
+```
+
+### 4. API测试接口
+- `GET /api/playwright/status` - 查看Playwright状态
+- `GET /api/playwright/test-navigate` - 测试导航功能
+
+详细文档：`src/main/java/com/getjobs/worker/manager/README.md`
 
 ## 编译验证
 
