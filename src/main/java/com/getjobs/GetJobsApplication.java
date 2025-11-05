@@ -1,4 +1,4 @@
-package com.getjobs.application;
+package com.getjobs;
 
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
