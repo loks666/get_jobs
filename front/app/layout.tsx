@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "./components/Sidebar";
+import ContentArea from "./components/ContentArea";
 
 export const metadata: Metadata = {
   title: "智能求职助手 - 配置管理中心",
@@ -17,9 +18,9 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <div className="flex min-h-screen">
           <Sidebar />
-          <main className="flex-1 ml-64">
+          <ContentArea>
             {children}
-          </main>
+          </ContentArea>
         </div>
       </body>
     </html>

@@ -58,3 +58,15 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* 主题柔和背景辅助类：让右侧内容区与组件更自然融合 */
+.accent-teal { --accent-rgb: 20 184 166; } /* teal-500 */
+.accent-orange { --accent-rgb: 234 88 12; } /* orange-600 */
+.accent-amber { --accent-rgb: 245 158 11; } /* amber-500 */
+.accent-sky { --accent-rgb: 2 132 199; } /* sky-600 */
+
+.content-bg {
+  background-image:
+    radial-gradient(ellipse at top, rgb(var(--accent-rgb) / 0.12) 0%, transparent 60%),
+    linear-gradient(to bottom right, rgb(var(--accent-rgb) / 0.06), transparent);
+}

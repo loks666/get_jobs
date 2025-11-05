@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { BiUserCircle, BiSave, BiRefresh, BiSearchAlt, BiLocationPlus, BiMoney, BiBookAlt, BiLike } from 'react-icons/bi'
+import { BiUserCircle, BiSave, BiSearchAlt, BiLocationPlus, BiMoney, BiBookAlt, BiLike } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import PageHeader from '@/app/components/PageHeader'
 
 export default function ZhilianPage() {
   const [config, setConfig] = useState({
@@ -24,35 +25,22 @@ export default function ZhilianPage() {
     alert('智联招聘配置已保存！')
   }
 
-  const handleReset = () => {
-    if (confirm('确定要重置配置吗？')) {
-      window.location.reload()
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-lime-50 p-6">
-      {/* 页面��题 */}
-      <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex items-center gap-4 mb-2">
-          <div className="p-3 bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl text-white shadow-lg">
-            <BiUserCircle className="text-2xl" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 via-green-600 to-lime-600 bg-clip-text text-transparent">
-              智联招聘配置
-            </h1>
-            <p className="text-muted-foreground mt-1">配置智联招聘平台的求职参数</p>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        icon={<BiUserCircle className="text-2xl" />}
+        title="智联招聘配置"
+        subtitle="配置智联招聘平台的求职参数"
+        iconClass="text-white"
+        accentBgClass="bg-sky-600"
+      />
 
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="space-y-6">
         {/* 基本搜索 */}
         <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-emerald-700">
-              <BiSearchAlt className="text-emerald-500" />
+            <CardTitle className="flex items-center gap-2">
+              <BiSearchAlt className="text-primary" />
               基本搜索
             </CardTitle>
             <CardDescription>设置职位关键词和工作城市</CardDescription>
@@ -213,40 +201,15 @@ export default function ZhilianPage() {
         </Card>
 
         {/* 操作按钮 */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="flex justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
           <Button onClick={handleSave} size="lg" className="min-w-[160px]">
             <BiSave />
             保存配置
           </Button>
-          <Button onClick={handleReset} variant="outline" size="lg" className="min-w-[160px]">
-            <BiRefresh />
-            重置配置
-          </Button>
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 animate-in fade-in slide-in-from-bottom-9 duration-700">
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-emerald-600 mb-1">178</div>
-              <div className="text-sm text-muted-foreground">推荐职位</div>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-green-600 mb-1">34</div>
-              <div className="text-sm text-muted-foreground">投递简历</div>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-lime-600 mb-1">9</div>
-              <div className="text-sm text-muted-foreground">HR查看</div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* 统计卡片已移除 */}
       </div>
     </div>
   )

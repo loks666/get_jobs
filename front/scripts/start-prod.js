@@ -21,10 +21,7 @@ APP_VERSION=${serverConfig.app.version}
 // 写入环境变量文件
 fs.writeFileSync(envPath, envContent);
 
-console.log(`🔧 已从 server.config.js 加载生产配置:`);
-console.log(`   端口: ${port}`);
-console.log(`   主机: ${hostname}`);
-console.log(`   API地址: ${serverConfig.api.baseUrl}`);
+
 
 // 启动 Next.js，直接传递端口参数
 const nextProcess = spawn('next', ['start', '-p', port.toString()], {

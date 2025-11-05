@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { BiTask, BiSave, BiRefresh, BiListUl, BiMapAlt, BiDollar, BiCalendar, BiFilter } from 'react-icons/bi'
+import { BiTask, BiSave, BiListUl, BiMapAlt, BiDollar, BiCalendar, BiFilter } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import PageHeader from '@/app/components/PageHeader'
 
 export default function Job51Page() {
   const [config, setConfig] = useState({
@@ -24,35 +25,22 @@ export default function Job51Page() {
     alert('51job配置已保存！')
   }
 
-  const handleReset = () => {
-    if (confirm('确定要重置配置吗？')) {
-      window.location.reload()
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-6">
-      {/* 页面标题 */}
-      <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex items-center gap-4 mb-2">
-          <div className="p-3 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl text-white shadow-lg">
-            <BiTask className="text-2xl" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 via-orange-600 to-yellow-600 bg-clip-text text-transparent">
-              51job配置
-            </h1>
-            <p className="text-muted-foreground mt-1">配置前程无忧平台的求职参数</p>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        icon={<BiTask className="text-2xl" />}
+        title="51job配置"
+        subtitle="配置前程无忧平台的求职参数"
+        iconClass="text-white"
+        accentBgClass="bg-amber-500"
+      />
 
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="space-y-6">
         {/* 职位信息 */}
         <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-700">
-              <BiListUl className="text-amber-500" />
+            <CardTitle className="flex items-center gap-2">
+              <BiListUl className="text-primary" />
               职位信息
             </CardTitle>
             <CardDescription>设置目标职位和工作地点</CardDescription>
@@ -221,40 +209,15 @@ export default function Job51Page() {
         </Card>
 
         {/* 操作按钮 */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="flex justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
           <Button onClick={handleSave} size="lg" className="min-w-[160px]">
             <BiSave />
             保存配置
           </Button>
-          <Button onClick={handleReset} variant="outline" size="lg" className="min-w-[160px]">
-            <BiRefresh />
-            重置配置
-          </Button>
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 animate-in fade-in slide-in-from-bottom-9 duration-700">
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-amber-600 mb-1">234</div>
-              <div className="text-sm text-muted-foreground">匹配职位</div>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-orange-600 mb-1">45</div>
-              <div className="text-sm text-muted-foreground">已申请</div>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-yellow-600 mb-1">12</div>
-              <div className="text-sm text-muted-foreground">企业查看</div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* 统计卡片已移除 */}
       </div>
     </div>
   )

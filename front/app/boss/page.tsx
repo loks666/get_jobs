@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { BiBriefcase, BiSave, BiRefresh, BiSearch, BiMap, BiMoney, BiBuilding, BiTime } from 'react-icons/bi'
+import { BiBriefcase, BiSave, BiSearch, BiMap, BiMoney, BiBuilding, BiTime } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import PageHeader from '@/app/components/PageHeader'
 
 export default function BossPage() {
   const [config, setConfig] = useState({
@@ -25,35 +26,22 @@ export default function BossPage() {
     alert('Boss直聘配置已保存！')
   }
 
-  const handleReset = () => {
-    if (confirm('确定要重置配置吗？')) {
-      window.location.reload()
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 p-6">
-      {/* 页面标题 */}
-      <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex items-center gap-4 mb-2">
-          <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl text-white shadow-lg">
-            <BiBriefcase className="text-2xl" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 bg-clip-text text-transparent">
-              Boss直聘配置
-            </h1>
-            <p className="text-muted-foreground mt-1">配置Boss直聘平台的求职参数</p>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        icon={<BiBriefcase className="text-2xl" />}
+        title="Boss直聘配置"
+        subtitle="配置Boss直聘平台的求职参数"
+        iconClass="text-white"
+        accentBgClass="bg-teal-500"
+      />
 
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="space-y-6">
         {/* 搜索配置 */}
         <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-purple-700">
-              <BiSearch className="text-purple-500" />
+            <CardTitle className="flex items-center gap-2">
+              <BiSearch className="text-primary" />
               搜索配置
             </CardTitle>
             <CardDescription>设置职位搜索关键词和目标城市</CardDescription>
@@ -95,8 +83,8 @@ export default function BossPage() {
         {/* 薪资和经验 */}
         <Card className="animate-in fade-in slide-in-from-bottom-6 duration-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-pink-700">
-              <BiMoney className="text-pink-500" />
+            <CardTitle className="flex items-center gap-2">
+              <BiMoney className="text-primary" />
               薪资与经验要求
             </CardTitle>
             <CardDescription>设置期望薪资范围和工作经验要求</CardDescription>
@@ -149,8 +137,8 @@ export default function BossPage() {
         {/* 公司要求 */}
         <Card className="animate-in fade-in slide-in-from-bottom-7 duration-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-rose-700">
-              <BiBuilding className="text-rose-500" />
+            <CardTitle className="flex items-center gap-2">
+              <BiBuilding className="text-primary" />
               公司要求
             </CardTitle>
             <CardDescription>设置目标公司的规模和融资阶段</CardDescription>
@@ -212,40 +200,14 @@ export default function BossPage() {
         </Card>
 
         {/* 操作按钮 */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="flex justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
           <Button onClick={handleSave} size="lg" className="min-w-[160px]">
             <BiSave />
             保存配置
           </Button>
-          <Button onClick={handleReset} variant="outline" size="lg" className="min-w-[160px]">
-            <BiRefresh />
-            重置配置
-          </Button>
         </div>
 
-        {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 animate-in fade-in slide-in-from-bottom-9 duration-700">
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-purple-600 mb-1">156</div>
-              <div className="text-sm text-muted-foreground">匹配职位</div>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-pink-600 mb-1">23</div>
-              <div className="text-sm text-muted-foreground">已投递</div>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-rose-600 mb-1">8</div>
-              <div className="text-sm text-muted-foreground">面试邀请</div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* 统计卡片已移除 */}
       </div>
     </div>
   )
