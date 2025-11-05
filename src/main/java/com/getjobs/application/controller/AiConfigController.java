@@ -2,8 +2,7 @@ package com.getjobs.application.controller;
 
 import com.getjobs.application.entity.AiEntity;
 import com.getjobs.application.service.AiConfigService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +17,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/ai")
 @CrossOrigin(origins = "*")
+@Slf4j
 public class AiConfigController {
 
-    private static final Logger log = LoggerFactory.getLogger(AiConfigController.class);
 
     @Autowired
     private AiConfigService aiConfigService;

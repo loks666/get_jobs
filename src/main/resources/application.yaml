@@ -12,18 +12,11 @@ spring:
     charset: UTF-8
     location: classpath:banner.txt
   datasource:
-    url: jdbc:sqlite:./db/config.db
+    url: jdbc:sqlite:./db/getjobs.db
     driver-class-name: org.sqlite.JDBC
     hikari:
-      maximum-pool-size: 1
+      maximum-pool-size: 5
       connection-test-query: SELECT 1
-
-    datasource-data:
-      url: jdbc:sqlite:./db/data.db
-      driver-class-name: org.sqlite.JDBC
-      hikari:
-        maximum-pool-size: 1
-        connection-test-query: SELECT 1
   sql:
     init:
       mode: never  # 数据库文件已存在，不需要自动初始化
@@ -52,6 +45,7 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
   global-config:
+    banner: true  # 打开 MyBatis Plus 启动 banner
     db-config:
       id-type: auto
   mapper-locations: classpath*:/mapper/**/*.xml

@@ -1,4 +1,4 @@
-package com.getjobs.config;
+package com.getjobs.application.config;
 
 import org.apache.catalina.connector.Connector;
 import org.slf4j.Logger;
