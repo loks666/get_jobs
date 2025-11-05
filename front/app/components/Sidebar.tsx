@@ -72,9 +72,7 @@ export default function Sidebar() {
       {/* 侧边栏头部 */}
       <div className="p-6 border-b border-white/20">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-            <span className="text-2xl">🍀</span>
-          </div>
+          <span className="text-4xl leading-none">🍀</span>
           <div>
             <h1 className="text-xl font-bold text-white">Get Jobs</h1>
             <p className="text-white/80 text-sm">配置管理中心</p>

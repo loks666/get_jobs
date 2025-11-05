@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { BiSearch, BiSave, BiTargetLock, BiMap, BiMoney, BiTime, BiBookmark } from 'react-icons/bi'
+import { BiSearch, BiSave, BiTargetLock, BiMap, BiMoney, BiTime, BiBookmark, BiBarChart } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PageHeader from '@/app/components/PageHeader'
 
 export default function LiepinPage() {
@@ -35,7 +36,13 @@ export default function LiepinPage() {
         accentBgClass="bg-orange-500"
       />
 
-      <div className="space-y-6">
+      <Tabs defaultValue="config" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="config">平台配置</TabsTrigger>
+          <TabsTrigger value="analytics">投递分析</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="config" className="space-y-6 mt-6">
         {/* 职位搜索 */}
         <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
           <CardHeader>
@@ -201,9 +208,145 @@ export default function LiepinPage() {
             保存配置
           </Button>
         </div>
+        </TabsContent>
 
-        {/* 统计卡片已移除 */}
-      </div>
+        <TabsContent value="analytics" className="space-y-6 mt-6">
+          {/* 投递数据统计 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-blue-200 dark:border-blue-800">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">今日投递</p>
+                    <p className="text-3xl font-bold text-blue-600">0</p>
+                    <p className="text-xs text-muted-foreground mt-1">今天新增投递数</p>
+                  </div>
+                  <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                    <BiTime className="text-2xl text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-green-200 dark:border-green-800">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">累计投递</p>
+                    <p className="text-3xl font-bold text-green-600">0</p>
+                    <p className="text-xs text-muted-foreground mt-1">总投递岗位数量</p>
+                  </div>
+                  <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                    <BiBarChart className="text-2xl text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 图表分析 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 投递趋势 - 折线图 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BiTime className="text-primary" />
+                  投递趋势
+                </CardTitle>
+                <CardDescription>最近7天投递数量变化</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+                  <div className="text-center text-muted-foreground">
+                    <BiBarChart className="text-5xl mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">折线图</p>
+                    <p className="text-xs mt-1">显示每日投递趋势</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 薪资分布 - 柱状图 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BiMoney className="text-primary" />
+                  薪资分布
+                </CardTitle>
+                <CardDescription>不同薪资范围的岗位数量</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+                  <div className="text-center text-muted-foreground">
+                    <BiBarChart className="text-5xl mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">柱状图</p>
+                    <p className="text-xs mt-1">显示薪资区间分布</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 投递状态 - 饼状图 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <BiBarChart className="text-primary" />
+                投递状态分布
+              </CardTitle>
+              <CardDescription>各种投递状态的占比情况</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+                <div className="text-center text-muted-foreground">
+                  <BiBarChart className="text-5xl mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">饼状图</p>
+                  <p className="text-xs mt-1">显示已投递、待回复、已拒绝等状态占比</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 投递岗位列表 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <BiSearch className="text-primary" />
+                投递岗位数据
+              </CardTitle>
+              <CardDescription>最近投递的岗位详细信息</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg border">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr className="border-b">
+                        <th className="px-4 py-3 text-left text-sm font-medium">岗位名称</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">公司名称</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">薪资范围</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">投递时间</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">状态</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                          <BiTargetLock className="text-4xl mx-auto mb-2 opacity-30" />
+                          <p className="text-sm">暂无投递数据</p>
+                          <p className="text-xs mt-1">开始投递后将显示岗位列表</p>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* 统计卡片已移除 */}
     </div>
   )
 }
