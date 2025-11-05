@@ -30,9 +30,8 @@ public class PlaywrightController {
     public ResponseEntity<Map<String, Object>> getStatus() {
         Map<String, Object> status = new HashMap<>();
         status.put("initialized", playwrightManager.isInitialized());
-        status.put("screenWidth", playwrightManager.getScreenWidth());
-        status.put("screenHeight", playwrightManager.getScreenHeight());
-        status.put("hasDesktopPage", playwrightManager.getDesktopPage() != null);
+        status.put("cdpPort", playwrightManager.getCdpPort());
+        status.put("hasPage", playwrightManager.getPage() != null);
         status.put("hasBrowser", playwrightManager.getBrowser() != null);
 
         return ResponseEntity.ok(status);
@@ -44,13 +43,13 @@ public class PlaywrightController {
     @GetMapping("/test-navigate")
     public ResponseEntity<Map<String, String>> testNavigate() {
         try {
-            playwrightManager.getDesktopPage().navigate("https://www.baidu.com");
-            String title = playwrightManager.getDesktopPage().title();
+            playwrightManager.getPage().navigate("https://www.baidu.com");
+            String title = playwrightManager.getPage().title();
 
             Map<String, String> result = new HashMap<>();
             result.put("success", "true");
             result.put("title", title);
-            result.put("url", playwrightManager.getDesktopPage().url());
+            result.put("url", playwrightManager.getPage().url());
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
