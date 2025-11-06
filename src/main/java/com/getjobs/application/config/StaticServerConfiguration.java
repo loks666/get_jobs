@@ -74,7 +74,6 @@ public class StaticServerConfiguration {
                 connection.disconnect();
 
                 if (responseCode >= 200 && responseCode < 500) {
-                    log.info("检测到前端开发服务运行在端口 {} (地址: {})", FRONTEND_PORT, host);
                     return true;
                 }
             } catch (IOException e) {

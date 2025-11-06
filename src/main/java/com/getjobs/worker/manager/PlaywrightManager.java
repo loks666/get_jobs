@@ -5,7 +5,7 @@ import com.getjobs.application.entity.CookieEntity;
 import com.getjobs.application.service.CookieService;
 import com.microsoft.playwright.options.Cookie;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.Lazy;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 @Slf4j
 @Getter
 @Component
+@Lazy
 public class PlaywrightManager {
 
     // Playwright实例
@@ -74,11 +75,13 @@ public class PlaywrightManager {
     private CookieService cookieService;
 
     /**
-     * 初始化Playwright实例
-     * 在Spring容器启动后自动执行
+     * 初始化Playwright实例（延迟初始化）
      */
-    @PostConstruct
     public void init() {
+        if (isInitialized()) {
+            log.info("Playwright管理器已初始化，跳过重复初始化");
+            return;
+        }
         log.info("开始初始化Playwright管理器...");
 
         try {
@@ -304,7 +307,7 @@ public class PlaywrightManager {
      * 定时检查登录状态（每5秒）
      * 用于捕获通过DOM元素判断登录状态的场景
      */
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = 3000)
     public void scheduledLoginCheck() {
         if (bossPage != null) {
             checkLoginStatus(bossPage, "boss");
