@@ -12,6 +12,8 @@ module.exports = {
     turbo: true,
     // 是否自动打开浏览器
     open: true,
+    // 绑定到 IPv4 避免在 Windows 上 ::1 权限问题
+    hostname: '127.0.0.1',
   },
 
   // 生产环境配置

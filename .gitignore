@@ -46,9 +46,6 @@ playwright-*
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 ### VS Code ###
 .vscode/
 data.json
@@ -83,7 +80,6 @@ chromedriver
 /build
 
 # misc
-.DS_Store
 *.pem
 
 # debug

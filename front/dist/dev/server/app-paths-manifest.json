@@ -1,10 +1,5 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/ai-config/page": "app/ai-config/page.js",
   "/boss/page": "app/boss/page.js",
   "/env-config/page": "app/env-config/page.js",
-  "/job51/page": "app/job51/page.js",
-  "/liepin/page": "app/liepin/page.js",
-  "/page": "app/page.js",
-  "/zhilian/page": "app/zhilian/page.js"
+  "/page": "app/page.js"
 }

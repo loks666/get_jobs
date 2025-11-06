@@ -23,19 +23,16 @@ import java.util.stream.Collectors;
 public class BossDataService {
 
     private final BossOptionMapper bossOptionMapper;
-    private final BossCityMapper bossCityMapper;
     private final BossIndustryMapper bossIndustryMapper;
     private final BossConfigMapper bossConfigMapper;
     private final BlacklistMapper blacklistMapper;
 
     public BossDataService(
             BossOptionMapper bossOptionMapper,
-            BossCityMapper bossCityMapper,
             BossIndustryMapper bossIndustryMapper,
             BossConfigMapper bossConfigMapper,
             BlacklistMapper blacklistMapper) {
         this.bossOptionMapper = bossOptionMapper;
-        this.bossCityMapper = bossCityMapper;
         this.bossIndustryMapper = bossIndustryMapper;
         this.bossConfigMapper = bossConfigMapper;
         this.blacklistMapper = blacklistMapper;
@@ -47,9 +44,33 @@ public class BossDataService {
      * 根据类型获取选项列表
      */
     public List<BossOptionEntity> getOptionsByType(String type) {
+        // 确保数据库存在『不限』选项（code=0），并置顶显示
+        // city 与 industry 都需要此默认项
+        QueryWrapper<BossOptionEntity> checkWrapper = new QueryWrapper<>();
+        checkWrapper.eq("type", type);
+        checkWrapper.eq("code", com.getjobs.worker.utils.Constant.UNLIMITED_CODE);
+        Long count = bossOptionMapper.selectCount(checkWrapper);
+        if (count == null || count == 0) {
+            BossOptionEntity unlimited = new BossOptionEntity();
+            unlimited.setType(type);
+            unlimited.setName("不限");
+            unlimited.setCode(com.getjobs.worker.utils.Constant.UNLIMITED_CODE);
+            // 置顶显示
+            unlimited.setSortOrder(0);
+            unlimited.setCreatedAt(java.time.LocalDateTime.now());
+            unlimited.setUpdatedAt(java.time.LocalDateTime.now());
+            bossOptionMapper.insert(unlimited);
+        }
+
+        // 排序：city/industry 按 sort_order 优先，其次 id；其他类型维持原有 id 升序
         QueryWrapper<BossOptionEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("type", type);
-        wrapper.orderByAsc("id");
+        if ("city".equals(type) || "industry".equals(type)) {
+            // SQLite 下可用：ORDER BY sort_order IS NULL, sort_order ASC, id ASC
+            wrapper.last("ORDER BY sort_order IS NULL, sort_order ASC, id ASC");
+        } else {
+            wrapper.orderByAsc("id");
+        }
         return bossOptionMapper.selectList(wrapper);
     }
 
@@ -85,28 +106,15 @@ public class BossDataService {
     // ==================== City相关方法 ====================
 
     /**
-     * 获取所有城市
-     */
-    public List<BossCityEntity> getAllCities() {
-        return bossCityMapper.selectList(null);
-    }
-
-    /**
-     * 根据代码获取城市
-     */
-    public BossCityEntity getCityByCode(Integer code) {
-        return bossCityMapper.selectById(code);
-    }
-
-    /**
-     * 根据城市名称获取代码
+     * 根据城市名称获取代码（从 boss_option 表中按 type=city 查询）
      * 如果找不到，返回默认值 "0"
      */
     public String getCityCodeByName(String name) {
-        QueryWrapper<BossCityEntity> wrapper = new QueryWrapper<>();
+        QueryWrapper<BossOptionEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("type", "city");
         wrapper.eq("name", name);
-        BossCityEntity entity = bossCityMapper.selectOne(wrapper);
-        return entity != null ? String.valueOf(entity.getCode()) : "0";
+        BossOptionEntity entity = bossOptionMapper.selectOne(wrapper);
+        return entity != null ? entity.getCode() : "0";
     }
 
     // ==================== Industry相关方法 ====================
@@ -181,6 +189,51 @@ public class BossDataService {
     }
 
     /**
+     * 保存或更新（优先更新第一条）配置，支持选择性更新（仅覆盖非空字段）。
+     * - 若表中已有记录：合并非空字段并更新该记录
+     * - 若表为空：插入新记录
+     */
+    public BossConfigEntity saveOrUpdateFirstSelective(BossConfigEntity partial) {
+        BossConfigEntity existing = getFirstConfig();
+        LocalDateTime now = LocalDateTime.now();
+
+        if (existing == null) {
+            // 表为空，插入新记录
+            partial.setCreatedAt(now);
+            partial.setUpdatedAt(now);
+            bossConfigMapper.insert(partial);
+            return partial;
+        }
+
+        // 选择性合并：仅当请求体字段非空时才覆盖
+        if (partial.getSayHi() != null) existing.setSayHi(partial.getSayHi());
+        if (partial.getDebugger() != null) existing.setDebugger(partial.getDebugger());
+        if (partial.getEnableAi() != null) existing.setEnableAi(partial.getEnableAi());
+        if (partial.getFilterDeadHr() != null) existing.setFilterDeadHr(partial.getFilterDeadHr());
+        if (partial.getSendImgResume() != null) existing.setSendImgResume(partial.getSendImgResume());
+        if (partial.getWaitTime() != null) existing.setWaitTime(partial.getWaitTime());
+
+        if (partial.getKeywords() != null) existing.setKeywords(partial.getKeywords());
+        if (partial.getCityCode() != null) existing.setCityCode(partial.getCityCode());
+        if (partial.getIndustry() != null) existing.setIndustry(partial.getIndustry());
+        if (partial.getJobType() != null) existing.setJobType(partial.getJobType());
+        if (partial.getExperience() != null) existing.setExperience(partial.getExperience());
+        if (partial.getDegree() != null) existing.setDegree(partial.getDegree());
+        if (partial.getSalary() != null) existing.setSalary(partial.getSalary());
+        if (partial.getScale() != null) existing.setScale(partial.getScale());
+        if (partial.getStage() != null) existing.setStage(partial.getStage());
+
+        if (partial.getExpectedSalaryMin() != null) existing.setExpectedSalaryMin(partial.getExpectedSalaryMin());
+        if (partial.getExpectedSalaryMax() != null) existing.setExpectedSalaryMax(partial.getExpectedSalaryMax());
+
+        if (partial.getDeadStatus() != null) existing.setDeadStatus(partial.getDeadStatus());
+
+        existing.setUpdatedAt(now);
+        bossConfigMapper.updateById(existing);
+        return existing;
+    }
+
+    /**
      * 删除配置
      */
     public boolean deleteConfig(Long id) {
@@ -194,68 +247,128 @@ public class BossDataService {
      * 从配置文件和数据库加载完整的Boss配置
      */
     public BossConfig loadBossConfig() {
-        // 从配置文件加载基础配置
-        BossConfig config = JobUtils.getConfig(BossConfig.class);
+        // 直接从数据库 boss_config 加载，并将括号列表解析为集合
+        BossConfigEntity entity = getFirstConfig();
+        BossConfig config = new BossConfig();
 
-        // 转换工作类型
-        String jobTypeCode = getCodeByTypeAndName("jobType", config.getJobType());
-        config.setJobType(jobTypeCode);
+        if (entity == null) {
+            log.warn("boss_config 表为空，使用默认空配置");
+            return config;
+        }
 
-        // 转换薪资范围
-        String salaryCode = getCodeByTypeAndName("salary", config.getSalary());
-        config.setSalary(salaryCode);
+        // 文本与布尔/数值
+        config.setSayHi(entity.getSayHi());
+        config.setDebugger(entity.getDebugger() != null && entity.getDebugger() == 1);
+        config.setEnableAI(entity.getEnableAi() != null && entity.getEnableAi() == 1);
+        config.setFilterDeadHR(entity.getFilterDeadHr() != null && entity.getFilterDeadHr() == 1);
+        config.setSendImgResume(entity.getSendImgResume() != null && entity.getSendImgResume() == 1);
+        config.setWaitTime(entity.getWaitTime() != null ? String.valueOf(entity.getWaitTime()) : null);
 
-        // 转换城市编码
-        List<String> convertedCityCodes = config.getCityCode().stream()
-                .map(city -> {
-                    // 优先从自定义映射中获取
-                    if (config.getCustomCityCode() != null && config.getCustomCityCode().containsKey(city)) {
-                        return config.getCustomCityCode().get(city);
-                    }
-                    // 从数据库中获取
-                    String code = getCityCodeByName(city);
-                    if (!"0".equals(code)) {
-                        return code;
-                    }
-                    // 如果都找不到，返回"不限"的代码
-                    log.warn("未找到城市【{}】的代码，使用默认值", city);
-                    return "0";
-                })
-                .collect(Collectors.toList());
-        config.setCityCode(convertedCityCodes);
+        // 关键词（允许逗号或括号列表），直接解析为列表
+        config.setKeywords(parseListString(entity.getKeywords()));
 
-        // 转换工作经验要求
-        List<String> experienceCodes = config.getExperience().stream()
-                .map(value -> getCodeByTypeAndName("experience", value))
-                .collect(Collectors.toList());
-        config.setExperience(experienceCodes);
+        // 将中文名转换为代码，供 Worker 使用
+        // 城市：单值或列表，统一转换为代码列表
+        config.setCityCode(toCodes("city", parseListString(entity.getCityCode())));
+        // 行业/经验/学历/规模/阶段：名称或代码 -> 统一为代码列表
+        config.setIndustry(toCodes("industry", parseListString(entity.getIndustry())));
+        config.setExperience(toCodes("experience", parseListString(entity.getExperience())));
+        config.setDegree(toCodes("degree", parseListString(entity.getDegree())));
+        config.setScale(toCodes("scale", parseListString(entity.getScale())));
+        config.setStage(toCodes("stage", parseListString(entity.getStage())));
 
-        // 转换学历要求
-        List<String> degreeCodes = config.getDegree().stream()
-                .map(value -> getCodeByTypeAndName("degree", value))
-                .collect(Collectors.toList());
-        config.setDegree(degreeCodes);
+        // 职位类型：若为列表则取第一个，否则使用原值
+        List<String> jobTypeList = parseListString(entity.getJobType());
+        config.setJobType(jobTypeList.isEmpty() ? entity.getJobType() : jobTypeList.get(0));
+        // 薪资：名称或代码 -> 统一为代码列表（用于URL逗号拼接）
+        config.setSalary(toCodes("salary", parseListString(entity.getSalary())));
 
-        // 转换公司规模
-        List<String> scaleCodes = config.getScale().stream()
-                .map(value -> getCodeByTypeAndName("scale", value))
-                .collect(Collectors.toList());
-        config.setScale(scaleCodes);
+        // 期望薪资（min,max）
+        if (entity.getExpectedSalaryMin() != null || entity.getExpectedSalaryMax() != null) {
+            config.setExpectedSalary(java.util.Arrays.asList(
+                    entity.getExpectedSalaryMin() != null ? entity.getExpectedSalaryMin() : 0,
+                    entity.getExpectedSalaryMax() != null ? entity.getExpectedSalaryMax() : 0
+            ));
+        }
 
-        // 转换公司融资阶段
-        List<String> stageCodes = config.getStage().stream()
-                .map(value -> getCodeByTypeAndName("stage", value))
-                .collect(Collectors.toList());
-        config.setStage(stageCodes);
+        // HR不在线状态（括号列表字符串）
+        config.setDeadStatus(parseListString(entity.getDeadStatus()));
 
-        // 转换行业
-        List<String> industryCodes = config.getIndustry().stream()
-                .map(this::getIndustryCodeByName)
-                .collect(Collectors.toList());
-        config.setIndustry(industryCodes);
-
-        log.info("已从数据库加载Boss配置");
+        log.info("已从 boss_config 加载Boss配置，并完成括号列表解析");
         return config;
+    }
+
+    /**
+     * 解析括号列表或逗号分隔的字符串为列表，例如 "[a,b,c]" 或 "a,b,c"。
+     * 空值返回空列表。
+     */
+    public List<String> parseListString(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return java.util.Collections.emptyList();
+        String s = raw.trim();
+        if (s.startsWith("[") && s.endsWith("]")) {
+            s = s.substring(1, s.length() - 1);
+        }
+        if (s.trim().isEmpty()) return java.util.Collections.emptyList();
+        return java.util.Arrays.stream(s.split(","))
+                .map(String::trim)
+                // 去除项内可能存在的双引号，兼容 JSON 数组序列化存储
+                .map(str -> str.replaceAll("^\"|\"$", ""))
+                .filter(str -> !str.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 将列表转换为括号列表字符串，例如 [a,b,c]
+     */
+    public String toBracketListString(List<String> list) {
+        if (list == null || list.isEmpty()) return "";
+        return "[" + String.join(",", list) + "]";
+    }
+
+    /**
+     * 规范化：将传入的代码列表转换为名称列表（若传入已是名称则原样返回）。
+     */
+    public List<String> toNames(String type, List<String> items) {
+        if (items == null || items.isEmpty()) return java.util.Collections.emptyList();
+        return items.stream().map(it -> {
+            // 若是有效code，直接按code查找并取name
+            BossOptionEntity byCode = getOptionByTypeAndCode(type, it);
+            if (byCode != null && byCode.getName() != null) {
+                return byCode.getName();
+            }
+            // 否则当作name使用（无需转换）
+            return it;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 规范化：将传入的名称列表转换为代码列表（若传入已是代码则原样保留）。
+     */
+    public List<String> toCodes(String type, List<String> items) {
+        if (items == null || items.isEmpty()) return java.util.Collections.emptyList();
+        return items.stream().map(it -> {
+            // 若是有效code，保留
+            BossOptionEntity byCode = getOptionByTypeAndCode(type, it);
+            if (byCode != null && byCode.getCode() != null) {
+                return byCode.getCode();
+            }
+            // 否则按name查code
+            String code = getCodeByTypeAndName(type, it);
+            return code != null ? code : "0";
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 统一化城市：将 city 值（可能是 code 或 name 或括号列表）转换为『城市中文名』。
+     */
+    public String normalizeCityToName(String raw) {
+        List<String> list = parseListString(raw);
+        String first = list.isEmpty() ? (raw == null ? "" : raw.trim()) : list.get(0);
+        if (first.isEmpty()) return "";
+        BossOptionEntity byCode = getOptionByTypeAndCode("city", first);
+        if (byCode != null && byCode.getName() != null) return byCode.getName();
+        // 已是中文名
+        return first;
     }
 
     // ==================== Blacklist相关方法 ====================

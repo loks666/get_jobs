@@ -55,9 +55,9 @@ public class BossConfig {
     private String jobType;
 
     /**
-     * 薪资范围
+     * 薪资范围（多选）
      */
-    private String salary;
+    private java.util.List<String> salary;
 
     /**
      * 学历要求列表

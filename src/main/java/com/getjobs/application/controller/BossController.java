@@ -1,5 +1,6 @@
 package com.getjobs.application.controller;
 
+import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.service.BossJobService;
 import com.getjobs.worker.dto.JobProgressMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,32 @@ public class BossController {
 
     @Autowired
     private BossJobService bossJobService;
+
+    @Autowired
+    private PlaywrightManager playwrightManager;
+
+    /**
+     * 检查登录状态
+     * @return 登录状态信息
+     */
+    @GetMapping("/login-status")
+    public ResponseEntity<Map<String, Object>> checkLoginStatus() {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            boolean isLoggedIn = playwrightManager.isLoggedIn("boss");
+            response.put("success", true);
+            response.put("isLoggedIn", isLoggedIn);
+            response.put("message", isLoggedIn ? "已登录" : "未登录");
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("检查登录状态失败", e);
+            response.put("success", false);
+            response.put("message", "检查登录状态失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
     
     /**
      * 启动Boss自动投递任务
@@ -33,6 +60,14 @@ public class BossController {
         Map<String, Object> response = new HashMap<>();
 
         try {
+            // 未登录则不允许启动
+            if (!playwrightManager.isLoggedIn("boss")) {
+                response.put("success", false);
+                response.put("message", "请先登录Boss直聘");
+                response.put("status", "not_logged_in");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             // 检查是否已有任务在运行
             if (bossJobService.isRunning()) {
                 response.put("success", false);

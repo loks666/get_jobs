@@ -25,10 +25,14 @@ public class JobUtils {
     }
 
     public static String appendListParam(String name, List<String> values) {
-        return Optional.ofNullable(values)
-                .filter(list -> !list.isEmpty() && !Objects.equals(UNLIMITED_CODE, list.getFirst()))
-                .map(list -> "&" + name + "=" + String.join(",", list))
-                .orElse("");
+        // 需求：如果列表包含 0（UNLIMITED_CODE），表示该参数不设置，直接返回 null
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        if (values.stream().anyMatch(v -> Objects.equals(UNLIMITED_CODE, v))) {
+            return null;
+        }
+        return "&" + name + "=" + String.join(",", values);
     }
 
     @SneakyThrows

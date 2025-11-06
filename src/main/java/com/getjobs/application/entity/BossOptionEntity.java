@@ -28,6 +28,11 @@ public class BossOptionEntity {
      */
     private String code;
 
+    /**
+     * 显示排序（数值越小越靠前）
+     */
+    private Integer sortOrder;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -1,5 +1,6 @@
 package com.getjobs.worker.boss;
 
+import com.getjobs.application.service.BossDataService;
 import com.getjobs.worker.ai.AiConfig;
 import com.getjobs.worker.ai.AiFilter;
 import com.getjobs.worker.ai.AiService;
@@ -7,8 +8,12 @@ import com.getjobs.worker.utils.Job;
 import com.getjobs.worker.utils.JobUtils;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -17,6 +22,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.Collections;
 
 import static com.getjobs.worker.boss.Locators.*;
 
@@ -28,20 +34,27 @@ import static com.getjobs.worker.boss.Locators.*;
  * Boss直聘自动投递
  */
 @Slf4j
+@Component
+@Scope("prototype")
 public class Boss {
 
     private final String homeUrl = "https://www.zhipin.com";
 
-    private final Page page;
-    private final BossConfig config;
-    private final Set<String> blackCompanies;
-    private final Set<String> blackRecruiters;
-    private final Set<String> blackJobs;
-    private final ProgressCallback progressCallback;
-    private final Supplier<Boolean> shouldStopCallback;
+    @Setter
+    private Page page;
+    @Setter
+    private BossConfig config;
+    @Autowired
+    private BossDataService bossDataService;
+    private Set<String> blackCompanies;
+    private Set<String> blackRecruiters;
+    private Set<String> blackJobs;
+    @Setter
+    private ProgressCallback progressCallback;
+    @Setter
+    private Supplier<Boolean> shouldStopCallback;
 
     private final List<Job> resultList = new ArrayList<>();
-    private final Date startDate;
 
     /**
      * 进度回调接口
@@ -54,29 +67,91 @@ public class Boss {
     /**
      * 构造函数
      */
-    public Boss(Page page, BossConfig config,
-                Set<String> blackCompanies,
-                Set<String> blackRecruiters,
-                Set<String> blackJobs,
-                ProgressCallback progressCallback,
-                Supplier<Boolean> shouldStopCallback) {
-        this.page = page;
-        this.config = config;
-        this.blackCompanies = blackCompanies;
-        this.blackRecruiters = blackRecruiters;
-        this.blackJobs = blackJobs;
-        this.progressCallback = progressCallback;
-        this.shouldStopCallback = shouldStopCallback;
-        this.startDate = new Date();
+    public Boss() {
+        // Spring 原型Bean，无参构造
+    }
+
+    
+
+    public void prepare() {
+        // 从数据库加载黑名单
+        this.blackCompanies = bossDataService.getBlackCompanies();
+        this.blackRecruiters = bossDataService.getBlackRecruiters();
+        this.blackJobs = bossDataService.getBlackJobs();
+
+        log.info("黑名单加载完成: 公司({}) 招聘者({}) 职位({})",
+                blackCompanies != null ? blackCompanies.size() : 0,
+                blackRecruiters != null ? blackRecruiters.size() : 0,
+                blackJobs != null ? blackJobs.size() : 0);
     }
 
     /**
      * 执行投递
      */
     public int execute() {
-        login();
+        // 不在这里登录，登录由外部控制
         config.getCityCode().forEach(this::postJobByCity);
         return resultList.size();
+    }
+
+    /**
+     * 初始化并等待登录
+     * 在SpringBoot启动时调用
+     */
+    public void initAndWaitForLogin() {
+        log.info("打开Boss直聘网站中...");
+        page.navigate(homeUrl);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // 检查滑块验证
+        waitForSliderVerify(page);
+
+        if (isLoginRequired()) {
+            log.info("需要登录，等待用户扫码登录...");
+            progressCallback.accept("等待用户扫码登录...", 0, 0);
+            // 不执行scanLogin，只是打开登录页面
+            page.navigate(homeUrl + "/web/user/?ka=header-login");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            // 定位二维码登录的切换按钮
+            try {
+                Locator scanButton = page.locator(LOGIN_SCAN_SWITCH);
+                if (scanButton.count() > 0) {
+                    scanButton.click();
+                }
+            } catch (Exception e) {
+                log.warn("切换到二维码登录失败", e);
+            }
+        } else {
+            log.info("已登录Boss直聘");
+            progressCallback.accept("已登录Boss直聘", 0, 0);
+        }
+    }
+
+    /**
+     * 检查是否已登录
+     */
+    public boolean checkLoginStatus() {
+        try {
+            page.navigate(homeUrl);
+            Thread.sleep(1000);
+
+            // 检查滑块验证
+            waitForSliderVerify(page);
+
+            return !isLoginRequired();
+        } catch (Exception e) {
+            log.error("检查登录状态失败", e);
+            return false;
+        }
     }
 
     /**
@@ -97,6 +172,7 @@ public class Boss {
             Thread.currentThread().interrupt();
         }
 
+        int newBlacklistCount = 0;
         boolean shouldBreak = false;
         while (!shouldBreak) {
             try {
@@ -148,13 +224,16 @@ public class Boss {
                                 || message.contains("遗憾") || message.contains("需要本") || message.contains("对不");
                         boolean nomatch = message.contains("不是") || message.contains("不生");
                         if (match && !nomatch) {
-                            log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
                             if (blackCompanies.stream().anyMatch(companyName::contains)) {
                                 continue;
                             }
                             companyName = companyName.replaceAll("\\.{3}", "");
                             if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
                                 blackCompanies.add(companyName);
+                                // 保存到数据库
+                                bossDataService.addBlacklist("company", companyName);
+                                newBlacklistCount++;
+                                log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
                             }
                         }
                     }
@@ -175,12 +254,12 @@ public class Boss {
                 break;
             }
         }
-        log.info("黑名单公司数量：{}", blackCompanies.size());
+        log.info("黑名单公司数量：{}，本次新增：{}", (blackCompanies != null ? blackCompanies.size() : 0), newBlacklistCount);
 
         Map<String, Set<String>> result = new HashMap<>();
-        result.put("blackCompanies", new HashSet<>(blackCompanies));
-        result.put("blackRecruiters", new HashSet<>(blackRecruiters));
-        result.put("blackJobs", new HashSet<>(blackJobs));
+        result.put("blackCompanies", new HashSet<>(blackCompanies != null ? blackCompanies : Collections.emptySet()));
+        result.put("blackRecruiters", new HashSet<>(blackRecruiters != null ? blackRecruiters : Collections.emptySet()));
+        result.put("blackJobs", new HashSet<>(blackJobs != null ? blackJobs : Collections.emptySet()));
         return result;
     }
 
@@ -258,7 +337,7 @@ public class Boss {
 
                 // 岗位名称
                 String jobName = safeText(detailBox, "span[class*='job-name']");
-                if (blackJobs.stream().anyMatch(jobName::contains)) continue;
+                if (blackJobs != null && blackJobs.stream().anyMatch(jobName::contains)) continue;
                 // 薪资(原始)
                 String jobSalaryRaw = safeText(detailBox, "span.job-salary");
                 String jobSalary = decodeSalary(jobSalaryRaw);
@@ -278,9 +357,9 @@ public class Boss {
                 String bossTitleRaw = safeText(detailBox, "div[class*='boss-info-attr']");
                 String[] bossTitleInfo = splitBossTitle(bossTitleRaw);
                 String bossCompany = bossTitleInfo[0];
-                if (blackCompanies.stream().anyMatch(bossCompany::contains)) continue;
+                if (blackCompanies != null && blackCompanies.stream().anyMatch(bossCompany::contains)) continue;
                 String bossJobTitle = bossTitleInfo[1];
-                if (blackRecruiters.stream().anyMatch(bossJobTitle::contains)) continue;
+                if (blackRecruiters != null && blackRecruiters.stream().anyMatch(bossJobTitle::contains)) continue;
 
                 // 创建Job对象
                 Job job = new Job();
@@ -359,14 +438,24 @@ public class Boss {
 
     private String getSearchUrl(String cityCode) {
         String baseUrl = "https://www.zhipin.com/web/geek/job?";
-        return baseUrl + JobUtils.appendParam("city", cityCode) +
-                JobUtils.appendParam("jobType", config.getJobType()) +
-                JobUtils.appendParam("salary", config.getSalary()) +
-                JobUtils.appendListParam("experience", config.getExperience()) +
-                JobUtils.appendListParam("degree", config.getDegree()) +
-                JobUtils.appendListParam("scale", config.getScale()) +
-                JobUtils.appendListParam("industry", config.getIndustry()) +
-                JobUtils.appendListParam("stage", config.getStage());
+        StringBuilder sb = new StringBuilder(baseUrl);
+        String pCity = JobUtils.appendParam("city", cityCode);
+        if (pCity != null) sb.append(pCity);
+        String pJobType = JobUtils.appendParam("jobType", config.getJobType());
+        if (pJobType != null) sb.append(pJobType);
+        String pSalary = JobUtils.appendListParam("salary", config.getSalary());
+        if (pSalary != null) sb.append(pSalary);
+        String pExp = JobUtils.appendListParam("experience", config.getExperience());
+        if (pExp != null) sb.append(pExp);
+        String pDegree = JobUtils.appendListParam("degree", config.getDegree());
+        if (pDegree != null) sb.append(pDegree);
+        String pScale = JobUtils.appendListParam("scale", config.getScale());
+        if (pScale != null) sb.append(pScale);
+        String pIndustry = JobUtils.appendListParam("industry", config.getIndustry());
+        if (pIndustry != null) sb.append(pIndustry);
+        String pStage = JobUtils.appendListParam("stage", config.getStage());
+        if (pStage != null) sb.append(pStage);
+        return sb.toString();
     }
 
     @SneakyThrows
@@ -677,25 +766,6 @@ public class Boss {
         return null;
     }
 
-    @SneakyThrows
-    private void login() {
-        log.info("打开Boss直聘网站中...");
-
-        page.navigate(homeUrl);
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        // 检查滑块验证
-        waitForSliderVerify(page);
-
-        if (isLoginRequired()) {
-            log.error("需要登录，请先完成登录...");
-            scanLogin();
-        }
-    }
-
     private void waitForSliderVerify(Page page) {
         String SLIDER_URL = "https://www.zhipin.com/web/user/safe/verify-slider";
         // 最多等待5分钟（防呆，防止死循环）
@@ -747,77 +817,6 @@ public class Boss {
             return false;
         }
         return false;
-    }
-
-    @SneakyThrows
-    private void scanLogin() {
-        // 访问登录页面
-        page.navigate(homeUrl + "/web/user/?ka=header-login");
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        // 1. 如果已经登录，则直接返回
-        try {
-            Locator loginBtnLocator = page.locator(LOGIN_BTN);
-            if (loginBtnLocator.count() > 0 && !Objects.equals(loginBtnLocator.textContent(), "登录")) {
-                log.info("已经登录，直接开始投递...");
-                return;
-            }
-        } catch (Exception ignored) {
-        }
-
-        log.info("等待登录...");
-        progressCallback.accept("等待用户扫码登录...", 0, 0);
-
-        // 2. 定位二维码登录的切换按钮
-        try {
-            Locator scanButton = page.locator(LOGIN_SCAN_SWITCH);
-            scanButton.click();
-
-            // 3. 登录逻辑
-            boolean login = false;
-
-            // 4. 记录开始时间，用于判断10分钟超时
-            long startTime = System.currentTimeMillis();
-            final long TIMEOUT = 10 * 60 * 1000; // 10分钟
-
-            while (!login) {
-                // 检查是否需要停止
-                if (shouldStopCallback.get()) {
-                    progressCallback.accept("用户取消登录", 0, 0);
-                    return;
-                }
-
-                // 判断是否超时
-                long elapsed = System.currentTimeMillis() - startTime;
-                if (elapsed >= TIMEOUT) {
-                    log.error("超过10分钟未完成登录，程序退出...");
-                    throw new RuntimeException("登录超时");
-                }
-
-                try {
-                    // 判断页面上是否出现职位列表容器
-                    Locator jobList = page.locator("div.job-list-container");
-                    if (jobList.isVisible()) {
-                        login = true;
-                        log.info("用户已登录！");
-                        progressCallback.accept("登录成功", 0, 0);
-                        break;
-                    }
-                } catch (Exception e) {
-                    log.error("检测元素时异常: {}", e.getMessage());
-                }
-                // 每2秒检查一次
-                Thread.sleep(2000);
-            }
-
-
-        } catch (Exception e) {
-            log.error("未找到二维码登录按钮，登录失败", e);
-        }
     }
 
 }

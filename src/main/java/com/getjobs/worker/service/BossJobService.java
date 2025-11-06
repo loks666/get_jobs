@@ -8,11 +8,11 @@ import com.getjobs.worker.manager.PlaywrightManager;
 import com.microsoft.playwright.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -27,6 +27,7 @@ public class BossJobService implements JobPlatformService {
 
     private final PlaywrightManager playwrightManager;
     private final BossDataService bossDataService;
+    private final ObjectProvider<Boss> bossProvider;
 
     // 任务运行状态
     private volatile boolean isRunning = false;
@@ -40,9 +41,6 @@ public class BossJobService implements JobPlatformService {
             return;
         }
 
-        isRunning = true;
-        shouldStop = false;
-
         try {
             // 获取Boss页面实例
             Page page = playwrightManager.getBossPage();
@@ -53,21 +51,17 @@ public class BossJobService implements JobPlatformService {
 
             // 检查是否已登录
             if (!playwrightManager.isLoggedIn(PLATFORM)) {
-                progressCallback.accept(JobProgressMessage.warning(PLATFORM, "请先登录Boss直聘"));
+                progressCallback.accept(JobProgressMessage.error(PLATFORM, "请先登录Boss直聘"));
                 return;
             }
+
+            // 通过校验后再标记运行
+            isRunning = true;
+            shouldStop = false;
 
             // 加载配置
             BossConfig config = bossDataService.loadBossConfig();
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "配置加载成功"));
-
-            // 从数据库加载黑名单
-            Set<String> blackCompanies = bossDataService.getBlackCompanies();
-            Set<String> blackRecruiters = bossDataService.getBlackRecruiters();
-            Set<String> blackJobs = bossDataService.getBlackJobs();
-            progressCallback.accept(JobProgressMessage.info(PLATFORM,
-                String.format("黑名单加载成功: 公司(%d) 招聘者(%d) 职位(%d)",
-                    blackCompanies.size(), blackRecruiters.size(), blackJobs.size())));
 
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "开始投递任务..."));
 
@@ -80,13 +74,14 @@ public class BossJobService implements JobPlatformService {
                 }
             };
 
-            Boss boss = new Boss(page, config, blackCompanies, blackRecruiters, blackJobs,
-                                bossCallback, this::shouldStop);
+            Boss boss = bossProvider.getObject();
+            boss.setPage(page);
+            boss.setConfig(config);
+            boss.setProgressCallback(bossCallback);
+            boss.setShouldStopCallback(this::shouldStop);
+            boss.prepare();
 
             int deliveredCount = boss.execute();
-
-            // 保存更新后的黑名单到数据库（Boss类可能在运行过程中更新了黑名单）
-            // saveBlacklistToDatabase(boss.getBlackCompanies(), boss.getBlackRecruiters(), boss.getBlackJobs());
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共发起%d个聊天", deliveredCount)));
@@ -97,20 +92,6 @@ public class BossJobService implements JobPlatformService {
             isRunning = false;
             shouldStop = false;
         }
-    }
-
-    /**
-     * 保存黑名单到数据库
-     */
-    private void saveBlacklistToDatabase(Set<String> companies, Set<String> recruiters, Set<String> jobs) {
-        // 清空现有数据
-        bossDataService.getAllBlacklist().forEach(entity ->
-            bossDataService.removeBlacklist(entity.getType(), entity.getValue()));
-
-        // 保存新数据
-        bossDataService.addBlacklistBatch("company", companies);
-        bossDataService.addBlacklistBatch("recruiter", recruiters);
-        bossDataService.addBlacklistBatch("job", jobs);
     }
 
     @Override

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
@@ -50,14 +51,15 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
                 }
             }
 
-            // 配置静态资源处理器
+            // 配置静态资源处理器：确保文件系统路径优先、禁用缓存
             registry.addResourceHandler("/**")
                     .addResourceLocations(
-                            "classpath:/dist/",
-                            "classpath:/static/",
                             "file:src/main/resources/dist/",
-                            "file:src/main/resources/static/"
+                            "file:src/main/resources/static/",
+                            "classpath:/dist/",
+                            "classpath:/static/"
                     )
+                    .setCachePeriod(0)
                     .resourceChain(true)
                     .addResolver(new PathResourceResolver() {
                         @Override
@@ -70,8 +72,19 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
                                     return requestedResource;
                                 }
 
-                                // 对于 SPA 应用，如果资源不存在且不是 API 请求，返回 index.html
+                                // Next.js 静态导出：无后缀路径优先匹配同名 .html / .txt
                                 if (!resourcePath.startsWith("api/") && !resourcePath.contains(".")) {
+                                    // 1) 尝试同名 .html
+                                    Resource htmlResource = location.createRelative(resourcePath + ".html");
+                                    if (htmlResource.exists() && htmlResource.isReadable()) {
+                                        return htmlResource;
+                                    }
+                                    // 2) 尝试同名 .txt（App Router RSC 数据）
+                                    Resource txtResource = location.createRelative(resourcePath + ".txt");
+                                    if (txtResource.exists() && txtResource.isReadable()) {
+                                        return txtResource;
+                                    }
+                                    // 3) 兜底返回 index.html（SPA fallback）
                                     Resource indexResource = location.createRelative("index.html");
                                     if (indexResource.exists() && indexResource.isReadable()) {
                                         return indexResource;
@@ -117,5 +130,13 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
         }
 
         return false;
+    }
+
+    /**
+     * 视图控制：将根路径转发到 index.html，确保 SPA 直接访问根路径正常
+     */
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/").setViewName("forward:/index.html");
     }
 }

@@ -117,17 +117,70 @@ public class PlaywrightManager {
         try {
             bossPage.navigate(BOSS_URL);
             log.info("Boss直聘页面已导航到: {}", BOSS_URL);
+
+            // 等待页面加载
+            Thread.sleep(2000);
+
+            // 检查是否需要登录
+            if (!checkIfLoggedIn()) {
+                log.info("检测到未登录，导航到登录页面...");
+                bossPage.navigate(BOSS_URL + "/web/user/?ka=header-login");
+                Thread.sleep(1000);
+
+                // 尝试切换到二维码登录（点击“APP扫码登录”按钮）
+                try {
+                    // 新版登录页按钮：<div class="btn-sign-switch ewm-switch"><div class="switch-tip">APP扫码登录</div></div>
+                    Locator qrSwitch = bossPage.locator(".btn-sign-switch.ewm-switch");
+                    if (qrSwitch.count() > 0) {
+                        qrSwitch.click();
+                        log.info("已点击二维码登录切换按钮（.btn-sign-switch.ewm-switch）");
+                    } else {
+                        // 兜底：按文本匹配内部提示
+                        Locator tip = bossPage.getByText("APP扫码登录");
+                        if (tip.count() > 0) {
+                            tip.click();
+                            log.info("已点击包含文本的二维码登录切换提示（APP扫码登录）");
+                        } else {
+                            // 兼容旧版选择器
+                            Locator legacy = bossPage.locator("li.sign-switch-tip");
+                            if (legacy.count() > 0) {
+                                legacy.click();
+                                log.info("已通过旧版选择器切换二维码登录（li.sign-switch-tip）");
+                            } else {
+                                log.info("未找到二维码登录切换按钮，保持当前登录页");
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("切换二维码登录失败: {}", e.getMessage());
+                }
+            } else {
+                log.info("Boss直聘已登录");
+            }
         } catch (Exception e) {
             log.warn("Boss直聘页面导航失败: {}", e.getMessage());
         }
 
         // 初始化登录状态为未登录
-        loginStatus.put("boss", false);
+        loginStatus.put("boss", checkIfLoggedIn());
 
         // 设置登录状态监控
         setupLoginMonitoring(bossPage, "boss");
 
         log.info("Boss直聘平台初始化完成");
+    }
+
+    /**
+     * 检查Boss是否已登录
+     */
+    private boolean checkIfLoggedIn() {
+        try {
+            String currentUrl = bossPage.url();
+            return currentUrl.contains("/web/geek/") ||
+                    bossPage.locator(".user-avatar").count() > 0;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
