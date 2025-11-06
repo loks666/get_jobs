@@ -46,15 +46,6 @@ public class BossController {
             response.put("isLoggedIn", isLoggedIn);
             response.put("message", isLoggedIn ? "已登录" : "未登录");
 
-            // 如果已登录，顺便触发一次Cookie保存，确保扫码成功后持久化
-            if (isLoggedIn) {
-                try {
-                    playwrightManager.saveBossCookiesToDb("login-status check");
-                } catch (Exception e) {
-                    log.warn("在登录状态查询中触发保存Cookie失败: {}", e.getMessage());
-                }
-            }
-
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("检查登录状态失败", e);

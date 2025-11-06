@@ -12,9 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -127,40 +126,15 @@ public class PlaywrightManager {
         try {
             CookieEntity cookieEntity = cookieService.getCookieByPlatform("boss");
             if (cookieEntity != null && cookieEntity.getCookieValue() != null && !cookieEntity.getCookieValue().isBlank()) {
-                String cookieJson = cookieEntity.getCookieValue();
-                JSONArray jsonArray = new JSONArray(cookieJson);
+                String cookieStr = cookieEntity.getCookieValue();
+                List<Cookie> cookies = parseCookiesFromString(cookieStr);
 
-                List<Cookie> cookies = new java.util.ArrayList<>();
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject jsonObject = jsonArray.getJSONObject(i);
-
-                    Cookie cookie = new Cookie(jsonObject.getString("name"), jsonObject.getString("value"));
-
-                    if (!jsonObject.isNull("domain")) {
-                        cookie.domain = jsonObject.getString("domain");
-                    }
-
-                    if (!jsonObject.isNull("path")) {
-                        cookie.path = jsonObject.getString("path");
-                    }
-
-                    if (!jsonObject.isNull("expires")) {
-                        cookie.expires = jsonObject.getDouble("expires");
-                    }
-
-                    if (!jsonObject.isNull("secure")) {
-                        cookie.secure = jsonObject.getBoolean("secure");
-                    }
-
-                    if (!jsonObject.isNull("httpOnly")) {
-                        cookie.httpOnly = jsonObject.getBoolean("httpOnly");
-                    }
-
-                    cookies.add(cookie);
+                if (!cookies.isEmpty()) {
+                    bossContext.addCookies(cookies);
+                    log.info("已从数据库加载Boss Cookie并注入浏览器上下文，共 {} 条", cookies.size());
+                } else {
+                    log.warn("解析Cookie失败，未能加载任何Cookie");
                 }
-
-                bossContext.addCookies(cookies);
-                log.info("已从数据库加载Boss Cookie并注入浏览器上下文，共 {} 条", cookies.size());
             } else {
                 log.info("数据库未找到Boss Cookie或值为空，跳过Cookie注入");
             }
@@ -220,7 +194,7 @@ public class PlaywrightManager {
         loginStatus.put("boss", checkIfLoggedIn());
 
         // 设置登录状态监控
-        setupLoginMonitoring(bossPage, "boss");
+        setupLoginMonitoring(bossPage);
 
         log.info("Boss直聘平台初始化完成");
     }
@@ -230,9 +204,7 @@ public class PlaywrightManager {
      */
     private boolean checkIfLoggedIn() {
         try {
-            String currentUrl = bossPage.url();
-            return currentUrl.contains("/web/geek/") ||
-                    bossPage.locator(".user-avatar").count() > 0;
+            return bossPage.locator("li.nav-figure span.label-text").count() > 0;
         } catch (Exception e) {
             return false;
         }
@@ -241,18 +213,17 @@ public class PlaywrightManager {
     /**
      * 设置登录状态监控
      *
-     * @param page     页面实例
-     * @param platform 平台名称
+     * @param page 页面实例
      */
-    private void setupLoginMonitoring(Page page, String platform) {
+    private void setupLoginMonitoring(Page page) {
         // 监听页面导航事件，检测URL变化
         page.onFrameNavigated(frame -> {
             if (frame == page.mainFrame()) {
-                checkLoginStatus(page, platform);
+                checkLoginStatus(page, "boss");
             }
         });
 
-        log.info("{}平台登录状态监控已启用", platform);
+        log.info("{}平台登录状态监控已启用", "boss");
     }
 
     /**
@@ -264,14 +235,9 @@ public class PlaywrightManager {
     private void checkLoginStatus(Page page, String platform) {
         try {
             boolean isLoggedIn = false;
-            String currentUrl = page.url();
-
-            if (platform.equals("boss")) {// Boss直聘登录判断：URL包含/web/geek/ 或者 存在用户头像元素
-                isLoggedIn = currentUrl.contains("/web/geek/") ||
-                        page.locator(".user-avatar").count() > 0;
-                // 其他平台登录判断逻辑预留
+            if (platform.equals("boss")) {
+                isLoggedIn = page.locator("li.nav-figure span.label-text").count() > 0;
             }
-
             // 如果登录状态发生变化（从未登录变为已登录）
             Boolean previousStatus = loginStatus.get(platform);
             if (isLoggedIn && (previousStatus == null || !previousStatus)) {
@@ -294,16 +260,7 @@ public class PlaywrightManager {
 
         // 登录成功时保存 Cookie 到数据库（仅 boss 平台）
         if ("boss".equals(platform)) {
-            try {
-                List<com.microsoft.playwright.options.Cookie> cookies = bossContext.cookies();
-                String cookieJson = new ObjectMapper().writeValueAsString(cookies);
-                boolean cookieResult = cookieService.saveOrUpdateCookie("boss", cookieJson, "login success");
-                if (cookieResult) {
-                    log.info("Boss登录成功，已保存Cookie到数据库，共 {} 条", cookies.size());
-                }
-            } catch (Exception e) {
-                log.warn("Boss登录成功后保存Cookie失败: {}", e.getMessage());
-            }
+            saveBossCookiesToDatabase("login success");
         }
 
         // 通知所有监听器
@@ -318,18 +275,29 @@ public class PlaywrightManager {
     }
 
     /**
+     * 统一的Boss Cookie保存方法（使用JSON序列化）
+     *
+     * @param remark 备注信息
+     */
+    private void saveBossCookiesToDatabase(String remark) {
+        try {
+            List<com.microsoft.playwright.options.Cookie> cookies = bossContext.cookies();
+            // 使用ObjectMapper序列化为JSON字符串
+            String cookieJson = new ObjectMapper().writeValueAsString(cookies);
+            boolean result = cookieService.saveOrUpdateCookie("boss", cookieJson, remark);
+            if (result) {
+                log.info("Boss Cookie已保存到数据库，共 {} 条，remark={}", cookies.size(), remark);
+            }
+        } catch (Exception e) {
+            log.warn("保存Boss Cookie失败: {}", e.getMessage());
+        }
+    }
+
+    /**
      * 主动保存 Boss Cookie 到数据库（用于调试/验证）
      */
     public void saveBossCookiesToDb(String remark) {
-        try {
-            List<com.microsoft.playwright.options.Cookie> cookies = bossContext.cookies();
-            boolean boss = cookieService.saveOrUpdateCookie("boss", cookies.toString(), remark);
-            if (boss) {
-                log.info("主动保存Boss Cookie到数据库，共 {} 条，remark={}", cookies.size(), remark);
-            }
-        } catch (Exception e) {
-            log.warn("主动保存Boss Cookie失败: {}", e.getMessage());
-        }
+        saveBossCookiesToDatabase(remark);
     }
 
     /**
@@ -418,6 +386,62 @@ public class PlaywrightManager {
      */
     public boolean isLoggedIn(String platform) {
         return loginStatus.getOrDefault(platform, false);
+    }
+
+    /**
+     * 从JSON字符串解析Cookie列表
+     *
+     * @param cookieJson Cookie的JSON字符串
+     * @return Cookie列表
+     */
+    private List<Cookie> parseCookiesFromString(String cookieJson) {
+        List<Cookie> cookies = new ArrayList<>();
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode jsonArray = objectMapper.readTree(cookieJson);
+
+            for (com.fasterxml.jackson.databind.JsonNode node : jsonArray) {
+                // 创建Cookie对象（name和value是必需的）
+                Cookie cookie = new Cookie(
+                    node.get("name").asText(),
+                    node.get("value").asText()
+                );
+
+                // 设置可选字段
+                if (node.has("domain") && !node.get("domain").isNull()) {
+                    cookie.domain = node.get("domain").asText();
+                }
+                if (node.has("path") && !node.get("path").isNull()) {
+                    cookie.path = node.get("path").asText();
+                }
+                if (node.has("expires") && !node.get("expires").isNull()) {
+                    cookie.expires = node.get("expires").asDouble();
+                }
+                if (node.has("httpOnly") && !node.get("httpOnly").isNull()) {
+                    cookie.httpOnly = node.get("httpOnly").asBoolean();
+                }
+                if (node.has("secure") && !node.get("secure").isNull()) {
+                    cookie.secure = node.get("secure").asBoolean();
+                }
+                if (node.has("sameSite") && !node.get("sameSite").isNull()) {
+                    String sameSite = node.get("sameSite").asText();
+                    if (sameSite != null && !sameSite.isEmpty()) {
+                        cookie.sameSite = com.microsoft.playwright.options.SameSiteAttribute.valueOf(
+                            sameSite.toUpperCase()
+                        );
+                    }
+                }
+
+                cookies.add(cookie);
+            }
+
+            log.debug("成功解析Cookie，共 {} 条", cookies.size());
+        } catch (Exception e) {
+            log.error("解析Cookie JSON失败: {}", e.getMessage(), e);
+        }
+
+        return cookies;
     }
 
     /**

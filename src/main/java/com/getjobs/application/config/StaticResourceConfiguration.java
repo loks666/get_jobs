@@ -41,13 +41,13 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
 
             // 根据前端服务运行状态输出不同日志
             if (hasFrontendService) {
-                log.info("  - 使用前端开发服务 (端口 {})", FRONTEND_PORT);
+                log.info(" 使用前端开发服务 (端口 {})", FRONTEND_PORT);
             } else {
                 if (hasDistResources) {
-                    log.info("  - 使用 dist 目录: {}", distPath.toAbsolutePath());
+                    log.info("使用 dist 目录: {}", distPath.toAbsolutePath());
                 }
                 if (hasStaticResources) {
-                    log.info("  - 使用 static 目录: {}", staticPath.toAbsolutePath());
+                    log.info("使用 static 目录: {}", staticPath.toAbsolutePath());
                 }
             }
 
