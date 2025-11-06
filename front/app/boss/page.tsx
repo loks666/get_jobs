@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { BiBriefcase, BiSave, BiSearch, BiMap, BiMoney, BiBuilding, BiTime, BiBarChart, BiTrash, BiPlus, BiPlay, BiStop } from 'react-icons/bi'
+import { BiBriefcase, BiSave, BiSearch, BiMap, BiMoney, BiBuilding, BiTime, BiBarChart, BiTrash, BiPlus, BiPlay, BiStop, BiLogOut } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -94,6 +94,7 @@ export default function BossPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isDelivering, setIsDelivering] = useState(false)
   const [checkingLogin, setCheckingLogin] = useState(true)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   useEffect(() => {
     fetchAllData()
@@ -325,20 +326,20 @@ export default function BossPage() {
       })
 
       if (response.ok) {
-        if (!silent) alert('Boss直聘配置已保存！')
         fetchAllData()
       } else {
-        if (!silent) alert('保存失败，请重试')
+        // 保存失败：不弹框，记录日志
+        console.warn('保存失败：后端返回非 2xx 状态')
       }
     } catch (error) {
       console.error('Failed to save config:', error)
-      if (!silent) alert('保存失败，请重试')
+      // 保存失败：不弹框
     }
   }
 
   const handleAddBlacklist = async () => {
     if (!newBlacklistKeyword.trim()) {
-      alert('请输入黑名单关键词')
+      // 输入为空：不弹框，直接返回
       return
     }
 
@@ -358,11 +359,12 @@ export default function BossPage() {
         setNewBlacklistKeyword('')
         fetchAllData()
       } else {
-        alert('添加失败，请重试')
+        // 添加失败：不弹框
+        console.warn('添加黑名单失败：后端返回非 2xx 状态')
       }
     } catch (error) {
       console.error('Failed to add blacklist:', error)
-      alert('添加失败，请重试')
+      // 添加失败：不弹框
     }
   }
 
@@ -375,11 +377,12 @@ export default function BossPage() {
       if (response.ok) {
         fetchAllData()
       } else {
-        alert('删除失败，请重试')
+        // 删除失败：不弹框
+        console.warn('删除黑名单失败：后端返回非 2xx 状态')
       }
     } catch (error) {
       console.error('Failed to delete blacklist:', error)
-      alert('删除失败，请重试')
+      // 删除失败：不弹框
     }
   }
 
@@ -392,14 +395,15 @@ export default function BossPage() {
       const data = await response.json()
 
       if (data.success) {
-        alert('Boss投递任务已启动！')
+        // 启动成功：不弹框
       } else {
-        alert(data.message || '启动失败，请重试')
+        // 启动失败：不弹框
+        console.warn('启动失败：', data.message)
         setIsDelivering(false)
       }
     } catch (error) {
       console.error('Failed to start delivery:', error)
-      alert('启动失败，请重试')
+      // 启动失败：不弹框
       setIsDelivering(false)
     }
   }
@@ -412,14 +416,31 @@ export default function BossPage() {
       const data = await response.json()
 
       if (data.success) {
-        alert('Boss投递任务停止请求已发送！')
+        // 停止成功：不弹框
         setIsDelivering(false)
       } else {
-        alert(data.message || '停止失败，请重试')
+        // 停止失败：不弹框
+        console.warn('停止失败：', data.message)
       }
     } catch (error) {
       console.error('Failed to stop delivery:', error)
-      alert('停止失败，请重试')
+      // 停止失败：不弹框
+    }
+  }
+
+  const triggerLogout = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/boss/logout', { method: 'POST' })
+      const data = await response.json()
+      if (data.success) {
+        setIsLoggedIn(false)
+        setIsDelivering(false)
+        console.info('已退出登录，数据库Cookie已置空')
+      } else {
+        console.warn('退出登录失败：', data.message)
+      }
+    } catch (error) {
+      console.error('Failed to logout:', error)
     }
   }
 
@@ -454,6 +475,9 @@ export default function BossPage() {
                 <BiPlay className="mr-1" /> 开始投递
               </Button>
             )}
+            <Button onClick={() => setShowLogoutDialog(true)} size="sm" className="rounded-full border border-red-300 text-red-600 hover:bg-red-50 px-4 shadow">
+              <BiLogOut className="mr-1" /> 退出登录
+            </Button>
             <Button onClick={() => handleSave(false)} size="sm" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg">
               <BiSave className="mr-1" /> 保存配置
             </Button>
@@ -860,6 +884,42 @@ export default function BossPage() {
       </Tabs>
 
       {/* 统计卡片已移除 */}
+      {/* 退出确认弹框 */}
+      {showLogoutDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-[92%] max-w-sm border border-gray-200 dark:border-neutral-800 animate-in fade-in zoom-in-95">
+            <Card className="border-0">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BiLogOut className="text-red-500" />
+                  确认退出登录
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-sm text-muted-foreground mb-4">退出后将清除Cookie并切换为未登录状态。</p>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowLogoutDialog(false)}
+                    className="rounded-full px-4"
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      await triggerLogout()
+                      setShowLogoutDialog(false)
+                    }}
+                    className="rounded-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white px-4"
+                  >
+                    确认退出
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -2,6 +2,7 @@ package com.getjobs.application.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -30,7 +31,7 @@ public class CookieEntity {
     /**
      * Cookie值
      */
-    @TableField("cookie_value")
+    @TableField(value = "cookie_value", updateStrategy = FieldStrategy.IGNORED)
     private String cookieValue;
 
     /**

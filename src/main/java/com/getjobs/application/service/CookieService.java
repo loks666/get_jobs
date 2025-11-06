@@ -3,6 +3,7 @@ package com.getjobs.application.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.getjobs.application.entity.CookieEntity;
 import com.getjobs.application.mapper.CookieMapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +26,9 @@ public class CookieService {
      */
     public CookieEntity getCookieByPlatform(String platform) {
         LambdaQueryWrapper<CookieEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CookieEntity::getPlatform, platform);
+        wrapper.eq(CookieEntity::getPlatform, platform)
+                .orderByDesc(CookieEntity::getUpdatedAt)
+                .last("LIMIT 1");
         return cookieMapper.selectOne(wrapper);
     }
 
@@ -55,6 +58,21 @@ public class CookieService {
             newCookie.setUpdatedAt(LocalDateTime.now());
             return cookieMapper.insert(newCookie) > 0;
         }
+    }
+
+    /**
+     * 清空指定平台的所有Cookie值（处理重复记录场景）
+     * @param platform 平台名称
+     * @param remark 备注
+     * @return 影响行数是否大于0
+     */
+    public boolean clearCookieByPlatform(String platform, String remark) {
+        UpdateWrapper<CookieEntity> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("platform", platform)
+                .set("cookie_value", "")
+                .set("remark", remark)
+                .set("updated_at", LocalDateTime.now());
+        return cookieMapper.update(null, updateWrapper) > 0;
     }
 
     /**
