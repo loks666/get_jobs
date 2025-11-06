@@ -15,6 +15,7 @@ config.yaml
 
 # Frontend build output
 src/main/resources/dist/
+dist/
 
 ### IntelliJ IDEA ###
 *.iws
