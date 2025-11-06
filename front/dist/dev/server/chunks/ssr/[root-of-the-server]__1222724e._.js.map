@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 18, "column": 0}, "map": {"version":3,"sources":["file:///D:/Program/Project/Java/new_getjobs/get_jobs/front/app/page.tsx"],"sourcesContent":["import { redirect } from 'next/navigation'\n\nexport default function HomeRedirect() {\n  // 根路径重定向到环境配置页\n  redirect('/env-config')\n}"],"names":[],"mappings":";;;;AAAA;AAAA;;AAEe,SAAS;IACtB,eAAe;IACf,IAAA,kWAAQ,EAAC;AACX","debugId":null}}]
-}
