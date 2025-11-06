@@ -2,11 +2,8 @@ package com.getjobs.application.controller;
 
 import com.getjobs.application.entity.BossConfigEntity;
 import com.getjobs.application.entity.BossOptionEntity;
-import com.getjobs.application.service.BossConfigService;
-import com.getjobs.application.service.BossOptionService;
-import com.getjobs.application.service.BlacklistService;
+import com.getjobs.application.service.BossDataService;
 import com.getjobs.application.entity.BlacklistEntity;
-import com.getjobs.application.mapper.BlacklistMapper;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -17,20 +14,10 @@ import java.util.Map;
 @RequestMapping("/api/boss/config")
 public class BossConfigController {
 
-    private final BossConfigService bossConfigService;
-    private final BossOptionService bossOptionService;
-    private final BlacklistService blacklistService;
-    private final BlacklistMapper blacklistMapper;
+    private final BossDataService bossDataService;
 
-    public BossConfigController(
-            BossConfigService bossConfigService,
-            BossOptionService bossOptionService,
-            BlacklistService blacklistService,
-            BlacklistMapper blacklistMapper) {
-        this.bossConfigService = bossConfigService;
-        this.bossOptionService = bossOptionService;
-        this.blacklistService = blacklistService;
-        this.blacklistMapper = blacklistMapper;
+    public BossConfigController(BossDataService bossDataService) {
+        this.bossDataService = bossDataService;
     }
 
     /**
@@ -41,24 +28,24 @@ public class BossConfigController {
         Map<String, Object> result = new HashMap<>();
 
         // 获取配置
-        BossConfigEntity config = bossConfigService.getFirstConfig();
+        BossConfigEntity config = bossDataService.getFirstConfig();
         if (config == null) {
             config = new BossConfigEntity();
         }
 
         // 获取所有选项并按类型分组
         Map<String, List<BossOptionEntity>> options = new HashMap<>();
-        options.put("city", bossOptionService.getOptionsByType("city"));
-        options.put("industry", bossOptionService.getOptionsByType("industry"));
-        options.put("experience", bossOptionService.getOptionsByType("experience"));
-        options.put("jobType", bossOptionService.getOptionsByType("jobType"));
-        options.put("salary", bossOptionService.getOptionsByType("salary"));
-        options.put("degree", bossOptionService.getOptionsByType("degree"));
-        options.put("scale", bossOptionService.getOptionsByType("scale"));
-        options.put("stage", bossOptionService.getOptionsByType("stage"));
+        options.put("city", bossDataService.getOptionsByType("city"));
+        options.put("industry", bossDataService.getOptionsByType("industry"));
+        options.put("experience", bossDataService.getOptionsByType("experience"));
+        options.put("jobType", bossDataService.getOptionsByType("jobType"));
+        options.put("salary", bossDataService.getOptionsByType("salary"));
+        options.put("degree", bossDataService.getOptionsByType("degree"));
+        options.put("scale", bossDataService.getOptionsByType("scale"));
+        options.put("stage", bossDataService.getOptionsByType("stage"));
 
         // 获取黑名单列表
-        List<BlacklistEntity> blacklist = blacklistService.getAllBlacklist();
+        List<BlacklistEntity> blacklist = bossDataService.getAllBlacklist();
 
         result.put("config", config);
         result.put("options", options);
@@ -74,10 +61,10 @@ public class BossConfigController {
     public BossConfigEntity updateConfig(@RequestBody BossConfigEntity config) {
         if (config.getId() == null) {
             // 如果没有ID，创建新配置
-            return bossConfigService.saveConfig(config);
+            return bossDataService.saveConfig(config);
         } else {
             // 更新现有配置
-            return bossConfigService.updateConfig(config);
+            return bossDataService.updateConfig(config);
         }
     }
 
@@ -86,7 +73,7 @@ public class BossConfigController {
      */
     @GetMapping("/options/{type}")
     public List<BossOptionEntity> getOptionsByType(@PathVariable String type) {
-        return bossOptionService.getOptionsByType(type);
+        return bossDataService.getOptionsByType(type);
     }
 
     /**
@@ -94,7 +81,7 @@ public class BossConfigController {
      */
     @GetMapping("/blacklist")
     public List<BlacklistEntity> getBlacklist() {
-        return blacklistService.getAllBlacklist();
+        return bossDataService.getAllBlacklist();
     }
 
     /**
@@ -106,7 +93,7 @@ public class BossConfigController {
         String value = blacklist.getValue() != null ? blacklist.getValue() : "";
         String type = blacklist.getType() != null ? blacklist.getType() : "boss";
 
-        boolean success = blacklistService.addBlacklist(type, value);
+        boolean success = bossDataService.addBlacklist(type, value);
         if (success) {
             // 添加成功，返回新创建的实体
             blacklist.setId(null); // 重新从数据库获取
@@ -122,9 +109,14 @@ public class BossConfigController {
      */
     @DeleteMapping("/blacklist/{id}")
     public boolean deleteBlacklist(@PathVariable Long id) {
-        BlacklistEntity entity = blacklistMapper.selectById(id);
+        // 直接通过ID查找并删除
+        List<BlacklistEntity> allBlacklist = bossDataService.getAllBlacklist();
+        BlacklistEntity entity = allBlacklist.stream()
+                .filter(e -> e.getId().equals(id))
+                .findFirst()
+                .orElse(null);
         if (entity != null) {
-            return blacklistService.removeBlacklist(entity.getType(), entity.getValue());
+            return bossDataService.removeBlacklist(entity.getType(), entity.getValue());
         }
         return false;
     }

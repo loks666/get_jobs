@@ -5,8 +5,7 @@ import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.service.BossJobService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -23,11 +22,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * 任务投递控制器
  * 提供Boss平台的REST API和SSE实时推送功能
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
 public class JobController {
-    private static final Logger log = LoggerFactory.getLogger(JobController.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final BossJobService bossJobService;

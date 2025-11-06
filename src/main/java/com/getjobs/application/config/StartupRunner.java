@@ -1,7 +1,6 @@
 package com.getjobs.application.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -15,9 +14,9 @@ import java.net.URL;
  * 应用启动后自动打开管理页面
  * 优先级：前端服务 > 静态资源 > 不打开
  */
+@Slf4j
 @Component
 public class StartupRunner implements ApplicationRunner {
-    private static final Logger log = LoggerFactory.getLogger(StartupRunner.class);
 
     @Value("${server.port:8888}")
     private int backendPort;

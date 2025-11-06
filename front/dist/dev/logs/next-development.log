@@ -1,3 +1,37 @@
 [00:00:00.889] Server  LOG      ✓ Ready in 626ms
 [00:11:09.128] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
 [00:13:11.717] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:36:26.876] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:47:30.208] Server  LOG      ✓ Compiled in 53ms
+[00:48:02.403] Server  LOG      ✓ Compiled in 37ms
+[00:48:34.103] Server  LOG      ✓ Compiled in 41ms
+[00:48:34.291] Browser ERROR   A component is changing an uncontrolled input to be controlled. This is likely caused by the value changing from undefined to a defined value, which should not happen. Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://react.dev/link/controlled-components
+[00:49:08.445] Server  LOG      ✓ Compiled in 35ms
+[00:49:35.167] Server  LOG      ✓ Compiled in 49ms
+[00:54:50.755] Server  LOG      ✓ Compiled in 36ms
+[00:54:51.287] Browser ERROR   uncaughtError: ReferenceError: cities is not defined
+[00:55:15.525] Server  WARN     ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:55:15.731] Server  LOG      ✓ Compiled in 41ms
+[00:55:16.089] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:55:39.067] Server  LOG      ✓ Compiled in 41ms
+[00:56:04.598] Server  LOG      ✓ Compiled in 37ms
+[01:13:15.960] Server  LOG      ✓ Compiled in 36ms
+[01:13:37.430] Server  LOG      ✓ Compiled in 39ms
+[01:14:47.187] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:18:23.498] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:39:45.394] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:47:56.313] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:53:09.741] Browser ERROR   获取配置失败: {}
+[01:53:10.165] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:58:25.996] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[02:12:07.231] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[02:15:52.255] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[02:21:42.274] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[11:50:42.863] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[11:57:41.395] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[12:05:07.887] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[12:27:52.635] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[13:00:29.705] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[13:03:36.149] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[13:05:59.241] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[13:10:17.320] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold

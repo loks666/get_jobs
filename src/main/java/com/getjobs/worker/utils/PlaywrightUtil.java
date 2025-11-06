@@ -2,10 +2,9 @@ package com.getjobs.worker.utils;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Cookie;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -17,8 +16,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Playwright工具类，提供浏览器自动化相关的功能
  */
+@Slf4j
 public class PlaywrightUtil {
-    private static final Logger log = LoggerFactory.getLogger(PlaywrightUtil.class);
 
     /**
      * 设备类型枚举

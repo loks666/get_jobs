@@ -1,7 +1,6 @@
 package com.getjobs.application.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
@@ -14,11 +13,10 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 异步配置类
  * 配置异步任务执行的线程池
  */
+@Slf4j
 @Configuration
 public class AsyncConfig implements AsyncConfigurer {
-    
-    private static final Logger log = LoggerFactory.getLogger(AsyncConfig.class);
-    
+
     /**
      * 配置异步任务执行器
      * @return 线程池执行器

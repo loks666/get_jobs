@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { BiBriefcase, BiSave, BiSearch, BiMap, BiMoney, BiBuilding, BiTime, BiBarChart } from 'react-icons/bi'
+import { useState, useEffect } from 'react'
+import { BiBriefcase, BiSave, BiSearch, BiMap, BiMoney, BiBuilding, BiTime, BiBarChart, BiTrash, BiPlus } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,22 +9,176 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PageHeader from '@/app/components/PageHeader'
 
-export default function BossPage() {
-  const [config, setConfig] = useState({
-    keywords: 'Java开发工程师',
-    city: '北京',
-    salaryMin: '15',
-    salaryMax: '30',
-    experience: '3-5年',
-    education: '本科',
-    companySize: '不限',
-    financing: '不限',
-    autoApply: false,
-  })
+interface BossConfig {
+  id?: number
+  debugger?: number
+  waitTime?: number
+  keywords?: string
+  cityCode?: string
+  industry?: string
+  jobType?: string
+  experience?: string
+  degree?: string
+  salary?: string
+  scale?: string
+  stage?: string
+  sayHi?: string
+  expectedSalaryMin?: number
+  expectedSalaryMax?: number
+  enableAi?: number
+  sendImgResume?: number
+  filterDeadHr?: number
+  deadStatus?: string
+}
 
-  const handleSave = () => {
-    console.log('Saving Boss config:', config)
-    alert('Boss直聘配置已保存！')
+interface BossOption {
+  id: number
+  type: string
+  name: string
+  code: string
+}
+
+interface BossOptions {
+  city: BossOption[]
+  industry: BossOption[]
+  experience: BossOption[]
+  jobType: BossOption[]
+  salary: BossOption[]
+  degree: BossOption[]
+  scale: BossOption[]
+  stage: BossOption[]
+}
+
+interface BlacklistItem {
+  id: number
+  value: string
+  type: string
+}
+
+export default function BossPage() {
+  const [config, setConfig] = useState<BossConfig>({
+    keywords: '',
+    cityCode: '',
+    industry: '',
+    jobType: '',
+    experience: '',
+    degree: '',
+    salary: '',
+    scale: '',
+    stage: '',
+    expectedSalaryMin: 0,
+    expectedSalaryMax: 0,
+  })
+  const [options, setOptions] = useState<BossOptions>({
+    city: [],
+    industry: [],
+    experience: [],
+    jobType: [],
+    salary: [],
+    degree: [],
+    scale: [],
+    stage: [],
+  })
+  const [blacklist, setBlacklist] = useState<BlacklistItem[]>([])
+  const [newBlacklistKeyword, setNewBlacklistKeyword] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAllData()
+  }, [])
+
+  const fetchAllData = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/boss/config')
+      const data = await response.json()
+
+      if (data.config) {
+        setConfig(data.config)
+      }
+      if (data.options) {
+        setOptions(data.options)
+      }
+      if (data.blacklist) {
+        setBlacklist(data.blacklist)
+      }
+    } catch (error) {
+      console.error('Failed to fetch data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/boss/config', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config),
+      })
+
+      if (response.ok) {
+        alert('Boss直聘配置已保存！')
+        fetchAllData()
+      } else {
+        alert('保存失败，请重试')
+      }
+    } catch (error) {
+      console.error('Failed to save config:', error)
+      alert('保存失败，请重试')
+    }
+  }
+
+  const handleAddBlacklist = async () => {
+    if (!newBlacklistKeyword.trim()) {
+      alert('请输入黑名单关键词')
+      return
+    }
+
+    try {
+      const response = await fetch('http://localhost:8888/api/boss/config/blacklist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          value: newBlacklistKeyword,
+          type: 'boss',
+        }),
+      })
+
+      if (response.ok) {
+        setNewBlacklistKeyword('')
+        fetchAllData()
+      } else {
+        alert('添加失败，请重试')
+      }
+    } catch (error) {
+      console.error('Failed to add blacklist:', error)
+      alert('添加失败，请重试')
+    }
+  }
+
+  const handleDeleteBlacklist = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:8888/api/boss/config/blacklist/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        fetchAllData()
+      } else {
+        alert('删除失败，请重试')
+      }
+    } catch (error) {
+      console.error('Failed to delete blacklist:', error)
+      alert('删除失败，请重试')
+    }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">加载中...</div>
   }
 
   return (
@@ -54,37 +208,55 @@ export default function BossPage() {
               <CardDescription>设置职位搜索关键词和目标城市</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="keywords">搜索关键词</Label>
-                <Input
-                  id="keywords"
-                  value={config.keywords}
-                  onChange={(e) => setConfig({ ...config, keywords: e.target.value })}
-                  placeholder="例如：Java开发工程师"
-                />
-                <p className="text-xs text-muted-foreground">职位搜索的关键词</p>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="keywords">搜索关键词</Label>
+                  <Input
+                    id="keywords"
+                    value={config.keywords || ''}
+                    onChange={(e) => setConfig({ ...config, keywords: e.target.value })}
+                    placeholder="例如：Java开发工程师"
+                  />
+                  <p className="text-xs text-muted-foreground">职位搜索的关键词</p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="city">工作城市</Label>
-                <select
-                  id="city"
-                  value={config.city}
-                  onChange={(e) => setConfig({ ...config, city: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
-                >
-                  <option value="北京">北京</option>
-                  <option value="上海">上海</option>
-                  <option value="广州">广州</option>
-                  <option value="深圳">深圳</option>
-                  <option value="杭州">杭州</option>
-                  <option value="成都">成都</option>
-                </select>
-                <p className="text-xs text-muted-foreground">目标工作城市</p>
+                <div className="space-y-2">
+                  <Label htmlFor="city">工作城市</Label>
+                  <select
+                    id="city"
+                    value={config.cityCode || ''}
+                    onChange={(e) => setConfig({ ...config, cityCode: e.target.value })}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
+                  >
+                    <option value="">请选择</option>
+                    {options.city.map((city) => (
+                      <option key={city.id} value={city.code}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">目标工作城市</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="industry">行业类型</Label>
+                  <select
+                    id="industry"
+                    value={config.industry || ''}
+                    onChange={(e) => setConfig({ ...config, industry: e.target.value })}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
+                  >
+                    <option value="">请选择</option>
+                    {options.industry.map((industry) => (
+                      <option key={industry.id} value={industry.code}>
+                        {industry.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">目标行业类型</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
+            </CardContent>
         </Card>
 
         {/* 薪资和经验 */}
@@ -99,23 +271,23 @@ export default function BossPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="salaryMin">最低薪资 (K/月)</Label>
+                <Label htmlFor="salaryMin">期望薪资最低 (K/月)</Label>
                 <Input
                   id="salaryMin"
                   type="number"
-                  value={config.salaryMin}
-                  onChange={(e) => setConfig({ ...config, salaryMin: e.target.value })}
+                  value={config.expectedSalaryMin || ''}
+                  onChange={(e) => setConfig({ ...config, expectedSalaryMin: parseInt(e.target.value) || 0 })}
                   placeholder="15"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="salaryMax">最高薪资 (K/月)</Label>
+                <Label htmlFor="salaryMax">期望薪资最高 (K/月)</Label>
                 <Input
                   id="salaryMax"
                   type="number"
-                  value={config.salaryMax}
-                  onChange={(e) => setConfig({ ...config, salaryMax: e.target.value })}
+                  value={config.expectedSalaryMax || ''}
+                  onChange={(e) => setConfig({ ...config, expectedSalaryMax: parseInt(e.target.value) || 0 })}
                   placeholder="30"
                 />
               </div>
@@ -124,17 +296,15 @@ export default function BossPage() {
                 <Label htmlFor="experience">工作经验</Label>
                 <select
                   id="experience"
-                  value={config.experience}
+                  value={config.experience || ''}
                   onChange={(e) => setConfig({ ...config, experience: e.target.value })}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
                 >
-                  <option value="不限">不限</option>
-                  <option value="应届生">应届生</option>
-                  <option value="1年以内">1年以内</option>
-                  <option value="1-3年">1-3年</option>
-                  <option value="3-5年">3-5年</option>
-                  <option value="5-10年">5-10年</option>
-                  <option value="10年以上">10年以上</option>
+                  {options.experience.map((exp) => (
+                    <option key={exp.id} value={exp.code}>
+                      {exp.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -156,15 +326,15 @@ export default function BossPage() {
                 <Label htmlFor="education">学历要求</Label>
                 <select
                   id="education"
-                  value={config.education}
-                  onChange={(e) => setConfig({ ...config, education: e.target.value })}
+                  value={config.degree || ''}
+                  onChange={(e) => setConfig({ ...config, degree: e.target.value })}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
                 >
-                  <option value="不限">不限</option>
-                  <option value="大专">大专</option>
-                  <option value="本科">本科</option>
-                  <option value="硕士">硕士</option>
-                  <option value="博士">博士</option>
+                  {options.degree.map((deg) => (
+                    <option key={deg.id} value={deg.code}>
+                      {deg.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -172,16 +342,15 @@ export default function BossPage() {
                 <Label htmlFor="companySize">公司规模</Label>
                 <select
                   id="companySize"
-                  value={config.companySize}
-                  onChange={(e) => setConfig({ ...config, companySize: e.target.value })}
+                  value={config.scale || ''}
+                  onChange={(e) => setConfig({ ...config, scale: e.target.value })}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
                 >
-                  <option value="不限">不限</option>
-                  <option value="0-20人">0-20人</option>
-                  <option value="20-99人">20-99人</option>
-                  <option value="100-499人">100-499人</option>
-                  <option value="500-999人">500-999人</option>
-                  <option value="1000人以上">1000人以上</option>
+                  {options.scale.map((sc) => (
+                    <option key={sc.id} value={sc.code}>
+                      {sc.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -189,25 +358,83 @@ export default function BossPage() {
                 <Label htmlFor="financing">融资阶段</Label>
                 <select
                   id="financing"
-                  value={config.financing}
-                  onChange={(e) => setConfig({ ...config, financing: e.target.value })}
+                  value={config.stage || ''}
+                  onChange={(e) => setConfig({ ...config, stage: e.target.value })}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
                 >
-                  <option value="不限">不限</option>
-                  <option value="未融资">未融资</option>
-                  <option value="天使轮">天使轮</option>
-                  <option value="A轮">A轮</option>
-                  <option value="B轮">B轮</option>
-                  <option value="C轮及以上">C轮及以上</option>
-                  <option value="已上市">已上市</option>
+                  {options.stage.map((st) => (
+                    <option key={st.id} value={st.code}>
+                      {st.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* 黑名单管理 */}
+        <Card className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BiSearch className="text-primary" />
+              黑名单管理
+            </CardTitle>
+            <CardDescription>添加或删除不想投递的公司或职位关键词</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* 添加黑名单 */}
+              <div className="flex gap-2">
+                <Input
+                  value={newBlacklistKeyword}
+                  onChange={(e) => setNewBlacklistKeyword(e.target.value)}
+                  placeholder="输入黑名单关键词（公司名或职位关键词）"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddBlacklist()
+                    }
+                  }}
+                />
+                <Button onClick={handleAddBlacklist} className="whitespace-nowrap">
+                  <BiPlus />
+                  添加
+                </Button>
+              </div>
+
+              {/* 黑名单列表 */}
+              <div className="space-y-2">
+                {blacklist.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="text-sm">暂无黑名单</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {blacklist.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                      >
+                        <span className="text-sm">{item.value}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteBlacklist(item.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <BiTrash />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* 操作按钮 */}
-        <div className="flex justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="flex justify-center items-center animate-in fade-in slide-in-from-bottom-9 duration-700">
           <Button onClick={handleSave} size="lg" className="min-w-[160px]">
             <BiSave />
             保存配置

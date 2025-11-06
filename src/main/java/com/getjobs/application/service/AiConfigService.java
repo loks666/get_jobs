@@ -3,8 +3,7 @@ package com.getjobs.application.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.getjobs.application.entity.AiEntity;
 import com.getjobs.application.mapper.AiMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,10 +14,9 @@ import java.util.List;
 /**
  * AI配置服务类
  */
+@Slf4j
 @Service
 public class AiConfigService {
-
-    private static final Logger log = LoggerFactory.getLogger(AiConfigService.class);
 
     @Autowired
     private AiMapper aiMapper;

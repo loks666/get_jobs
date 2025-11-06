@@ -1,7 +1,6 @@
 package com.getjobs.application.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -19,9 +18,9 @@ import java.nio.file.Paths;
  * 静态资源配置
  * 配置前端静态资源的访问路径
  */
+@Slf4j
 @Configuration
 public class StaticResourceConfiguration implements WebMvcConfigurer {
-    private static final Logger logger = LoggerFactory.getLogger(StaticResourceConfiguration.class);
     private static final int FRONTEND_PORT = 6866;
 
     @Override
@@ -37,17 +36,17 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
         boolean hasStaticResources = Files.exists(staticPath);
 
         if (hasDistResources || hasStaticResources) {
-            logger.info("配置静态资源服务:");
+            log.info("配置静态资源服务:");
 
             // 根据前端服务运行状态输出不同日志
             if (hasFrontendService) {
-                logger.info("  - 使用前端开发服务 (端口 {})", FRONTEND_PORT);
+                log.info("  - 使用前端开发服务 (端口 {})", FRONTEND_PORT);
             } else {
                 if (hasDistResources) {
-                    logger.info("  - 使用 dist 目录: {}", distPath.toAbsolutePath());
+                    log.info("  - 使用 dist 目录: {}", distPath.toAbsolutePath());
                 }
                 if (hasStaticResources) {
-                    logger.info("  - 使用 static 目录: {}", staticPath.toAbsolutePath());
+                    log.info("  - 使用 static 目录: {}", staticPath.toAbsolutePath());
                 }
             }
 
@@ -86,7 +85,7 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
                         }
                     });
         } else {
-            logger.warn("未找到静态资源目录 (dist 或 static)");
+            log.warn("未找到静态资源目录 (dist 或 static)");
         }
     }
 

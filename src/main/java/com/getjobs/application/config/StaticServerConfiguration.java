@@ -1,8 +1,7 @@
 package com.getjobs.application.config;
 
 import org.apache.catalina.connector.Connector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -19,9 +18,9 @@ import java.nio.file.Paths;
  * 静态资源服务器配置
  * 当前端 dev 服务未运行时，在 6866 端口提供静态资源
  */
+@Slf4j
 @Configuration
 public class StaticServerConfiguration {
-    private static final Logger logger = LoggerFactory.getLogger(StaticServerConfiguration.class);
     private static final int FRONTEND_PORT = 6866;
     private static final String DIST_PATH = "src/main/resources/dist";
     private static final String STATIC_PATH = "src/main/resources/static";
@@ -33,7 +32,7 @@ public class StaticServerConfiguration {
             boolean hasFrontendDev = detectFrontendDevServer();
 
             if (hasFrontendDev) {
-                logger.info("检测到前端开发服务运行在端口 {}", FRONTEND_PORT);
+                log.info("检测到前端开发服务运行在端口 {}", FRONTEND_PORT);
                 return;
             }
 
@@ -41,14 +40,14 @@ public class StaticServerConfiguration {
             boolean hasStaticResources = checkStaticResources();
 
             if (hasStaticResources) {
-                logger.info("未检测到前端开发服务，但找到静态资源");
-                logger.info("配置额外端口 {} 用于提供静态资源", FRONTEND_PORT);
+                log.info("未检测到前端开发服务，但找到静态资源");
+                log.info("配置额外端口 {} 用于提供静态资源", FRONTEND_PORT);
 
                 Connector connector = new Connector(TomcatServletWebServerFactory.DEFAULT_PROTOCOL);
                 connector.setPort(FRONTEND_PORT);
                 server.addAdditionalTomcatConnectors(connector);
             } else {
-                logger.warn("未检测到前端开发服务，也未找到静态资源");
+                log.warn("未检测到前端开发服务，也未找到静态资源");
             }
         };
     }
@@ -75,15 +74,15 @@ public class StaticServerConfiguration {
                 connection.disconnect();
 
                 if (responseCode >= 200 && responseCode < 500) {
-                    logger.info("检测到前端开发服务运行在端口 {} (地址: {})", FRONTEND_PORT, host);
+                    log.info("检测到前端开发服务运行在端口 {} (地址: {})", FRONTEND_PORT, host);
                     return true;
                 }
             } catch (IOException e) {
-                logger.debug("检测前端服务失败 ({}): {}", host, e.getMessage());
+                log.debug("检测前端服务失败 ({}): {}", host, e.getMessage());
             }
         }
 
-        logger.debug("前端开发服务检测失败，已尝试所有地址");
+        log.debug("前端开发服务检测失败，已尝试所有地址");
         return false;
     }
 
@@ -94,15 +93,15 @@ public class StaticServerConfiguration {
         Path distPath = Paths.get(DIST_PATH);
         Path staticPath = Paths.get(STATIC_PATH);
 
-        logger.info("检查静态资源路径:");
-        logger.info("  dist路径: {} (绝对路径: {})", DIST_PATH, distPath.toAbsolutePath());
-        logger.info("  static路径: {} (绝对路径: {})", STATIC_PATH, staticPath.toAbsolutePath());
+        log.info("检查静态资源路径:");
+        log.info("  dist路径: {} (绝对路径: {})", DIST_PATH, distPath.toAbsolutePath());
+        log.info("  static路径: {} (绝对路径: {})", STATIC_PATH, staticPath.toAbsolutePath());
 
         boolean hasDist = hasContent(distPath);
         boolean hasStatic = hasContent(staticPath);
 
-        logger.info("  dist存在: {}", hasDist);
-        logger.info("  static存在: {}", hasStatic);
+        log.info("  dist存在: {}", hasDist);
+        log.info("  static存在: {}", hasStatic);
 
         return hasDist || hasStatic;
     }
@@ -117,7 +116,7 @@ public class StaticServerConfiguration {
             }
             return Files.list(path).findAny().isPresent();
         } catch (IOException e) {
-            logger.error("检查路径失败: {}", path, e);
+            log.error("检查路径失败: {}", path, e);
             return false;
         }
     }

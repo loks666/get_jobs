@@ -4,8 +4,7 @@ import com.microsoft.playwright.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -20,10 +19,10 @@ import java.util.function.Consumer;
  * Spring管理的单例Bean，在应用启动时自动初始化Playwright实例
  * 支持4个求职平台的独立BrowserContext和登录状态监控
  */
+@Slf4j
 @Getter
 @Component
 public class PlaywrightManager {
-    private static final Logger log = LoggerFactory.getLogger(PlaywrightManager.class);
 
     // Playwright实例
     private Playwright playwright;

@@ -1,14 +1,13 @@
 package com.getjobs.worker.service;
 
-import com.getjobs.application.service.BlacklistService;
+import com.getjobs.application.service.BossDataService;
 import com.getjobs.worker.boss.Boss;
 import com.getjobs.worker.boss.BossConfig;
 import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.microsoft.playwright.Page;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -20,14 +19,14 @@ import java.util.function.Consumer;
  * Boss直聘任务服务
  * 管理Boss平台的投递任务执行和状态
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BossJobService implements JobPlatformService {
-    private static final Logger log = LoggerFactory.getLogger(BossJobService.class);
     private static final String PLATFORM = "boss";
 
     private final PlaywrightManager playwrightManager;
-    private final BlacklistService blacklistService;
+    private final BossDataService bossDataService;
 
     // 任务运行状态
     private volatile boolean isRunning = false;
@@ -59,13 +58,13 @@ public class BossJobService implements JobPlatformService {
             }
 
             // 加载配置
-            BossConfig config = BossConfig.init();
+            BossConfig config = bossDataService.loadBossConfig();
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "配置加载成功"));
 
             // 从数据库加载黑名单
-            Set<String> blackCompanies = blacklistService.getBlackCompanies();
-            Set<String> blackRecruiters = blacklistService.getBlackRecruiters();
-            Set<String> blackJobs = blacklistService.getBlackJobs();
+            Set<String> blackCompanies = bossDataService.getBlackCompanies();
+            Set<String> blackRecruiters = bossDataService.getBlackRecruiters();
+            Set<String> blackJobs = bossDataService.getBlackJobs();
             progressCallback.accept(JobProgressMessage.info(PLATFORM,
                 String.format("黑名单加载成功: 公司(%d) 招聘者(%d) 职位(%d)",
                     blackCompanies.size(), blackRecruiters.size(), blackJobs.size())));
@@ -105,13 +104,13 @@ public class BossJobService implements JobPlatformService {
      */
     private void saveBlacklistToDatabase(Set<String> companies, Set<String> recruiters, Set<String> jobs) {
         // 清空现有数据
-        blacklistService.getAllBlacklist().forEach(entity ->
-            blacklistService.removeBlacklist(entity.getType(), entity.getValue()));
+        bossDataService.getAllBlacklist().forEach(entity ->
+            bossDataService.removeBlacklist(entity.getType(), entity.getValue()));
 
         // 保存新数据
-        blacklistService.addBlacklistBatch("company", companies);
-        blacklistService.addBlacklistBatch("recruiter", recruiters);
-        blacklistService.addBlacklistBatch("job", jobs);
+        bossDataService.addBlacklistBatch("company", companies);
+        bossDataService.addBlacklistBatch("recruiter", recruiters);
+        bossDataService.addBlacklistBatch("job", jobs);
     }
 
     @Override
