@@ -1,12 +1,11 @@
 package com.getjobs.worker.liepin;
 
 import com.getjobs.worker.utils.JobUtils;
+import com.getjobs.worker.utils.PlaywrightUtil;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import lombok.SneakyThrows;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.getjobs.worker.utils.PlaywrightUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,7 +13,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import static com.getjobs.worker.liepin.Locators.*;
 import static com.getjobs.worker.utils.Bot.sendMessageByTime;
@@ -25,13 +26,13 @@ import static com.getjobs.worker.utils.JobUtils.formatDuration;
  * @author loks666
  * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  */
+@Slf4j
 public class Liepin {
     static {
         // 在类加载时就设置日志文件名，确保Logger初始化时能获取到正确的属性
         System.setProperty("log.name", "liepin");
     }
-    
-    private static final Logger log = LoggerFactory.getLogger(Liepin.class);
+
     static String homeUrl = "https://www.liepin.com/";
     static String cookiePath = "./src/main/java/liepin/cookie.json";
     static int maxPage = 50;
@@ -81,16 +82,6 @@ public class Liepin {
         sendMessageByTime(message);
         resultList.clear();
         PlaywrightUtil.close();
-        
-        // 确保所有日志都被刷新到文件
-        try {
-            Thread.sleep(1000); // 等待1秒确保日志写入完成
-            // 强制刷新日志 - 使用正确的方法
-            ch.qos.logback.classic.LoggerContext loggerContext = (ch.qos.logback.classic.LoggerContext) LoggerFactory.getILoggerFactory();
-            loggerContext.stop();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 
 
