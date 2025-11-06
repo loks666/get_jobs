@@ -1,12 +1,19 @@
 package com.getjobs.worker.manager;
 
 import com.microsoft.playwright.*;
+import com.getjobs.application.entity.CookieEntity;
+import com.getjobs.application.service.CookieService;
+import com.microsoft.playwright.options.Cookie;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.List;
 import java.util.Map;
@@ -64,6 +71,9 @@ public class PlaywrightManager {
     private static final String JOB51_URL = "https://www.51job.com";
     private static final String ZHILIAN_URL = "https://www.zhaopin.com";
 
+    @Autowired
+    private CookieService cookieService;
+
     /**
      * 初始化Playwright实例
      * 在Spring容器启动后自动执行
@@ -112,6 +122,51 @@ public class PlaywrightManager {
         // 创建页面
         bossPage = bossContext.newPage();
         bossPage.setDefaultTimeout(DEFAULT_TIMEOUT);
+
+        // 尝试从数据库加载Boss平台Cookie到上下文
+        try {
+            CookieEntity cookieEntity = cookieService.getCookieByPlatform("boss");
+            if (cookieEntity != null && cookieEntity.getCookieValue() != null && !cookieEntity.getCookieValue().isBlank()) {
+                String cookieJson = cookieEntity.getCookieValue();
+                JSONArray jsonArray = new JSONArray(cookieJson);
+
+                List<Cookie> cookies = new java.util.ArrayList<>();
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+                    Cookie cookie = new Cookie(jsonObject.getString("name"), jsonObject.getString("value"));
+
+                    if (!jsonObject.isNull("domain")) {
+                        cookie.domain = jsonObject.getString("domain");
+                    }
+
+                    if (!jsonObject.isNull("path")) {
+                        cookie.path = jsonObject.getString("path");
+                    }
+
+                    if (!jsonObject.isNull("expires")) {
+                        cookie.expires = jsonObject.getDouble("expires");
+                    }
+
+                    if (!jsonObject.isNull("secure")) {
+                        cookie.secure = jsonObject.getBoolean("secure");
+                    }
+
+                    if (!jsonObject.isNull("httpOnly")) {
+                        cookie.httpOnly = jsonObject.getBoolean("httpOnly");
+                    }
+
+                    cookies.add(cookie);
+                }
+
+                bossContext.addCookies(cookies);
+                log.info("已从数据库加载Boss Cookie并注入浏览器上下文，共 {} 条", cookies.size());
+            } else {
+                log.info("数据库未找到Boss Cookie或值为空，跳过Cookie注入");
+            }
+        } catch (Exception e) {
+            log.warn("从数据库加载Boss Cookie失败: {}", e.getMessage());
+        }
 
         // 导航到Boss直聘首页
         try {
@@ -237,6 +292,20 @@ public class PlaywrightManager {
         log.info("检测到{}平台登录成功", platform);
         loginStatus.put(platform, true);
 
+        // 登录成功时保存 Cookie 到数据库（仅 boss 平台）
+        if ("boss".equals(platform)) {
+            try {
+                List<com.microsoft.playwright.options.Cookie> cookies = bossContext.cookies();
+                String cookieJson = new ObjectMapper().writeValueAsString(cookies);
+                boolean cookieResult = cookieService.saveOrUpdateCookie("boss", cookieJson, "login success");
+                if (cookieResult) {
+                    log.info("Boss登录成功，已保存Cookie到数据库，共 {} 条", cookies.size());
+                }
+            } catch (Exception e) {
+                log.warn("Boss登录成功后保存Cookie失败: {}", e.getMessage());
+            }
+        }
+
         // 通知所有监听器
         LoginStatusChange change = new LoginStatusChange(platform, true, System.currentTimeMillis());
         loginStatusListeners.forEach(listener -> {
@@ -246,6 +315,21 @@ public class PlaywrightManager {
                 log.error("通知登录状态监听器时发生错误", e);
             }
         });
+    }
+
+    /**
+     * 主动保存 Boss Cookie 到数据库（用于调试/验证）
+     */
+    public void saveBossCookiesToDb(String remark) {
+        try {
+            List<com.microsoft.playwright.options.Cookie> cookies = bossContext.cookies();
+            boolean boss = cookieService.saveOrUpdateCookie("boss", cookies.toString(), remark);
+            if (boss) {
+                log.info("主动保存Boss Cookie到数据库，共 {} 条，remark={}", cookies.size(), remark);
+            }
+        } catch (Exception e) {
+            log.warn("主动保存Boss Cookie失败: {}", e.getMessage());
+        }
     }
 
     /**

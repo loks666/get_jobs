@@ -1,8 +1,9 @@
 package com.getjobs.application.controller;
 
+import com.getjobs.application.entity.CookieEntity;
+import com.getjobs.application.service.CookieService;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.service.BossJobService;
-import com.getjobs.worker.dto.JobProgressMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,9 @@ public class BossController {
     @Autowired
     private PlaywrightManager playwrightManager;
 
+    @Autowired
+    private CookieService cookieService;
+
     /**
      * 检查登录状态
      * @return 登录状态信息
@@ -41,6 +45,15 @@ public class BossController {
             response.put("success", true);
             response.put("isLoggedIn", isLoggedIn);
             response.put("message", isLoggedIn ? "已登录" : "未登录");
+
+            // 如果已登录，顺便触发一次Cookie保存，确保扫码成功后持久化
+            if (isLoggedIn) {
+                try {
+                    playwrightManager.saveBossCookiesToDb("login-status check");
+                } catch (Exception e) {
+                    log.warn("在登录状态查询中触发保存Cookie失败: {}", e.getMessage());
+                }
+            }
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -195,5 +208,81 @@ public class BossController {
         response.put("timestamp", System.currentTimeMillis());
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 调试接口：读取数据库中的 Boss Cookie 记录
+     */
+    @GetMapping("/cookie")
+    public ResponseEntity<Map<String, Object>> getBossCookieRecord() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            CookieEntity cookie = cookieService.getCookieByPlatform("boss");
+            Map<String, Object> data = new HashMap<>();
+            if (cookie != null) {
+                data.put("id", cookie.getId());
+                data.put("platform", cookie.getPlatform());
+                data.put("cookie_value", cookie.getCookieValue());
+                data.put("remark", cookie.getRemark());
+                data.put("created_at", cookie.getCreatedAt());
+                data.put("updated_at", cookie.getUpdatedAt());
+            } else {
+                data.put("platform", "boss");
+                data.put("cookie_value", null);
+                data.put("message", "未找到Boss Cookie记录");
+            }
+            response.put("success", true);
+            response.put("data", data);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "读取Cookie记录失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * 退出登录：仅将数据库cookie值置为null，不清理运行中的上下文Cookie
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, Object>> logoutBoss() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            // 更新登录状态为未登录（供前端轮询接口读取）
+            try {
+                playwrightManager.getLoginStatus().put("boss", false);
+            } catch (Exception e) {
+                // 忽略写状态异常
+            }
+
+            // 清空数据库中 Boss 平台的所有 Cookie 值（处理重复记录场景）
+            cookieService.clearCookieByPlatform("boss", "manual logout");
+
+            response.put("success", true);
+            response.put("message", "Boss已退出登录，数据库Cookie已置空");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "退出登录失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * 调试接口：主动保存当前上下文中的 Boss Cookie 到数据库
+     */
+    @PostMapping("/save-cookie")
+    public ResponseEntity<Map<String, Object>> saveBossCookie() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            playwrightManager.saveBossCookiesToDb("manual save");
+            response.put("success", true);
+            response.put("message", "已主动保存Boss Cookie到数据库");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "保存Boss Cookie失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 }
