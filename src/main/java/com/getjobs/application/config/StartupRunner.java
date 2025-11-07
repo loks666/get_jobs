@@ -10,7 +10,7 @@ import com.getjobs.worker.manager.PlaywrightManager;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 
 /**
  * 应用启动后自动打开管理页面
@@ -79,8 +79,10 @@ public class StartupRunner implements ApplicationRunner {
 
         for (String host : hosts) {
             try {
-                URL url = new URL("http://" + host + ":" + port);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                // 使用URI替代已过时的URL构造函数
+                HttpURLConnection connection = (HttpURLConnection) URI.create("http://" + host + ":" + port)
+                        .toURL()
+                        .openConnection();
 
                 connection.setConnectTimeout(2000);
                 connection.setReadTimeout(2000);

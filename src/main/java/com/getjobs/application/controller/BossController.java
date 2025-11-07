@@ -233,7 +233,7 @@ public class BossController {
     }
 
     /**
-     * 退出登录：仅将数据库cookie值置为null，不清理运行中的上下文Cookie
+     * 退出登录：清空数据库Cookie并清理运行中的上下文Cookie
      */
     @PostMapping("/logout")
     public ResponseEntity<Map<String, Object>> logoutBoss() {
@@ -242,17 +242,24 @@ public class BossController {
             // 更新登录状态为未登录（供前端轮询接口读取）
             try {
                 playwrightManager.getLoginStatus().put("boss", false);
-            } catch (Exception e) {
-                // 忽略写状态异常
+            } catch (Exception ignored) {
             }
 
             // 清空数据库中 Boss 平台的所有 Cookie 值（处理重复记录场景）
             cookieService.clearCookieByPlatform("boss", "manual logout");
 
+            // 清理运行中的上下文Cookie
+            try {
+                playwrightManager.clearBossCookies();
+            } catch (Exception e) {
+                log.warn("清理Boss上下文Cookie时发生异常，但不影响退出流程: {}", e.getMessage());
+            }
+
             response.put("success", true);
-            response.put("message", "Boss已退出登录，数据库Cookie已置空");
+            response.put("message", "Boss已退出登录，数据库Cookie和上下文Cookie均已清理");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            log.error("退出登录失败", e);
             response.put("success", false);
             response.put("message", "退出登录失败: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);

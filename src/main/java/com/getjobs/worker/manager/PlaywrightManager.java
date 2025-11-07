@@ -165,7 +165,6 @@ public class PlaywrightManager {
                     Locator qrSwitch = bossPage.locator(".btn-sign-switch.ewm-switch");
                     if (qrSwitch.count() > 0) {
                         qrSwitch.click();
-                        log.info("已点击二维码登录切换按钮（.btn-sign-switch.ewm-switch）");
                     } else {
                         // 兜底：按文本匹配内部提示
                         Locator tip = bossPage.getByText("APP扫码登录");
@@ -192,14 +191,10 @@ public class PlaywrightManager {
         } catch (Exception e) {
             log.warn("Boss直聘页面导航失败: {}", e.getMessage());
         }
-
         // 初始化登录状态为未登录
         loginStatus.put("boss", checkIfLoggedIn());
-
         // 设置登录状态监控
         setupLoginMonitoring(bossPage);
-
-        log.info("Boss直聘平台初始化完成");
     }
 
     /**
@@ -258,7 +253,7 @@ public class PlaywrightManager {
      * @param platform 平台名称
      */
     private void onLoginSuccess(String platform) {
-        log.info("检测到{}平台登录成功", platform);
+        log.info("{}平台登录成功", platform);
         loginStatus.put(platform, true);
 
         // 登录成功时保存 Cookie 到数据库（仅 boss 平台）
@@ -289,7 +284,7 @@ public class PlaywrightManager {
             String cookieJson = new ObjectMapper().writeValueAsString(cookies);
             boolean result = cookieService.saveOrUpdateCookie("boss", cookieJson, remark);
             if (result) {
-                log.info("Boss Cookie已保存到数据库，共 {} 条，remark={}", cookies.size(), remark);
+                log.info("保存Boss Cookie成功，共 {} 条，remark={}", cookies.size(), remark);
             }
         } catch (Exception e) {
             log.warn("保存Boss Cookie失败: {}", e.getMessage());
@@ -301,6 +296,24 @@ public class PlaywrightManager {
      */
     public void saveBossCookiesToDb(String remark) {
         saveBossCookiesToDatabase(remark);
+    }
+
+    /**
+     * 清理Boss上下文中的Cookie
+     * 用于退出登录时清除浏览器上下文中的所有Cookie
+     */
+    public void clearBossCookies() {
+        try {
+            if (bossContext != null) {
+                bossContext.clearCookies();
+                log.info("已清理Boss上下文中的所有Cookie");
+            } else {
+                log.warn("Boss上下文不存在，无法清理Cookie");
+            }
+        } catch (Exception e) {
+            log.error("清理Boss上下文Cookie失败: {}", e.getMessage(), e);
+            throw new RuntimeException("清理Boss上下文Cookie失败", e);
+        }
     }
 
     /**
