@@ -78,6 +78,7 @@ public class JobController {
      */
     @GetMapping(value = "/login-status/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamLoginStatus() {
+        log.info("新的SSE连接请求：登录状态推送");
         SseEmitter emitter = new SseEmitter(0L);
         loginStatusEmitters.add(emitter);
 
@@ -103,12 +104,17 @@ public class JobController {
 
         // 发送连接成功消息和当前登录状态
         try {
+            boolean bossLoggedIn = playwrightManager.isLoggedIn("boss");
+            log.info("发送SSE连接成功消息，当前Boss登录状态: {}", bossLoggedIn);
+
             emitter.send(SseEmitter.event()
                     .name("connected")
                     .data(Map.of(
                             "message", "已连接到登录状态推送",
-                            "bossLoggedIn", playwrightManager.isLoggedIn("boss")
+                            "bossLoggedIn", bossLoggedIn
                     )));
+
+            log.info("SSE连接成功消息已发送");
         } catch (IOException e) {
             log.error("发送SSE连接消息失败", e);
         }

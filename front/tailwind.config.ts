@@ -19,7 +19,7 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ['Consolas', 'SimHei', 'sans-serif'],
+        sans: ['Microsoft YaHei', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

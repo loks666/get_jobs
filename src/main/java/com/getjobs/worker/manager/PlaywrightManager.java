@@ -1,6 +1,7 @@
 package com.getjobs.worker.manager;
 
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.WaitUntilState;
 import com.getjobs.application.entity.CookieEntity;
 import com.getjobs.application.service.CookieService;
 import com.microsoft.playwright.options.Cookie;
@@ -79,15 +80,16 @@ public class PlaywrightManager {
      */
     public void init() {
         if (isInitialized()) {
-            log.info("Playwright管理器已初始化，跳过重复初始化");
             return;
         }
-        log.info("开始初始化Playwright管理器...");
+        log.info("========================================");
+        log.info("  初始化浏览器自动化引擎");
+        log.info("========================================");
 
         try {
             // 启动Playwright
             playwright = Playwright.create();
-            log.info("Playwright实例创建成功");
+            log.info("✓ Playwright引擎已启动");
 
             // 创建浏览器实例，使用固定CDP端口7866，最大化启动
             browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
@@ -97,14 +99,15 @@ public class PlaywrightManager {
                             "--remote-debugging-port=" + CDP_PORT, // 使用固定CDP端口
                             "--start-maximized" // 最大化启动窗口
                     )));
-            log.info("浏览器实例创建成功（CDP端口: {}）", CDP_PORT);
+            log.info("✓ Chrome浏览器已启动 (调试端口: {})", CDP_PORT);
 
             // 初始化Boss直聘平台
             initBossPlatform();
 
-            log.info("Playwright管理器初始化完成！");
+            log.info("✓ 浏览器自动化引擎初始化完成");
+            log.info("========================================");
         } catch (Exception e) {
-            log.error("Playwright管理器初始化失败", e);
+            log.error("✗ 浏览器自动化引擎初始化失败", e);
             throw new RuntimeException("Playwright初始化失败", e);
         }
     }
@@ -117,7 +120,7 @@ public class PlaywrightManager {
 
         // 创建独立的BrowserContext
         bossContext = browser.newContext(new Browser.NewContextOptions()
-                .setViewportSize(null) // 不设置固定视口，允许窗口自适应
+                .setViewportSize(null) // 不设置固定视口，使用浏览器窗口实际大小
                 .setUserAgent(
                         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"));
 
@@ -145,13 +148,36 @@ public class PlaywrightManager {
             log.warn("从数据库加载Boss Cookie失败: {}", e.getMessage());
         }
 
-        // 导航到Boss直聘首页
-        try {
-            bossPage.navigate(BOSS_URL);
-            log.info("Boss直聘页面已导航到: {}", BOSS_URL);
+        // 导航到Boss直聘首页（带重试机制）
+        int maxRetries = 3;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                log.info("正在导航到Boss直聘首页（第{}/{}次尝试）...", attempt, maxRetries);
 
-            // 等待页面加载
-            Thread.sleep(2000);
+                // 使用DOMCONTENTLOADED策略，不等待所有资源加载完成
+                bossPage.navigate(BOSS_URL, new Page.NavigateOptions()
+                        .setTimeout(60000) // 增加超时到60秒
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)); // 只等待DOM加载完成
+
+                log.info("Boss直聘页面导航成功");
+                break; // 成功则跳出循环
+
+            } catch (Exception e) {
+                if (attempt == maxRetries) {
+                    log.error("Boss直聘页面导航失败，已重试{}次", maxRetries, e);
+                } else {
+                    log.warn("Boss直聘页面导航失败（第{}/{}次），错误: {}，2秒后重试...",
+                            attempt, maxRetries, e.getMessage());
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+        }
+
+        try {
 
             // 检查是否需要登录
             if (!checkIfLoggedIn()) {
@@ -191,8 +217,8 @@ public class PlaywrightManager {
         } catch (Exception e) {
             log.warn("Boss直聘页面导航失败: {}", e.getMessage());
         }
-        // 初始化登录状态为未登录
-        loginStatus.put("boss", checkIfLoggedIn());
+        // 初始化登录状态并通知（如果有SSE连接会立即推送）
+        setLoginStatus("boss", checkIfLoggedIn());
         // 设置登录状态监控
         setupLoginMonitoring(bossPage);
     }
@@ -254,22 +280,14 @@ public class PlaywrightManager {
      */
     private void onLoginSuccess(String platform) {
         log.info("{}平台登录成功", platform);
-        loginStatus.put(platform, true);
+
+        // 更新登录状态并通知（统一使用setLoginStatus方法）
+        setLoginStatus(platform, true);
 
         // 登录成功时保存 Cookie 到数据库（仅 boss 平台）
         if ("boss".equals(platform)) {
             saveBossCookiesToDatabase("login success");
         }
-
-        // 通知所有监听器
-        LoginStatusChange change = new LoginStatusChange(platform, true, System.currentTimeMillis());
-        loginStatusListeners.forEach(listener -> {
-            try {
-                listener.accept(change);
-            } catch (Exception e) {
-                log.error("通知登录状态监听器时发生错误", e);
-            }
-        });
     }
 
     /**
@@ -402,6 +420,33 @@ public class PlaywrightManager {
      */
     public boolean isLoggedIn(String platform) {
         return loginStatus.getOrDefault(platform, false);
+    }
+
+    /**
+     * 手动设置平台登录状态（会触发SSE通知）
+     *
+     * @param platform 平台名称
+     * @param isLoggedIn 是否已登录
+     */
+    public void setLoginStatus(String platform, boolean isLoggedIn) {
+        Boolean previousStatus = loginStatus.get(platform);
+
+        // 只有状态真正发生变化时才更新和通知
+        if (previousStatus == null || previousStatus != isLoggedIn) {
+            loginStatus.put(platform, isLoggedIn);
+
+            // 通知所有监听器（触发SSE推送）
+            LoginStatusChange change = new LoginStatusChange(platform, isLoggedIn, System.currentTimeMillis());
+            loginStatusListeners.forEach(listener -> {
+                try {
+                    listener.accept(change);
+                } catch (Exception e) {
+                    log.error("通知登录状态监听器失败: platform={}, isLoggedIn={}", platform, isLoggedIn, e);
+                }
+            });
+
+//            log.info("登录状态已更新: platform={}, isLoggedIn={}", platform, isLoggedIn);
+        }
     }
 
     /**

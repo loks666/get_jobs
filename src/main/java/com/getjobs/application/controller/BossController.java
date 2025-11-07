@@ -239,11 +239,8 @@ public class BossController {
     public ResponseEntity<Map<String, Object>> logoutBoss() {
         Map<String, Object> response = new HashMap<>();
         try {
-            // 更新登录状态为未登录（供前端轮询接口读取）
-            try {
-                playwrightManager.getLoginStatus().put("boss", false);
-            } catch (Exception ignored) {
-            }
+            // 更新登录状态为未登录并触发SSE通知
+            playwrightManager.setLoginStatus("boss", false);
 
             // 清空数据库中 Boss 平台的所有 Cookie 值（处理重复记录场景）
             cookieService.clearCookieByPlatform("boss", "manual logout");

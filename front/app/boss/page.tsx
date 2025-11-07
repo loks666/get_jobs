@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PageHeader from '@/app/components/PageHeader'
 
@@ -98,25 +99,77 @@ export default function BossPage() {
 
   useEffect(() => {
     fetchAllData()
-    checkLoginStatus()
-    // 定期检查登录状态
-    const interval = setInterval(checkLoginStatus, 5000)
-    return () => clearInterval(interval)
-  }, [])
 
-  const checkLoginStatus = async () => {
+    // 确保在客户端环境且 EventSource 可用
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
+      console.warn('EventSource 不可用，无法连接SSE')
+      setCheckingLogin(false)
+      return
+    }
+
+    // 使用SSE实时接收登录状态变化
+    let eventSource: EventSource | null = null
+
     try {
-      const response = await fetch('http://localhost:8888/api/boss/login-status')
-      const data = await response.json()
-      if (data.success) {
-        setIsLoggedIn(data.isLoggedIn)
+      console.log('[SSE] 正在创建连接到: http://localhost:8888/api/jobs/login-status/stream')
+      eventSource = new EventSource('http://localhost:8888/api/jobs/login-status/stream')
+
+      // 监听打开事件
+      eventSource.onopen = () => {
+        console.log('[SSE] 连接已打开')
+      }
+
+      // 连接成功
+      eventSource.addEventListener('connected', (event) => {
+        console.log('[SSE] 收到 connected 事件:', event.data)
+        try {
+          const data = JSON.parse(event.data)
+          console.log('[SSE] 解析后的数据:', data)
+          console.log('[SSE] bossLoggedIn =', data.bossLoggedIn)
+          setIsLoggedIn(data.bossLoggedIn || false)
+          setCheckingLogin(false)
+          console.log('[SSE] 状态已更新: isLoggedIn =', data.bossLoggedIn || false, ', checkingLogin = false')
+        } catch (error) {
+          console.error('[SSE] 解析连接消息失败:', error)
+        }
+      })
+
+      // 登录状态变化
+      eventSource.addEventListener('login-status', (event) => {
+        console.log('[SSE] 收到 login-status 事件:', event.data)
+        try {
+          const data = JSON.parse(event.data)
+          console.log('[SSE] 登录状态变化:', data)
+          if (data.platform === 'boss') {
+            setIsLoggedIn(data.isLoggedIn)
+            setCheckingLogin(false)
+            console.log('[SSE] Boss登录状态已更新:', data.isLoggedIn)
+          }
+        } catch (error) {
+          console.error('[SSE] 解析登录状态消息失败:', error)
+        }
+      })
+
+      // 连接错误
+      eventSource.onerror = (e) => {
+        console.warn('[SSE] 连接失败或中断，浏览器将自动尝试重连', e)
+        console.log('[SSE] EventSource readyState:', eventSource?.readyState)
+        setCheckingLogin(false)
+        // SSE会自动重连，不需要手动处理
       }
     } catch (error) {
-      console.error('Failed to check login status:', error)
-    } finally {
+      console.error('[SSE] 创建SSE连接失败:', error)
       setCheckingLogin(false)
     }
-  }
+
+    // 组件卸载时关闭SSE连接
+    return () => {
+      if (eventSource) {
+        console.log('[SSE] 关闭SSE连接')
+        eventSource.close()
+      }
+    }
+  }, [])
 
   const fetchAllData = async () => {
     try {
@@ -516,18 +569,17 @@ export default function BossPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="city">工作城市</Label>
-                  <select
+                  <Select
                     id="city"
                     value={config.cityCode || ''}
                     onChange={(e) => setConfig({ ...config, cityCode: e.target.value })}
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
                   >
                     {options.city.map((city) => (
                       <option key={city.id} value={city.code}>
                         {city.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   <p className="text-xs text-muted-foreground">目标工作城市（按设定顺序显示）</p>
                 </div>
 
@@ -636,15 +688,15 @@ export default function BossPage() {
             <div className="space-y-6">
               {/* 添加黑名单 */}
               <div className="flex gap-2">
-                <select
+                <Select
                   value={blacklistType}
                   onChange={(e) => setBlacklistType(e.target.value)}
-                  className="flex h-9 w-32 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-32"
                 >
                   <option value="company">公司</option>
                   <option value="job">岗位</option>
                   <option value="recruiter">HR</option>
-                </select>
+                </Select>
                 <Input
                   value={newBlacklistKeyword}
                   onChange={(e) => setNewBlacklistKeyword(e.target.value)}
@@ -983,25 +1035,29 @@ function MultiSelect({
       <button
         type="button"
         onClick={() => { const next = !open; setOpen(next); if (!next) onClose?.() }}
-        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
+        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-all duration-200 hover:border-primary/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:border-primary"
       >
         <span className="truncate text-sm">
           {selectedNames.length > 0 ? selectedNames.join('，') : (placeholder || '请选择')}
         </span>
-        <span className="ml-2 text-xs text-muted-foreground">{open ? '▲' : '▼'}</span>
+        <span className={`ml-2 text-xs text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>▼</span>
       </button>
       {open && (
-        <div className="absolute z-10 mt-1 w-full max-h-48 overflow-auto rounded-md border bg-background shadow">
+        <div className="absolute z-10 mt-1 w-full max-h-48 overflow-auto rounded-md border border-border bg-background shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
           {options.map((opt) => {
             const checked = selected.includes(opt.code)
             return (
-              <label key={opt.id} className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted/40">
+              <label
+                key={opt.id}
+                className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-primary/10 transition-colors duration-150 border-b border-border/50 last:border-b-0"
+              >
                 <input
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggle(opt.code)}
+                  className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-0 cursor-pointer transition-all"
                 />
-                <span className="text-sm">{opt.name}</span>
+                <span className={`text-sm ${checked ? 'font-medium text-primary' : 'text-foreground'}`}>{opt.name}</span>
               </label>
             )
           })}
