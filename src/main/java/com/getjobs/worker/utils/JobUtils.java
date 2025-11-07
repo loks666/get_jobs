@@ -18,7 +18,10 @@ import static com.getjobs.worker.utils.Constant.UNLIMITED_CODE;
 public class JobUtils {
 
     public static String appendParam(String name, String value) {
-        return Optional.ofNullable(value)
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+        return Optional.of(value)
                 .filter(v -> !Objects.equals(UNLIMITED_CODE, v))
                 .map(v -> "&" + name + "=" + v)
                 .orElse("");
@@ -27,10 +30,10 @@ public class JobUtils {
     public static String appendListParam(String name, List<String> values) {
         // 需求：如果列表包含 0（UNLIMITED_CODE），表示该参数不设置，直接返回 null
         if (values == null || values.isEmpty()) {
-            return null;
+            return "";
         }
         if (values.stream().anyMatch(v -> Objects.equals(UNLIMITED_CODE, v))) {
-            return null;
+            return "";
         }
         return "&" + name + "=" + String.join(",", values);
     }

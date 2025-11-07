@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -83,9 +82,7 @@ public class JobController {
         loginStatusEmitters.add(emitter);
 
         // 注册登录状态监听器
-        playwrightManager.addLoginStatusListener(change -> {
-            sendLoginStatusChange(change);
-        });
+        playwrightManager.addLoginStatusListener(this::sendLoginStatusChange);
 
         emitter.onCompletion(() -> {
             log.info("登录状态SSE连接已完成");
@@ -136,9 +133,7 @@ public class JobController {
 
         // 异步执行投递任务
         CompletableFuture.runAsync(() -> {
-            bossJobService.executeDelivery(message -> {
-                sendBossProgress(message);
-            });
+            bossJobService.executeDelivery(this::sendBossProgress);
         });
 
         return ResponseEntity.ok(Map.of(

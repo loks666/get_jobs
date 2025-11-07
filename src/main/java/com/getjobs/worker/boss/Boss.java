@@ -6,6 +6,7 @@ import com.getjobs.worker.ai.AiFilter;
 import com.getjobs.worker.ai.AiService;
 import com.getjobs.worker.utils.Job;
 import com.getjobs.worker.utils.JobUtils;
+import com.getjobs.worker.utils.PlaywrightUtil;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import lombok.Setter;
@@ -71,8 +72,6 @@ public class Boss {
         // Spring 原型Bean，无参构造
     }
 
-    
-
     public void prepare() {
         // 从数据库加载黑名单
         this.blackCompanies = bossDataService.getBlackCompanies();
@@ -95,66 +94,6 @@ public class Boss {
     }
 
     /**
-     * 初始化并等待登录
-     * 在SpringBoot启动时调用
-     */
-    public void initAndWaitForLogin() {
-        log.info("打开Boss直聘网站中...");
-        page.navigate(homeUrl);
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        // 检查滑块验证
-        waitForSliderVerify(page);
-
-        if (isLoginRequired()) {
-            log.info("需要登录，等待用户扫码登录...");
-            progressCallback.accept("等待用户扫码登录...", 0, 0);
-            // 不执行scanLogin，只是打开登录页面
-            page.navigate(homeUrl + "/web/user/?ka=header-login");
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            // 定位二维码登录的切换按钮
-            try {
-                Locator scanButton = page.locator(LOGIN_SCAN_SWITCH);
-                if (scanButton.count() > 0) {
-                    scanButton.click();
-                }
-            } catch (Exception e) {
-                log.warn("切换到二维码登录失败", e);
-            }
-        } else {
-            log.info("已登录Boss直聘");
-            progressCallback.accept("已登录Boss直聘", 0, 0);
-        }
-    }
-
-    /**
-     * 检查是否已登录
-     */
-    public boolean checkLoginStatus() {
-        try {
-            page.navigate(homeUrl);
-            Thread.sleep(1000);
-
-            // 检查滑块验证
-            waitForSliderVerify(page);
-
-            return !isLoginRequired();
-        } catch (Exception e) {
-            log.error("检查登录状态失败", e);
-            return false;
-        }
-    }
-
-    /**
      * 获取结果列表
      */
     public List<Job> getResultList() {
@@ -166,11 +105,7 @@ public class Boss {
      */
     public Map<String, Set<String>> updateBlacklistFromChats() {
         page.navigate("https://www.zhipin.com/web/geek/chat");
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        PlaywrightUtil.sleep(3);
 
         int newBlacklistCount = 0;
         boolean shouldBreak = false;
@@ -199,7 +134,7 @@ public class Boss {
                     String message = null;
                     int retryCount = 0;
 
-                    while (retryCount < 2) {
+                    while (true) {
                         try {
                             companyName = companyElements.nth(i).textContent();
                             message = messageElements.nth(i).textContent();
@@ -211,11 +146,7 @@ public class Boss {
                                 break;
                             }
                             log.info("页面元素已变更，正在重试第{}次获取元素文本...", retryCount);
-                            try {
-                                Thread.sleep(1000);
-                            } catch (InterruptedException ex) {
-                                Thread.currentThread().interrupt();
-                            }
+                            PlaywrightUtil.sleep(1);
                         }
                     }
 
@@ -277,7 +208,6 @@ public class Boss {
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
 
             String url = searchUrl + "&query=" + encodedKeyword;
-            log.info("投递地址:{}", searchUrl + "&query=" + keyword);
             page.navigate(url);
 
             // 1. 滚动到底部，加载所有岗位卡片
@@ -285,12 +215,6 @@ public class Boss {
             while (true) {
                 // 滑动到底部
                 page.evaluate("window.scrollTo(0, document.body.scrollHeight);");
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-
                 // 获取所有卡片数
                 Locator cards = page.locator("//ul[contains(@class, 'rec-job-list')]//li[contains(@class, 'job-card-box')]");
                 int currentCount = cards.count();
@@ -306,11 +230,7 @@ public class Boss {
 
             // 2. 回到页面顶部
             page.evaluate("window.scrollTo(0, 0);");
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            PlaywrightUtil.sleep(1);
 
             // 3. 逐个遍历所有岗位
             Locator cards = page.locator("//ul[contains(@class, 'rec-job-list')]//li[contains(@class, 'job-card-box')]");
@@ -325,11 +245,7 @@ public class Boss {
                 // 重新获取卡片，避免元素过期
                 cards = page.locator("//ul[contains(@class, 'rec-job-list')]//li[contains(@class, 'job-card-box')]");
                 cards.nth(i).click();
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                PlaywrightUtil.sleep(1);
 
                 // 等待详情内容加载
                 page.waitForSelector("div[class*='job-detail-box']", new Page.WaitForSelectorOptions().setTimeout(4000));
@@ -440,31 +356,27 @@ public class Boss {
         String baseUrl = "https://www.zhipin.com/web/geek/job?";
         StringBuilder sb = new StringBuilder(baseUrl);
         String pCity = JobUtils.appendParam("city", cityCode);
-        if (pCity != null) sb.append(pCity);
+        sb.append(pCity);
         String pJobType = JobUtils.appendParam("jobType", config.getJobType());
-        if (pJobType != null) sb.append(pJobType);
+        sb.append(pJobType);
         String pSalary = JobUtils.appendListParam("salary", config.getSalary());
-        if (pSalary != null) sb.append(pSalary);
+        sb.append(pSalary);
         String pExp = JobUtils.appendListParam("experience", config.getExperience());
-        if (pExp != null) sb.append(pExp);
+        sb.append(pExp);
         String pDegree = JobUtils.appendListParam("degree", config.getDegree());
-        if (pDegree != null) sb.append(pDegree);
+        sb.append(pDegree);
         String pScale = JobUtils.appendListParam("scale", config.getScale());
-        if (pScale != null) sb.append(pScale);
+        sb.append(pScale);
         String pIndustry = JobUtils.appendListParam("industry", config.getIndustry());
-        if (pIndustry != null) sb.append(pIndustry);
+        sb.append(pIndustry);
         String pStage = JobUtils.appendListParam("stage", config.getStage());
-        if (pStage != null) sb.append(pStage);
+        sb.append(pStage);
         return sb.toString();
     }
 
     @SneakyThrows
     private void resumeSubmission(Page page, String keyword, Job job) {
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        PlaywrightUtil.sleep(1);
 
         // 1. 查找"查看更多信息"按钮（必须存在且新开页）
         Locator moreInfoBtn = page.locator("a.more-job-btn");
@@ -483,11 +395,7 @@ public class Boss {
         // 2. 新开详情页
         Page detailPage = page.context().newPage();
         detailPage.navigate(detailUrl);
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        PlaywrightUtil.sleep(1);
 
         // 3. 查找"立即沟通"按钮
         Locator chatBtn = detailPage.locator("a.btn-startchat, a.op-btn-chat");
@@ -497,11 +405,7 @@ public class Boss {
                 foundChatBtn = true;
                 break;
             }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            PlaywrightUtil.sleep(1);
         }
         if (!foundChatBtn) {
             log.warn("未找到立即沟通按钮，跳过岗位: {}", job.getJobName());
@@ -509,11 +413,7 @@ public class Boss {
             return;
         }
         chatBtn.first().click();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        PlaywrightUtil.sleep(1);
 
         // 4. 等待聊天输入框
         Locator inputLocator = detailPage.locator("div#chat-input.chat-input[contenteditable='true'], textarea.input-area");
@@ -523,11 +423,7 @@ public class Boss {
                 inputReady = true;
                 break;
             }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            PlaywrightUtil.sleep(1);
         }
         if (!inputReady) {
             log.warn("聊天输入框未出现，跳过: {}", job.getJobName());
@@ -579,11 +475,7 @@ public class Boss {
         boolean sendSuccess = false;
         if (sendBtn.count() > 0) {
             sendBtn.first().click();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            PlaywrightUtil.sleep(1);
             sendSuccess = true;
         } else {
             log.warn("未找到发送按钮，自动跳过！岗位：{}", job.getJobName());
@@ -593,11 +485,7 @@ public class Boss {
 
         // 9. 关闭详情页，回到主页面
         detailPage.close();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        PlaywrightUtil.sleep(1);
 
         // 10. 成功投递加入结果
         if (sendSuccess) {
@@ -780,11 +668,7 @@ public class Boss {
                 } catch (Exception e) {
                     log.error("等待滑块验证输入异常: {}", e.getMessage());
                 }
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                PlaywrightUtil.sleep(1);
                 // 验证通过后页面url会变，循环再检测一次
                 continue;
             }

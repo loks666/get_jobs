@@ -310,6 +310,17 @@ export default function BossPage() {
         const normalizedCityCode = cityMatchByCode ? cityMatchByCode.code : (cityMatchByName ? cityMatchByName.code : '0')
         setConfig(prev => ({ ...prev, cityCode: normalizedCityCode }))
 
+        // 职位类型：支持后端返回中文或代码，统一回显为代码；缺省为不限('0')
+        const currentJobTypeRaw = data.config?.jobType || ''
+        const currentJobTypeHead = (() => {
+          const list = parseListString(currentJobTypeRaw)
+          return list.length > 0 ? list[0] : currentJobTypeRaw
+        })()
+        const jtMatchByCode = (data.options?.jobType || []).find((o: BossOption) => o.code === currentJobTypeHead)
+        const jtMatchByName = (data.options?.jobType || []).find((o: BossOption) => o.name === currentJobTypeHead)
+        const normalizedJobType = jtMatchByCode ? jtMatchByCode.code : (jtMatchByName ? jtMatchByName.code : '0')
+        setConfig(prev => ({ ...prev, jobType: normalizedJobType }))
+
         // 其它多选选项：将中文名称转换为代码以匹配 MultiSelect 的 selected
         setSelectedIndustry(toCodes(data.options.industry || [], parseListString(data.config?.industry)))
         setSelectedExperience(toCodes(data.options.experience || [], parseListString(data.config?.experience)))
@@ -579,15 +590,31 @@ export default function BossPage() {
                         {city.name}
                       </option>
                     ))}
-                  </Select>
-                  <p className="text-xs text-muted-foreground">目标工作城市（按设定顺序显示）</p>
-                </div>
+                </Select>
+                <p className="text-xs text-muted-foreground">目标工作城市（按设定顺序显示）</p>
+              </div>
 
-                <div className="space-y-2">
-                  <Label>公司行业</Label>
-                  <MultiSelect
-                    options={options.industry}
-                    selected={selectedIndustry}
+              <div className="space-y-2">
+                <Label htmlFor="jobType">职位类型</Label>
+                <Select
+                  id="jobType"
+                  value={config.jobType || '0'}
+                  onChange={(e) => setConfig({ ...config, jobType: e.target.value })}
+                >
+                  {(options.jobType || []).map((jt) => (
+                    <option key={jt.id} value={jt.code}>
+                      {jt.name}
+                    </option>
+                  ))}
+                </Select>
+                <p className="text-xs text-muted-foreground">职位类型（单选，不选视为不限）</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>公司行业</Label>
+                <MultiSelect
+                  options={options.industry}
+                  selected={selectedIndustry}
                     onChange={setSelectedIndustry}
                     placeholder="选择公司行业"
                   />

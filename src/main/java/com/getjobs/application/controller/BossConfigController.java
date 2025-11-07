@@ -102,6 +102,18 @@ public class BossConfigController {
             config.setSalary(bossDataService.toBracketListString(names));
         }
 
+        // 职位类型：保存为中文名（单值）
+        if (config.getJobType() != null) {
+            java.util.List<String> list = bossDataService.parseListString(config.getJobType());
+            java.util.List<String> names = bossDataService.toNames("jobType", list);
+            String name = names != null && !names.isEmpty()
+                    ? names.get(0)
+                    : (bossDataService.getOptionByTypeAndCode("jobType", config.getJobType()) != null
+                        ? bossDataService.getOptionByTypeAndCode("jobType", config.getJobType()).getName()
+                        : config.getJobType());
+            config.setJobType(name);
+        }
+
         // 为避免每次新增导致错乱：当ID缺失时也执行“选择性更新第一条”策略
         // 若存在ID，按ID更新；否则更新首条记录（若不存在则插入）
         if (config.getId() != null) {

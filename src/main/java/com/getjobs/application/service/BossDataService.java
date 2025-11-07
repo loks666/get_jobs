@@ -277,9 +277,21 @@ public class BossDataService {
         config.setScale(toCodes("scale", parseListString(entity.getScale())));
         config.setStage(toCodes("stage", parseListString(entity.getStage())));
 
-        // 职位类型：若为列表则取第一个，否则使用原值
-        List<String> jobTypeList = parseListString(entity.getJobType());
-        config.setJobType(jobTypeList.isEmpty() ? entity.getJobType() : jobTypeList.get(0));
+        // 职位类型：统一转换为代码，若为列表取第一个；为空时使用不限代码
+        List<String> jobTypeCodes = toCodes("jobType", parseListString(entity.getJobType()));
+        String jobTypeCode = null;
+        if (!jobTypeCodes.isEmpty()) {
+            jobTypeCode = jobTypeCodes.get(0);
+        } else if (entity.getJobType() != null && !entity.getJobType().trim().isEmpty()) {
+            BossOptionEntity byCode = getOptionByTypeAndCode("jobType", entity.getJobType());
+            jobTypeCode = byCode != null && byCode.getCode() != null
+                    ? byCode.getCode()
+                    : getCodeByTypeAndName("jobType", entity.getJobType());
+        }
+        if (jobTypeCode == null || jobTypeCode.trim().isEmpty()) {
+            jobTypeCode = com.getjobs.worker.utils.Constant.UNLIMITED_CODE;
+        }
+        config.setJobType(jobTypeCode);
         // 薪资：名称或代码 -> 统一为代码列表（用于URL逗号拼接）
         config.setSalary(toCodes("salary", parseListString(entity.getSalary())));
 
