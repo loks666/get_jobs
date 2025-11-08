@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
 
   // 静态导出配置
   output: 'export',
-  // 输出目录为dist2（避免与已运行的开发锁冲突）
-  distDir: 'dist2',
+  // 输出目录改为 dist，便于部署与预览
+  distDir: 'dist',
   // 禁用图片优化（静态导出不支持）
   images: {
     unoptimized: true,
