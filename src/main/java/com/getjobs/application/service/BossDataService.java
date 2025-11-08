@@ -728,6 +728,7 @@ public class BossDataService {
     public static class Charts {
         public List<NameValue> byStatus;
         public List<NameValue> byCity;
+        public List<NameValue> byIndustry;
         public List<NameValue> byCompany;
         public List<NameValue> byExperience;
         public List<NameValue> byDegree;
@@ -759,6 +760,7 @@ public class BossDataService {
         Charts charts = new Charts();
         charts.byStatus = new ArrayList<>();
         charts.byCity = new ArrayList<>();
+        charts.byIndustry = new ArrayList<>();
         charts.byCompany = new ArrayList<>();
         charts.byExperience = new ArrayList<>();
         charts.byDegree = new ArrayList<>();
@@ -793,9 +795,14 @@ public class BossDataService {
                 while (rs.next()) charts.byStatus.add(new NameValue(nullSafe(rs.getString(1)), rs.getLong(2)));
             }
 
-            // byCity TOP10
+            // byCity TOP10（保留）
             try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT location, COUNT(*) AS cnt FROM boss_data GROUP BY location ORDER BY cnt DESC LIMIT 10")) {
                 while (rs.next()) charts.byCity.add(new NameValue(nullSafe(rs.getString(1)), rs.getLong(2)));
+            }
+
+            // byIndustry TOP10（新增）
+            try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT industry, COUNT(*) AS cnt FROM boss_data GROUP BY industry ORDER BY cnt DESC LIMIT 10")) {
+                while (rs.next()) charts.byIndustry.add(new NameValue(nullSafe(rs.getString(1)), rs.getLong(2)));
             }
 
             // byCompany TOP10
@@ -823,31 +830,204 @@ public class BossDataService {
                 while (rs.next()) charts.hrActivity.add(new NameValue(nullSafe(rs.getString(1)), rs.getLong(2)));
             }
 
-            // salaryBuckets（基于中位数K按档统计）
-            long b0_10=0,b10_15=0,b15_20=0,b20_30=0,b30p=0;
+            // salaryBuckets（基于中位数K按档统计，动态上限）
+            long b0_10=0,b10_15=0,b15_20=0,b20_top=0,b_ge_top=0;
+            double maxMedian = 0.0;
+            List<Double> medians = new ArrayList<>();
             try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT salary FROM boss_data WHERE salary IS NOT NULL")) {
                 while (rs.next()) {
                     SalaryInfo info = parseSalary(rs.getString(1));
                     if (info == null || info.medianK == null) continue;
                     double m = info.medianK;
-                    if (m < 10) b0_10++;
-                    else if (m < 15) b10_15++;
-                    else if (m < 20) b15_20++;
-                    else if (m < 30) b20_30++;
-                    else b30p++;
+                    medians.add(m);
+                    if (m > maxMedian) maxMedian = m;
                 }
+            }
+            int topEdge = (int) Math.ceil(maxMedian / 5.0) * 5; // 向上取整到5的倍数
+            if (topEdge <= 20) topEdge = 25; // 避免区间过窄
+            for (double m : medians) {
+                if (m < 10) b0_10++;
+                else if (m < 15) b10_15++;
+                else if (m < 20) b15_20++;
+                else if (m < topEdge) b20_top++;
+                else b_ge_top++;
             }
             charts.salaryBuckets.add(new BucketValue("0-10K", b0_10));
             charts.salaryBuckets.add(new BucketValue("10-15K", b10_15));
             charts.salaryBuckets.add(new BucketValue("15-20K", b15_20));
-            charts.salaryBuckets.add(new BucketValue("20-30K", b20_30));
-            charts.salaryBuckets.add(new BucketValue("30+K", b30p));
+            charts.salaryBuckets.add(new BucketValue("20-" + topEdge + "K", b20_top));
+            charts.salaryBuckets.add(new BucketValue(">=" + topEdge + "K", b_ge_top));
 
             resp.charts = charts;
             return resp;
         } catch (Exception e) {
             log.error("获取Boss统计失败: {}", e.getMessage(), e);
             // 失败时返回空集合，避免前端崩溃
+            resp.charts = charts;
+            return resp;
+        }
+    }
+
+    /**
+     * 获取投递分析统计与图表数据（按筛选条件）
+     */
+    public StatsResponse getBossStats(
+            List<String> statuses,
+            String location,
+            String experience,
+            String degree,
+            Double minK,
+            Double maxK,
+            String keyword,
+            boolean filterHeadhunter
+    ) {
+        StatsResponse resp = new StatsResponse();
+        resp.kpi = new Kpi();
+        Charts charts = new Charts();
+        charts.byStatus = new ArrayList<>();
+        charts.byCity = new ArrayList<>();
+        charts.byIndustry = new ArrayList<>();
+        charts.byCompany = new ArrayList<>();
+        charts.byExperience = new ArrayList<>();
+        charts.byDegree = new ArrayList<>();
+        charts.salaryBuckets = new ArrayList<>();
+        charts.dailyTrend = new ArrayList<>();
+        charts.hrActivity = new ArrayList<>();
+
+        try {
+            // 构造与列表相同的筛选条件
+            QueryWrapper<BossJobDataEntity> wrapper = new QueryWrapper<>();
+            if (statuses != null && !statuses.isEmpty()) {
+                wrapper.in("delivery_status", statuses);
+            }
+            if (StringUtils.isNotBlank(location)) wrapper.eq("location", location);
+            if (StringUtils.isNotBlank(experience)) wrapper.eq("experience", experience);
+            if (StringUtils.isNotBlank(degree)) wrapper.eq("degree", degree);
+
+            if (StringUtils.isNotBlank(keyword)) {
+                wrapper.and(w -> w.like("company_name", keyword)
+                        .or().like("job_name", keyword)
+                        .or().like("hr_name", keyword));
+            }
+            if (filterHeadhunter) {
+                wrapper.and(w -> w.isNull("hr_position").or().notLike("hr_position", "猎头"));
+            }
+            wrapper.orderByDesc("created_at");
+
+            List<BossJobDataEntity> all = bossJobDataMapper.selectList(wrapper);
+
+            // 内存进行薪资区间过滤（按中位数K）
+            List<BossJobDataEntity> filtered = new ArrayList<>();
+            double sumMedian = 0.0; long countMedian = 0;
+            for (BossJobDataEntity e : all) {
+                SalaryInfo info = parseSalary(e.getSalary());
+                boolean passSalary;
+                if (minK == null && maxK == null) {
+                    passSalary = true;
+                } else {
+                    if (info == null || info.medianK == null) passSalary = false; // 面议或不可解析
+                    else {
+                        boolean ok = true;
+                        if (minK != null) ok = ok && (info.medianK >= minK);
+                        if (maxK != null) ok = ok && (info.medianK <= maxK);
+                        passSalary = ok;
+                    }
+                }
+                if (passSalary) {
+                    filtered.add(e);
+                    if (info != null && info.medianK != null) { sumMedian += info.medianK; countMedian++; }
+                }
+            }
+
+            // KPI
+            resp.kpi.total = filtered.size();
+            resp.kpi.delivered = filtered.stream().filter(e -> "已投递".equals(e.getDeliveryStatus())).count();
+            resp.kpi.pending = filtered.stream().filter(e -> "未投递".equals(e.getDeliveryStatus())).count();
+            resp.kpi.filtered = filtered.stream().filter(e -> "已过滤".equals(e.getDeliveryStatus())).count();
+            resp.kpi.failed = filtered.stream().filter(e -> "投递失败".equals(e.getDeliveryStatus())).count();
+            resp.kpi.avgMonthlyK = countMedian > 0 ? Math.round((sumMedian / countMedian) * 100.0) / 100.0 : null;
+
+            // Charts - 分组聚合（在内存中统计）
+            Map<String, Long> byStatus = filtered.stream()
+                    .collect(Collectors.groupingBy(e -> nullSafe(e.getDeliveryStatus()), Collectors.counting()));
+            byStatus.forEach((k, v) -> charts.byStatus.add(new NameValue(k, v)));
+
+            Map<String, Long> byCity = filtered.stream()
+                    .collect(Collectors.groupingBy(e -> nullSafe(e.getLocation()), Collectors.counting()));
+            byCity.entrySet().stream()
+                    .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                    .limit(10)
+                    .forEach(en -> charts.byCity.add(new NameValue(en.getKey(), en.getValue())));
+
+            // byIndustry TOP10
+            Map<String, Long> byIndustry = filtered.stream()
+                    .collect(Collectors.groupingBy(e -> nullSafe(e.getIndustry()), Collectors.counting()));
+            byIndustry.entrySet().stream()
+                    .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                    .limit(10)
+                    .forEach(en -> charts.byIndustry.add(new NameValue(en.getKey(), en.getValue())));
+
+            Map<String, Long> byCompany = filtered.stream()
+                    .collect(Collectors.groupingBy(e -> nullSafe(e.getCompanyName()), Collectors.counting()));
+            byCompany.entrySet().stream()
+                    .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                    .limit(10)
+                    .forEach(en -> charts.byCompany.add(new NameValue(en.getKey(), en.getValue())));
+
+            Map<String, Long> byExp = filtered.stream()
+                    .collect(Collectors.groupingBy(e -> nullSafe(e.getExperience()), Collectors.counting()));
+            byExp.forEach((k, v) -> charts.byExperience.add(new NameValue(k, v)));
+
+            Map<String, Long> byDeg = filtered.stream()
+                    .collect(Collectors.groupingBy(e -> nullSafe(e.getDegree()), Collectors.counting()));
+            byDeg.forEach((k, v) -> charts.byDegree.add(new NameValue(k, v)));
+
+            // dailyTrend（created_at 到天）
+            Map<String, Long> byDay = filtered.stream()
+                    .collect(Collectors.groupingBy(e -> {
+                        LocalDateTime t = e.getCreatedAt();
+                        return t == null ? "未知" : String.format("%04d-%02d-%02d", t.getYear(), t.getMonthValue(), t.getDayOfMonth());
+                    }, Collectors.counting()));
+            byDay.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(en -> charts.dailyTrend.add(new NameValue(en.getKey(), en.getValue())));
+
+            // hrActivity（活跃状态非空的 hr_name 计数）
+            Map<String, Long> hrAct = filtered.stream()
+                    .filter(e -> e.getHrActiveStatus() != null && !e.getHrActiveStatus().trim().isEmpty())
+                    .collect(Collectors.groupingBy(e -> nullSafe(e.getHrName()), Collectors.counting()));
+            hrAct.forEach((k, v) -> charts.hrActivity.add(new NameValue(k, v)));
+
+            // salaryBuckets（动态上限）
+            long b0_10=0,b10_15=0,b15_20=0,b20_top=0,b_ge_top=0;
+            double maxMedian = 0.0;
+            List<Double> medians = new ArrayList<>();
+            for (BossJobDataEntity e : filtered) {
+                SalaryInfo info = parseSalary(e.getSalary());
+                if (info == null || info.medianK == null) continue;
+                double m = info.medianK;
+                medians.add(m);
+                if (m > maxMedian) maxMedian = m;
+            }
+            int topEdge = (int) Math.ceil(maxMedian / 5.0) * 5;
+            if (topEdge <= 20) topEdge = 25;
+            for (double m : medians) {
+                if (m < 10) b0_10++;
+                else if (m < 15) b10_15++;
+                else if (m < 20) b15_20++;
+                else if (m < topEdge) b20_top++;
+                else b_ge_top++;
+            }
+            charts.salaryBuckets.add(new BucketValue("0-10K", b0_10));
+            charts.salaryBuckets.add(new BucketValue("10-15K", b10_15));
+            charts.salaryBuckets.add(new BucketValue("15-20K", b15_20));
+            charts.salaryBuckets.add(new BucketValue("20-" + topEdge + "K", b20_top));
+            charts.salaryBuckets.add(new BucketValue(">=" + topEdge + "K", b_ge_top));
+
+            resp.charts = charts;
+            return resp;
+        } catch (Exception e) {
+            log.error("获取Boss筛选统计失败: {}", e.getMessage(), e);
             resp.charts = charts;
             return resp;
         }
@@ -873,7 +1053,8 @@ public class BossDataService {
             Double maxK,
             String keyword,
             int page,
-            int size
+            int size,
+            boolean filterHeadhunter
     ) {
         if (page <= 0) page = 1;
         if (size <= 0) size = 20;
@@ -892,9 +1073,14 @@ public class BossDataService {
                     .or().like("hr_name", keyword));
         }
 
+        // 查询阶段过滤猎头：hr_position 不包含“猎头”或为空
+        if (filterHeadhunter) {
+            wrapper.and(w -> w.isNull("hr_position").or().notLike("hr_position", "猎头"));
+        }
+
         wrapper.orderByDesc("created_at");
 
-        // 先取全部符合非薪资条件的记录，再在内存按薪资中位数K过滤与分页（数据量较小时可接受）
+        // 取符合条件的记录（猎头已在查询阶段过滤），随后在内存进行薪资区间过滤与分页
         List<BossJobDataEntity> all = bossJobDataMapper.selectList(wrapper);
 
         List<BossJobDataEntity> filtered = new ArrayList<>();

@@ -21,11 +21,36 @@ public class BossAnalyticsController {
     }
 
     /**
-     * 投递分析统计与图表
+     * 投递分析统计与图表（支持与列表相同的筛选条件）
      */
     @GetMapping("/stats")
-    public BossDataService.StatsResponse getStats() {
-        return bossDataService.getBossStats();
+    public BossDataService.StatsResponse getStats(
+            @RequestParam(value = "statuses", required = false) String statuses,
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "experience", required = false) String experience,
+            @RequestParam(value = "degree", required = false) String degree,
+            @RequestParam(value = "minK", required = false) Double minK,
+            @RequestParam(value = "maxK", required = false) Double maxK,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "filterHeadhunter", required = false) Boolean filterHeadhunter
+    ) {
+        List<String> statusList = null;
+        if (statuses != null && !statuses.trim().isEmpty()) {
+            statusList = Arrays.stream(statuses.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+        }
+        return bossDataService.getBossStats(
+                statusList,
+                location,
+                experience,
+                degree,
+                minK,
+                maxK,
+                keyword,
+                filterHeadhunter != null && filterHeadhunter
+        );
     }
 
     /**
@@ -40,6 +65,7 @@ public class BossAnalyticsController {
             @RequestParam(value = "minK", required = false) Double minK,
             @RequestParam(value = "maxK", required = false) Double maxK,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "filterHeadhunter", required = false) Boolean filterHeadhunter,
             @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
             @RequestParam(value = "size", required = false, defaultValue = "20") Integer size
     ) {
@@ -50,7 +76,18 @@ public class BossAnalyticsController {
                     .filter(s -> !s.isEmpty())
                     .collect(Collectors.toList());
         }
-        return bossDataService.listBossJobs(statusList, location, experience, degree, minK, maxK, keyword, page, size);
+        return bossDataService.listBossJobs(
+                statusList,
+                location,
+                experience,
+                degree,
+                minK,
+                maxK,
+                keyword,
+                page,
+                size,
+                filterHeadhunter != null && filterHeadhunter
+        );
     }
 
     /**
