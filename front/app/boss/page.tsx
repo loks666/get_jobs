@@ -96,6 +96,10 @@ export default function BossPage() {
   const [isDelivering, setIsDelivering] = useState(false)
   const [checkingLogin, setCheckingLogin] = useState(true)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
+  const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
 
   useEffect(() => {
     fetchAllData()
@@ -261,7 +265,7 @@ export default function BossPage() {
           : cityList
 
         // 兜底：如果后端未返回『不限』（code='0'），前端补充一个，确保可选
-        const hasUnlimitedCity = sortedCity.some((c) => c.code === '0' || c.name === '不限')
+        const hasUnlimitedCity = sortedCity.some((c: BossOption) => c.code === '0' || c.name === '不限')
         if (!hasUnlimitedCity) {
           sortedCity = [{ id: -1, type: 'city', name: '不限', code: '0', sortOrder: 0 }, ...sortedCity]
         }
@@ -305,8 +309,8 @@ export default function BossPage() {
           const list = parseListString(currentCityRaw)
           return list.length > 0 ? list[0] : currentCityRaw
         })()
-        const cityMatchByCode = sortedCity.find(c => c.code === currentCityHead)
-        const cityMatchByName = sortedCity.find(c => c.name === currentCityHead)
+        const cityMatchByCode = sortedCity.find((c: BossOption) => c.code === currentCityHead)
+        const cityMatchByName = sortedCity.find((c: BossOption) => c.name === currentCityHead)
         const normalizedCityCode = cityMatchByCode ? cityMatchByCode.code : (cityMatchByName ? cityMatchByName.code : '0')
         setConfig(prev => ({ ...prev, cityCode: normalizedCityCode }))
 
@@ -391,13 +395,25 @@ export default function BossPage() {
 
       if (response.ok) {
         fetchAllData()
+        if (!silent) {
+          setSaveResult({ success: true, message: '保存成功，配置已更新。' })
+          setShowSaveDialog(true)
+        }
       } else {
         // 保存失败：不弹框，记录日志
         console.warn('保存失败：后端返回非 2xx 状态')
+        if (!silent) {
+          setSaveResult({ success: false, message: '保存失败：后端返回异常状态。' })
+          setShowSaveDialog(true)
+        }
       }
     } catch (error) {
       console.error('Failed to save config:', error)
       // 保存失败：不弹框
+      if (!silent) {
+        setSaveResult({ success: false, message: '保存失败：网络或服务异常。' })
+        setShowSaveDialog(true)
+      }
     }
   }
 
@@ -500,11 +516,17 @@ export default function BossPage() {
         setIsLoggedIn(false)
         setIsDelivering(false)
         console.info('已退出登录，数据库Cookie已置空')
+        setLogoutResult({ success: true, message: '已退出登录，Cookie已清空。' })
+        setShowLogoutResultDialog(true)
       } else {
         console.warn('退出登录失败：', data.message)
+        setLogoutResult({ success: false, message: `退出登录失败：${data.message || '服务返回异常。'}` })
+        setShowLogoutResultDialog(true)
       }
     } catch (error) {
       console.error('Failed to logout:', error)
+      setLogoutResult({ success: false, message: '退出登录失败：网络或服务异常。' })
+      setShowLogoutResultDialog(true)
     }
   }
 
@@ -992,6 +1014,60 @@ export default function BossPage() {
                     className="rounded-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white px-4"
                   >
                     确认退出
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* 退出登录结果弹框 */}
+      {showLogoutResultDialog && logoutResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" role="dialog" aria-modal="true">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-[92%] max-w-sm border border-gray-200 dark:border-neutral-800 animate-in fade-in zoom-in-95">
+            <Card className="border-0">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BiLogOut className={logoutResult.success ? 'text-green-500' : 'text-red-500'} />
+                  {logoutResult.success ? '退出登录成功' : '退出登录失败'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-sm text-muted-foreground mb-4">{logoutResult.message}</p>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    onClick={() => setShowLogoutResultDialog(false)}
+                    className={`rounded-full px-4 ${logoutResult.success ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white'}`}
+                  >
+                    知道了
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* 保存结果弹框 */}
+      {showSaveDialog && saveResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" role="dialog" aria-modal="true">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-[92%] max-w-sm border border-gray-200 dark:border-neutral-800 animate-in fade-in zoom-in-95">
+            <Card className="border-0">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BiSave className={saveResult.success ? 'text-green-500' : 'text-red-500'} />
+                  {saveResult.success ? '保存成功' : '保存失败'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-sm text-muted-foreground mb-4">{saveResult.message}</p>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    onClick={() => setShowSaveDialog(false)}
+                    className={`rounded-full px-4 ${saveResult.success ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white'}`}
+                  >
+                    知道了
                   </Button>
                 </div>
               </CardContent>

@@ -89,7 +89,17 @@ public class Boss {
      * 执行投递
      */
     public int execute() {
-        config.getCityCode().forEach(this::postJobByCity);
+        for (String cityCode : config.getCityCode()) {
+            if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
+                progressCallback.accept("用户取消投递", 0, 0);
+                break;
+            }
+            postJobByCity(cityCode);
+            if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
+                progressCallback.accept("用户取消投递", 0, 0);
+                break;
+            }
+        }
         return resultList.size();
     }
 
@@ -218,6 +228,11 @@ public class Boss {
             int lastCount = -1;
             int stableTries = 0;
             for (int i = 0; i < 5000; i++) { // 最多尝试约120次，避免死循环
+                // 停止检查：滚动加载过程中也要及时响应
+                if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
+                    progressCallback.accept("用户取消投递", 0, 0);
+                    return;
+                }
                 Locator footer = page.locator("div#footer, #footer");
                 if (footer.count() > 0 && footer.first().isVisible()) {
                     break; // 到达页面底部
@@ -255,7 +270,7 @@ public class Boss {
             int count = cards.count();
             for (int i = 0; i < count; i++) {
                 // 检查是否需要停止
-                if (shouldStopCallback.get()) {
+                if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
                     progressCallback.accept("用户取消投递", i, count);
                     return;
                 }
@@ -577,6 +592,11 @@ public class Boss {
      */
     @SneakyThrows
     private void resumeSubmission(String keyword, Job job) {
+        // 若收到停止指令，直接短路返回
+        if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
+            log.info("停止指令已触发，跳过投递 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
+            return;
+        }
         // 调试模式：仅遍历不投递
         if (Boolean.TRUE.equals(config.getDebugger())) {
             log.info("调试模式：仅遍历岗位，不投递 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
@@ -605,6 +625,11 @@ public class Boss {
         Locator chatBtn = detailPage.locator("a.btn-startchat, a.op-btn-chat");
         boolean foundChatBtn = false;
         for (int i = 0; i < 5; i++) {
+            if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
+                log.info("停止指令已触发，结束查找聊天按钮 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
+                try { detailPage.close(); } catch (Exception ignore) {}
+                return;
+            }
             if (chatBtn.count() > 0 && (chatBtn.first().textContent().contains("立即沟通"))) {
                 foundChatBtn = true;
                 break;
@@ -627,6 +652,11 @@ public class Boss {
         Locator inputLocator = detailPage.locator("div#chat-input.chat-input[contenteditable='true'], textarea.input-area");
         boolean inputReady = false;
         for (int i = 0; i < 10; i++) {
+            if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
+                log.info("停止指令已触发，结束等待聊天输入框 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
+                try { detailPage.close(); } catch (Exception ignore) {}
+                return;
+            }
             if (inputLocator.count() > 0 && inputLocator.first().isVisible()) {
                 inputReady = true;
                 break;
