@@ -7,6 +7,8 @@ import com.getjobs.application.entity.BossConfigEntity;
 import com.getjobs.application.entity.BossIndustryEntity;
 import com.getjobs.application.entity.BossOptionEntity;
 import com.getjobs.application.mapper.BlacklistMapper;
+import com.getjobs.application.mapper.BossJobDataMapper;
+import com.getjobs.application.entity.BossJobDataEntity;
 import com.getjobs.application.mapper.BossConfigMapper;
 import com.getjobs.application.mapper.BossIndustryMapper;
 import com.getjobs.application.mapper.BossOptionMapper;
@@ -33,6 +35,8 @@ public class BossDataService {
     private final BossIndustryMapper bossIndustryMapper;
     private final BossConfigMapper bossConfigMapper;
     private final BlacklistMapper blacklistMapper;
+    private final BossJobDataMapper bossJobDataMapper;
+    private final javax.sql.DataSource dataSource;
 
     // ==================== Option相关方法 ====================
 
@@ -472,5 +476,143 @@ public class BossDataService {
      */
     public List<BlacklistEntity> getAllBlacklist() {
         return blacklistMapper.selectList(null);
+    }
+
+    // ==================== boss_data（岗位数据）相关方法 ====================
+
+    /**
+     * 确保 boss_data 表的列顺序以 encrypt_id、encrypt_user_id 开头。
+     * 若不满足，则进行一次在线迁移：创建新表、复制数据、替换旧表。
+     */
+    public void ensureBossDataColumnOrder() {
+        java.sql.Connection conn = null;
+        try {
+            conn = dataSource.getConnection();
+            try (java.sql.Statement stmt = conn.createStatement()) {
+                java.util.List<String> cols = new java.util.ArrayList<>();
+                try (java.sql.ResultSet rs = stmt.executeQuery("PRAGMA table_info('boss_data')")) {
+                    while (rs.next()) {
+                        cols.add(rs.getString("name"));
+                    }
+                }
+                if (cols.isEmpty()) return; // 表不存在或无列
+                boolean needMigrate = true;
+                if (cols.size() >= 3) {
+                    String c0 = cols.get(0) == null ? "" : cols.get(0).toLowerCase();
+                    String c1 = cols.get(1) == null ? "" : cols.get(1).toLowerCase();
+                    String c2 = cols.get(2) == null ? "" : cols.get(2).toLowerCase();
+                    // 允许第一列是 id 或 encrypt_id，但要求前两列满足 encrypt_id、encrypt_user_id 顺序
+                    if ("id".equals(c0) && "encrypt_id".equals(c1) && "encrypt_user_id".equals(c2)) {
+                        needMigrate = false;
+                    } else if ("encrypt_id".equals(c0) && "encrypt_user_id".equals(c1)) {
+                        needMigrate = false;
+                    }
+                }
+                if (!needMigrate) return;
+
+                stmt.execute("BEGIN TRANSACTION");
+                // 新表：将 encrypt_id、encrypt_user_id 移到最前（紧随 id）
+                String createSql = "CREATE TABLE boss_data_new (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "encrypt_id TEXT, " +
+                        "encrypt_user_id TEXT, " +
+                        "company_name TEXT, " +
+                        "job_name TEXT, " +
+                        "salary TEXT, " +
+                        "location TEXT, " +
+                        "experience TEXT, " +
+                        "degree TEXT, " +
+                        "hr_name TEXT, " +
+                        "hr_position TEXT, " +
+                        "hr_active_status TEXT, " +
+                        "delivery_status TEXT, " +
+                        "job_description TEXT, " +
+                        "job_url TEXT, " +
+                        "recruitment_status TEXT, " +
+                        "company_address TEXT, " +
+                        "industry TEXT, " +
+                        "introduce TEXT, " +
+                        "financing_stage TEXT, " +
+                        "company_scale TEXT, " +
+                        "created_at TEXT, " +
+                        "updated_at TEXT" +
+                        ")";
+                stmt.execute(createSql);
+
+                String copySql = "INSERT INTO boss_data_new (" +
+                        "id, encrypt_id, encrypt_user_id, company_name, job_name, salary, location, experience, degree, " +
+                        "hr_name, hr_position, hr_active_status, delivery_status, job_description, job_url, recruitment_status, " +
+                        "company_address, industry, introduce, financing_stage, company_scale, created_at, updated_at" +
+                        ") SELECT " +
+                        "id, encrypt_id, encrypt_user_id, company_name, job_name, salary, location, experience, degree, " +
+                        "hr_name, hr_position, hr_active_status, delivery_status, job_description, job_url, recruitment_status, " +
+                        "company_address, industry, introduce, financing_stage, company_scale, created_at, updated_at " +
+                        "FROM boss_data";
+                stmt.execute(copySql);
+
+                stmt.execute("DROP TABLE boss_data");
+                stmt.execute("ALTER TABLE boss_data_new RENAME TO boss_data");
+                stmt.execute("COMMIT");
+                log.info("已调整 boss_data 表列顺序：将 encrypt_id、encrypt_user_id 前置");
+            }
+        } catch (Exception e) {
+            log.warn("调整 boss_data 列顺序失败：{}", e.getMessage());
+            try { if (conn != null) conn.createStatement().execute("ROLLBACK"); } catch (Exception ignore) {}
+        } finally {
+            try { if (conn != null) conn.close(); } catch (Exception ignore) {}
+        }
+    }
+
+    /**
+     * 判断岗位是否已存在（相同 encrypt_id AND encrypt_user_id）
+     */
+    public boolean existsBossJob(String encryptId, String encryptUserId) {
+        if (encryptId == null || encryptUserId == null) return false;
+        QueryWrapper<BossJobDataEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("encrypt_id", encryptId)
+                .eq("encrypt_user_id", encryptUserId)
+                .last("LIMIT 1");
+        Long count = bossJobDataMapper.selectCount(wrapper);
+        return count != null && count > 0;
+    }
+
+    /**
+     * 仅根据 encrypt_id 判断是否存在（当 encrypt_user_id 缺失时的降级策略）
+     */
+    public boolean existsBossJobByEncryptId(String encryptId) {
+        if (encryptId == null) return false;
+        QueryWrapper<BossJobDataEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("encrypt_id", encryptId)
+                .last("LIMIT 1");
+        Long count = bossJobDataMapper.selectCount(wrapper);
+        return count != null && count > 0;
+    }
+
+    /**
+     * 插入新岗位数据（默认 delivery_status 为 未投递，或外部传入值）
+     */
+    public void insertBossJob(BossJobDataEntity entity) {
+        if (entity == null) return;
+        LocalDateTime now = LocalDateTime.now();
+        entity.setCreatedAt(now);
+        entity.setUpdatedAt(now);
+        bossJobDataMapper.insert(entity);
+    }
+
+    /**
+     * 更新投递状态（WHERE encrypt_id = ? AND encrypt_user_id = ?）
+     */
+    public void updateDeliveryStatus(String encryptId, String encryptUserId, String status) {
+        if (encryptId == null || status == null) return;
+        BossJobDataEntity update = new BossJobDataEntity();
+        update.setDeliveryStatus(status);
+        update.setUpdatedAt(LocalDateTime.now());
+        com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<BossJobDataEntity> uw =
+                new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<>();
+        uw.eq("encrypt_id", encryptId);
+        if (encryptUserId != null) {
+            uw.eq("encrypt_user_id", encryptUserId);
+        }
+        bossJobDataMapper.update(update, uw);
     }
 }
