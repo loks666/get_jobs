@@ -59,6 +59,9 @@ public class BossJobService implements JobPlatformService {
             isRunning = true;
             shouldStop = false;
 
+            // 暂停后台登录监控，避免与投递流程并发访问同一Page
+            playwrightManager.pauseBossMonitoring();
+
             // 加载配置
             BossConfig config = bossDataService.loadBossConfig();
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "配置加载成功"));
@@ -91,6 +94,10 @@ public class BossJobService implements JobPlatformService {
         } finally {
             isRunning = false;
             shouldStop = false;
+            // 恢复后台登录监控
+            try {
+                playwrightManager.resumeBossMonitoring();
+            } catch (Exception ignored) {}
         }
     }
 

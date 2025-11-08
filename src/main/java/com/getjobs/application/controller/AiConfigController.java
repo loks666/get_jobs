@@ -1,7 +1,7 @@
 package com.getjobs.application.controller;
 
 import com.getjobs.application.entity.AiEntity;
-import com.getjobs.application.service.AiConfigService;
+import com.getjobs.application.service.AiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +22,7 @@ public class AiConfigController {
 
 
     @Autowired
-    private AiConfigService aiConfigService;
+    private AiService aiService;
 
     /**
      * 获取AI配置
@@ -33,7 +33,7 @@ public class AiConfigController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            AiEntity aiEntity = aiConfigService.getAiConfig();
+            AiEntity aiEntity = aiService.getAiConfig();
 
             response.put("success", true);
             response.put("data", aiEntity);
@@ -68,7 +68,7 @@ public class AiConfigController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            AiEntity aiEntity = aiConfigService.saveOrUpdateAiConfig(introduce, prompt);
+            AiEntity aiEntity = aiService.saveOrUpdateAiConfig(introduce, prompt);
 
             response.put("success", true);
             response.put("data", aiEntity);
@@ -98,5 +98,32 @@ public class AiConfigController {
         response.put("timestamp", System.currentTimeMillis());
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * AI 文本生成测试接口（GET）
+     * 示例：/api/ai/chat?content=你好，帮我写一句简洁的问候语
+     */
+    @GetMapping("/chat")
+    public ResponseEntity<Map<String, Object>> chat(@RequestParam(name = "content") String content) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            if (content == null || content.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "content 参数不能为空");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            String reply = aiService.sendRequest(content.trim());
+            response.put("success", true);
+            response.put("data", reply);
+            response.put("message", "AI 请求成功");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("AI 请求失败", e);
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 }

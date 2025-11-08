@@ -1,9 +1,8 @@
 package com.getjobs.worker.boss;
 
 import com.getjobs.application.service.BossDataService;
-import com.getjobs.worker.ai.AiConfig;
-import com.getjobs.worker.ai.AiFilter;
-import com.getjobs.worker.ai.AiService;
+import com.getjobs.application.entity.AiEntity;
+import com.getjobs.application.service.AiService;
 import com.getjobs.worker.utils.Job;
 import com.getjobs.worker.utils.JobUtils;
 import com.getjobs.worker.utils.PlaywrightUtil;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -47,6 +47,8 @@ public class Boss {
     private BossConfig config;
     @Autowired
     private BossDataService bossDataService;
+    @Autowired
+    private AiService aiService;
     private Set<String> blackCompanies;
     private Set<String> blackRecruiters;
     private Set<String> blackJobs;
@@ -432,16 +434,14 @@ public class Boss {
         }
 
         // 5. AI智能生成打招呼语
-        AiFilter aiResult = null;
+        String aiMessage = null;
         if (config.getEnableAI()) {
             String jd = job.getJobInfo();
             if (jd != null && !jd.isEmpty()) {
-                aiResult = checkJob(keyword, job.getJobName(), jd);
+                aiMessage = generateAiMessage(keyword, job.getJobName(), jd);
             }
         }
-        String sayHi = config.getSayHi().replaceAll("[\\r\\n]", "");
-        String message = (aiResult != null && aiResult.getResult() && isValidString(aiResult.getMessage()))
-                ? aiResult.getMessage() : sayHi;
+        String message = isValidString(aiMessage) ? aiMessage : config.getSayHi();
 
         // 6. 输入打招呼语
         Locator input = inputLocator.first();
@@ -456,7 +456,7 @@ public class Boss {
         boolean imgResume = false;
         if (config.getSendImgResume()) {
             try {
-                java.net.URL resourceUrl = Boss.class.getResource("/resume.jpg");
+                URL resourceUrl = Boss.class.getResource("/resume.jpg");
                 if (resourceUrl != null) {
                     File imageFile = new File(resourceUrl.toURI());
                     Locator fileInput = detailPage.locator("//div[@aria-label='发送图片']//input[@type='file']");
@@ -635,12 +635,30 @@ public class Boss {
         return false;// 如果没有找到，返回 false
     }
 
-    private AiFilter checkJob(String keyword, String jobName, String jd) {
-        AiConfig aiConfig = AiConfig.init();
-        String requestMessage = String.format(aiConfig.getPrompt(), aiConfig.getIntroduce(), keyword, jobName, jd,
-                config.getSayHi());
-        String result = AiService.sendRequest(requestMessage);
-        return result.contains("false") ? new AiFilter(false) : new AiFilter(true, result);
+    private String generateAiMessage(String keyword, String jobName, String jd) {
+        AiEntity aiConfig = aiService.getAiConfig();
+        String introduce = (aiConfig != null && aiConfig.getIntroduce() != null) ? aiConfig.getIntroduce() : "";
+        String prompt = (aiConfig != null) ? aiConfig.getPrompt() : null;
+
+        String requestMessage = "";
+        if (prompt != null) {
+            requestMessage = String.format(prompt, introduce, keyword, jobName, jd, config.getSayHi());
+        }
+
+        String result = aiService.sendRequest(requestMessage);
+        if (result == null) {
+            return null;
+        }
+        return result.toLowerCase().contains("false") ? null : result;
+    }
+
+    private String buildDefaultPrompt(String introduce, String keyword, String jobName, String jd) {
+        return "请基于以下信息生成简洁友好的中文打招呼语，不超过60字：\n" +
+                "个人介绍：" + introduce + "\n" +
+                "关键词：" + keyword + "\n" +
+                "职位名称：" + jobName + "\n" +
+                "职位描述：" + jd + "\n" +
+                "参考语：" + config.getSayHi();
     }
 
     private Integer[] parseSalaryRange(String salaryText) {

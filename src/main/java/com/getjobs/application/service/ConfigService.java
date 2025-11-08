@@ -69,6 +69,45 @@ public class ConfigService {
     }
 
     /**
+     * 根据配置键获取配置值（可能为null）
+     * @param configKey 配置键
+     * @return 配置值或null
+     */
+    public String getConfigValue(String configKey) {
+        ConfigEntity entity = getConfigByKey(configKey);
+        return entity != null ? entity.getConfigValue() : null;
+    }
+
+    /**
+     * 根据配置键获取必填配置值（缺失或空则抛异常）
+     * @param configKey 配置键
+     * @return 配置值（非空）
+     * @throws IllegalStateException 当配置缺失或空白时抛出
+     */
+    public String requireConfigValue(String configKey) {
+        String value = getConfigValue(configKey);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("缺少必要配置: " + configKey);
+        }
+        return value;
+    }
+
+    /**
+     * 获取AI调用所需的基础配置（BASE_URL, API_KEY, MODEL）
+     * @return 配置Map，包含 BASE_URL, API_KEY, MODEL 键
+     */
+    public Map<String, String> getAiConfigs() {
+        Map<String, String> result = new HashMap<>();
+        String baseUrl = requireConfigValue("BASE_URL");
+        String apiKey = requireConfigValue("API_KEY");
+        String model = requireConfigValue("MODEL");
+        result.put("BASE_URL", baseUrl);
+        result.put("API_KEY", apiKey);
+        result.put("MODEL", model);
+        return result;
+    }
+
+    /**
      * 批量更新配置
      * @param configMap 配置Map，key为config_key，value为config_value
      * @return 更新的配置数量

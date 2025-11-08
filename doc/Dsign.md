@@ -98,7 +98,7 @@
 | **liepin/**  | 猎聘          | `Liepin.java`                       |
 | **lagou/**   | 拉勾          | `Lagou.java`                        |
 | **zhilian/** | 智联招聘        | `Zhilian.java`                      |
-| **ai/**      | AI 打招呼语     | `AiService`, `AiFilter`             |
+| **ai/**      | AI 打招呼语     | `AiService`                         |
 | **utils/**   | 通用工具类       | `PlaywrightUtil`, `JobUtils`, `Bot` |
 | **core/**    | 调度接口层       | `BossRunner`, `Job51Runner` 等       |
 

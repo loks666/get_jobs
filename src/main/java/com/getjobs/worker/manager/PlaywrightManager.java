@@ -60,6 +60,9 @@ public class PlaywrightManager {
     // 登录状态监听器
     private final List<Consumer<LoginStatusChange>> loginStatusListeners = new CopyOnWriteArrayList<>();
 
+    // 控制是否暂停对bossPage的后台监控，避免与任务执行并发访问同一页面
+    private volatile boolean bossMonitoringPaused = false;
+
     // 默认超时时间（毫秒）
     private static final int DEFAULT_TIMEOUT = 30000;
 
@@ -243,7 +246,10 @@ public class PlaywrightManager {
         // 监听页面导航事件，检测URL变化
         page.onFrameNavigated(frame -> {
             if (frame == page.mainFrame()) {
-                checkLoginStatus(page, "boss");
+                // 事件触发的检查在Playwright内部线程执行，仍需遵守暂停标志
+                if (!bossMonitoringPaused) {
+                    checkLoginStatus(page, "boss");
+                }
             }
         });
 
@@ -340,9 +346,25 @@ public class PlaywrightManager {
      */
     @Scheduled(fixedDelay = 3000)
     public void scheduledLoginCheck() {
-        if (bossPage != null) {
+        if (bossPage != null && !bossMonitoringPaused) {
             checkLoginStatus(bossPage, "boss");
         }
+    }
+
+    /**
+     * 暂停Boss页面的后台登录监控（避免与业务流程并发操作页面）
+     */
+    public void pauseBossMonitoring() {
+        bossMonitoringPaused = true;
+        log.debug("Boss登录监控已暂停");
+    }
+
+    /**
+     * 恢复Boss页面的后台登录监控
+     */
+    public void resumeBossMonitoring() {
+        bossMonitoringPaused = false;
+        log.debug("Boss登录监控已恢复");
     }
 
     /**
