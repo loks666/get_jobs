@@ -2,10 +2,16 @@ package com.getjobs.application.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.getjobs.application.entity.*;
-import com.getjobs.application.mapper.*;
+import com.getjobs.application.entity.BlacklistEntity;
+import com.getjobs.application.entity.BossConfigEntity;
+import com.getjobs.application.entity.BossIndustryEntity;
+import com.getjobs.application.entity.BossOptionEntity;
+import com.getjobs.application.mapper.BlacklistMapper;
+import com.getjobs.application.mapper.BossConfigMapper;
+import com.getjobs.application.mapper.BossIndustryMapper;
+import com.getjobs.application.mapper.BossOptionMapper;
 import com.getjobs.worker.boss.BossConfig;
-import com.getjobs.worker.utils.JobUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -20,23 +26,13 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class BossDataService {
 
     private final BossOptionMapper bossOptionMapper;
     private final BossIndustryMapper bossIndustryMapper;
     private final BossConfigMapper bossConfigMapper;
     private final BlacklistMapper blacklistMapper;
-
-    public BossDataService(
-            BossOptionMapper bossOptionMapper,
-            BossIndustryMapper bossIndustryMapper,
-            BossConfigMapper bossConfigMapper,
-            BlacklistMapper blacklistMapper) {
-        this.bossOptionMapper = bossOptionMapper;
-        this.bossIndustryMapper = bossIndustryMapper;
-        this.bossConfigMapper = bossConfigMapper;
-        this.blacklistMapper = blacklistMapper;
-    }
 
     // ==================== Option相关方法 ====================
 

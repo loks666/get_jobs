@@ -14,7 +14,7 @@
 - 已实现｜日志落地与滚动策略：logback.xml 输出到 `./target/logs`。
 - 已实现｜多平台 Worker 存量代码：`com.getjobs.run.worker/boss|job51|lagou|liepin|zhilian` 模块存在。
 - 已实现｜自动化工具封装：`com.getjobs.run.worker/utils/PlaywrightUtil.java`、`com.getjobs.run.worker/utils/SeleniumUtil.java` 存在。
-- 已实现｜批量执行脚本：`com.getjobs.run.worker/StartAll.java` 存在（多进程/线程启动）。
+- 已移除｜批量执行脚本：`StartAll.java` 已删除，统一由 Spring `@Scheduled` 管理。
 - 未实现｜版本一致：Spring Boot 固定 3.5.7、Java 21（pom 仍为 2.5.0）。
 - 未实现｜.gitignore：忽略前端产物（.next/out/dist）、node_modules、运行期数据目录。
 - 进行中｜设计文档 Dsign.md：已更新为全量 Playwright、配置入库、MVP、双形态 UI。
@@ -22,12 +22,14 @@
 ---
 
 ## 阶段1：后端骨架与最小 API
-- 未实现｜升级 Spring Boot 至 3.5.7，并新增启动类 `@SpringBootApplication`。
+- 未实现｜升级 Spring Boot 至 3.5.7。
+- 已实现｜Spring Boot 启动类：`GetJobsApplication`（`src/main/java/com/getjobs/GetJobsApplication.java`）。
 - 未实现｜最小接口：
   - POST `/com.getjobs.run.api/runs` 创建运行
   - GET `/com.getjobs.run.api/runs/{id}/events` SSE 事件流
   - GET `/com.getjobs.run.api/runs/{id}/results` 查询结果
   - GET/PUT `/com.getjobs.run.api/config` 读取/更新配置（DB）
+- 已实现｜AI 测试接口：GET `/api/ai/chat`（`AiConfigController`）。
 - 未实现｜事件总线与 SSE：定义 `RunEvent` 模型，服务端使用 `SseEmitter` 推送。
 - 未实现｜Runner SPI：`WorkerRunner`、`TaskRequest`、`RunEvent` 定义与注册表。
 - 未实现｜Boss Runner 接入 SPI，并将关键日志点改为事件 emit。
@@ -106,9 +108,9 @@
 ---
 
 ## 附：当前代码快照（用于定位）
-- `com.getjobs.run.worker/StartAll.java`（存在）
+- `com.getjobs.run.worker/StartAll.java`（已删除）
 - `com.getjobs.run.worker/boss/*`（存在，Boss 主流程）
 - `com.getjobs.run.worker/job51/*`、`com.getjobs.run.worker/lagou/*`、`com.getjobs.run.worker/liepin/*`、`com.getjobs.run.worker/zhilian/*`（存在）
 - `com.getjobs.run.worker/utils/PlaywrightUtil.java`、`com.getjobs.run.worker/utils/SeleniumUtil.java`（存在）
 - `src/main/resources/logback.xml`（存在）
-- Spring Boot 启动类与 API 层（未发现）
+- Spring Boot 启动类与 API 层（已发现：`GetJobsApplication`、`AiConfigController`）

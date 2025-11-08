@@ -1,21 +1,20 @@
 package com.getjobs.worker.boss;
 
-import com.getjobs.application.service.BossDataService;
 import com.getjobs.application.entity.AiEntity;
 import com.getjobs.application.service.AiService;
+import com.getjobs.application.service.BossDataService;
 import com.getjobs.worker.utils.Job;
 import com.getjobs.worker.utils.JobUtils;
 import com.getjobs.worker.utils.PlaywrightUtil;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
@@ -23,7 +22,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.Collections;
 
 import static com.getjobs.worker.boss.Locators.*;
 
@@ -37,18 +35,15 @@ import static com.getjobs.worker.boss.Locators.*;
 @Slf4j
 @Component
 @Scope("prototype")
+@RequiredArgsConstructor
 public class Boss {
-
-    private final String homeUrl = "https://www.zhipin.com";
 
     @Setter
     private Page page;
     @Setter
     private BossConfig config;
-    @Autowired
-    private BossDataService bossDataService;
-    @Autowired
-    private AiService aiService;
+    private final BossDataService bossDataService;
+    private final AiService aiService;
     private Set<String> blackCompanies;
     private Set<String> blackRecruiters;
     private Set<String> blackJobs;
@@ -67,12 +62,7 @@ public class Boss {
         void accept(String message, Integer current, Integer total);
     }
 
-    /**
-     * 构造函数
-     */
-    public Boss() {
-        // Spring 原型Bean，无参构造
-    }
+    // 通过 Lombok @RequiredArgsConstructor 使用构造器注入 bossDataService 与 aiService
 
     public void prepare() {
         // 从数据库加载黑名单
@@ -290,7 +280,7 @@ public class Boss {
 
                 // 输出
                 progressCallback.accept("正在投递：" + jobName, i + 1, count);
-                resumeSubmission(page, keyword, job);
+                resumeSubmission(keyword, job);
                 postCount++;
             }
             log.info("【{}】岗位已投递完毕！已投递岗位数量:{}", keyword, postCount);
@@ -376,8 +366,11 @@ public class Boss {
         return sb.toString();
     }
 
+    /**
+     * 备注：目前Boss无法通过新标签页打开立即沟通按钮，所以只能点击更多详情，然后从更多详情里打开聊天按钮
+     */
     @SneakyThrows
-    private void resumeSubmission(Page page, String keyword, Job job) {
+    private void resumeSubmission(String keyword, Job job) {
         PlaywrightUtil.sleep(1);
 
         // 1. 查找"查看更多信息"按钮（必须存在且新开页）
@@ -393,8 +386,7 @@ public class Boss {
             return;
         }
         String detailUrl = "https://www.zhipin.com" + href;
-
-        // 2. 新开详情页
+        // 2. 在新窗口打开详情页
         Page detailPage = page.context().newPage();
         detailPage.navigate(detailUrl);
         PlaywrightUtil.sleep(1);
@@ -411,7 +403,11 @@ public class Boss {
         }
         if (!foundChatBtn) {
             log.warn("未找到立即沟通按钮，跳过岗位: {}", job.getJobName());
-            detailPage.close();
+            // 关闭详情页
+            try {
+                detailPage.close();
+            } catch (Exception ignore) {
+            }
             return;
         }
         chatBtn.first().click();
@@ -429,7 +425,11 @@ public class Boss {
         }
         if (!inputReady) {
             log.warn("聊天输入框未出现，跳过: {}", job.getJobName());
-            detailPage.close();
+            // 关闭详情页
+            try {
+                detailPage.close();
+            } catch (Exception ignore) {
+            }
             return;
         }
 
@@ -452,39 +452,35 @@ public class Boss {
             input.evaluate("(el, msg) => el.innerText = msg", message);
         }
 
-        // 7. 发送图片简历（可选）
-        boolean imgResume = false;
-        if (config.getSendImgResume()) {
-            try {
-                URL resourceUrl = Boss.class.getResource("/resume.jpg");
-                if (resourceUrl != null) {
-                    File imageFile = new File(resourceUrl.toURI());
-                    Locator fileInput = detailPage.locator("//div[@aria-label='发送图片']//input[@type='file']");
-                    if (fileInput.count() > 0) {
-                        fileInput.setInputFiles(imageFile.toPath());
-                        imgResume = true;
-                    }
-                }
-            } catch (Exception e) {
-                log.error("发送图片简历失败: {}", e.getMessage());
-            }
-        }
-
-        // 8. 点击发送按钮（div.send-message 或 button.btn-send）
-        Locator sendBtn = detailPage.locator("div.send-message, button[type='send'].btn-send, button.btn-send");
+        // 7. 点击发送按钮（div.send-message 或 button.btn-send）
+        Locator sendText = detailPage.locator("div.send-message, button[type='send'].btn-send, button.btn-send");
         boolean sendSuccess = false;
-        if (sendBtn.count() > 0) {
-            sendBtn.first().click();
+        if (sendText.count() > 0) {
+            sendText.first().click();
             PlaywrightUtil.sleep(1);
             sendSuccess = true;
+            try {
+                detailPage.locator("i.icon-close").first().click();
+            } catch (Exception e) {
+                log.error("发送文本小窗口关闭失败！");
+            }
         } else {
             log.warn("未找到发送按钮，自动跳过！岗位：{}", job.getJobName());
         }
 
-        log.info("投递完成 | 岗位：{} | 招呼语：{} | 图片简历：{}", job.getJobName(), message, imgResume ? "已发送" : "未发送");
+        // 8. 发送图片简历（可选）
+        boolean imgResume = false;
+        if (config.getSendImgResume()) {
+            imgResume = sendImageResume(detailPage);
+        }
 
-        // 9. 关闭详情页，回到主页面
-        detailPage.close();
+        log.info("投递完成 | 公司：{} | 岗位：{} | 薪资：{} | 招呼语：{} | 图片简历：{}", job.getCompanyName(), job.getJobName(), job.getSalary(), message, imgResume ? "已发送" : "未发送");
+
+        // 9. 关闭新打开的详情页
+        try {
+            detailPage.close();
+        } catch (Exception ignore) {
+        }
         PlaywrightUtil.sleep(1);
 
         // 10. 成功投递加入结果
@@ -495,6 +491,82 @@ public class Boss {
 
     public boolean isValidString(String str) {
         return str != null && !str.isEmpty();
+    }
+
+    private boolean sendImageResume(Page page) {
+        try {
+            // 0) 资源存在性校验，避免后续无效操作
+            URL resourceUrlCheck = Boss.class.getResource("/resume.jpg");
+            if (resourceUrlCheck == null) {
+                log.error("资源文件 resume.jpg 不存在，跳过发送图片简历");
+                return false;
+            }
+
+            // 进入聊天页
+            if (!page.url().contains("/web/geek/chat")) {
+                Locator chatBtn = page.locator("a.btn-startchat, a.op-btn-chat");
+                if (chatBtn.count() == 0) {
+                    log.warn("未找到【继续沟通/立即沟通】按钮，跳过发送图片简历");
+                    return false;
+                }
+                chatBtn.first().click();
+                page.waitForURL("**/web/geek/chat**", new Page.WaitForURLOptions().setTimeout(15_000));
+            }
+
+            // 1) 解析图片路径（在可能触发文件选择器前就准备好）
+            java.nio.file.Path imagePath = resolveResumeImage();
+
+            // 精准定位聊天工具栏内的图片输入，避免匹配到页面其他上传控件
+            Locator imgContainer = page.locator("div.btn-sendimg[aria-label='发送图片'], div[aria-label='发送图片'].btn-sendimg");
+            Locator imageInput = imgContainer.locator("input[type='file'][accept*='image']").first();
+            if (imageInput.count() == 0) {
+                // 若未渲染，尝试拦截系统文件选择器；若未出现则普通点击促使 input 出现
+                if (imgContainer.count() > 0) {
+                    boolean chooserHandled = false;
+                    try {
+                        com.microsoft.playwright.FileChooser chooser = page.waitForFileChooser(() -> {
+                            imgContainer.first().click();
+                        });
+                        chooser.setFiles(imagePath);
+                        chooserHandled = true;
+                        log.info("通过 FileChooser 直接提交图片文件，避免系统窗口阻塞");
+                    } catch (com.microsoft.playwright.PlaywrightException ignore) {
+                        // 未弹出系统文件选择器，继续常规流程
+                    }
+                    if (!chooserHandled) {
+                        PlaywrightUtil.sleep(1);
+                        imageInput = imgContainer.locator("input[type='file'][accept*='image']").first();
+                    }
+                }
+            }
+            imageInput.waitFor(new Locator.WaitForOptions().setTimeout(10_000));
+
+            // 上传图片
+            imageInput.setInputFiles(imagePath);
+            PlaywrightUtil.sleep(1);
+            return true;
+        } catch (Throwable e) {
+            log.error("发送图片简历失败：{}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    private java.nio.file.Path resolveResumeImage() throws Exception {
+        URL resourceUrl = Boss.class.getResource("/resume.jpg");
+        if (resourceUrl == null) {
+            throw new IllegalStateException("资源文件 /resume.jpg 未找到，请将图片放置到 src/main/resources 目录下");
+        }
+        if ("file".equalsIgnoreCase(resourceUrl.getProtocol())) {
+            return java.nio.file.Paths.get(resourceUrl.toURI());
+        }
+        java.nio.file.Path temp = java.nio.file.Files.createTempFile("resume-", ".jpg");
+        try (java.io.InputStream in = Boss.class.getResourceAsStream("/resume.jpg")) {
+            if (in == null) {
+                throw new IllegalStateException("无法从类路径读取 /resume.jpg 资源");
+            }
+            java.nio.file.Files.copy(in, temp, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+        return temp;
     }
 
     /**
@@ -604,7 +676,7 @@ public class Boss {
     }
 
     private boolean isSalaryOutOfRange(Integer[] jobSalary, Integer miniSalary, Integer maxSalary,
-                                              String jobType) {
+                                       String jobType) {
         if (jobSalary == null) {
             return true;
         }
@@ -640,16 +712,20 @@ public class Boss {
         String introduce = (aiConfig != null && aiConfig.getIntroduce() != null) ? aiConfig.getIntroduce() : "";
         String prompt = (aiConfig != null) ? aiConfig.getPrompt() : null;
 
-        String requestMessage = "";
-        if (prompt != null) {
-            requestMessage = String.format(prompt, introduce, keyword, jobName, jd, config.getSayHi());
-        }
+        String requestMessage = (prompt != null)
+                ? String.format(prompt, introduce, keyword, jobName, jd, config.getSayHi())
+                : buildDefaultPrompt(introduce, keyword, jobName, jd);
 
-        String result = aiService.sendRequest(requestMessage);
-        if (result == null) {
-            return null;
+        try {
+            String result = aiService.sendRequest(requestMessage);
+            if (result == null) {
+                return config.getSayHi();
+            }
+            return result.toLowerCase().contains("false") ? config.getSayHi() : result;
+        } catch (Exception e) {
+            log.warn("AI请求失败，使用原有打招呼语: {}", e.getMessage());
+            return config.getSayHi();
         }
-        return result.toLowerCase().contains("false") ? null : result;
     }
 
     private String buildDefaultPrompt(String introduce, String keyword, String jobName, String jd) {

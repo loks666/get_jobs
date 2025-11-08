@@ -3,8 +3,8 @@ package com.getjobs.application.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.getjobs.application.entity.ConfigEntity;
 import com.getjobs.application.mapper.ConfigMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +18,9 @@ import java.util.Map;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ConfigService {
-
-    @Autowired
-    private ConfigMapper configMapper;
+    private final ConfigMapper configMapper;
 
     /**
      * 获取所有配置（以Map形式返回）

@@ -196,18 +196,30 @@ cd get_jobs
 
 ### 5️⃣ 定时投递
 
-- 目前默认Boss会定时投递两次，可以修改相关代码修改时间
-- 每个包下的Scheduled文件，即使单独针对平台的定时投递，例：[BossScheduled.java](src/main/java/boss/BossScheduled.java)
-  ，就是boss平台每天定时投递
-- 定时投递第一次运行时会立即投递一次，到了第二天设定的时间，会再次投递，时间可以自行在代码中修改
+- 目前默认 Boss 会定时投递两次，时间可在代码中调整
+- 定时由 Spring `@Scheduled` 管理，示例：`PlaywrightManager`（`src/main/java/com/getjobs/worker/manager/PlaywrightManager.java`）
+- 首次启动立即投递一次，第二天在设定时间再次投递，时间可以在代码中修改
 
 ---
 
 ### ️ 6️⃣ 批量投递
 
-- win平台下，配置任务计划，执行run_startall.bat脚本即可，时间可以自己设定
-- [StartAll.java](src/main/java/StartAll.java)[BossScheduled.java](src/main/java/boss/BossScheduled.java)
-  脚本可以一键启动所有平台，需要哪些平台可以自行进行修改编辑
+- 建议直接运行 Spring Boot 应用，统一由 `@Scheduled` 任务触发批量投递
+- 如需自定义批量策略，可在 `PlaywrightManager` 中调整任务启停与时间
+
+### 7️⃣ AI 测试接口
+
+- GET `/api/ai/chat?content=你好`
+- 位置：`src/main/java/com/getjobs/application/controller/AiConfigController.java`
+- 示例：
+  - `curl -G "http://localhost:8080/api/ai/chat" --data-urlencode "content=你好"`
+- 配置要求：`BASE_URL`、`API_KEY`、`MODEL` 正确；兼容 Azure OpenAI（使用 `Authorization: Bearer` 与 `api-key`）
+
+### 更新说明（近期）
+
+- 移除 `src/main/java/com/getjobs/worker/StartAll.java`，批量任务统一由 Spring `@Scheduled` 管理。
+- 移除 `src/main/java/com/getjobs/worker/ai/*`，同时清理相关文档引用。
+- 删除 `SpringContextHolder.java`，所有依赖均通过 Spring 注入与管理。
 
 ### ✍🏼 例:Boss投递日志
 
