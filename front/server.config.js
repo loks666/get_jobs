@@ -4,7 +4,7 @@
  */
 module.exports = {
   // 服务器端口
-  port: 6867,
+  port: 6866,
 
   // 开发环境配置
   development: {
@@ -19,7 +19,7 @@ module.exports = {
   // 生产环境配置
   production: {
     // 生产环境端口
-    port: 6868,
+    port: 6866,
     // 主机名
     hostname: '0.0.0.0',
   },

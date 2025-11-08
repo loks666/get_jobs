@@ -362,9 +362,10 @@ public class Boss {
                     log.info("被过滤：职位黑名单命中 | 公司：{} | 岗位：{} | 关键词：{}", bossCompany != null ? bossCompany : "", jobName, term != null ? term : "");
                     continue;
                 }
-                if (bossActive != null && config.getDeadStatus().stream().anyMatch(bossActive::contains)) {
-                    String term = findMatchedTerm(config.getDeadStatus(), bossActive);
-                    log.info("被过滤：HR不在线 | 公司：{} | 岗位：{} | 活跃：{} | 关键词：{}", bossCompany != null ? bossCompany : "", jobName != null ? jobName : "", bossActive, term != null ? term : "");
+                // HR活跃状态过滤：当开启过滤开关且活跃描述包含“年”时，视为不活跃
+                boolean hrInactiveByYear = bossActive != null && bossActive.contains("年");
+                if (Boolean.TRUE.equals(config.getFilterDeadHR()) && hrInactiveByYear) {
+                    log.info("被过滤：HR活跃状态包含‘年’ | 公司：{} | 岗位：{} | 活跃：{}", bossCompany != null ? bossCompany : "", jobName != null ? jobName : "", bossActive);
                     continue;
                 }
                 if (bossCompany != null && blackCompanies != null && blackCompanies.stream().anyMatch(bossCompany::contains)) {
@@ -469,6 +470,14 @@ public class Boss {
                 if (!filtered && blackJobs != null && blackJobs.stream().anyMatch(positionName::contains)) filtered = true;
                 if (!filtered && blackRecruiters != null && blackRecruiters.stream().anyMatch(hrPosition::contains)) filtered = true;
             } catch (Throwable ignore) {}
+
+            // HR活跃状态过滤：开启过滤且活跃描述包含“年”，则标记为已过滤，但仍入库
+            if (!filtered && Boolean.TRUE.equals(config.getFilterDeadHR())) {
+                String hrActive = entity.getHrActiveStatus();
+                if (hrActive != null && hrActive.contains("年")) {
+                    filtered = true;
+                }
+            }
 
             entity.setDeliveryStatus(filtered ? "已过滤" : "未投递");
 

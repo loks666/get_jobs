@@ -69,6 +69,7 @@ export default function BossPage() {
     salary: '',
     scale: '',
     stage: '',
+    filterDeadHr: 0,
   })
   // 关键词显示用（无括号无引号，逗号分隔）
   const [keywordsDisplay, setKeywordsDisplay] = useState<string>('')
@@ -325,6 +326,10 @@ export default function BossPage() {
         const jtMatchByName = (data.options?.jobType || []).find((o: BossOption) => o.name === currentJobTypeHead)
         const normalizedJobType = jtMatchByCode ? jtMatchByCode.code : (jtMatchByName ? jtMatchByName.code : '0')
         setConfig(prev => ({ ...prev, jobType: normalizedJobType }))
+
+        // HR活跃过滤开关：后端为 0/1，前端直接回显为数字
+        const normalizedFilterDeadHr = (data.config?.filterDeadHr ?? 0)
+        setConfig(prev => ({ ...prev, filterDeadHr: normalizedFilterDeadHr }))
 
         // 其它多选选项：将中文名称转换为代码以匹配 MultiSelect 的 selected
         setSelectedIndustry(toCodes(data.options.industry || [], parseListString(data.config?.industry)))
@@ -643,6 +648,20 @@ export default function BossPage() {
                   />
                   <p className="text-xs text-muted-foreground">可多选</p>
                 </div>
+              
+              {/* HR活跃过滤开关 */}
+              <div className="space-y-2">
+                <Label htmlFor="filterDeadHr">HR活跃过滤</Label>
+                <Select
+                  id="filterDeadHr"
+                  value={String(config.filterDeadHr ?? 0)}
+                  onChange={(e) => setConfig({ ...config, filterDeadHr: Number(e.target.value) })}
+                >
+                  <option value="0">关闭</option>
+                  <option value="1">开启</option>
+                </Select>
+                <p className="text-xs text-muted-foreground">开启后将过滤活跃状态包含“年”的HR，但仍保存数据。</p>
+              </div>
               </div>
             </CardContent>
         </Card>
