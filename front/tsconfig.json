@@ -38,9 +38,7 @@
     "dist/types/**/*.ts",
     "dist/dev/types/**/*.ts",
     "dist2/types/**/*.ts",
-    "dist2/dev/types/**/*.ts",
-    "dist3/types/**/*.ts",
-    "dist3/dev/types/**/*.ts"
+    "dist2/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
