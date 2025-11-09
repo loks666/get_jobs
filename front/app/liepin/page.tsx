@@ -1,29 +1,102 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BiSearch, BiSave, BiTargetLock, BiMap, BiMoney, BiTime, BiBookmark, BiBarChart } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PageHeader from '@/app/components/PageHeader'
 
-export default function LiepinPage() {
-  const [config, setConfig] = useState({
-    keywords: '前端开发工程师',
-    industry: '互联网/IT',
-    city: '上海',
-    salaryMin: '20',
-    salaryMax: '40',
-    jobType: '全职',
-    companyType: '不限',
-    updateTime: '近三天',
-  })
+interface LiepinConfig {
+  id?: number
+  keywords?: string
+  city?: string
+  salary?: string
+  publishTime?: string
+}
 
-  const handleSave = () => {
-    console.log('Saving Liepin config:', config)
-    alert('猎聘配置已保存！')
+interface LiepinOption {
+  id: number
+  type: string
+  name: string
+  code: string
+}
+
+interface LiepinOptions {
+  city: LiepinOption[]
+  publishTime: LiepinOption[]
+}
+
+export default function LiepinPage() {
+  const [config, setConfig] = useState<LiepinConfig>({
+    keywords: '',
+    city: '',
+    salary: '',
+    publishTime: '',
+  })
+  const [options, setOptions] = useState<LiepinOptions>({
+    city: [],
+    publishTime: [],
+  })
+  const [loading, setLoading] = useState(true)
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+
+  useEffect(() => {
+    fetchAllData()
+  }, [])
+
+  const fetchAllData = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/liepin/config')
+      const data = await response.json()
+
+      console.log('Fetched liepin data:', data)
+
+      if (data.config) {
+        setConfig(data.config)
+      }
+      if (data.options) {
+        setOptions(data.options)
+      }
+    } catch (error) {
+      console.error('Failed to fetch liepin data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/liepin/config', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config),
+      })
+
+      if (response.ok) {
+        fetchAllData()
+        setSaveResult({ success: true, message: '保存成功，配置已更新。' })
+        setShowSaveDialog(true)
+      } else {
+        console.warn('保存失败：后端返回非 2xx 状态')
+        setSaveResult({ success: false, message: '保存失败：后端返回异常状态。' })
+        setShowSaveDialog(true)
+      }
+    } catch (error) {
+      console.error('Failed to save config:', error)
+      setSaveResult({ success: false, message: '保存失败：网络或服务异常。' })
+      setShowSaveDialog(true)
+    }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">加载中...</div>
   }
 
   return (
@@ -33,7 +106,12 @@ export default function LiepinPage() {
         title="猎聘配置"
         subtitle="配置猎聘平台的求职参数"
         iconClass="text-white"
-        accentBgClass="bg-orange-500"
+        accentBgClass="bg-purple-500"
+        actions={
+          <Button onClick={handleSave} size="sm" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <BiSave className="mr-1" /> 保存配置
+          </Button>
+        }
       />
 
       <Tabs defaultValue="config" className="w-full">
@@ -43,171 +121,82 @@ export default function LiepinPage() {
         </TabsList>
 
         <TabsContent value="config" className="space-y-6 mt-6">
-        {/* 职位搜索 */}
+        {/* 搜索配置 */}
         <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BiTargetLock className="text-primary" />
-              职位搜索
+              <BiSearch className="text-primary" />
+              搜索配置
             </CardTitle>
-            <CardDescription>设置目标职位和行业</CardDescription>
+            <CardDescription>设置职位搜索关键词和筛选条件</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="keywords">职位关键词</Label>
+                <Label htmlFor="keywords">搜索关键词</Label>
                 <Input
                   id="keywords"
-                  value={config.keywords}
+                  value={config.keywords || ''}
                   onChange={(e) => setConfig({ ...config, keywords: e.target.value })}
-                  placeholder="例如：前端开发工程师"
+                  placeholder="例如：Java开发工程师"
                 />
-                <p className="text-xs text-muted-foreground">搜索的职位名称或关键词</p>
+                <p className="text-xs text-muted-foreground">职位搜索的关键词</p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="industry">目标行业</Label>
-                <select
-                  id="industry"
-                  value={config.industry}
-                  onChange={(e) => setConfig({ ...config, industry: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
-                >
-                  <option value="互联网/IT">互联网/IT</option>
-                  <option value="金融">金融</option>
-                  <option value="教育">教育</option>
-                  <option value="医疗健康">医疗健康</option>
-                  <option value="电子商务">电子商务</option>
-                  <option value="制造业">制造业</option>
-                </select>
-                <p className="text-xs text-muted-foreground">目标行业领域</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 地区和薪资 */}
-        <Card className="animate-in fade-in slide-in-from-bottom-6 duration-700">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-cyan-700">
-              <BiMap className="text-cyan-500" />
-              地区与薪资
-            </CardTitle>
-            <CardDescription>设置工作地点和期望薪资</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="city">工作城市</Label>
-                <select
+                <Select
                   id="city"
-                  value={config.city}
+                  value={config.city || ''}
                   onChange={(e) => setConfig({ ...config, city: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
                 >
-                  <option value="北京">北京</option>
-                  <option value="上海">上海</option>
-                  <option value="广州">广州</option>
-                  <option value="深圳">深圳</option>
-                  <option value="杭州">杭州</option>
-                  <option value="南京">南京</option>
-                  <option value="苏州">苏州</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="salaryMin">最低年薪 (万)</Label>
-                <Input
-                  id="salaryMin"
-                  type="number"
-                  value={config.salaryMin}
-                  onChange={(e) => setConfig({ ...config, salaryMin: e.target.value })}
-                  placeholder="20"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="salaryMax">最高年薪 (万)</Label>
-                <Input
-                  id="salaryMax"
-                  type="number"
-                  value={config.salaryMax}
-                  onChange={(e) => setConfig({ ...config, salaryMax: e.target.value })}
-                  placeholder="40"
-                />
+                  {options.city.map((city) => (
+                    <option key={city.id} value={city.code}>
+                      {city.name}
+                    </option>
+                  ))}
+                </Select>
+                <p className="text-xs text-muted-foreground">目标工作城市</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* 职位类型和筛选 */}
-        <Card className="animate-in fade-in slide-in-from-bottom-7 duration-700">
+        {/* 薪资和发布时间 */}
+        <Card className="animate-in fade-in slide-in-from-bottom-6 duration-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BiBookmark className="text-primary" />
-              职位筛选
+              <BiMoney className="text-primary" />
+              薪资与时间筛选
             </CardTitle>
-            <CardDescription>设置职位类型和更新时间</CardDescription>
+            <CardDescription>设置薪资范围和职位发布时间</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="jobType">职位类型</Label>
-                <select
-                  id="jobType"
-                  value={config.jobType}
-                  onChange={(e) => setConfig({ ...config, jobType: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
-                >
-                  <option value="全职">全职</option>
-                  <option value="兼职">兼职</option>
-                  <option value="实习">实习</option>
-                  <option value="外包">外包</option>
-                </select>
+                <Label htmlFor="salary">薪资范围</Label>
+                <Input
+                  id="salary"
+                  value={config.salary || ''}
+                  onChange={(e) => setConfig({ ...config, salary: e.target.value })}
+                  placeholder="例如：20-40K"
+                />
+                <p className="text-xs text-muted-foreground">期望薪资范围</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="companyType">公司类型</Label>
-                <select
-                  id="companyType"
-                  value={config.companyType}
-                  onChange={(e) => setConfig({ ...config, companyType: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
-                >
-                  <option value="不限">不限</option>
-                  <option value="上市公司">上市公司</option>
-                  <option value="外资企业">外资企业</option>
-                  <option value="国企">国企</option>
-                  <option value="创业公司">创业公司</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="updateTime">更新时间</Label>
-                <select
-                  id="updateTime"
-                  value={config.updateTime}
-                  onChange={(e) => setConfig({ ...config, updateTime: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
-                >
-                  <option value="不限">不限</option>
-                  <option value="今天">今天</option>
-                  <option value="近三天">近三天</option>
-                  <option value="近一周">近一周</option>
-                  <option value="近一月">近一月</option>
-                </select>
+                <Label htmlFor="publishTime">发布时间</Label>
+                <Input
+                  id="publishTime"
+                  value={config.publishTime || ''}
+                  onChange={(e) => setConfig({ ...config, publishTime: e.target.value })}
+                  placeholder="例如：近三天"
+                />
+                <p className="text-xs text-muted-foreground">职位发布时间筛选</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* 操作按钮 */}
-        <div className="flex justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <Button onClick={handleSave} size="lg" className="min-w-[160px]">
-            <BiSave />
-            保存配置
-          </Button>
-        </div>
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6 mt-6">
@@ -327,7 +316,32 @@ export default function LiepinPage() {
         </TabsContent>
       </Tabs>
 
-      {/* 统计卡片已移除 */}
+      {/* 保存结果弹框 */}
+      {showSaveDialog && saveResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" role="dialog" aria-modal="true">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-[92%] max-w-sm border border-gray-200 dark:border-neutral-800 animate-in fade-in zoom-in-95">
+            <Card className="border-0">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BiSave className={saveResult.success ? 'text-green-500' : 'text-red-500'} />
+                  {saveResult.success ? '保存成功' : '保存失败'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-sm text-muted-foreground mb-4">{saveResult.message}</p>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    onClick={() => setShowSaveDialog(false)}
+                    className={`rounded-full px-4 ${saveResult.success ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white'}`}
+                  >
+                    知道了
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
