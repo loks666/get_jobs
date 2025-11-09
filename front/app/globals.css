@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* shadcn/ui 原有颜色 - 保留 */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -24,6 +25,27 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+
+    /* Solid Next.js 模板颜色系统 */
+    --color-stroke: #eeeeee;
+    --color-strokedark: #2d2f40;
+    --color-hoverdark: #252a42;
+    --color-titlebg: #adfff8;
+    --color-titlebg2: #ffeac2;
+    --color-titlebgdark: #46495a;
+    --color-btndark: #292e45;
+    --color-white: #ffffff;
+    --color-black: #181c31;
+    --color-blackho: #2c3149;
+    --color-blacksection: #1c2136;
+    --color-primary: #006bff;
+    --color-primaryho: #0063ec;
+    --color-meta: #20c5a8;
+    --color-waterloo: #757693;
+    --color-manatee: #999aa1;
+    --color-alabaster: #fbfbfb;
+    --color-zumthor: #edf5ff;
+    --color-socialicon: #d1d8e0;
   }
 
   .dark {
@@ -60,13 +82,89 @@
 }
 
 /* 主题柔和背景辅助类：让右侧内容区与组件更自然融合 */
-.accent-teal { --accent-rgb: 20 184 166; } /* teal-500 */
-.accent-orange { --accent-rgb: 234 88 12; } /* orange-600 */
-.accent-amber { --accent-rgb: 245 158 11; } /* amber-500 */
-.accent-sky { --accent-rgb: 2 132 199; } /* sky-600 */
+.accent-teal { --accent-rgb: 20 184 166; }
+.accent-orange { --accent-rgb: 234 88 12; }
+.accent-amber { --accent-rgb: 245 158 11; }
+.accent-sky { --accent-rgb: 2 132 199; }
 
 .content-bg {
   background-image:
     radial-gradient(ellipse at top, rgb(var(--accent-rgb) / 0.12) 0%, transparent 60%),
     linear-gradient(to bottom right, rgb(var(--accent-rgb) / 0.06), transparent);
+}
+
+/* Solid Next.js 模板工具类 */
+@layer utilities {
+  .dropdown-panel {
+    @apply fixed z-[99999] max-h-56 overflow-y-auto rounded-md border shadow-lg;
+    background-color: rgba(255, 255, 255, 0.98);
+  }
+
+  .dark .dropdown-panel {
+    @apply bg-neutral-900 border-neutral-700;
+  }
+
+  /* 强制覆盖 input 自动填充样式 */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.05) inset !important;
+    -webkit-text-fill-color: inherit !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Framer Motion 动画辅助类 */
+  .animate_top {
+    animation: animateTop 0.6s ease-out;
+  }
+
+  .animate_left {
+    animation: animateLeft 0.6s ease-out;
+  }
+
+  .animate_right {
+    animation: animateRight 0.6s ease-out;
+  }
+
+  @keyframes animateTop {
+    0% {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes animateLeft {
+    0% {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes animateRight {
+    0% {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
 }

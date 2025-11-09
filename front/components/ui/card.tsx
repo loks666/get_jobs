@@ -9,8 +9,16 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border bg-card text-card-foreground shadow transition-all duration-300",
-      "hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5",
+      // 炫酷玻璃拟态 + 渐变光晕（允许下拉层浮出，不裁剪）
+      "relative overflow-visible rounded-2xl",
+      "border border-white/15 dark:border-white/10",
+      // 柔和的彩色径向渐变背景（不影响可读性）
+      "bg-[radial-gradient(ellipse_at_top_left,rgba(99,102,241,0.15),transparent_60%),radial-gradient(ellipse_at_bottom_right,rgba(16,185,129,0.12),transparent_60%)]",
+      "bg-clip-padding backdrop-blur-xl text-card-foreground",
+      // 细微的内环与阴影，增强层次感
+      "shadow-lg ring-1 ring-inset ring-white/10",
+      // 悬浮时的霓虹光晕与轻微位移
+      "transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(56,189,248,0.35)]",
       className
     )}
     {...props}

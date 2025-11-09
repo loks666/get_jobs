@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { BiBriefcase, BiSave, BiSearch, BiMap, BiMoney, BiBuilding, BiTime, BiBarChart, BiTrash, BiPlus, BiPlay, BiStop, BiLogOut } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -193,9 +194,17 @@ export default function BossPage() {
           if (list.length > 0) return list[0]
           return raw
         }
+        // 规范化职位类型：后端可能返回单值或括号列表，此处取第一个值用于下拉回显
+        const normalizeJobType = (raw?: string): string => {
+          if (!raw) return ''
+          const list = parseListString(raw)
+          if (list.length > 0) return list[0]
+          return raw
+        }
         setConfig({
           ...data.config,
           cityCode: normalizeCityCode(data.config.cityCode),
+          jobType: normalizeJobType(data.config.jobType),
         })
         // 将后端存储的关键词（可能是 JSON 数组或括号列表）转为展示用逗号分隔文本
         const toDisplayKeywords = (raw?: string): string => {
@@ -305,6 +314,7 @@ export default function BossPage() {
             return byName ? byName.code : it
           })
         }
+
         // 城市：若当前为中文名，转换为对应的 code 以在下拉中回显
         const currentCityRaw = data.config?.cityCode || ''
         const currentCityHead = (() => {
@@ -316,15 +326,15 @@ export default function BossPage() {
         const normalizedCityCode = cityMatchByCode ? cityMatchByCode.code : (cityMatchByName ? cityMatchByName.code : '0')
         setConfig(prev => ({ ...prev, cityCode: normalizedCityCode }))
 
-        // 职位类型：支持后端返回中文或代码，统一回显为代码；缺省为不限('0')
+        // 职位类型：若当前为中文名，转换为对应的 code 以在下拉中回显
         const currentJobTypeRaw = data.config?.jobType || ''
         const currentJobTypeHead = (() => {
           const list = parseListString(currentJobTypeRaw)
           return list.length > 0 ? list[0] : currentJobTypeRaw
         })()
-        const jtMatchByCode = (data.options?.jobType || []).find((o: BossOption) => o.code === currentJobTypeHead)
-        const jtMatchByName = (data.options?.jobType || []).find((o: BossOption) => o.name === currentJobTypeHead)
-        const normalizedJobType = jtMatchByCode ? jtMatchByCode.code : (jtMatchByName ? jtMatchByName.code : '0')
+        const jobTypeMatchByCode = (data.options.jobType || []).find((t: BossOption) => t.code === currentJobTypeHead)
+        const jobTypeMatchByName = (data.options.jobType || []).find((t: BossOption) => t.name === currentJobTypeHead)
+        const normalizedJobType = jobTypeMatchByCode ? jobTypeMatchByCode.code : (jobTypeMatchByName ? jobTypeMatchByName.code : '')
         setConfig(prev => ({ ...prev, jobType: normalizedJobType }))
 
         // HR活跃过滤开关：后端为 0/1，前端直接回显为数字
@@ -626,16 +636,16 @@ export default function BossPage() {
                 <Label htmlFor="jobType">职位类型</Label>
                 <Select
                   id="jobType"
-                  value={config.jobType || '0'}
+                  value={config.jobType || ''}
                   onChange={(e) => setConfig({ ...config, jobType: e.target.value })}
                 >
-                  {(options.jobType || []).map((jt) => (
-                    <option key={jt.id} value={jt.code}>
-                      {jt.name}
+                  {options.jobType.map((type) => (
+                    <option key={type.id} value={type.code}>
+                      {type.name}
                     </option>
                   ))}
                 </Select>
-                <p className="text-xs text-muted-foreground">职位类型（单选，不选视为不限）</p>
+                <p className="text-xs text-muted-foreground">选择职位类型</p>
               </div>
 
               <div className="space-y-2">
@@ -1002,38 +1012,104 @@ function MultiSelect({
   onClose?: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+
+  // 确保组件已挂载（解决 SSR 问题）
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // 计算下拉框位置
+  const updatePosition = useCallback(() => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      })
+    }
+  }, [])
+
+  // 打开时计算位置
+  useEffect(() => {
+    if (open) {
+      updatePosition()
+      // 监听滚动和窗口大小变化，更新位置
+      const handleUpdate = () => updatePosition()
+      window.addEventListener('scroll', handleUpdate, true)
+      window.addEventListener('resize', handleUpdate)
+      return () => {
+        window.removeEventListener('scroll', handleUpdate, true)
+        window.removeEventListener('resize', handleUpdate)
+      }
+    }
+  }, [open, updatePosition])
 
   // 点击组件外部或焦点移出时关闭下拉
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (!open) return
       const target = e.target as Node
-      if (wrapperRef.current && !wrapperRef.current.contains(target)) {
+      // 检查点击是否在按钮或下拉框内
+      const clickedButton = wrapperRef.current?.contains(target)
+      const clickedDropdown = dropdownRef.current?.contains(target)
+
+      console.log('[MultiSelect] 外部点击检测', {
+        clickedButton,
+        clickedDropdown,
+        targetElement: (target as HTMLElement)?.tagName,
+        targetClass: (target as HTMLElement)?.className
+      })
+
+      if (!clickedButton && !clickedDropdown) {
+        console.log('[MultiSelect] 检测到外部点击，关闭下拉框')
+        setOpen(false)
+        onClose?.()
+      } else {
+        console.log('[MultiSelect] 点击在组件内部，保持打开')
+      }
+    }
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        console.log('[MultiSelect] ESC 键关闭')
         setOpen(false)
         onClose?.()
       }
     }
-    const handleFocusOut = (e: FocusEvent) => {
-      const target = e.target as Node
-      if (wrapperRef.current && !wrapperRef.current.contains(target)) {
-        setOpen(false)
-        onClose?.()
-      }
+
+    if (open) {
+      console.log('[MultiSelect] 下拉框打开，注册监听器')
+      // 使用 setTimeout 确保 DOM 已更新
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleOutsideClick)
+        document.addEventListener('keydown', handleEscape)
+      }, 0)
     }
-    document.addEventListener('mousedown', handleOutsideClick)
-    document.addEventListener('focusin', handleFocusOut)
+
     return () => {
+      if (open) {
+        console.log('[MultiSelect] 移除监听器')
+      }
       document.removeEventListener('mousedown', handleOutsideClick)
-      document.removeEventListener('focusin', handleFocusOut)
+      document.removeEventListener('keydown', handleEscape)
     }
-  }, [open])
+  }, [open, onClose])
 
   const toggle = (code: string) => {
+    console.log('[MultiSelect] toggle 被调用', { code, currentSelected: selected })
     if (selected.includes(code)) {
-      onChange(selected.filter((c) => c !== code))
+      const newSelected = selected.filter((c) => c !== code)
+      console.log('[MultiSelect] 取消选择，新值:', newSelected)
+      onChange(newSelected)
     } else {
-      onChange([...selected, code])
+      const newSelected = [...selected, code]
+      console.log('[MultiSelect] 添加选择，新值:', newSelected)
+      onChange(newSelected)
     }
   }
 
@@ -1042,37 +1118,54 @@ function MultiSelect({
     .map((o) => o.name)
 
   return (
-    <div className="relative" ref={wrapperRef} onKeyDown={(e) => { if (e.key === 'Escape') { setOpen(false); onClose?.() } }}>
+    <div className="relative" ref={wrapperRef}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => { const next = !open; setOpen(next); if (!next) onClose?.() }}
-        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-all duration-200 hover:border-primary/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:border-primary"
+        className="flex h-10 w-full items-center justify-between rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,.25)] transition-all duration-200 hover:bg-white/15 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-0"
       >
         <span className="truncate text-sm">
           {selectedNames.length > 0 ? selectedNames.join('，') : (placeholder || '请选择')}
         </span>
         <span className={`ml-2 text-xs text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>▼</span>
       </button>
-      {open && (
-        <div className="absolute z-10 mt-1 w-full max-h-48 overflow-auto rounded-md border border-border bg-background shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
-          {options.map((opt) => {
-            const checked = selected.includes(opt.code)
-            return (
-              <label
-                key={opt.id}
-                className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-primary/10 transition-colors duration-150 border-b border-border/50 last:border-b-0"
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggle(opt.code)}
-                  className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-0 cursor-pointer transition-all"
-                />
-                <span className={`text-sm ${checked ? 'font-medium text-primary' : 'text-foreground'}`}>{opt.name}</span>
-              </label>
-            )
-          })}
-        </div>
+      {open && mounted && createPortal(
+        <div
+          ref={dropdownRef}
+          className="dropdown-panel p-2"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+          }}
+        >
+          <div className="flex flex-col gap-2">
+            {options.map((opt) => {
+              const checked = selected.includes(opt.code)
+              return (
+                <div
+                  key={opt.id}
+                  className={`group inline-flex items-center justify-between gap-3 rounded-full px-3 py-2 cursor-pointer transition-all border ${checked ? 'border-teal-300/60 bg-gradient-to-r from-teal-500/12 to-cyan-500/12 text-teal-900 dark:text-teal-200 shadow' : 'border-white/20 bg-white/8 text-foreground hover:bg-white/12'}`}
+                  onClick={(e) => {
+                    console.log('[MultiSelect] div 被点击', {
+                      optionCode: opt.code,
+                      optionName: opt.name,
+                      currentChecked: checked
+                    })
+                    toggle(opt.code)
+                  }}
+                >
+                  <span className="flex items-center gap-3">
+                    <span className={`inline-flex h-4 w-4 items-center justify-center rounded-md border border-white/30 bg-white/10 shadow-inner transition-all ${checked ? 'bg-teal-400/60 border-teal-300/80' : ''}`}></span>
+                    <span className="text-sm truncate">{opt.name}</span>
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )

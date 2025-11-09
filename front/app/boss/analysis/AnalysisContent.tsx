@@ -126,10 +126,13 @@ function ChartCanvas({
     const ctx = canvasRef.current?.getContext("2d")
     if (!ctx) return
 
+    // 销毁旧图表
     if (chartRef.current) {
       chartRef.current.destroy()
       chartRef.current = null
     }
+
+    let cancelled = false
 
     const pieColorsBase = [
       "#3b82f6",
@@ -183,27 +186,38 @@ function ChartCanvas({
     }
 
     ;(async () => {
-      const Chart = await ensureChart()
-      chartRef.current = new Chart(ctx, {
-        type,
-        data: {
-          labels,
-          datasets: [dataset],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: type === "pie" },
-            title: { display: !!title, text: title },
+      try {
+        const Chart = await ensureChart()
+        // 检查组件是否已卸载
+        if (cancelled) return
+
+        chartRef.current = new Chart(ctx, {
+          type,
+          data: {
+            labels,
+            datasets: [dataset],
           },
-          scales: type !== "pie" ? { x: { ticks: { autoSkip: true } }, y: { beginAtZero: true } } : undefined,
-        },
-      })
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: type === "pie" },
+              title: { display: !!title, text: title },
+            },
+            scales: type !== "pie" ? { x: { ticks: { autoSkip: true } }, y: { beginAtZero: true } } : undefined,
+          },
+        })
+      } catch (error) {
+        console.error("Failed to create chart:", error)
+      }
     })()
 
     return () => {
-      chartRef.current?.destroy()
+      cancelled = true
+      if (chartRef.current) {
+        chartRef.current.destroy()
+        chartRef.current = null
+      }
     }
   }, [type, labels, data, title, color, colors])
 
@@ -531,9 +545,16 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
               <CardTitle className="text-base">筛选与操作</CardTitle>
               <CardDescription>按状态、地区、经验、学历与薪资区间过滤列表</CardDescription>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 rounded-full px-3 py-2 border border-white/20 bg-white/5 backdrop-blur-md shadow-sm">
               {statusOptions.map((s) => (
-                <label key={s} className="flex items-center gap-2 text-sm">
+                <label
+                  key={s}
+                  className={`group inline-flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all border backdrop-blur-sm ${
+                    statuses.includes(s)
+                      ? "border-cyan-300/60 bg-gradient-to-r from-cyan-500/15 to-violet-500/15 text-cyan-900 dark:text-cyan-200 shadow"
+                      : "border-white/20 bg-white/8 text-foreground/80 hover:bg-white/12"
+                  }`}
+                >
                   <input
                     type="checkbox"
                     checked={statuses.includes(s)}
@@ -543,16 +564,26 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
                         return prev.filter((x) => x !== s)
                       })
                     }}
+                    className="sr-only peer"
                   />
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-md border border-white/30 bg-white/10 shadow-inner transition-all peer-checked:bg-cyan-400/60 peer-checked:border-cyan-300/80"></span>
                   {s}
                 </label>
               ))}
-              <label className="flex items-center gap-2 text-sm">
+              <label
+                className={`group inline-flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all border backdrop-blur-sm ${
+                  filterHeadhunter
+                    ? "border-teal-300/60 bg-gradient-to-r from-teal-500/15 to-emerald-500/15 text-teal-900 dark:text-teal-200 shadow"
+                    : "border-white/20 bg-white/8 text-foreground/80 hover:bg-white/12"
+                }`}
+              >
                 <input
                   type="checkbox"
                   checked={filterHeadhunter}
                   onChange={(e) => setFilterHeadhunter(e.target.checked)}
+                  className="sr-only peer"
                 />
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-md border border-white/30 bg-white/10 shadow-inner transition-all peer-checked:bg-teal-400/60 peer-checked:border-teal-300/80"></span>
                 过滤猎头岗位
               </label>
             </div>
@@ -711,99 +742,111 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
           <CardDescription>支持筛选、导出与刷新</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border overflow-x-auto">
-            <table className="w-full table-fixed min-w-[1200px]">
-              <thead className="bg-muted/50">
-                <tr className="border-b">
-                  <th className="w-40 px-4 py-3 text-left text-sm leading-6 font-medium">公司名称</th>
-                  <th className="w-48 px-4 py-3 text-left text-sm leading-6 font-medium">岗位名称</th>
-                  <th className="w-24 px-4 py-3 text-left text-sm leading-6 font-medium">薪资</th>
-                  <th className="w-24 px-4 py-3 text-left text-sm leading-6 font-medium">地点</th>
-                  <th className="w-24 px-4 py-3 text-left text-sm leading-6 font-medium">经验</th>
-                  <th className="w-20 px-4 py-3 text-left text-sm leading-6 font-medium">学历</th>
-                  <th className="w-28 px-4 py-3 text-left text-sm leading-6 font-medium">HR</th>
-                  <th className="w-32 px-4 py-3 text-left text-sm leading-6 font-medium">HR职位</th>
-                  <th className="w-32 px-4 py-3 text-left text-sm leading-6 font-medium">HR活跃</th>
-                  <th className="w-24 px-4 py-3 text-left text-sm leading-6 font-medium">投递状态</th>
-                  <th className="w-24 px-4 py-3 text-left text-sm leading-6 font-medium">招聘状态</th>
-                  <th className="w-16 px-4 py-3 text-left text-sm leading-6 font-medium">链接</th>
-                  <th className="w-48 px-4 py-3 text-left text-sm leading-6 font-medium">公司地址</th>
-                  <th className="w-28 px-4 py-3 text-left text-sm leading-6 font-medium">行业</th>
-                  <th className="w-28 px-4 py-3 text-left text-sm leading-6 font-medium">公司规模</th>
-                  <th className="w-28 px-4 py-3 text-left text-sm leading-6 font-medium">融资阶段</th>
-                  <th className="w-48 px-4 py-3 text-left text-sm leading-6 font-medium">公司介绍</th>
-                  <th className="w-48 px-4 py-3 text-left text-sm leading-6 font-medium">岗位描述</th>
-                  <th className="w-28 px-4 py-3 text-left text-sm leading-6 font-medium">创建时间</th>
+          <div className="overflow-x-auto rounded-xl border border-stroke/30 dark:border-strokedark/30 shadow-lg">
+            <table className="w-full table-fixed min-w-[1200px] bg-white dark:bg-blacksection">
+              <thead>
+                <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b-2 border-blue-200 dark:border-blue-800">
+                  <th className="w-40 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">公司名称</th>
+                  <th className="w-48 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">岗位名称</th>
+                  <th className="w-24 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">薪资</th>
+                  <th className="w-24 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">地点</th>
+                  <th className="w-24 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">经验</th>
+                  <th className="w-20 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">学历</th>
+                  <th className="w-28 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">HR</th>
+                  <th className="w-32 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">HR职位</th>
+                  <th className="w-32 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">HR活跃</th>
+                  <th className="w-24 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">投递状态</th>
+                  <th className="w-24 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">招聘状态</th>
+                  <th className="w-16 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">链接</th>
+                  <th className="w-48 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">公司地址</th>
+                  <th className="w-28 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">行业</th>
+                  <th className="w-28 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">公司规模</th>
+                  <th className="w-28 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">融资阶段</th>
+                  <th className="w-48 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">公司介绍</th>
+                  <th className="w-48 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-200 dark:border-gray-700">岗位描述</th>
+                  <th className="w-28 px-4 py-3.5 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">创建时间</th>
                 </tr>
               </thead>
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={19} className="px-4 py-8 text-center text-muted-foreground">暂无数据</td>
+                    <td colSpan={19} className="px-4 py-12 text-center text-muted-foreground bg-gray-50 dark:bg-gray-900/20">
+                      <div className="flex flex-col items-center gap-3">
+                        <BiBriefcase className="text-4xl text-gray-300 dark:text-gray-600" />
+                        <p className="text-sm">暂无数据</p>
+                      </div>
+                    </td>
                   </tr>
                 ) : (
-                  items.map((it) => (
-                    <tr key={it.id} className="border-b">
-                      <td className="px-4 py-2 text-sm leading-6 align-top">
-                        <div className="truncate cursor-pointer" title={it.companyName || '-'} onClick={() => openTextDialog("公司名称", it.companyName)}>{it.companyName || '-'}</div>
+                  items.map((it, idx) => (
+                    <tr
+                      key={it.id}
+                      className={`group transition-colors border-b border-gray-200 dark:border-gray-700 last:border-b-0 ${
+                        idx % 2 === 0
+                          ? 'bg-white dark:bg-blacksection hover:bg-blue-50/50 dark:hover:bg-blue-950/20'
+                          : 'bg-gray-50/50 dark:bg-gray-900/20 hover:bg-blue-50/50 dark:hover:bg-blue-950/20'
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-sm leading-6 align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.companyName || '-'} onClick={() => openTextDialog("公司名称", it.companyName)}>{it.companyName || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 align-top">
-                        <div className="truncate cursor-pointer" title={it.jobName || '-'} onClick={() => openTextDialog("岗位名称", it.jobName)}>{it.jobName || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.jobName || '-'} onClick={() => openTextDialog("岗位名称", it.jobName)}>{it.jobName || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 whitespace-nowrap align-top">
-                        <div className="truncate cursor-pointer" title={it.salary || '-'} onClick={() => openTextDialog("薪资", it.salary)}>{it.salary || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 whitespace-nowrap align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.salary || '-'} onClick={() => openTextDialog("薪资", it.salary)}>{it.salary || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 whitespace-nowrap align-top">
-                        <div className="truncate cursor-pointer" title={it.location || '-'} onClick={() => openTextDialog("地点", it.location)}>{it.location || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 whitespace-nowrap align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.location || '-'} onClick={() => openTextDialog("地点", it.location)}>{it.location || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 whitespace-nowrap align-top">
-                        <div className="truncate cursor-pointer" title={it.experience || '-'} onClick={() => openTextDialog("经验", it.experience)}>{it.experience || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 whitespace-nowrap align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.experience || '-'} onClick={() => openTextDialog("经验", it.experience)}>{it.experience || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 whitespace-nowrap align-top">
-                        <div className="truncate cursor-pointer" title={it.degree || '-'} onClick={() => openTextDialog("学历", it.degree)}>{it.degree || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 whitespace-nowrap align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.degree || '-'} onClick={() => openTextDialog("学历", it.degree)}>{it.degree || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 align-top">
-                        <div className="truncate cursor-pointer" title={it.hrName || '-'} onClick={() => openTextDialog("HR", it.hrName)}>{it.hrName || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.hrName || '-'} onClick={() => openTextDialog("HR", it.hrName)}>{it.hrName || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 align-top">
-                        <div className="truncate cursor-pointer" title={it.hrPosition || '-'} onClick={() => openTextDialog("HR职位", it.hrPosition)}>{it.hrPosition || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.hrPosition || '-'} onClick={() => openTextDialog("HR职位", it.hrPosition)}>{it.hrPosition || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 whitespace-nowrap align-top">
+                      <td className="px-4 py-3 text-sm leading-6 whitespace-nowrap align-top border-r border-gray-200 dark:border-gray-700">
                         <button className={badgeClass("hr", it.hrActiveStatus)} title={it.hrActiveStatus} onClick={() => openTextDialog("HR活跃", it.hrActiveStatus)}>{it.hrActiveStatus || "-"}</button>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 whitespace-nowrap align-top">
+                      <td className="px-4 py-3 text-sm leading-6 whitespace-nowrap align-top border-r border-gray-200 dark:border-gray-700">
                         <button className={badgeClass("delivery", it.deliveryStatus)} title={it.deliveryStatus} onClick={() => openTextDialog("投递状态", it.deliveryStatus)}>{it.deliveryStatus || "-"}</button>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 whitespace-nowrap align-top">
+                      <td className="px-4 py-3 text-sm leading-6 whitespace-nowrap align-top border-r border-gray-200 dark:border-gray-700">
                         <button className={badgeClass("recruitment", it.recruitmentStatus)} title={it.recruitmentStatus} onClick={() => openTextDialog("招聘状态", it.recruitmentStatus)}>{it.recruitmentStatus || "-"}</button>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 whitespace-nowrap align-top">
+                      <td className="px-4 py-3 text-sm leading-6 whitespace-nowrap align-top border-r border-gray-200 dark:border-gray-700">
                         {it.jobUrl ? (
-                          <a href={it.jobUrl} className="text-primary underline" target="_blank" rel="noreferrer">链接</a>
+                          <a href={it.jobUrl} className="text-primary underline hover:text-primary/80 transition-colors" target="_blank" rel="noreferrer">链接</a>
                         ) : (
                           "-"
                         )}
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 align-top">
-                        <div className="truncate cursor-pointer" title={it.companyAddress || '-'} onClick={() => openTextDialog("公司地址", it.companyAddress)}>{it.companyAddress || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.companyAddress || '-'} onClick={() => openTextDialog("公司地址", it.companyAddress)}>{it.companyAddress || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 align-top">
-                        <div className="truncate cursor-pointer" title={it.industry || '-'} onClick={() => openTextDialog("行业", it.industry)}>{it.industry || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.industry || '-'} onClick={() => openTextDialog("行业", it.industry)}>{it.industry || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 align-top">
-                        <div className="truncate cursor-pointer" title={it.companyScale || '-'} onClick={() => openTextDialog("公司规模", it.companyScale)}>{it.companyScale || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.companyScale || '-'} onClick={() => openTextDialog("公司规模", it.companyScale)}>{it.companyScale || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 align-top">
-                        <div className="truncate cursor-pointer" title={it.financingStage || '-'} onClick={() => openTextDialog("融资阶段", it.financingStage)}>{it.financingStage || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.financingStage || '-'} onClick={() => openTextDialog("融资阶段", it.financingStage)}>{it.financingStage || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 align-top">
-                        <div className="truncate cursor-pointer" title={it.introduce || '-'} onClick={() => openTextDialog("公司介绍", it.introduce)}>{it.introduce || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.introduce || '-'} onClick={() => openTextDialog("公司介绍", it.introduce)}>{it.introduce || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 align-top">
-                        <div className="truncate cursor-pointer" title={it.jobDescription || '-'} onClick={() => openTextDialog("岗位描述", it.jobDescription)}>{it.jobDescription || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 align-top border-r border-gray-200 dark:border-gray-700">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={it.jobDescription || '-'} onClick={() => openTextDialog("岗位描述", it.jobDescription)}>{it.jobDescription || '-'}</div>
                       </td>
-                      <td className="px-4 py-2 text-sm leading-6 whitespace-nowrap align-top">
-                        <div className="truncate cursor-pointer" title={formatDateOnly(it.createdAt) || '-'} onClick={() => openTextDialog("创建时间", formatDateOnly(it.createdAt))}>{formatDateOnly(it.createdAt) || '-'}</div>
+                      <td className="px-4 py-3 text-sm leading-6 whitespace-nowrap align-top">
+                        <div className="truncate cursor-pointer hover:text-primary transition-colors" title={formatDateOnly(it.createdAt) || '-'} onClick={() => openTextDialog("创建时间", formatDateOnly(it.createdAt))}>{formatDateOnly(it.createdAt) || '-'}</div>
                       </td>
                     </tr>
                   ))

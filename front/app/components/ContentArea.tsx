@@ -1,6 +1,7 @@
 "use client"
 import { usePathname } from 'next/navigation'
 import { ReactNode, useMemo } from 'react'
+import { motion } from 'framer-motion'
 
 export default function ContentArea({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -21,10 +22,17 @@ export default function ContentArea({ children }: { children: ReactNode }) {
   }, [pathname])
 
   return (
-    <main className={`flex-1 ml-64 bg-background content-bg ${accentClass}`}>
-      <div className="container py-8">
+    <main className={`flex-1 ml-64 bg-background dark:bg-blacksection content-bg ${accentClass} min-h-screen`}>
+      <motion.div
+        key={pathname}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.4, ease: "easeInOut" }}
+        className="container py-8"
+      >
         {children}
-      </div>
+      </motion.div>
     </main>
   )
 }
