@@ -101,12 +101,18 @@ public class JobController {
         // 发送连接成功消息和当前登录状态（不打印日志）
         try {
             boolean bossLoggedIn = playwrightManager.isLoggedIn("boss");
+            boolean liepinLoggedIn = playwrightManager.isLoggedIn("liepin");
+            boolean job51LoggedIn = playwrightManager.isLoggedIn("51job");
+            boolean zhilianLoggedIn = playwrightManager.isLoggedIn("zhilian");
 
             emitter.send(SseEmitter.event()
                     .name("connected")
                     .data(Map.of(
                             "message", "已连接到登录状态推送",
-                            "bossLoggedIn", bossLoggedIn
+                            "bossLoggedIn", bossLoggedIn,
+                            "liepinLoggedIn", liepinLoggedIn,
+                            "job51LoggedIn", job51LoggedIn,
+                            "zhilianLoggedIn", zhilianLoggedIn
                     )));
         } catch (IOException e) {
             log.error("发送SSE连接消息失败", e);

@@ -12,7 +12,7 @@ export default function ContentArea({ children }: { children: ReactNode }) {
         return 'accent-teal'
       case '/liepin':
         return 'accent-orange'
-      case '/job51':
+      case '/51job':
         return 'accent-amber'
       case '/zhilian':
         return 'accent-sky'

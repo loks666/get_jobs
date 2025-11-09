@@ -1,339 +1,219 @@
 'use client'
 
-import { useState } from 'react'
-import { BiUserCircle, BiSave, BiSearchAlt, BiLocationPlus, BiMoney, BiBookAlt, BiLike, BiBarChart, BiTime } from 'react-icons/bi'
+import { useState, useEffect } from 'react'
+import { BiLogOut, BiSave, BiBriefcase, BiPlay, BiStop } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import PageHeader from '@/app/components/PageHeader'
 
 export default function ZhilianPage() {
-  const [config, setConfig] = useState({
-    keyword: '产品经理',
-    city: '杭州',
-    salaryMin: '18',
-    salaryMax: '35',
-    workExperience: '3-5年',
-    degree: '本科',
-    companyScale: '不限',
-    jobType: '全职',
-  })
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isDelivering, setIsDelivering] = useState(false)
+  const [checkingLogin, setCheckingLogin] = useState(true)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
+  const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
 
-  const handleSave = () => {
-    console.log('Saving Zhilian config:', config)
-    alert('智联招聘配置已保存！')
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
+      console.warn('[智联招聘] EventSource 不可用，无法连接SSE')
+      setCheckingLogin(false)
+      return
+    }
+
+    let eventSource: EventSource | null = null
+
+    try {
+      console.log('[智联招聘] 正在创建连接到: http://localhost:8888/api/jobs/login-status/stream')
+      eventSource = new EventSource('http://localhost:8888/api/jobs/login-status/stream')
+
+      eventSource.onopen = () => console.log('[智联招聘 SSE] 连接已打开')
+
+      eventSource.addEventListener('connected', (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          setIsLoggedIn(data.zhilianLoggedIn || false)
+          setCheckingLogin(false)
+        } catch (error) {
+          console.error('[智联招聘 SSE] 解析连接消息失败:', error)
+        }
+      })
+
+      eventSource.addEventListener('login-status', (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.platform === 'zhilian') {
+            setIsLoggedIn(data.isLoggedIn)
+            setCheckingLogin(false)
+          }
+        } catch (error) {
+          console.error('[智联招聘 SSE] 解析登录状态消息失败:', error)
+        }
+      })
+
+      eventSource.onerror = () => setCheckingLogin(false)
+    } catch (error) {
+      console.error('[智联招聘 SSE] 创建SSE连接失败:', error)
+      setCheckingLogin(false)
+    }
+
+    return () => eventSource?.close()
+  }, [])
+
+  const handleStartDelivery = async () => {
+    try {
+      setIsDelivering(true)
+      const response = await fetch('http://localhost:8888/api/zhilian/start', { method: 'POST' })
+      const data = await response.json()
+      if (!data.success) setIsDelivering(false)
+    } catch (error) {
+      setIsDelivering(false)
+    }
+  }
+
+  const handleStopDelivery = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/zhilian/stop', { method: 'POST' })
+      const data = await response.json()
+      if (data.success) setIsDelivering(false)
+    } catch (error) {}
+  }
+
+  const triggerLogout = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/zhilian/logout', { method: 'POST' })
+      const data = await response.json()
+      setIsLoggedIn(false)
+      setLogoutResult({ success: data.success, message: data.success ? '已退出登录，Cookie已清空。' : data.message })
+      setShowLogoutResultDialog(true)
+    } catch (error) {
+      setLogoutResult({ success: false, message: '退出登录失败：网络或服务异常。' })
+      setShowLogoutResultDialog(true)
+    }
+  }
+
+  const handleSaveCookie = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/zhilian/save-cookie', { method: 'POST' })
+      const data = await response.json()
+      setSaveResult({ success: data.success, message: data.success ? '配置保存成功。' : data.message })
+      setShowSaveDialog(true)
+    } catch (error) {
+      setSaveResult({ success: false, message: '配置保存失败：网络或服务异常。' })
+      setShowSaveDialog(true)
+    }
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<BiUserCircle className="text-2xl" />}
+        icon={<BiBriefcase className="text-2xl" />}
         title="智联招聘配置"
         subtitle="配置智联招聘平台的求职参数"
         iconClass="text-white"
-        accentBgClass="bg-sky-600"
+        accentBgClass="bg-purple-500"
+        actions={
+          <div className="flex items-center gap-2">
+            {checkingLogin ? (
+              <Button size="sm" disabled className="rounded-full bg-gray-300 text-gray-600 cursor-not-allowed px-4 shadow">
+                <BiPlay className="mr-1" /> 检查登录中...
+              </Button>
+            ) : !isLoggedIn ? (
+              <Button size="sm" disabled className="rounded-full bg-gray-300 text-gray-600 cursor-not-allowed px-4 shadow">
+                <BiPlay className="mr-1" /> 请先登录智联招聘
+              </Button>
+            ) : isDelivering ? (
+              <Button onClick={handleStopDelivery} size="sm" className="rounded-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <BiStop className="mr-1" /> 停止投递
+              </Button>
+            ) : (
+              <Button onClick={handleStartDelivery} size="sm" className="rounded-full bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <BiPlay className="mr-1" /> 开始投递
+              </Button>
+            )}
+            <Button onClick={() => setShowLogoutDialog(true)} size="sm" className="rounded-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              <BiLogOut className="mr-1" /> 退出登录
+            </Button>
+            <Button onClick={handleSaveCookie} size="sm" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              <BiSave className="mr-1" /> 保存配置
+            </Button>
+          </div>
+        }
       />
 
-      <Tabs defaultValue="config" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="config">平台配置</TabsTrigger>
-          <TabsTrigger value="analytics">投递分析</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="config" className="space-y-6 mt-6">
-        {/* 基本搜索 */}
-        <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BiSearchAlt className="text-primary" />
-              基本搜索
-            </CardTitle>
-            <CardDescription>设置职位关键词和工作城市</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="keyword">职位关键词</Label>
-                <Input
-                  id="keyword"
-                  value={config.keyword}
-                  onChange={(e) => setConfig({ ...config, keyword: e.target.value })}
-                  placeholder="例如：产品经理"
-                />
-                <p className="text-xs text-muted-foreground">搜索职位的关键词</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="city">工作城市</Label>
-                <select
-                  id="city"
-                  value={config.city}
-                  onChange={(e) => setConfig({ ...config, city: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
-                >
-                  <option value="北京">北京</option>
-                  <option value="上海">上海</option>
-                  <option value="广州">广州</option>
-                  <option value="深圳">深圳</option>
-                  <option value="杭州">杭州</option>
-                  <option value="南京">南京</option>
-                  <option value="西安">西安</option>
-                  <option value="成都">成都</option>
-                </select>
-                <p className="text-xs text-muted-foreground">期望的工作城市</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 薪资要求 */}
-        <Card className="animate-in fade-in slide-in-from-bottom-6 duration-700">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-700">
-              <BiMoney className="text-green-500" />
-              薪资要求
-            </CardTitle>
-            <CardDescription>设置期望的薪资范围</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="salaryMin">最低月薪 (K)</Label>
-                <Input
-                  id="salaryMin"
-                  type="number"
-                  value={config.salaryMin}
-                  onChange={(e) => setConfig({ ...config, salaryMin: e.target.value })}
-                  placeholder="18"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="salaryMax">最高月薪 (K)</Label>
-                <Input
-                  id="salaryMax"
-                  type="number"
-                  value={config.salaryMax}
-                  onChange={(e) => setConfig({ ...config, salaryMax: e.target.value })}
-                  placeholder="35"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 工作要求 */}
-        <Card className="animate-in fade-in slide-in-from-bottom-7 duration-700">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lime-700">
-              <BiBookAlt className="text-lime-500" />
-              工作要求
-            </CardTitle>
-            <CardDescription>设置工作经验、学历和公司规模</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="workExperience">工作经验</Label>
-                <select
-                  id="workExperience"
-                  value={config.workExperience}
-                  onChange={(e) => setConfig({ ...config, workExperience: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
-                >
-                  <option value="不限">不限</option>
-                  <option value="应届毕业生">应届毕业生</option>
-                  <option value="1年以���">1年以下</option>
-                  <option value="1-3年">1-3年</option>
-                  <option value="3-5年">3-5年</option>
-                  <option value="5-10年">5-10年</option>
-                  <option value="10年以上">10年以上</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="degree">学历要求</Label>
-                <select
-                  id="degree"
-                  value={config.degree}
-                  onChange={(e) => setConfig({ ...config, degree: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
-                >
-                  <option value="不限">不限</option>
-                  <option value="初中及以下">初中及以下</option>
-                  <option value="高中">高中</option>
-                  <option value="大专">大专</option>
-                  <option value="本科">本科</option>
-                  <option value="硕士">硕士</option>
-                  <option value="博士">博士</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="companyScale">公司规模</Label>
-                <select
-                  id="companyScale"
-                  value={config.companyScale}
-                  onChange={(e) => setConfig({ ...config, companyScale: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
-                >
-                  <option value="不限">不限</option>
-                  <option value="少于50人">少于50人</option>
-                  <option value="50-150人">50-150人</option>
-                  <option value="150-500人">150-500人</option>
-                  <option value="500-1000人">500-1000人</option>
-                  <option value="1000-5000人">1000-5000人</option>
-                  <option value="5000人以上">5000人以上</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="jobType">工作类型</Label>
-                <select
-                  id="jobType"
-                  value={config.jobType}
-                  onChange={(e) => setConfig({ ...config, jobType: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
-                >
-                  <option value="全职">全职</option>
-                  <option value="兼职">兼职</option>
-                  <option value="实习">实习</option>
-                  <option value="劳务派遣">劳务派遣</option>
-                </select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 操作按钮 */}
-        <div className="flex justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <Button onClick={handleSave} size="lg" className="min-w-[160px]">
-            <BiSave />
-            保存配置
-          </Button>
-        </div>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6 mt-6">
-          {/* 投递数据统计 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-blue-200 dark:border-blue-800">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">今日投递</p>
-                    <p className="text-3xl font-bold text-blue-600">0</p>
-                    <p className="text-xs text-muted-foreground mt-1">今天新增投递数</p>
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                    <BiTime className="text-2xl text-blue-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-green-200 dark:border-green-800">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">累计投递</p>
-                    <p className="text-3xl font-bold text-green-600">0</p>
-                    <p className="text-xs text-muted-foreground mt-1">总投递岗位数量</p>
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                    <BiBarChart className="text-2xl text-green-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+      <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BiBriefcase className="text-primary" />
+            智联招聘平台说明
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">请在浏览器标签页中登录智联招聘平台，登录成功后系统会自动检测登录状态。</p>
+            <p className="text-sm text-muted-foreground">登录成功后，点击"开始投递"按钮启动自动投递任务。</p>
+            <p className="text-sm text-muted-foreground">点击"保存配置"按钮可手动保存当前登录相关信息到数据库。</p>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* 图表分析 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 投递趋势 - 柱状图 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BiTime className="text-primary" />
-                  投递趋势
-                </CardTitle>
-                <CardDescription>最近7天投递数量变化</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
-                  <div className="text-center text-muted-foreground">
-                    <BiBarChart className="text-5xl mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">柱状图</p>
-                    <p className="text-xs mt-1">显示每日投递趋势</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 薪资分布 - 折线图 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BiMoney className="text-primary" />
-                  薪资分布
-                </CardTitle>
-                <CardDescription>不同薪资范围的岗位数量</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
-                  <div className="text-center text-muted-foreground">
-                    <BiBarChart className="text-5xl mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">折线图</p>
-                    <p className="text-xs mt-1">显示薪资区间分布</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* 岗位数据列表 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <BiUserCircle className="text-primary" />
-                岗位数据
+      {/* 退出确认弹框 */}
+      {showLogoutDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <Card className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-[92%] max-w-sm border-0">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BiLogOut className="text-red-500" /> 确认退出登录
               </CardTitle>
-              <CardDescription>投递的岗位详细信息</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50">
-                      <tr className="border-b">
-                        <th className="px-4 py-3 text-left text-sm font-medium">公司名称</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">岗位名称</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">薪资</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">岗位要求</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">岗位链接</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">状态</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                          <BiSearchAlt className="text-4xl mx-auto mb-2 opacity-30" />
-                          <p className="text-sm">暂无岗位数据</p>
-                          <p className="text-xs mt-1">开始投递后将显示岗位列表</p>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <p className="text-sm text-muted-foreground mb-4">退出后将清除Cookie并切换为未登录状态。</p>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setShowLogoutDialog(false)} className="rounded-full px-4">取消</Button>
+                <Button onClick={async () => { await triggerLogout(); setShowLogoutDialog(false) }} className="rounded-full bg-gradient-to-r from-red-500 to-rose-600 text-white px-4">确认退出</Button>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
 
-      {/* 统计卡片已移除 */}
+      {/* 退出登录结果弹框 */}
+      {showLogoutResultDialog && logoutResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <Card className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-[92%] max-w-sm border-0">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BiLogOut className={logoutResult.success ? 'text-green-500' : 'text-red-500'} />
+                {logoutResult.success ? '退出登录成功' : '退出登录失败'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">{logoutResult.message}</p>
+              <Button onClick={() => setShowLogoutResultDialog(false)} className={`rounded-full px-4 ${logoutResult.success ? 'bg-green-500' : 'bg-red-500'} text-white`}>知道了</Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* 保存Cookie结果弹框 */}
+      {showSaveDialog && saveResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <Card className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-[92%] max-w-sm border-0">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BiSave className={saveResult.success ? 'text-green-500' : 'text-red-500'} />
+                {saveResult.success ? '保存成功' : '保存失败'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">{saveResult.message}</p>
+              <Button onClick={() => setShowSaveDialog(false)} className={`rounded-full px-4 ${saveResult.success ? 'bg-green-500' : 'bg-red-500'} text-white`}>知道了</Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

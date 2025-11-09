@@ -71,7 +71,7 @@ export default function Sidebar() {
   const platformGroup = [
     { href: '/boss', icon: BiBriefcase, label: 'Boss直聘', color: 'text-indigo-300' },
     { href: '/liepin', icon: BiSearch, label: '猎聘', color: 'text-purple-300' },
-    { href: '/job51', icon: BiTask, label: '51job', color: 'text-blue-300' },
+    { href: '/51job', icon: BiTask, label: '51job', color: 'text-blue-300' },
     { href: '/zhilian', icon: BiUserCircle, label: '智联招聘', color: 'text-cyan-300' },
   ]
 
