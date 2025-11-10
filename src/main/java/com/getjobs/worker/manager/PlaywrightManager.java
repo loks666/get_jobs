@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,13 +69,13 @@ public class PlaywrightManager {
     private volatile boolean liepinMonitoringPaused = false;
 
     // 控制是否暂停对51jobPage的后台监控
-    private volatile boolean job51MonitoringPaused = false;
+  private volatile boolean job51MonitoringPaused = false;
 
     // 控制是否暂停对zhilianPage的后台监控
     private volatile boolean zhilianMonitoringPaused = false;
 
     // 默认超时时间（毫秒）
-    private static final int DEFAULT_TIMEOUT = 30000;
+  private static final int DEFAULT_TIMEOUT = 30000;
 
     // Playwright调试端口
     private static final int CDP_PORT = 7866;
@@ -82,8 +83,12 @@ public class PlaywrightManager {
     // 平台URL常量
     private static final String BOSS_URL = "https://www.zhipin.com";
     private static final String LIEPIN_URL = "https://www.liepin.com";
-    private static final String JOB51_URL = "https://www.51job.com";
+  private static final String JOB51_URL = "https://www.51job.com";
     private static final String ZHILIAN_URL = "https://www.zhaopin.com";
+    // 降噪：51job Cookie保存日志节流状态
+    private volatile long last51CookieLogMs = 0L;
+    private volatile int last51CookieLogCount = -1;
+    private volatile String last51CookieRemark = "";
 
     @Autowired
     private CookieService cookieService;
@@ -392,10 +397,28 @@ public class PlaywrightManager {
                             liepinPage.navigate("https://www.liepin.com/login");
                             try { Thread.sleep(800); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
                         }
+                        // 优先点击官方切换二维码的容器
                         Locator qrSwitch = liepinPage.locator(".switch-type-mask-img-box").first();
                         if (qrSwitch.isVisible()) {
                             qrSwitch.click();
                             log.info("已切换到猎聘二维码登录页面，等待用户扫码...");
+                        } else {
+                            // 兼容新版页面：图片资源名包含 qrcode-btn，需要点击其父级按钮
+                            Locator qrImg = liepinPage.locator("img[src*='qrcode-btn']").first();
+                            if (qrImg.count() > 0 && qrImg.isVisible()) {
+                                try {
+                                    // 尝试点击父节点或最近的可点击容器
+                                    qrImg.click();
+                                } catch (Exception ignored) {
+                                    try {
+                                        Locator parentBtn = qrImg.locator("xpath=ancestor::button[1] | xpath=ancestor::*[contains(@class,'btn')][1]").first();
+                                        if (parentBtn.count() > 0 && parentBtn.isVisible()) {
+                                            parentBtn.click();
+                                        }
+                                    } catch (Exception ignored2) {}
+                                }
+                                log.info("已通过二维码按钮切换到扫码登录状态");
+                            }
                         }
                     } catch (Exception e) {
                         log.debug("猎聘登录页引导/二维码切换失败: {}", e.getMessage());
@@ -522,7 +545,33 @@ public class PlaywrightManager {
         try {
             // 检查是否需要登录
             if (!checkIf51jobLoggedIn()) {
-                log.info("检测到未登录51job，保持在首页等待扫码登录");
+                log.info("检测到未登录51job，尝试自动点击登录入口并等待用户登录");
+
+                try {
+                    // 优先使用用户提供的选择器：span.login.loginBtnClick
+                    Locator loginEntry = job51Page.locator("span.login.loginBtnClick").first();
+                    if (loginEntry != null && loginEntry.isVisible()) {
+                        loginEntry.click(new Locator.ClickOptions().setTimeout(30000));
+                        log.info("已点击 51job 首页的 ‘登录/注册’ 入口，等待用户登录...");
+                        asyncWaitFor51jobLogin();
+                    } else {
+                        // 备用选择器：文本匹配
+                        Locator altLoginEntry = job51Page.locator("text=/登录\\/注册|登录|注册/").first();
+                        if (altLoginEntry != null && altLoginEntry.isVisible()) {
+                            altLoginEntry.click(new Locator.ClickOptions().setTimeout(30000));
+                            log.info("已点击 51job 首页的登录入口（文本匹配），等待用户登录...");
+                            asyncWaitFor51jobLogin();
+                        } else {
+                            log.info("未找到 51job 登录入口元素，保持在首页等待用户自行登录");
+                            // 启动后台轮询，确保无导航也能检测到登录成功
+                            asyncWaitFor51jobLogin();
+                        }
+                    }
+                } catch (Exception clickEx) {
+                    log.warn("尝试点击 51job 登录入口时发生异常: {}，保持在首页等待用户登录", clickEx.getMessage());
+                    // 启动后台轮询，避免异常导致无法检测登录成功
+                    asyncWaitFor51jobLogin();
+                }
             } else {
                 log.info("51job已登录");
             }
@@ -539,14 +588,33 @@ public class PlaywrightManager {
     /**
      * 检查51job是否已登录
      */
-    private boolean checkIf51jobLoggedIn() {
-        try {
-            // 51job登录后顶部会显示用户信息
+  private boolean checkIf51jobLoggedIn() {
+      try {
+            // 未登录特征：存在“登录/注册”入口
+            Locator loginBtn = job51Page.locator("span.login.loginBtnClick").first();
+            if (loginBtn.isVisible()) {
+                String txt = (loginBtn.textContent() == null ? "" : loginBtn.textContent()).trim();
+                if (txt.contains("登录")) {
+                    return false;
+                }
+            }
+            // 已登录特征（增强）：顶部显示用户名入口或个人中心链接
+            // 1) 明确的用户名锚点（类名：uname e_icon at）
+            Locator userAnchor = job51Page.locator("a.uname.e_icon.at");
+            if (userAnchor.count() > 0 && userAnchor.first().isVisible()) {
+                return true;
+            }
+            // 2) 个人中心链接（href=/pc/my/myjob）
+            Locator myJobLink = job51Page.locator("a[href*='/pc/my/myjob']");
+            if (myJobLink.count() > 0 && myJobLink.first().isVisible()) {
+                return true;
+            }
+            // 3) 其他可能的用户信息容器（旧的兜底选择器）
             return job51Page.locator(".login-info, .user-info, .username").count() > 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
+      } catch (Exception e) {
+          return false;
+      }
+  }
 
     /**
      * 设置51job登录状态监控
@@ -599,23 +667,75 @@ public class PlaywrightManager {
     }
 
     /**
+     * 在后台异步等待 51job 登录成功。
+     * 说明：不阻塞初始化主流程，独立线程每秒轮询一次登录状态，最长等待5分钟。
+     */
+    private void asyncWaitFor51jobLogin() {
+        Thread waitThread = new Thread(() -> {
+            try {
+                int maxSeconds = 300; // 最长等待 5 分钟
+                for (int i = 0; i < maxSeconds; i++) {
+                    boolean loggedIn = false;
+                    try {
+                        loggedIn = checkIf51jobLoggedIn();
+                    } catch (Exception ignored) {
+                    }
+
+                    if (loggedIn) {
+                        // 交由统一回调处理登录成功逻辑（包含状态更新与保存 Cookie）
+                        on51jobLoginSuccess();
+                        log.info("后台等待检测到 51job 登录成功，用时约 {} 秒", i);
+                        return;
+                    }
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        log.debug("等待 51job 登录线程被中断");
+                        return;
+                    }
+                }
+                log.warn("后台等待 51job 登录超时（约5分钟），仍未检测到登录成功");
+            } catch (Exception e) {
+                log.warn("后台等待 51job 登录过程中发生异常: {}", e.getMessage());
+            }
+        }, "wait-51job-login-thread");
+
+        waitThread.setDaemon(true);
+        waitThread.start();
+    }
+
+    /**
      * 保存51job Cookie到数据库
      *
      * @param remark 备注信息
      */
-    private void save51jobCookiesToDatabase(String remark) {
-        try {
-            List<com.microsoft.playwright.options.Cookie> cookies = context.cookies();
-            // 使用ObjectMapper序列化为JSON字符串
-            String cookieJson = new ObjectMapper().writeValueAsString(cookies);
-            boolean result = cookieService.saveOrUpdateCookie("51job", cookieJson, remark);
-            if (result) {
-                log.info("保存51job Cookie成功，共 {} 条，remark={}", cookies.size(), remark);
-            }
-        } catch (Exception e) {
-            log.warn("保存51job Cookie失败: {}", e.getMessage());
-        }
-    }
+  private void save51jobCookiesToDatabase(String remark) {
+      try {
+          List<com.microsoft.playwright.options.Cookie> cookies = context.cookies();
+          // 使用ObjectMapper序列化为JSON字符串
+          String cookieJson = new ObjectMapper().writeValueAsString(cookies);
+          boolean result = cookieService.saveOrUpdateCookie("51job", cookieJson, remark);
+          if (result) {
+                long now = System.currentTimeMillis();
+                boolean shouldInfoLog = (now - last51CookieLogMs) > 15000 // 至少间隔15秒
+                        || cookies.size() != last51CookieLogCount
+                        || (remark != null && !remark.equals(last51CookieRemark));
+                if (shouldInfoLog) {
+                    log.info("保存51job Cookie成功，共 {} 条，remark={}", cookies.size(), remark);
+                    last51CookieLogMs = now;
+                    last51CookieLogCount = cookies.size();
+                    last51CookieRemark = remark == null ? "" : remark;
+                } else {
+                    // 近似重复的频繁调用，改为debug降低噪音
+                    log.debug("保存51job Cookie成功(节流)，条数={}，remark={}", cookies.size(), remark);
+                }
+          }
+      } catch (Exception e) {
+          log.warn("保存51job Cookie失败: {}", e.getMessage());
+      }
+  }
 
     /**
      * 主动保存51job Cookie到数据库（用于调试/验证）
@@ -655,6 +775,64 @@ public class PlaywrightManager {
     public void resume51jobMonitoring() {
         job51MonitoringPaused = false;
         log.debug("51job登录监控已恢复");
+    }
+
+    /**
+     * 触发 51job 登录流程：打开登录页并点击“微信扫码登录”按钮
+     */
+    public void trigger51jobLogin() {
+        try {
+            if (job51Page == null) {
+                if (context == null) {
+                    throw new IllegalStateException("浏览器上下文尚未初始化");
+                }
+                job51Page = context.newPage();
+            }
+
+            // 如果已登录则直接返回
+            if (checkIf51jobLoggedIn()) {
+                log.info("检测到已登录51job，跳过登录触发");
+                return;
+            }
+
+            // 先尝试在首页点击“登录/注册”入口
+            try {
+                job51Page.navigate(JOB51_URL, new Page.NavigateOptions()
+                    .setTimeout(60000)
+                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+                Locator loginEntry = job51Page.locator("span.login.loginBtnClick, text=/登录\\/注册|登录|注册/").first();
+                if (loginEntry.isVisible()) {
+                    loginEntry.click(new Locator.ClickOptions().setTimeout(DEFAULT_TIMEOUT));
+                }
+            } catch (Exception e) {
+                log.debug("在首页尝试点击登录入口失败: {}", e.getMessage());
+            }
+
+            // 跳转到官方登录页
+            String loginUrl = "https://login.51job.com/login.php";
+            job51Page.navigate(loginUrl, new Page.NavigateOptions()
+                .setTimeout(60000)
+                .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+
+            // 尝试点击“微信扫码登录”按钮
+            Locator wechatScanBtn = job51Page.locator(
+                "i.passIcon.custom-cursor-on-hover[data-sensor-id='sensor_login_wechatScan'], " +
+                "i.passIcon[data-sensor-id='sensor_login_wechatScan'], " +
+                "[data-sensor-id='sensor_login_wechatScan']"
+            ).first();
+
+            if (wechatScanBtn.isVisible()) {
+                wechatScanBtn.click(new Locator.ClickOptions().setTimeout(DEFAULT_TIMEOUT));
+                log.info("已点击51job登录页的微信扫码按钮，等待用户扫码登录...");
+            } else {
+                log.warn("未找到微信扫码登录按钮，用户可在登录页自行选择扫码方式");
+            }
+
+            // 不阻塞等待：监控会自动检测到登录成功并保存Cookie
+        } catch (Exception e) {
+            log.error("触发51job登录流程失败: {}", e.getMessage(), e);
+            throw new RuntimeException("触发51job登录流程失败", e);
+        }
     }
 
     /**
@@ -1052,24 +1230,29 @@ public class PlaywrightManager {
     }
 
     /**
-     * 定时检查登录状态（每5秒）
-     * 用于捕获通过DOM元素判断登录状态的场景
+     * 定时检查登录状态（每3秒）
+     * 用于捕获通过DOM元素判断登录状态的场景（无导航也可触发）
      */
-//    @Scheduled(fixedDelay = 3000)
-//    public void scheduledLoginCheck() {
-//        if (bossPage != null && !bossMonitoringPaused) {
-//            checkLoginStatus(bossPage, "boss");
-//        }
-//        if (liepinPage != null && !liepinMonitoringPaused) {
-//            checkLiepinLoginStatus(liepinPage);
-//        }
-//        if (job51Page != null && !job51MonitoringPaused) {
-//            check51jobLoginStatus(job51Page);
-//        }
-//        if (zhilianPage != null && !zhilianMonitoringPaused) {
-//            checkZhilianLoginStatus(zhilianPage);
-//        }
-//    }
+    @Scheduled(fixedDelay = 3000)
+    public void scheduledLoginCheck() {
+        try {
+            if (liepinPage != null && !liepinMonitoringPaused) {
+                checkLiepinLoginStatus(liepinPage);
+            }
+            // 其他平台如需也可启用（保留，但不强制）
+            if (bossPage != null && !bossMonitoringPaused) {
+                checkLoginStatus(bossPage, "boss");
+            }
+            if (job51Page != null && !job51MonitoringPaused) {
+                check51jobLoginStatus(job51Page);
+            }
+            if (zhilianPage != null && !zhilianMonitoringPaused) {
+                checkZhilianLoginStatus(zhilianPage);
+            }
+        } catch (Exception e) {
+            log.debug("定时登录检测异常: {}", e.getMessage());
+        }
+    }
 
     /**
      * 暂停Boss页面的后台登录监控（避免与业务流程并发操作页面）

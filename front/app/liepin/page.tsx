@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createSSEWithBackoff } from '@/lib/sse'
 import { BiSearch, BiSave, BiTargetLock, BiMap, BiMoney, BiTime, BiBookmark, BiBarChart, BiPlay, BiStop, BiLogOut } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -59,67 +60,47 @@ export default function LiepinPage() {
       return
     }
 
-    // 使用SSE实时接收登录状态变化
-    let eventSource: EventSource | null = null
-
-    try {
-      console.log('[SSE] 正在创建连接到: http://localhost:8888/api/jobs/login-status/stream')
-      eventSource = new EventSource('http://localhost:8888/api/jobs/login-status/stream')
-
-      // 监听打开事件
-      eventSource.onopen = () => {
+    const client = createSSEWithBackoff('http://localhost:8888/api/jobs/login-status/stream', {
+      onOpen: () => {
         console.log('[SSE] 连接已打开')
-      }
-
-      // 连接成功
-      eventSource.addEventListener('connected', (event) => {
-        console.log('[SSE] 收到 connected 事件:', event.data)
-        try {
-          const data = JSON.parse(event.data)
-          console.log('[SSE] 解析后的数据:', data)
-          console.log('[SSE] liepinLoggedIn =', data.liepinLoggedIn)
-          setIsLoggedIn(data.liepinLoggedIn || false)
-          setCheckingLogin(false)
-          console.log('[SSE] 状态已更新: isLoggedIn =', data.liepinLoggedIn || false, ', checkingLogin = false')
-        } catch (error) {
-          console.error('[SSE] 解析连接消息失败:', error)
-        }
-  })
-
-      // 登录状态变化
-      eventSource.addEventListener('login-status', (event) => {
-        console.log('[SSE] 收到 login-status 事件:', event.data)
-        try {
-          const data = JSON.parse(event.data)
-          console.log('[SSE] 登录状态变化:', data)
-          if (data.platform === 'liepin') {
-            setIsLoggedIn(data.isLoggedIn)
-            setCheckingLogin(false)
-            console.log('[SSE] 猎聘登录状态已更新:', data.isLoggedIn)
-          }
-        } catch (error) {
-          console.error('[SSE] 解析登录状态消息失败:', error)
-        }
-      })
-
-      // 连接错误
-      eventSource.onerror = (e) => {
-        console.warn('[SSE] 连接失败或中断，浏览器将自动尝试重连', e)
-        console.log('[SSE] EventSource readyState:', eventSource?.readyState)
+      },
+      onError: (e, attempt, delay) => {
+        console.warn(`[SSE] 连接错误，准备第${attempt}次重连，延迟 ${delay}ms`, e)
         setCheckingLogin(false)
-        // SSE会自动重连，不需要手动处理
-      }
-    } catch (error) {
-      console.error('[SSE] 创建SSE连接失败:', error)
-      setCheckingLogin(false)
-    }
+      },
+      listeners: [
+        {
+          name: 'connected',
+          handler: (event) => {
+            try {
+              const data = JSON.parse(event.data)
+              setIsLoggedIn(data.liepinLoggedIn || false)
+              setCheckingLogin(false)
+            } catch (error) {
+              console.error('[SSE] 解析连接消息失败:', error)
+            }
+          },
+        },
+        {
+          name: 'login-status',
+          handler: (event) => {
+            try {
+              const data = JSON.parse(event.data)
+              if (data.platform === 'liepin') {
+                setIsLoggedIn(data.isLoggedIn)
+                setCheckingLogin(false)
+              }
+            } catch (error) {
+              console.error('[SSE] 解析登录状态消息失败:', error)
+            }
+          },
+        },
+        { name: 'ping', handler: () => {} },
+      ],
+    })
 
-    // 组件卸载时关闭SSE连接
     return () => {
-      if (eventSource) {
-        console.log('[SSE] 关闭SSE连接')
-        eventSource.close()
-      }
+      client.close()
     }
   }, [])
 

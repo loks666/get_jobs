@@ -1,27 +1,35 @@
 package com.getjobs.application.controller;
 
 import com.getjobs.application.entity.CookieEntity;
+import com.getjobs.application.entity.ZhilianConfigEntity;
 import com.getjobs.application.service.CookieService;
+import com.getjobs.application.service.ZhilianService;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.service.ZhilianJobService;
+import com.getjobs.worker.zhilian.ZhilianEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 智联招聘控制器
- * 提供智联招聘平台Cookie管理和登录状态控制的REST API接口
+ * 智联招聘控制器（整合版）
+ * 提供智联招聘平台配置管理、Cookie管理和登录状态控制的REST API接口
  */
 @Slf4j
 @RestController
 @RequestMapping("/api/zhilian")
 @CrossOrigin(origins = "*")
 public class ZhilianController {
+
+    @Autowired
+    private ZhilianService zhilianService;
 
     @Autowired
     private PlaywrightManager playwrightManager;
@@ -31,6 +39,47 @@ public class ZhilianController {
 
     @Autowired
     private ZhilianJobService zhilianJobService;
+
+    // ==================== 配置管理相关接口 ====================
+
+    /**
+     * 获取 智联 配置与可选项
+     */
+    @GetMapping("/config")
+    public Map<String, Object> getAllZhilianConfig() {
+        Map<String, Object> result = new HashMap<>();
+
+        ZhilianConfigEntity config = zhilianService.getFirstConfig();
+        if (config == null) {
+            config = new ZhilianConfigEntity();
+        }
+
+        Map<String, List<Map<String, String>>> options = new HashMap<>();
+        options.put("city", buildCityOptions());
+        // 智联薪资目前不枚举，前端可用文本输入或简单选择"不限"
+
+        result.put("config", config);
+        result.put("options", options);
+        return result;
+    }
+
+    /**
+     * 更新 智联 配置（选择性更新第一条记录）
+     */
+    @PutMapping("/config")
+    public ZhilianConfigEntity updateConfig(@RequestBody ZhilianConfigEntity config) {
+        return zhilianService.updateConfig(config);
+    }
+
+    /**
+     * 返回城市选项列表
+     */
+    @GetMapping("/config/options/city")
+    public List<Map<String, String>> getCityOptions() {
+        return buildCityOptions();
+    }
+
+    // ==================== 登录和认证相关接口 ====================
 
     /**
      * 检查登录状态
@@ -51,52 +100,6 @@ public class ZhilianController {
             log.error("检查登录状态失败", e);
             response.put("success", false);
             response.put("message", "检查登录状态失败: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(response);
-        }
-    }
-
-    /**
-     * 健康检查接口
-     * @return 服务状态
-     */
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> healthCheck() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("service", "ZhilianController");
-        response.put("status", "healthy");
-        response.put("timestamp", System.currentTimeMillis());
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * 调试接口：读取数据库中的 智联招聘 Cookie 记录
-     */
-    @GetMapping("/cookie")
-    public ResponseEntity<Map<String, Object>> getZhilianCookieRecord() {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            CookieEntity cookie = cookieService.getCookieByPlatform("zhilian");
-            Map<String, Object> data = new HashMap<>();
-            if (cookie != null) {
-                data.put("id", cookie.getId());
-                data.put("platform", cookie.getPlatform());
-                data.put("cookie_value", cookie.getCookieValue());
-                data.put("remark", cookie.getRemark());
-                data.put("created_at", cookie.getCreatedAt());
-                data.put("updated_at", cookie.getUpdatedAt());
-            } else {
-                data.put("platform", "zhilian");
-                data.put("cookie_value", null);
-                data.put("message", "未找到智联招聘Cookie记录");
-            }
-            response.put("success", true);
-            response.put("data", data);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "读取Cookie记录失败: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -132,6 +135,39 @@ public class ZhilianController {
         }
     }
 
+    // ==================== Cookie管理相关接口 ====================
+
+    /**
+     * 调试接口：读取数据库中的 智联招聘 Cookie 记录
+     */
+    @GetMapping("/cookie")
+    public ResponseEntity<Map<String, Object>> getZhilianCookieRecord() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            CookieEntity cookie = cookieService.getCookieByPlatform("zhilian");
+            Map<String, Object> data = new HashMap<>();
+            if (cookie != null) {
+                data.put("id", cookie.getId());
+                data.put("platform", cookie.getPlatform());
+                data.put("cookie_value", cookie.getCookieValue());
+                data.put("remark", cookie.getRemark());
+                data.put("created_at", cookie.getCreatedAt());
+                data.put("updated_at", cookie.getUpdatedAt());
+            } else {
+                data.put("platform", "zhilian");
+                data.put("cookie_value", null);
+                data.put("message", "未找到智联招聘Cookie记录");
+            }
+            response.put("success", true);
+            response.put("data", data);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "读取Cookie记录失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
     /**
      * 调试接口：主动保存当前上下文中的 智联招聘 Cookie 到数据库
      */
@@ -149,6 +185,8 @@ public class ZhilianController {
             return ResponseEntity.internalServerError().body(response);
         }
     }
+
+    // ==================== 任务管理相关接口 ====================
 
     /**
      * 启动智联招聘自动投递任务
@@ -251,5 +289,35 @@ public class ZhilianController {
             response.put("message", "获取状态失败: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
+    }
+
+    // ==================== 健康检查接口 ====================
+
+    /**
+     * 健康检查接口
+     * @return 服务状态
+     */
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, Object>> healthCheck() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("service", "ZhilianController");
+        response.put("status", "healthy");
+        response.put("timestamp", System.currentTimeMillis());
+
+        return ResponseEntity.ok(response);
+    }
+
+    // ==================== 辅助方法 ====================
+
+    private List<Map<String, String>> buildCityOptions() {
+        List<Map<String, String>> list = new ArrayList<>();
+        for (ZhilianEnum.CityCode c : ZhilianEnum.CityCode.values()) {
+            Map<String, String> item = new HashMap<>();
+            item.put("name", c.getName());
+            item.put("code", c.getCode());
+            list.add(item);
+        }
+        return list;
     }
 }

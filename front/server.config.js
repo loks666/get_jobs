@@ -4,7 +4,7 @@
  */
 module.exports = {
   // 服务器端口
-  port: 7003,
+  port: 6866,
 
   // 开发环境配置
   development: {

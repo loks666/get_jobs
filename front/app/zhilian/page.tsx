@@ -1,10 +1,24 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createSSEWithBackoff } from '@/lib/sse'
 import { BiLogOut, BiSave, BiBriefcase, BiPlay, BiStop } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import PageHeader from '@/app/components/PageHeader'
+
+interface ZhilianConfig {
+  id?: number
+  keywords?: string
+  cityCode?: string
+  salary?: string
+}
+
+interface Option { name: string; code: string }
+interface ZhilianOptions { city: Option[] }
 
 export default function ZhilianPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -16,6 +30,10 @@ export default function ZhilianPage() {
   const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
   const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
 
+  const [config, setConfig] = useState<ZhilianConfig>({ keywords: '', cityCode: '', salary: '' })
+  const [options, setOptions] = useState<ZhilianOptions>({ city: [] })
+  const [loadingConfig, setLoadingConfig] = useState(true)
+
   useEffect(() => {
     if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
       console.warn('[智联招聘] EventSource 不可用，无法连接SSE')
@@ -23,44 +41,90 @@ export default function ZhilianPage() {
       return
     }
 
-    let eventSource: EventSource | null = null
+    const client = createSSEWithBackoff('http://localhost:8888/api/jobs/login-status/stream', {
+      onOpen: () => console.log('[智联招聘 SSE] 连接已打开'),
+      onError: (e, attempt, delay) => {
+        console.warn(`[智联招聘 SSE] 连接错误，第${attempt}次重连，延迟 ${delay}ms`, e)
+        setCheckingLogin(false)
+      },
+      listeners: [
+        {
+          name: 'connected',
+          handler: (event) => {
+            try {
+              const data = JSON.parse(event.data)
+              setIsLoggedIn(data.zhilianLoggedIn || false)
+              setCheckingLogin(false)
+            } catch (error) {
+              console.error('[智联招聘 SSE] 解析连接消息失败:', error)
+            }
+          },
+        },
+        {
+          name: 'login-status',
+          handler: (event) => {
+            try {
+              const data = JSON.parse(event.data)
+              if (data.platform === 'zhilian') {
+                setIsLoggedIn(data.isLoggedIn)
+                setCheckingLogin(false)
+              }
+            } catch (error) {
+              console.error('[智联招聘 SSE] 解析登录状态消息失败:', error)
+            }
+          },
+        },
+        { name: 'ping', handler: () => {} },
+      ],
+    })
 
-    try {
-      console.log('[智联招聘] 正在创建连接到: http://localhost:8888/api/jobs/login-status/stream')
-      eventSource = new EventSource('http://localhost:8888/api/jobs/login-status/stream')
-
-      eventSource.onopen = () => console.log('[智联招聘 SSE] 连接已打开')
-
-      eventSource.addEventListener('connected', (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          setIsLoggedIn(data.zhilianLoggedIn || false)
-          setCheckingLogin(false)
-        } catch (error) {
-          console.error('[智联招聘 SSE] 解析连接消息失败:', error)
-        }
-      })
-
-      eventSource.addEventListener('login-status', (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          if (data.platform === 'zhilian') {
-            setIsLoggedIn(data.isLoggedIn)
-            setCheckingLogin(false)
-          }
-        } catch (error) {
-          console.error('[智联招聘 SSE] 解析登录状态消息失败:', error)
-        }
-      })
-
-      eventSource.onerror = () => setCheckingLogin(false)
-    } catch (error) {
-      console.error('[智联招聘 SSE] 创建SSE连接失败:', error)
-      setCheckingLogin(false)
-    }
-
-    return () => eventSource?.close()
+    return () => client.close()
   }, [])
+
+  // 与猎聘一致的关键词解析/序列化
+  const parseKeywordsFromDb = (raw?: string): string => {
+    if (!raw) return ''
+    const t = raw.trim()
+    if (t.startsWith('[') && t.endsWith(']')) {
+      try {
+        const arr = JSON.parse(t)
+        if (Array.isArray(arr)) return arr.filter(Boolean).join(', ')
+      } catch (e) {
+        console.warn('[智联] 解析关键词JSON失败，使用原值:', e)
+      }
+    }
+    return t.replace(/，/g, ',')
+  }
+
+  const serializeKeywordsForDb = (display?: string): string => {
+    const raw = (display || '').trim()
+    if (!raw) return '[]'
+    const norm = raw.replace(/，/g, ',')
+    const tokens = norm
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+    return JSON.stringify(tokens)
+  }
+
+  const fetchAllData = async () => {
+    try {
+      const res = await fetch('http://localhost:8888/api/zhilian/config')
+      const data = await res.json()
+      if (data.config) {
+        const normalized = { ...data.config }
+        normalized.keywords = parseKeywordsFromDb(data.config.keywords)
+        setConfig(normalized)
+      }
+      if (data.options) setOptions(data.options)
+    } catch (e) {
+      console.error('[智联] 获取配置失败:', e)
+    } finally {
+      setLoadingConfig(false)
+    }
+  }
+
+  useEffect(() => { fetchAllData() }, [])
 
   const handleStartDelivery = async () => {
     try {
@@ -106,6 +170,29 @@ export default function ZhilianPage() {
     }
   }
 
+  const handleSaveConfig = async () => {
+    try {
+      const payload = { ...config, keywords: serializeKeywordsForDb(config.keywords) }
+      const response = await fetch('http://localhost:8888/api/zhilian/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (response.ok) {
+        try { await fetch('http://localhost:8888/api/cookie/save?platform=zhilian', { method: 'POST' }) } catch {}
+        await fetchAllData()
+        setSaveResult({ success: true, message: '保存成功，配置已更新。' })
+      } else {
+        setSaveResult({ success: false, message: '保存失败：后端返回异常状态。' })
+      }
+      setShowSaveDialog(true)
+    } catch (error) {
+      console.error('[智联] 保存配置失败:', error)
+      setSaveResult({ success: false, message: '保存失败：网络或服务异常。' })
+      setShowSaveDialog(true)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -116,6 +203,9 @@ export default function ZhilianPage() {
         accentBgClass="bg-purple-500"
         actions={
           <div className="flex items-center gap-2">
+            <Button onClick={handleSaveConfig} size="sm" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              <BiSave className="mr-1" /> 保存配置
+            </Button>
             {checkingLogin ? (
               <Button size="sm" disabled className="rounded-full bg-gray-300 text-gray-600 cursor-not-allowed px-4 shadow">
                 <BiPlay className="mr-1" /> 检查登录中...
@@ -156,6 +246,52 @@ export default function ZhilianPage() {
             <p className="text-sm text-muted-foreground">登录成功后，点击"开始投递"按钮启动自动投递任务。</p>
             <p className="text-sm text-muted-foreground">点击"保存配置"按钮可手动保存当前登录相关信息到数据库。</p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* 配置表单 */}
+      <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BiBriefcase className="text-primary" />
+            配置参数
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingConfig ? (
+            <p className="text-sm text-muted-foreground">配置加载中...</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>搜索关键词（逗号分隔）</Label>
+                <Input
+                  placeholder="如：Java, 后端, Spring"
+                  value={config.keywords || ''}
+                  onChange={(e) => setConfig((c) => ({ ...c, keywords: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>城市</Label>
+                <Select
+                  value={config.cityCode || ''}
+                  onChange={(e) => setConfig((c) => ({ ...c, cityCode: e.target.value }))}
+                  placeholder="请选择城市"
+                >
+                  {options.city.map((o) => (
+                    <option key={o.code} value={o.code}>{o.name}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>薪资范围（例：不限 或 代码）</Label>
+                <Input
+                  placeholder="如：不限 或 1-1.5万"
+                  value={config.salary || ''}
+                  onChange={(e) => setConfig((c) => ({ ...c, salary: e.target.value }))}
+                />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

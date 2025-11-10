@@ -1,10 +1,14 @@
 package com.getjobs.application.controller;
 
 import com.getjobs.application.entity.CookieEntity;
+import com.getjobs.application.entity.LiepinConfigEntity;
+import com.getjobs.application.entity.LiepinOptionEntity;
 import com.getjobs.application.service.CookieService;
+import com.getjobs.application.service.LiepinService;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.service.LiepinJobService;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,11 +21,12 @@ import java.util.concurrent.CompletableFuture;
  * 猎聘控制器
  * 提供猎聘自动投递功能的REST API接口
  */
-@Slf4j
 @RestController
 @RequestMapping("/api/liepin")
 @CrossOrigin(origins = "*")
 public class LiepinController {
+
+    private static final Logger log = LoggerFactory.getLogger(LiepinController.class);
 
     @Autowired
     private LiepinJobService liepinJobService;
@@ -31,6 +36,9 @@ public class LiepinController {
 
     @Autowired
     private CookieService cookieService;
+
+    @Autowired
+    private LiepinService liepinService;
 
     /**
      * 检查登录状态
@@ -171,6 +179,86 @@ public class LiepinController {
         response.put("timestamp", System.currentTimeMillis());
 
         return ResponseEntity.ok(response);
+    }
+
+    // ==================== 配置管理（合并） ====================
+
+    /** 获取所有猎聘配置信息（包括选项） */
+    @GetMapping("/config")
+    public Map<String, Object> getAllLiepinConfig() {
+        Map<String, Object> result = new HashMap<>();
+        LiepinConfigEntity config = liepinService.getFirstConfig();
+        if (config == null) config = new LiepinConfigEntity();
+        Map<String, java.util.List<LiepinOptionEntity>> options = new HashMap<>();
+        options.put("city", liepinService.getOptionsByType("city"));
+        result.put("config", config);
+        result.put("options", options);
+        return result;
+    }
+
+    /** 更新猎聘配置 */
+    @PutMapping("/config")
+    public LiepinConfigEntity updateConfig(@RequestBody LiepinConfigEntity config) {
+        if (config.getCity() != null && !config.getCity().isEmpty()) {
+            String cityName = liepinService.normalizeCityToName(config.getCity());
+            config.setCity(cityName);
+        }
+        if (config.getId() != null) {
+            return liepinService.updateConfig(config);
+        }
+        return liepinService.saveOrUpdateFirstSelective(config);
+    }
+
+    /** 获取指定类型的选项列表 */
+    @GetMapping("/config/options/{type}")
+    public java.util.List<LiepinOptionEntity> getOptionsByType(@PathVariable String type) {
+        return liepinService.getOptionsByType(type);
+    }
+
+    // ==================== 投递分析（合并） ====================
+
+    /** 投递分析统计与图表 */
+    @GetMapping("/stats")
+    public LiepinService.StatsResponse getStats(
+            @RequestParam(value = "statuses", required = false) String statuses,
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "experience", required = false) String experience,
+            @RequestParam(value = "degree", required = false) String degree,
+            @RequestParam(value = "minK", required = false) Double minK,
+            @RequestParam(value = "maxK", required = false) Double maxK,
+            @RequestParam(value = "keyword", required = false) String keyword
+    ) {
+        java.util.List<String> statusList = null;
+        if (statuses != null && !statuses.trim().isEmpty()) {
+            statusList = java.util.Arrays.stream(statuses.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+        }
+        return liepinService.getLiepinStats(statusList, location, experience, degree, minK, maxK, keyword);
+    }
+
+    /** 岗位列表（分页 + 筛选） */
+    @GetMapping("/list")
+    public LiepinService.PagedResult list(
+            @RequestParam(value = "statuses", required = false) String statuses,
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "experience", required = false) String experience,
+            @RequestParam(value = "degree", required = false) String degree,
+            @RequestParam(value = "minK", required = false) Double minK,
+            @RequestParam(value = "maxK", required = false) Double maxK,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+            @RequestParam(value = "size", required = false, defaultValue = "20") Integer size
+    ) {
+        java.util.List<String> statusList = null;
+        if (statuses != null && !statuses.trim().isEmpty()) {
+            statusList = java.util.Arrays.stream(statuses.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+        }
+        return liepinService.listLiepinJobs(statusList, location, experience, degree, minK, maxK, keyword, page, size);
     }
 
     /**

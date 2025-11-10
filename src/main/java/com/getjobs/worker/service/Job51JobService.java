@@ -70,6 +70,13 @@ public class Job51JobService implements JobPlatformService {
 
             // 创建Job51实例并执行投递
             Job51.ProgressCallback job51Callback = (message, current, total) -> {
+                // 拦截特定警告：当前页未采集到任何 jobId => 视为达到投递上限，自动停止并告警
+                if (message != null && message.contains("当前页未采集到任何 jobId")) {
+                    progressCallback.accept(JobProgressMessage.warning(PLATFORM, "检测到当前页无岗位ID，疑似达到上限或页面变化，任务已停止"));
+                    // 设置停止标志，Job51 将在下一次 shouldStop() 检查时退出
+                    stopDelivery();
+                    return;
+                }
                 if (current != null && total != null) {
                     progressCallback.accept(JobProgressMessage.progress(PLATFORM, message, current, total));
                 } else {
