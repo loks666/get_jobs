@@ -1,14 +1,22 @@
 package com.getjobs.worker.liepin;
 
 import com.getjobs.worker.utils.PlaywrightUtil;
+import com.getjobs.application.service.LiepinService;
+import com.getjobs.application.entity.LiepinEntity;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Response;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
+// 移除保存页面源码相关的导入
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -32,12 +40,16 @@ public class Liepin {
 
     private int maxPage = 50;
     private final List<String> resultList = new ArrayList<>();
+    private final List<LiepinEntity> lastApiEntities = new ArrayList<>();
+    private boolean monitoringRegistered = false;
     @Setter
     private LiepinConfig config;
     @Getter
     private Date startDate;
     @Setter
     private Page page;
+    @Autowired
+    private LiepinService liepinService;
 
     public interface ProgressCallback {
         void onProgress(String message, Integer current, Integer total);
@@ -51,6 +63,42 @@ public class Liepin {
     public void prepare() {
         this.startDate = new Date();
         this.resultList.clear();
+
+        // 监控猎聘接口请求与返回，输出被拦截的URL（精确匹配PC搜索相关接口）
+        if (page != null && !monitoringRegistered) {
+            // 请求拦截日志（仅搜索岗位接口）
+            page.onRequest(req -> {
+                try {
+                    String url = req.url();
+                    if (url != null && url.contains("com.liepin.searchfront4c.pc-search-job")
+                            && !url.contains("com.liepin.searchfront4c.pc-search-job-cond-init")) {
+                        // log.info("[拦截][请求] {}", url);
+                    }
+                } catch (Exception ignored) {}
+            });
+            page.onResponse((Response response) -> {
+                try {
+                    String url = response.url();
+                    if (url != null && response.status() == 200 &&
+                            url.contains("com.liepin.searchfront4c.pc-search-job") &&
+                            !url.contains("com.liepin.searchfront4c.pc-search-job-cond-init")) {
+                        log.info("[拦截][响应] {}", url);
+                        String contentType = null;
+                        try { contentType = response.headers().get("content-type"); } catch (Exception ignored) {}
+                        if (contentType == null || contentType.contains("application/json")) {
+                            String text = response.text();
+                            if (text != null && !text.isEmpty()) {
+                                // 尝试解析，若结构不符合则在方法内直接返回
+                                parseAndPersistLiepinData(text);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("监控猎聘接口响应时发生错误: {}", e.getMessage());
+                }
+            });
+            monitoringRegistered = true;
+        }
     }
 
     public int execute() {
@@ -60,6 +108,9 @@ public class Liepin {
         if (config == null) {
             throw new IllegalStateException("Liepin.config 未设置");
         }
+
+        // 在开始执行前确保已注册接口监听
+        prepare();
 
         List<String> keywords = config.getKeywords();
         if (keywords == null || keywords.isEmpty()) {
@@ -77,6 +128,92 @@ public class Liepin {
         return resultList.size();
     }
 
+    // ========== 解析接口JSON并保存到数据库 ==========
+    private void parseAndPersistLiepinData(String json) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
+            // 兼容两种结构：data.data.jobCardList 或 data.jobCardList
+            JsonNode cardList = root.path("data").path("data").path("jobCardList");
+            if (!cardList.isArray()) {
+                cardList = root.path("data").path("jobCardList");
+            }
+            if (!cardList.isArray()) {
+                return;
+            }
+            lastApiEntities.clear();
+            for (JsonNode item : cardList) {
+                JsonNode job = item.path("job");
+                JsonNode comp = item.path("comp");
+                JsonNode recruiter = item.path("recruiter");
+
+                Long jobId = readLong(job.path("jobId"));
+                if (jobId == null) {
+                    continue;
+                }
+
+                LiepinEntity entity = new LiepinEntity();
+                entity.setJobId(jobId);
+                entity.setJobTitle(readText(job.path("title")));
+                entity.setJobLink(readText(job.path("link")));
+                entity.setJobSalaryText(readText(job.path("salary")));
+                entity.setJobArea(readText(job.path("dq")));
+                entity.setJobEduReq(readText(job.path("requireEduLevel")));
+                entity.setJobExpReq(readText(job.path("requireWorkYears")));
+                entity.setJobPublishTime(readText(job.path("refreshTime")));
+
+                entity.setCompId(readLong(comp.path("compId")));
+                entity.setCompName(readText(comp.path("compName")));
+                entity.setCompIndustry(readText(comp.path("compIndustry")));
+                entity.setCompScale(readText(comp.path("compScale")));
+
+                entity.setHrId(readText(recruiter.path("recruiterId")));
+                entity.setHrName(readText(recruiter.path("recruiterName")));
+                entity.setHrTitle(readText(recruiter.path("recruiterTitle")));
+                entity.setHrImId(readText(recruiter.path("imId")));
+
+                // 缓存到内存供页面投递显示使用（避免从页面读取文本）
+                lastApiEntities.add(entity);
+            }
+            // 批量持久化：仅不存在时插入，默认 delivered=0
+            try {
+                liepinService.insertSnapshotsIfNotExistsBatch(lastApiEntities);
+            } catch (Exception e) {
+                log.warn("批量保存猎聘岗位数据失败: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            log.warn("解析猎聘JSON失败: {}", e.getMessage());
+        }
+    }
+
+    private String readText(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) return null;
+        String v = node.asText();
+        return (v == null || v.isEmpty()) ? null : v;
+    }
+
+    private Long readLong(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) return null;
+        try {
+            if (node.isNumber()) {
+                long v = node.asLong();
+                return v == 0 ? null : v;
+            }
+            if (node.isTextual()) {
+                String t = node.asText();
+                if (t == null || t.isEmpty()) return null;
+                long v = Long.parseLong(t.trim());
+                return v == 0 ? null : v;
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private String safeText(String s) {
+        if (s == null) return null;
+        return s.replaceAll("\n", " ").replaceAll("【 ", "[").replaceAll(" 】", "]");
+    }
+
     private boolean shouldStop() {
         return shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get());
     }
@@ -90,7 +227,9 @@ public class Liepin {
     }
 
     private void submit(String keyword) {
-        page.navigate(getSearchUrl() + "&key=" + keyword);
+        // 清洗关键词：去掉前后引号与多余空白
+        String cleanKeyword = keyword == null ? "" : keyword.replace("\"", "").trim();
+        page.navigate(getSearchUrl() + "&key=" + cleanKeyword);
         
         // 等待分页元素加载
         page.waitForSelector(PAGINATION_BOX, new Page.WaitForSelectorOptions().setTimeout(10000));
@@ -112,23 +251,47 @@ public class Liepin {
             } catch (Exception ignored) {
             }
             
-            // 等待岗位卡片加载
-            page.waitForSelector(JOB_CARDS, new Page.WaitForSelectorOptions().setTimeout(10000));
-            info(String.format("正在投递【%s】第【%d】页...", keyword, i + 1));
+        // 等待岗位卡片挂载（不要求可见，避免因遮挡造成超时）
+        page.waitForSelector(
+            JOB_CARDS,
+            new Page.WaitForSelectorOptions()
+                .setState(WaitForSelectorState.ATTACHED)
+                .setTimeout(15000)
+        );
+            // 额外等待一次接口响应，确保 lastApiEntities 刷新（精确匹配PC搜索接口）
+            try {
+                page.waitForResponse(r -> {
+                    try {
+                        String u = r.url();
+                        return u != null && u.contains("com.liepin.searchfront4c.pc-search-job") && r.status() == 200;
+                    } catch (Exception ignored) { return false; }
+                }, () -> {});
+            } catch (Exception ignored) {}
+            info(String.format("正在投递【%s】第【%d】页...", cleanKeyword, i + 1));
             submitJob();
             info(String.format("已投递第【%d】页所有的岗位...", i + 1));
             
-            // 查找下一页按钮
+            // 查找下一页按钮（AntD v5 结构）
             paginationBox = page.locator(PAGINATION_BOX);
-            Locator nextPage = paginationBox.locator(NEXT_PAGE);
-            if (nextPage.count() > 0 && nextPage.getAttribute("disabled") == null) {
-                nextPage.click();
-                // PlaywrightUtil.sleep(1); // 休息一秒
+            Locator nextLi = paginationBox.locator(NEXT_PAGE);
+            if (nextLi.count() > 0) {
+                String cls = nextLi.first().getAttribute("class");
+                boolean disabled = cls != null && cls.contains("ant-pagination-disabled");
+                if (!disabled) {
+                    Locator btn = nextLi.first().locator("button.ant-pagination-item-link");
+                    if (btn.count() > 0) {
+                        btn.first().click();
+                    } else {
+                        nextLi.first().click();
+                    }
+                } else {
+                    break;
+                }
             } else {
                 break;
             }
         }
-        info(String.format("【%s】关键词投递完成！", keyword));
+        info(String.format("【%s】关键词投递完成！", cleanKeyword));
     }
 
     private String getSearchUrl() {
@@ -161,24 +324,8 @@ public class Liepin {
     }
 
     private void submitJob() {
-        
-        // 等待页面完全加载
-        // try {
-        //     page.waitForLoadState(LoadState.NETWORKIDLE, new Page.WaitForLoadStateOptions().setTimeout(10000));
-        // } catch (Exception e) {
-        //     log.warn("等待页面网络空闲超时，继续执行: {}", e.getMessage());
-        // }
-        
         // 获取hr数量
         Locator jobCards = page.locator(JOB_CARDS);
-        
-        // 等待岗位卡片加载完成
-        // try {
-        //     jobCards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000));
-        // } catch (Exception e) {
-        //     log.warn("等待岗位卡片加载超时: {}", e.getMessage());
-        // }
-        
         int count = jobCards.count();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; i++) {
@@ -186,24 +333,26 @@ public class Liepin {
                 info("收到停止指令，结束卡片遍历");
                 return;
             }
-
-            Locator jobTitleElements = page.locator(JOB_TITLE);
-            Locator companyNameElements = page.locator(COMPANY_NAME);
-            Locator salaryElements = page.locator(JOB_SALARY);
-            
-            if (i >= jobTitleElements.count() || i >= companyNameElements.count() || i >= salaryElements.count()) {
-                continue;
-            }
-            
-            String jobName = jobTitleElements.nth(i).textContent().replaceAll("\n", " ").replaceAll("【 ", "[").replaceAll(" 】", "]");
-            String companyName = companyNameElements.nth(i).textContent().replaceAll("\n", " ");
-            String salary = salaryElements.nth(i).textContent().replaceAll("\n", " ");
+            // 获取当前岗位卡片（用于后续操作与缺省展示）
+            Locator currentJobCard = page.locator(JOB_CARDS).nth(i);
+            // 从接口数据获取展示所需字段，若接口数据缺失则使用缺省占位，仍尝试打招呼
+            String jobName = null;
+            String companyName = null;
+            String salary = null;
             String recruiterName = null;
+            if (i < lastApiEntities.size()) {
+                LiepinEntity apiEntity = lastApiEntities.get(i);
+                jobName = safeText(apiEntity.getJobTitle());
+                companyName = safeText(apiEntity.getCompName());
+                salary = safeText(apiEntity.getJobSalaryText());
+                recruiterName = safeText(apiEntity.getHrName());
+            }
+            if (recruiterName == null) recruiterName = "HR";
+            if (jobName == null) jobName = "岗位";
+            if (companyName == null) companyName = "公司";
+            if (salary == null) salary = "";
             
             try {
-                // 获取当前岗位卡片
-                Locator currentJobCard = page.locator(JOB_CARDS).nth(i);
-                
                 // 使用JavaScript滚动到卡片位置，更稳定
                 try {
                     // 先滚动到卡片位置
@@ -283,17 +432,7 @@ public class Liepin {
                 // PlaywrightUtil.sleep(1); // 等待按钮显示
                 
                 // 获取hr名字
-                try {
-                    Locator hrNameElement = currentJobCard.locator(".recruiter-name, .hr-name, .contact-name, [class*='recruiter-name'], [class*='hr-name']");
-                    if (hrNameElement.count() > 0) {
-                        recruiterName = hrNameElement.first().textContent();
-                    } else {
-                        recruiterName = "HR";
-                    }
-                } catch (Exception e) {
-                    log.error("获取HR名字失败: {}", e.getMessage());
-                    recruiterName = "HR";
-                }
+                // 已从接口获取 HR 名字，无需再从页面读
                 
             } catch (Exception e) {
                 log.error("处理岗位卡片失败: {}", e.getMessage());
@@ -305,7 +444,6 @@ public class Liepin {
             String buttonText = "";
             try {
                 // 在当前岗位卡片中查找按钮，尝试多种选择器
-                Locator currentJobCard = page.locator(JOB_CARDS).nth(i);
                 
                 String[] buttonSelectors = {
                     "button.ant-btn.ant-btn-primary.ant-btn-round",
@@ -355,10 +493,19 @@ public class Liepin {
                 
             } catch (Exception e) {
                 log.error("查找按钮失败: {}", e.getMessage());
-                // 保存页面源码用于调试
+                // 不再保存页面源码
                 continue;
             }
             
+            // 提取 jobId（用于更新投递状态）
+            Long jobIdForUpdate = null;
+            if (i < lastApiEntities.size()) {
+                jobIdForUpdate = lastApiEntities.get(i).getJobId();
+            }
+            if (jobIdForUpdate == null) {
+                jobIdForUpdate = extractJobIdFromCard(currentJobCard);
+            }
+
             // 检查按钮文本并点击
             if (button != null && buttonText.contains("聊一聊")) {
                 try {
@@ -408,23 +555,65 @@ public class Liepin {
                         
                         resultList.add(sb.append("【").append(companyName).append(" ").append(jobName).append(" ").append(salary).append(" ").append(recruiterName).append(" ").append("】").toString());
                         sb.setLength(0);
-                        info(String.format("成功发起聊天:【%s】的【%s·%s】岗位", companyName, jobName, salary));
+                        // 点击成功后标记为已投递
+                        if (jobIdForUpdate != null) {
+                            liepinService.markDelivered(jobIdForUpdate);
+                        }
                         
                     } catch (Exception e) {
                         log.warn("关闭聊天窗口失败，但投递可能已成功: {}", e.getMessage());
                         // 即使关闭失败，也认为投递成功
                         resultList.add(sb.append("【").append(companyName).append(" ").append(jobName).append(" ").append(salary).append(" ").append(recruiterName).append(" ").append("】").toString());
                         sb.setLength(0);
+                        if (jobIdForUpdate != null) {
+                            liepinService.markDelivered(jobIdForUpdate);
+                        }
                     }
                     
                 } catch (Exception e) {
                     log.error("点击按钮失败: {}", e.getMessage());
                 }
             } else {
+                // 如果按钮是“继续聊”，视为已投递
+                if (button != null && buttonText.contains("继续聊") && jobIdForUpdate != null) {
+                    liepinService.markDelivered(jobIdForUpdate);
+                }
                 if (button != null) {
                     log.debug("跳过岗位（按钮文本不匹配）: 【{}】的【{}·{}】岗位，按钮文本: '{}'", companyName, jobName, salary, buttonText);
+                } else {
+                    // 不再保存页面源码
                 }
             }
         }
+    }
+
+    // 从岗位卡片的 data 属性中提取 jobId（兼容 lastApiEntities 缺失场景）
+    private Long extractJobIdFromCard(Locator card) {
+        try {
+            String ext = card.getAttribute("data-tlg-ext");
+            if (ext != null && !ext.isEmpty()) {
+                try {
+                    String decoded = java.net.URLDecoder.decode(ext, java.nio.charset.StandardCharsets.UTF_8);
+                    com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(decoded);
+                    String jobIdStr = node.path("jobId").asText(null);
+                    if (jobIdStr != null && !jobIdStr.isEmpty()) {
+                        return Long.parseLong(jobIdStr);
+                    }
+                } catch (Exception ignore) {
+                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\\\\"jobId\\\\\":\\\\\"(\\d+)\\\\\"").matcher(ext);
+                    if (m.find()) {
+                        return Long.parseLong(m.group(1));
+                    }
+                }
+            }
+            String scm = card.getAttribute("data-tlg-scm");
+            if (scm != null) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("jobId=(\\d+)").matcher(scm);
+                if (m.find()) {
+                    return Long.parseLong(m.group(1));
+                }
+            }
+        } catch (Exception ignore) {}
+        return null;
     }
 }

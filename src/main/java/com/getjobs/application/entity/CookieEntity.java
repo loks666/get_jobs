@@ -31,7 +31,7 @@ public class CookieEntity {
     /**
      * Cookie值
      */
-    @TableField(value = "cookie_value", updateStrategy = FieldStrategy.IGNORED)
+    @TableField("cookie_value")
     private String cookieValue;
 
     /**

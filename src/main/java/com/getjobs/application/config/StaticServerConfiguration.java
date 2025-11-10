@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,7 +63,12 @@ public class StaticServerConfiguration {
 
         for (String host : hosts) {
             try {
-                URL url = new URL("http://" + host + ":" + FRONTEND_PORT);
+                String bareHost = host;
+                if (bareHost.startsWith("[") && bareHost.endsWith("]")) {
+                    bareHost = bareHost.substring(1, bareHost.length() - 1);
+                }
+                URI uri = new URI("http", null, bareHost, FRONTEND_PORT, "/", null, null);
+                URL url = uri.toURL();
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
                 connection.setRequestMethod("GET");
@@ -76,7 +82,7 @@ public class StaticServerConfiguration {
                 if (responseCode >= 200 && responseCode < 500) {
                     return true;
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.debug("检测前端服务失败 ({}): {}", host, e.getMessage());
             }
         }

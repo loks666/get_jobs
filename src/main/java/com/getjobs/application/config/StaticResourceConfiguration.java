@@ -10,6 +10,7 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -110,7 +111,12 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
 
         for (String host : hosts) {
             try {
-                URL url = new URL("http://" + host + ":" + FRONTEND_PORT);
+                String bareHost = host;
+                if (bareHost.startsWith("[") && bareHost.endsWith("]")) {
+                    bareHost = bareHost.substring(1, bareHost.length() - 1);
+                }
+                URI uri = new URI("http", null, bareHost, FRONTEND_PORT, "/", null, null);
+                URL url = uri.toURL();
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
                 connection.setRequestMethod("GET");
@@ -124,8 +130,8 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
                 if (responseCode >= 200 && responseCode < 500) {
                     return true;
                 }
-            } catch (IOException e) {
-                // 继续尝试下一个地址
+            } catch (Exception e) {
+                // 继续尝试下一个地址（包括IO/URI等异常）
             }
         }
 

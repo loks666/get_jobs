@@ -2,7 +2,7 @@ package com.getjobs.application.controller;
 
 import com.getjobs.application.entity.LiepinConfigEntity;
 import com.getjobs.application.entity.LiepinOptionEntity;
-import com.getjobs.application.service.LiepinDataService;
+import com.getjobs.application.service.LiepinService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -14,10 +14,10 @@ import java.util.Map;
 @RequestMapping("/api/liepin/config")
 public class LiepinConfigController {
 
-    private final LiepinDataService liepinDataService;
+    private final LiepinService liepinService;
 
-    public LiepinConfigController(LiepinDataService liepinDataService) {
-        this.liepinDataService = liepinDataService;
+    public LiepinConfigController(LiepinService liepinService) {
+        this.liepinService = liepinService;
     }
 
     /**
@@ -28,14 +28,14 @@ public class LiepinConfigController {
         Map<String, Object> result = new HashMap<>();
 
         // 获取配置
-        LiepinConfigEntity config = liepinDataService.getFirstConfig();
+        LiepinConfigEntity config = liepinService.getFirstConfig();
         if (config == null) {
             config = new LiepinConfigEntity();
         }
 
         // 获取所有选项并按类型分组
         Map<String, List<LiepinOptionEntity>> options = new HashMap<>();
-        options.put("city", liepinDataService.getOptionsByType("city"));
+        options.put("city", liepinService.getOptionsByType("city"));
 
         result.put("config", config);
         result.put("options", options);
@@ -50,16 +50,16 @@ public class LiepinConfigController {
     public LiepinConfigEntity updateConfig(@RequestBody LiepinConfigEntity config) {
         // 城市：如果传入的是代码，转换为名称保存；如果是手动输入的名称，直接保存
         if (config.getCity() != null && !config.getCity().isEmpty()) {
-            String cityName = liepinDataService.normalizeCityToName(config.getCity());
+            String cityName = liepinService.normalizeCityToName(config.getCity());
             config.setCity(cityName);
         }
 
         // 为避免每次新增导致错乱：当ID缺失时也执行"选择性更新第一条"策略
         // 若存在ID，按ID更新；否则更新首条记录（若不存在则插入）
         if (config.getId() != null) {
-            return liepinDataService.updateConfig(config);
+            return liepinService.updateConfig(config);
         }
-        return liepinDataService.saveOrUpdateFirstSelective(config);
+        return liepinService.saveOrUpdateFirstSelective(config);
     }
 
     /**
@@ -67,6 +67,6 @@ public class LiepinConfigController {
      */
     @GetMapping("/options/{type}")
     public List<LiepinOptionEntity> getOptionsByType(@PathVariable String type) {
-        return liepinDataService.getOptionsByType(type);
+        return liepinService.getOptionsByType(type);
     }
 }

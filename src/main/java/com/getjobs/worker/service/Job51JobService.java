@@ -62,8 +62,8 @@ public class Job51JobService implements JobPlatformService {
             // 暂停后台登录监控，避免与投递流程并发访问同一Page
             playwrightManager.pause51jobMonitoring();
 
-            // 加载配置（从数据库 config 表）
-            Job51Config config = buildJob51Config();
+            // 加载配置（统一从 job51_config 专表读取）
+            Job51Config config = configService.getJob51Config();
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "配置加载成功"));
 
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "开始投递任务..."));
@@ -135,60 +135,5 @@ public class Job51JobService implements JobPlatformService {
         return shouldStop;
     }
 
-    private Job51Config buildJob51Config() {
-        Job51Config config = new Job51Config();
-
-        // 关键词解析：支持逗号、中文逗号、或 [a,b] 格式
-        String rawKeywords = configService.getConfigValue("job51.keywords");
-        java.util.List<String> keywords = new java.util.ArrayList<>();
-        if (rawKeywords != null && !rawKeywords.isBlank()) {
-            String raw = rawKeywords.trim().replace('，', ',');
-            if (raw.startsWith("[") && raw.endsWith("]")) {
-                raw = raw.substring(1, raw.length() - 1);
-            }
-            for (String s : raw.split(",")) {
-                String t = s.trim();
-                if (!t.isEmpty()) keywords.add(t);
-            }
-        }
-        config.setKeywords(keywords);
-
-        // 城市区域：从中文名列表映射代码；如包含“不限”映射为 0
-        String rawAreas = configService.getConfigValue("job51.jobArea");
-        java.util.List<String> areaCodes = new java.util.ArrayList<>();
-        if (rawAreas != null && !rawAreas.isBlank()) {
-            String raw = rawAreas.trim().replace('，', ',');
-            if (raw.startsWith("[") && raw.endsWith("]")) {
-                raw = raw.substring(1, raw.length() - 1);
-            }
-            for (String s : raw.split(",")) {
-                String name = s.trim();
-                if (!name.isEmpty()) {
-                    String code = com.getjobs.worker.job51.Job51Enum.jobArea.forValue(name).getCode();
-                    areaCodes.add(code);
-                }
-            }
-        }
-        config.setJobArea(areaCodes);
-
-        // 薪资范围：从中文名列表映射代码；如包含“不限”映射为 0
-        String rawSalary = configService.getConfigValue("job51.salary");
-        java.util.List<String> salaryCodes = new java.util.ArrayList<>();
-        if (rawSalary != null && !rawSalary.isBlank()) {
-            String raw = rawSalary.trim().replace('，', ',');
-            if (raw.startsWith("[") && raw.endsWith("]")) {
-                raw = raw.substring(1, raw.length() - 1);
-            }
-            for (String s : raw.split(",")) {
-                String name = s.trim();
-                if (!name.isEmpty()) {
-                    String code = com.getjobs.worker.job51.Job51Enum.Salary.forValue(name).getCode();
-                    salaryCodes.add(code);
-                }
-            }
-        }
-        config.setSalary(salaryCodes);
-
-        return config;
-    }
+    
 }

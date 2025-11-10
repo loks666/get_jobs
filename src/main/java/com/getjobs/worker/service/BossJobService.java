@@ -1,6 +1,5 @@
 package com.getjobs.worker.service;
 
-import com.getjobs.application.service.BossDataService;
 import com.getjobs.application.service.ConfigService;
 import com.getjobs.worker.boss.Boss;
 import com.getjobs.worker.boss.BossConfig;
@@ -27,7 +26,6 @@ public class BossJobService implements JobPlatformService {
     private static final String PLATFORM = "boss";
 
     private final PlaywrightManager playwrightManager;
-    private final BossDataService bossDataService;
     private final ConfigService configService;
     private final ObjectProvider<Boss> bossProvider;
 
@@ -64,8 +62,8 @@ public class BossJobService implements JobPlatformService {
             // 暂停后台登录监控，避免与投递流程并发访问同一Page
             playwrightManager.pauseBossMonitoring();
 
-            // 加载配置（统一从 config 表读取）
-            BossConfig config = buildBossConfigFromConfigService();
+            // 加载配置（统一从 boss_config 专表读取）
+            BossConfig config = configService.getBossConfig();
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "配置加载成功"));
 
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "开始投递任务..."));
@@ -138,63 +136,5 @@ public class BossJobService implements JobPlatformService {
         return shouldStop;
     }
 
-    private BossConfig buildBossConfigFromConfigService() {
-        BossConfig config = new BossConfig();
-
-        // 文本与布尔/数值
-        String sayHi = configService.getConfigValue("boss.sayHi");
-        config.setSayHi(sayHi);
-
-        String debugger = configService.getConfigValue("boss.debugger");
-        config.setDebugger(debugger != null && ("1".equals(debugger.trim()) || "true".equalsIgnoreCase(debugger.trim())));
-
-        String enableAI = configService.getConfigValue("boss.enableAI");
-        config.setEnableAI(enableAI != null && ("1".equals(enableAI.trim()) || "true".equalsIgnoreCase(enableAI.trim())));
-
-        String filterDeadHR = configService.getConfigValue("boss.filterDeadHR");
-        config.setFilterDeadHR(filterDeadHR != null && ("1".equals(filterDeadHR.trim()) || "true".equalsIgnoreCase(filterDeadHR.trim())));
-
-        String sendImgResume = configService.getConfigValue("boss.sendImgResume");
-        config.setSendImgResume(sendImgResume != null && ("1".equals(sendImgResume.trim()) || "true".equalsIgnoreCase(sendImgResume.trim())));
-
-        String waitTime = configService.getConfigValue("boss.waitTime");
-        config.setWaitTime((waitTime != null && !waitTime.isBlank()) ? waitTime.trim() : null);
-
-        // 关键词
-        String rawKeywords = configService.getConfigValue("boss.keywords");
-        config.setKeywords(bossDataService.parseListString(rawKeywords));
-
-        // 城市/行业/经验/学历/规模/阶段 -> 统一为代码列表
-        config.setCityCode(bossDataService.toCodes("city", bossDataService.parseListString(configService.getConfigValue("boss.city"))));
-        config.setIndustry(bossDataService.toCodes("industry", bossDataService.parseListString(configService.getConfigValue("boss.industry"))));
-        config.setExperience(bossDataService.toCodes("experience", bossDataService.parseListString(configService.getConfigValue("boss.experience"))));
-        config.setDegree(bossDataService.toCodes("degree", bossDataService.parseListString(configService.getConfigValue("boss.degree"))));
-        config.setScale(bossDataService.toCodes("scale", bossDataService.parseListString(configService.getConfigValue("boss.scale"))));
-        config.setStage(bossDataService.toCodes("stage", bossDataService.parseListString(configService.getConfigValue("boss.stage"))));
-
-        // 职位类型：取首个代码，空则不限
-        java.util.List<String> jobTypeCodes = bossDataService.toCodes("jobType",
-                bossDataService.parseListString(configService.getConfigValue("boss.jobType")));
-        String jobTypeCode = jobTypeCodes.isEmpty() ? com.getjobs.worker.utils.Constant.UNLIMITED_CODE : jobTypeCodes.get(0);
-        config.setJobType(jobTypeCode);
-
-        // 薪资代码列表
-        config.setSalary(bossDataService.toCodes("salary", bossDataService.parseListString(configService.getConfigValue("boss.salary"))));
-
-        // 期望薪资（min,max）
-        String expectedMin = configService.getConfigValue("boss.expectedSalaryMin");
-        String expectedMax = configService.getConfigValue("boss.expectedSalaryMax");
-        if ((expectedMin != null && !expectedMin.isBlank()) || (expectedMax != null && !expectedMax.isBlank())) {
-            int min = 0;
-            int max = 0;
-            try { if (expectedMin != null && !expectedMin.isBlank()) min = Integer.parseInt(expectedMin.trim()); } catch (Exception ignored) {}
-            try { if (expectedMax != null && !expectedMax.isBlank()) max = Integer.parseInt(expectedMax.trim()); } catch (Exception ignored) {}
-            config.setExpectedSalary(java.util.Arrays.asList(min, max));
-        }
-
-        // HR不在线状态
-        config.setDeadStatus(bossDataService.parseListString(configService.getConfigValue("boss.deadStatus")));
-
-        return config;
-    }
+    
 }

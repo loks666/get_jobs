@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class BossDataService {
+public class BossService {
 
     private final BossOptionMapper bossOptionMapper;
     private final BossIndustryMapper bossIndustryMapper;

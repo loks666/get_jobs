@@ -21,6 +21,9 @@ export function parseSalary(raw?: string): SalaryInfo | undefined {
     months = Number(monthsMatch[1]) || 12
     // 去掉薪资后缀以便解析区间
     s = s.slice(0, s.indexOf(monthsMatch[0]))
+    // 某些源数据在 K 后还有多余符号（如 "30-60K-"），此处截断到最后的 K
+    const kIndex = Math.max(s.lastIndexOf("K"), s.lastIndexOf("k"))
+    if (kIndex >= 0) s = s.slice(0, kIndex + 1)
   }
 
   let minK: number | undefined

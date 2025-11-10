@@ -2,7 +2,7 @@ package com.getjobs.worker.boss;
 
 import com.getjobs.application.entity.AiEntity;
 import com.getjobs.application.service.AiService;
-import com.getjobs.application.service.BossDataService;
+import com.getjobs.application.service.BossService;
 import com.getjobs.worker.utils.Job;
 import com.getjobs.worker.utils.JobUtils;
 import com.getjobs.worker.utils.PlaywrightUtil;
@@ -46,7 +46,7 @@ public class Boss {
     private Page page;
     @Setter
     private BossConfig config;
-    private final BossDataService bossDataService;
+    private final BossService bossService;
     private final AiService aiService;
     private Set<String> blackCompanies;
     private Set<String> blackRecruiters;
@@ -68,15 +68,15 @@ public class Boss {
         void accept(String message, Integer current, Integer total);
     }
 
-    // 通过 Lombok @RequiredArgsConstructor 使用构造器注入 bossDataService 与 aiService
+    // 通过 Lombok @RequiredArgsConstructor 使用构造器注入 bossService 与 aiService
 
     public void prepare() {
         // 调整 boss_data 表结构：将 encrypt_id、encrypt_user_id 前置
-        try { bossDataService.ensureBossDataColumnOrder(); } catch (Throwable ignore) {}
+        try { bossService.ensureBossDataColumnOrder(); } catch (Throwable ignore) {}
         // 从数据库加载黑名单
-        this.blackCompanies = bossDataService.getBlackCompanies();
-        this.blackRecruiters = bossDataService.getBlackRecruiters();
-        this.blackJobs = bossDataService.getBlackJobs();
+        this.blackCompanies = bossService.getBlackCompanies();
+        this.blackRecruiters = bossService.getBlackRecruiters();
+        this.blackJobs = bossService.getBlackJobs();
 
         log.info("黑名单加载完成: 公司({}) 招聘者({}) 职位({})",
                 blackCompanies != null ? blackCompanies.size() : 0,
@@ -172,7 +172,7 @@ public class Boss {
                             if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
                                 blackCompanies.add(companyName);
                                 // 保存到数据库
-                                bossDataService.addBlacklist("company", companyName);
+                                bossService.addBlacklist("company", companyName);
                                 newBlacklistCount++;
                                 log.info("黑名单公司：【{}】，信息：【{}】", companyName, message);
                             }
@@ -486,12 +486,12 @@ public class Boss {
                 try {
                     boolean exists = false;
                     if (encryptUserId != null) {
-                        exists = bossDataService.existsBossJob(encryptId, encryptUserId);
+        exists = bossService.existsBossJob(encryptId, encryptUserId);
                     } else {
-                        exists = bossDataService.existsBossJobByEncryptId(encryptId);
+        exists = bossService.existsBossJobByEncryptId(encryptId);
                     }
                     if (!exists) {
-                        bossDataService.insertBossJob(entity);
+        bossService.insertBossJob(entity);
                         log.debug("岗位入库：{} | 公司：{} | HR：{} | 状态：{}", entity.getJobName(), entity.getCompanyName(), entity.getHrName(), entity.getDeliveryStatus());
                     }
                 } catch (Exception e) {
@@ -741,7 +741,7 @@ public class Boss {
             String encryptUserId = encryptId != null ? encryptIdToUserId.get(encryptId) : null;
             if (encryptId != null && encryptUserId != null) {
                 try {
-                    bossDataService.updateDeliveryStatus(encryptId, encryptUserId, "已投递");
+        bossService.updateDeliveryStatus(encryptId, encryptUserId, "已投递");
                     log.info("投递成功 | 公司：{} | 岗位：{} | encryptId：{} | encryptUserId：{}", job.getCompanyName(), job.getJobName(), encryptId, encryptUserId);
                 } catch (Exception e) {
                     log.warn("更新投递状态为已投递失败：{}", e.getMessage());
@@ -756,7 +756,7 @@ public class Boss {
             String encryptUserId = encryptId != null ? encryptIdToUserId.get(encryptId) : null;
             if (encryptId != null && encryptUserId != null) {
                 try {
-                    bossDataService.updateDeliveryStatus(encryptId, encryptUserId, "投递失败");
+        bossService.updateDeliveryStatus(encryptId, encryptUserId, "投递失败");
                     log.warn("投递失败 | 公司：{} | 岗位：{} | encryptId：{} | encryptUserId：{}", job.getCompanyName(), job.getJobName(), encryptId, encryptUserId);
                 } catch (Exception e) {
                     log.warn("更新投递状态为投递失败异常：{}", e.getMessage());

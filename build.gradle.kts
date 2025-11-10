@@ -56,6 +56,11 @@ tasks.test {
     useJUnitPlatform()
 }
 
+// 显示已过时 API 的详细告警，便于定位并修复
+tasks.withType<JavaCompile> {
+    options.compilerArgs.addAll(listOf("-Xlint:deprecation"))
+}
+
 // 让 bootJar 里带上 build-info（可在 Actuator /info 里看到）
 springBoot {
     buildInfo()
