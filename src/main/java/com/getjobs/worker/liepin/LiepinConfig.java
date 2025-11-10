@@ -1,8 +1,6 @@
 package com.getjobs.worker.liepin;
 
-import com.getjobs.worker.utils.JobUtils;
 import lombok.Data;
-import lombok.SneakyThrows;
 
 import java.util.List;
 
@@ -26,14 +24,5 @@ public class LiepinConfig {
      * 薪资范围
      */
     private String salary;
-
-
-    @SneakyThrows
-    public static LiepinConfig init() {
-        LiepinConfig config = JobUtils.getConfig(LiepinConfig.class);
-        // 转换城市编码
-        config.setCityCode(LiepinEnum.CityCode.forValue(config.getCityCode()).getCode());
-        return config;
-    }
 
 }

@@ -3,16 +3,12 @@ package com.getjobs.worker.liepin;
 import com.getjobs.worker.utils.PlaywrightUtil;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -36,33 +32,21 @@ public class Liepin {
 
     private int maxPage = 50;
     private final List<String> resultList = new ArrayList<>();
-    private final String baseUrl = "https://www.liepin.com/zhaopin/?";
+    @Setter
     private LiepinConfig config;
+    @Getter
     private Date startDate;
+    @Setter
     private Page page;
 
     public interface ProgressCallback {
         void onProgress(String message, Integer current, Integer total);
     }
 
+    @Setter
     private ProgressCallback progressCallback;
+    @Setter
     private Supplier<Boolean> shouldStopCallback;
-
-    public void setPage(Page page) {
-        this.page = page;
-    }
-
-    public void setConfig(LiepinConfig config) {
-        this.config = config;
-    }
-
-    public void setProgressCallback(ProgressCallback progressCallback) {
-        this.progressCallback = progressCallback;
-    }
-
-    public void setShouldStopCallback(Supplier<Boolean> shouldStopCallback) {
-        this.shouldStopCallback = shouldStopCallback;
-    }
 
     public void prepare() {
         this.startDate = new Date();
@@ -104,31 +88,6 @@ public class Liepin {
             log.info(msg);
         }
     }
-
-    /**
-     * 保存页面源码到日志和文件，用于调试
-     */
-    private static void savePageSource(Page page, String context) {
-        try {
-            String pageSource = page.content();
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-            
-            // 保存完整源码到文件
-            Path sourceDir = Paths.get("./target/logs/page_sources");
-            Files.createDirectories(sourceDir);
-            
-            String fileName = String.format("liepin_page_%s_%s.html", context.replaceAll("[^a-zA-Z0-9]", "_"), timestamp);
-            Path sourceFile = sourceDir.resolve(fileName);
-            Files.write(sourceFile, pageSource.getBytes("UTF-8"));
-            
-            log.info("完整页面源码已保存到文件: {}", sourceFile.toAbsolutePath());
-            
-        } catch (IOException e) {
-            log.error("保存页面源码失败: {}", e.getMessage());
-        }
-    }
-
-
 
     private void submit(String keyword) {
         page.navigate(getSearchUrl() + "&key=" + keyword);
@@ -173,6 +132,7 @@ public class Liepin {
     }
 
     private String getSearchUrl() {
+        String baseUrl = "https://www.liepin.com/zhaopin/?";
         StringBuilder sb = new StringBuilder(baseUrl);
         // 直接拼接参数，参数为空则忽略
         if (config.getCityCode() != null && !config.getCityCode().isEmpty()) {
@@ -396,7 +356,6 @@ public class Liepin {
             } catch (Exception e) {
                 log.error("查找按钮失败: {}", e.getMessage());
                 // 保存页面源码用于调试
-                savePageSource(page, "button_search_failed");
                 continue;
             }
             
@@ -460,21 +419,12 @@ public class Liepin {
                     
                 } catch (Exception e) {
                     log.error("点击按钮失败: {}", e.getMessage());
-                    // 保存页面源码用于调试
-                    savePageSource(page, "button_click_failed");
                 }
             } else {
                 if (button != null) {
                     log.debug("跳过岗位（按钮文本不匹配）: 【{}】的【{}·{}】岗位，按钮文本: '{}'", companyName, jobName, salary, buttonText);
-                } else {
-//                    log.warn("未找到可点击的按钮: 【{}】的【{}·{}】岗位", companyName, jobName, salary);
-                    // 保存页面源码用于调试
-                    savePageSource(page, "no_button_found");
                 }
             }
-            
-            // 等待一下，避免操作过快
-            // PlaywrightUtil.sleep(1);
         }
     }
 }

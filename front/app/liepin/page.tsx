@@ -83,7 +83,7 @@ export default function LiepinPage() {
         } catch (error) {
           console.error('[SSE] 解析连接消息失败:', error)
         }
-      })
+  })
 
       // 登录状态变化
       eventSource.addEventListener('login-status', (event) => {
@@ -122,6 +122,34 @@ export default function LiepinPage() {
     }
   }, [])
 
+  // 将数据库中的 JSON 数组字符串转换为逗号分隔的可读字符串
+  const parseKeywordsFromDb = (raw?: string): string => {
+    if (!raw) return ''
+    const t = raw.trim()
+    if (t.startsWith('[') && t.endsWith(']')) {
+      try {
+        const arr = JSON.parse(t)
+        if (Array.isArray(arr)) return arr.filter(Boolean).join(', ')
+      } catch (e) {
+        console.warn('解析关键词JSON失败，使用原值:', e)
+      }
+    }
+    // 兼容逗号或中文逗号分隔的原始字符串
+    return t.replace(/，/g, ',')
+  }
+
+  // 将输入的逗号分隔字符串转换为 JSON 数组字符串保存到数据库
+  const serializeKeywordsForDb = (display?: string): string => {
+    const raw = (display || '').trim()
+    if (!raw) return '[]'
+    const norm = raw.replace(/，/g, ',')
+    const tokens = norm
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+    return JSON.stringify(tokens)
+  }
+
   const fetchAllData = async () => {
     try {
       const response = await fetch('http://localhost:8888/api/liepin/config')
@@ -130,7 +158,9 @@ export default function LiepinPage() {
       console.log('Fetched liepin data:', data)
 
       if (data.config) {
-        setConfig(data.config)
+        const normalized = { ...data.config }
+        normalized.keywords = parseKeywordsFromDb(data.config.keywords)
+        setConfig(normalized)
         // 检查当前城市是否在选项列表中
         if (data.options?.city && data.config.city) {
           const cityExists = data.options.city.some((c: LiepinOption) => c.name === data.config.city || c.code === data.config.city)
@@ -149,12 +179,13 @@ export default function LiepinPage() {
 
   const handleSave = async () => {
     try {
+      const payload = { ...config, keywords: serializeKeywordsForDb(config.keywords) }
       const response = await fetch('http://localhost:8888/api/liepin/config', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(config),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
@@ -309,9 +340,9 @@ export default function LiepinPage() {
                   id="keywords"
                   value={config.keywords || ''}
                   onChange={(e) => setConfig({ ...config, keywords: e.target.value })}
-                  placeholder="例如：Java开发工程师"
+                  placeholder="例如：大模型, Python, Golang"
                 />
-                <p className="text-xs text-muted-foreground">职位搜索的关键词</p>
+                <p className="text-xs text-muted-foreground">关键词可多选，使用英文逗号分隔，例如：大模型, Python, Golang</p>
               </div>
 
               <div className="space-y-2">

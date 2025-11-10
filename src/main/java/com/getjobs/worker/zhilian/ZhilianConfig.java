@@ -29,14 +29,11 @@ public class ZhilianConfig {
     private String salary;
 
 
+    // 注意：已改为在 ZhilianJobService 中通过 ConfigService 构建配置
+    // 保留空的 init 以兼容旧调用，但建议不要再使用
     @SneakyThrows
     public static ZhilianConfig init() {
-        ZhilianConfig config = JobUtils.getConfig(ZhilianConfig.class);
-        // 转换城市编码
-        config.setCityCode(ZhilianEnum.CityCode.forValue(config.getCityCode()).getCode());
-        String salary = config.getSalary();
-        config.setSalary(Objects.equals("不限", salary) ? "0" : salary);
-        return config;
+        throw new UnsupportedOperationException("请在 ZhilianJobService 中通过 ConfigService 构建配置");
     }
 
 }

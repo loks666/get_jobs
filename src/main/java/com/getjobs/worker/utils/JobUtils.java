@@ -38,18 +38,7 @@ public class JobUtils {
         return "&" + name + "=" + String.join(",", values);
     }
 
-    @SneakyThrows
-    public static <T> T getConfig(Class<T> clazz) {
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        InputStream is = clazz.getClassLoader().getResourceAsStream("config.yaml");
-        if (is == null) {
-            throw new FileNotFoundException("无法找到 config.yaml 文件");
-        }
-        JsonNode rootNode = mapper.readTree(is);
-        String key = clazz.getSimpleName().toLowerCase().replaceAll("config", "");
-        JsonNode configNode = rootNode.path(key);
-        return mapper.treeToValue(configNode, clazz);
-    }
+    // getConfig(Class<T>) 方法已移除；配置改为由各平台服务通过数据库读取构建
 
     /**
      * 计算并格式化时间（毫秒）

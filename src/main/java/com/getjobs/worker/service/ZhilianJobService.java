@@ -1,5 +1,6 @@
 package com.getjobs.worker.service;
 
+import com.getjobs.application.service.ConfigService;
 import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.zhilian.ZhiLian;
@@ -26,6 +27,7 @@ public class ZhilianJobService implements JobPlatformService {
 
     private final PlaywrightManager playwrightManager;
     private final ObjectProvider<ZhiLian> zhilianProvider;
+    private final ConfigService configService;
 
     // 任务运行状态
     private volatile boolean isRunning = false;
@@ -60,8 +62,8 @@ public class ZhilianJobService implements JobPlatformService {
             // 暂停后台登录监控，避免与投递流程并发访问同一Page
             playwrightManager.pauseZhilianMonitoring();
 
-            // 加载配置
-            ZhilianConfig config = ZhilianConfig.init();
+            // 加载配置（从数据库 config 表）
+            ZhilianConfig config = buildZhilianConfig();
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "配置加载成功"));
 
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "开始投递任务..."));
@@ -131,5 +133,42 @@ public class ZhilianJobService implements JobPlatformService {
      */
     public boolean shouldStop() {
         return shouldStop;
+    }
+
+    private ZhilianConfig buildZhilianConfig() {
+        ZhilianConfig config = new ZhilianConfig();
+
+        // 关键词解析：支持逗号、中文逗号、或 [a,b] 格式
+        String rawKeywords = configService.getConfigValue("zhilian.keywords");
+        java.util.List<String> keywords = new java.util.ArrayList<>();
+        if (rawKeywords != null && !rawKeywords.isBlank()) {
+            String raw = rawKeywords.trim().replace('，', ',');
+            if (raw.startsWith("[") && raw.endsWith("]")) {
+                raw = raw.substring(1, raw.length() - 1);
+            }
+            for (String s : raw.split(",")) {
+                String t = s.trim();
+                if (!t.isEmpty()) keywords.add(t);
+            }
+        }
+        config.setKeywords(keywords);
+
+        // 城市：从中文名映射到代码，缺省或“不限”映射为 0
+        String cityName = configService.getConfigValue("zhilian.city");
+        String cityCode = "0";
+        if (cityName != null && !cityName.isBlank()) {
+            cityCode = com.getjobs.worker.zhilian.ZhilianEnum.CityCode.forValue(cityName.trim()).getCode();
+        }
+        config.setCityCode(cityCode);
+
+        // 薪资：缺省或“不限”映射为 0，其它保持原值（页面层处理区间）
+        String salaryValue = configService.getConfigValue("zhilian.salary");
+        if (salaryValue == null || salaryValue.isBlank() || "不限".equals(salaryValue.trim())) {
+            config.setSalary("0");
+        } else {
+            config.setSalary(salaryValue.trim());
+        }
+
+        return config;
     }
 }

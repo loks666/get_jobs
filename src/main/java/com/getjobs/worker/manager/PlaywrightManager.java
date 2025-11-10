@@ -378,60 +378,58 @@ public class PlaywrightManager {
      */
     private boolean checkIfLiepinLoggedIn() {
         try {
-            // 优先检测已登录特征：用户信息容器或用户头像是否可见
+            // 先检查“登录/注册”入口是否可见，若可见则明确未登录
             try {
-                Locator userInfo = liepinPage.locator("#header-quick-menu-user-info").first();
-                if (userInfo.isVisible()) {
-                    log.debug("猎聘登录检测：用户信息容器可见，判定已登录");
-                    return true;
-                }
-            } catch (Exception ignored) {}
-
-            try {
-                Locator userPhoto = liepinPage.locator("img.header-quick-menu-user-photo, .header-quick-menu-user-photo").first();
-                if (userPhoto.isVisible()) {
-                    log.debug("猎聘登录检测：用户头像可见，判定已登录");
-                    return true;
-                }
-            } catch (Exception ignored) {}
-
-            // 检测未登录入口是否可见
-            boolean loginEntryVisible = false;
-            try {
-                Locator loginEntry = liepinPage.locator("#header-quick-menu-login, a[href*='login']").first();
-                loginEntryVisible = loginEntry.isVisible();
-            } catch (Exception ignored) {}
-
-            if (!loginEntryVisible) {
-                // 无法明确判定时，保守返回未登录，不做页面跳转（交由 setLoginStatus 时机处理）
-                log.debug("猎聘登录检测：未找到清晰的登录或已登录特征，保守判定未登录");
-                return false;
-            }
-
-            // 明确未登录：若不在登录页，导航到登录页并尝试切换二维码
-            try {
-                String currentUrl = null;
-                try { currentUrl = liepinPage.url(); } catch (Exception ignored) {}
-                if (currentUrl == null || !currentUrl.contains("/login")) {
-                    liepinPage.navigate("https://www.liepin.com/login");
-                    try { Thread.sleep(800); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
-                }
-
-                try {
-                    Locator qrSwitch = liepinPage.locator(".switch-type-mask-img-box").first();
-                    if (qrSwitch.isVisible()) {
-                        qrSwitch.click();
-                        log.info("已切换到猎聘二维码登录页面，等待用户扫码...");
-                    } else {
-                        log.info("未找到二维码切换按钮，保持当前登录页");
+                Locator loginEntry = liepinPage.locator(
+                    "#header-quick-menu-login, a[href*='login'], a[data-key='login'], button[data-key='login'], text=/登录|注册/").first();
+                if (loginEntry.isVisible()) {
+                    log.info("检测到未登录猎聘，保持在登录页或首页等待扫码登录");
+                    // 若不在登录页，则导航到登录页并尝试切换二维码
+                    String currentUrl = null;
+                    try { currentUrl = liepinPage.url(); } catch (Exception ignored) {}
+                    try {
+                        if (currentUrl == null || !currentUrl.contains("/login")) {
+                            liepinPage.navigate("https://www.liepin.com/login");
+                            try { Thread.sleep(800); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                        }
+                        Locator qrSwitch = liepinPage.locator(".switch-type-mask-img-box").first();
+                        if (qrSwitch.isVisible()) {
+                            qrSwitch.click();
+                            log.info("已切换到猎聘二维码登录页面，等待用户扫码...");
+                        }
+                    } catch (Exception e) {
+                        log.debug("猎聘登录页引导/二维码切换失败: {}", e.getMessage());
                     }
-                } catch (Exception e) {
-                    log.debug("切换猎聘二维码登录失败: {}", e.getMessage());
+                    return false;
                 }
-            } catch (Exception e) {
-                log.debug("导航到猎聘登录页失败: {}", e.getMessage());
-            }
+            } catch (Exception ignored) {}
 
+            // 再检查已登录特征：用户信息容器或用户头像是否存在（无需强制可见）
+            try {
+                if (liepinPage.locator("#header-quick-menu-user-info").count() > 0) {
+                    log.debug("猎聘登录检测：存在用户信息容器，判定已登录");
+                    return true;
+                }
+            } catch (Exception ignored) {}
+
+            try {
+                if (liepinPage.locator("img.header-quick-menu-user-photo, .header-quick-menu-user-photo").count() > 0) {
+                    log.debug("猎聘登录检测：存在用户头像元素，判定已登录");
+                    return true;
+                }
+            } catch (Exception ignored) {}
+
+            // 兜底：若不存在登录入口且也未找到明确已登录特征，按已登录处理（避免误判）
+            try {
+                boolean loginEntryExists = liepinPage.locator("#header-quick-menu-login, a[href*='login']").count() > 0;
+                if (!loginEntryExists) {
+                    log.info("猎聘登录检测：未发现登录入口，兜底判定为已登录");
+                    return true;
+                }
+            } catch (Exception ignored) {}
+
+            // 默认未登录
+            log.debug("猎聘登录检测：未匹配到明确特征，判定未登录");
             return false;
         } catch (Exception e) {
             log.debug("猎聘登录检测异常: {}", e.getMessage());

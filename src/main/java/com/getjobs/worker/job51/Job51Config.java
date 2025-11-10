@@ -32,14 +32,11 @@ public class Job51Config {
     private List<String> salary;
 
 
+    // 注意：已改为在 Job51JobService 中通过 ConfigService 构建配置
+    // 保留空的 init 以兼容旧调用，但建议不要再使用
     @SneakyThrows
     public static Job51Config init() {
-        Job51Config config = JobUtils.getConfig(Job51Config.class);
-        // 转换城市编码
-        config.setJobArea(config.getJobArea().stream().map(value -> Job51Enum.jobArea.forValue(value).getCode()).collect(Collectors.toList()));
-        // 转换薪资范围
-        config.setSalary(config.getSalary().stream().map(value -> Job51Enum.Salary.forValue(value).getCode()).collect(Collectors.toList()));
-        return config;
+        throw new UnsupportedOperationException("请在 Job51JobService 中通过 ConfigService 构建配置");
     }
 
 }
