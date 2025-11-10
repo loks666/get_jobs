@@ -1,22 +1,23 @@
 package com.getjobs.worker.manager;
 
-import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.WaitUntilState;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.getjobs.application.entity.CookieEntity;
 import com.getjobs.application.service.CookieService;
+import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Cookie;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.context.annotation.Lazy;
+import com.microsoft.playwright.options.WaitUntilState;
+import com.microsoft.playwright.options.LoadState;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -120,19 +121,35 @@ public class PlaywrightManager {
                             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"));
             log.info("✓ BrowserContext已创建（所有平台共享）");
 
-            // 初始化Boss直聘平台
-            initBossPlatform();
+            // 顺序创建所有Page（避免并发创建Page导致的竞态条件）
+            log.info("开始创建所有平台的Page...");
+            bossPage = context.newPage();
+            bossPage.setDefaultTimeout(DEFAULT_TIMEOUT);
+            log.info("✓ Boss Page已创建");
 
-            // 初始化猎聘平台
-            initLiepinPlatform();
+            liepinPage = context.newPage();
+            liepinPage.setDefaultTimeout(DEFAULT_TIMEOUT);
+            log.info("✓ 猎聘 Page已创建");
 
-            // 初始化51job平台
-            init51jobPlatform();
+            job51Page = context.newPage();
+            job51Page.setDefaultTimeout(DEFAULT_TIMEOUT);
+            log.info("✓ 51job Page已创建");
 
-            // 初始化智联招聘平台
-            initZhilianPlatform();
+            zhilianPage = context.newPage();
+            zhilianPage.setDefaultTimeout(DEFAULT_TIMEOUT);
+            log.info("✓ 智联招聘 Page已创建");
 
-            log.info("✓ 浏览器自动化引擎初始化完成");
+            // 并发执行各平台的初始化逻辑（导航、Cookie加载等）
+            log.info("开始并发初始化所有平台...");
+            CompletableFuture<Void> bossFuture = CompletableFuture.runAsync(this::setupBossPlatform);
+            CompletableFuture<Void> liepinFuture = CompletableFuture.runAsync(this::setupLiepinPlatform);
+            CompletableFuture<Void> job51Future = CompletableFuture.runAsync(this::setup51jobPlatform);
+            CompletableFuture<Void> zhilianFuture = CompletableFuture.runAsync(this::setupZhilianPlatform);
+
+            // 等待所有平台初始化完成
+            CompletableFuture.allOf(bossFuture, liepinFuture, job51Future, zhilianFuture).join();
+
+            log.info("✓ 浏览器自动化引擎初始化完成（所有平台已并发启动）");
             log.info("========================================");
         } catch (Exception e) {
             log.error("✗ 浏览器自动化引擎初始化失败", e);
@@ -141,14 +158,10 @@ public class PlaywrightManager {
     }
 
     /**
-     * 初始化Boss直聘平台
+     * 设置Boss直聘平台（加载Cookie、导航、监控）
      */
-    private void initBossPlatform() {
+    private void setupBossPlatform() {
         log.info("开始初始化Boss直聘平台...");
-
-        // 在共享的BrowserContext中创建页面
-        bossPage = context.newPage();
-        bossPage.setDefaultTimeout(DEFAULT_TIMEOUT);
 
         // 尝试从数据库加载Boss平台Cookie到上下文
         try {
@@ -172,24 +185,29 @@ public class PlaywrightManager {
 
         // 导航到Boss直聘首页（带重试机制）
         int maxRetries = 3;
+        boolean navigateSuccess = false;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                log.info("正在导航到Boss直聘首页（第{}/{}次尝试）...", attempt, maxRetries);
-
-                // 使用DOMCONTENTLOADED策略，不等待所有资源加载完成
                 bossPage.navigate(BOSS_URL, new Page.NavigateOptions()
-                        .setTimeout(60000) // 增加超时到60秒
-                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)); // 只等待DOM加载完成
-
-                log.info("Boss直聘页面导航成功");
-                break; // 成功则跳出循环
-
+                        .setTimeout(60000)
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+                navigateSuccess = true;
+                break;
             } catch (Exception e) {
-                if (attempt == maxRetries) {
-                    log.error("Boss直聘页面导航失败，已重试{}次", maxRetries, e);
-                } else {
-                    log.warn("Boss直聘页面导航失败（第{}/{}次），错误: {}，2秒后重试...",
-                            attempt, maxRetries, e.getMessage());
+                // Playwright在并发导航时可能抛出 "Object doesn't exist" 异常，但页面实际已加载
+                boolean pageAccessible = false;
+                try {
+                    String url = bossPage.url();
+                    pageAccessible = url != null && url.contains("zhipin.com");
+                } catch (Exception ignored) {
+                }
+
+                if (pageAccessible) {
+                    navigateSuccess = true;
+                    break;
+                }
+
+                if (attempt < maxRetries) {
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException ie) {
@@ -199,43 +217,20 @@ public class PlaywrightManager {
             }
         }
 
+        if (!navigateSuccess) {
+            log.warn("Boss直聘页面导航失败");
+        }
+
         try {
-
-            // 检查是否需要登录
-            if (!checkIfLoggedIn()) {
-                log.info("检测到未登录，导航到登录页面...");
-                bossPage.navigate(BOSS_URL + "/web/user/?ka=header-login");
-                Thread.sleep(1000);
-
-                // 尝试切换到二维码登录（点击“APP扫码登录”按钮）
-                try {
-                    // 新版登录页按钮：<div class="btn-sign-switch ewm-switch"><div class="switch-tip">APP扫码登录</div></div>
-                    Locator qrSwitch = bossPage.locator(".btn-sign-switch.ewm-switch");
-                    if (qrSwitch.count() > 0) {
-                        qrSwitch.click();
-                    } else {
-                        // 兜底：按文本匹配内部提示
-                        Locator tip = bossPage.getByText("APP扫码登录");
-                        if (tip.count() > 0) {
-                            tip.click();
-                            log.info("已点击包含文本的二维码登录切换提示（APP扫码登录）");
-                        } else {
-                            // 兼容旧版选择器
-                            Locator legacy = bossPage.locator("li.sign-switch-tip");
-                            if (legacy.count() > 0) {
-                                legacy.click();
-                                log.info("已通过旧版选择器切换二维码登录（li.sign-switch-tip）");
-                            } else {
-                                log.info("未找到二维码登录切换按钮，保持当前登录页");
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    log.debug("切换二维码登录失败: {}", e.getMessage());
-                }
-            } else {
-                log.info("Boss直聘已登录");
+            // 等待页面网络空闲，确保头部导航渲染完成
+            try {
+                bossPage.waitForLoadState(LoadState.NETWORKIDLE);
+            } catch (Exception e) {
+                log.debug("等待Boss页面网络空闲失败: {}", e.getMessage());
             }
+
+            // 初始化阶段不主动跳转登录页，仅在导航后设置状态
+            // 参考猎聘实现：加载Cookie并导航后，由业务侧决定是否触发后续登录流程
         } catch (Exception e) {
             log.warn("Boss直聘页面导航失败: {}", e.getMessage());
         }
@@ -249,11 +244,35 @@ public class PlaywrightManager {
      * 检查Boss是否已登录
      */
     private boolean checkIfLoggedIn() {
+        // 更稳健的登录判断：优先检测用户头像/昵称是否可见；备用检测登录入口是否可见且包含“登录”文本
         try {
-            return bossPage.locator("li.nav-figure span.label-text").count() > 0;
-        } catch (Exception e) {
-            return false;
-        }
+            Locator userLabel = bossPage.locator("li.nav-figure span.label-text").first();
+            if (userLabel.isVisible()) {
+                return true;
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            // 有些版本仅展示头像入口，无 label-text
+            Locator navFigure = bossPage.locator("li.nav-figure").first();
+            if (navFigure.isVisible()) {
+                return true;
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            // 未登录时通常有“登录/注册”入口或按钮容器
+            Locator loginAnchor = bossPage.locator("li.nav-sign a, .btns").first();
+            if (loginAnchor.isVisible()) {
+                String text = loginAnchor.textContent();
+                if (text != null && text.contains("登录")) {
+                    return false;
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // 无法明确检测到登录特征时，保守返回未登录
+        return false;
     }
 
     /**
@@ -276,14 +295,10 @@ public class PlaywrightManager {
     }
 
     /**
-     * 初始化猎聘平台
+     * 设置猎聘平台（加载Cookie、导航、监控）
      */
-    private void initLiepinPlatform() {
+    private void setupLiepinPlatform() {
         log.info("开始初始化猎聘平台...");
-
-        // 在共享的BrowserContext中创建页面
-        liepinPage = context.newPage();
-        liepinPage.setDefaultTimeout(DEFAULT_TIMEOUT);
 
         // 尝试从数据库加载猎聘平台Cookie到上下文
         try {
@@ -307,24 +322,29 @@ public class PlaywrightManager {
 
         // 导航到猎聘首页（带重试机制）
         int maxRetries = 3;
+        boolean navigateSuccess = false;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                log.info("正在导航到猎聘首页（第{}/{}次尝试）...", attempt, maxRetries);
-
-                // 使用DOMCONTENTLOADED策略，不等待所有资源加载完成
                 liepinPage.navigate(LIEPIN_URL, new Page.NavigateOptions()
-                        .setTimeout(60000) // 增加超时到60秒
-                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)); // 只等待DOM加载完成
-
-                log.info("猎聘页面导航成功");
-                break; // 成功则跳出循环
-
+                        .setTimeout(60000)
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+                navigateSuccess = true;
+                break;
             } catch (Exception e) {
-                if (attempt == maxRetries) {
-                    log.error("猎聘页面导航失败，已重试{}次", maxRetries, e);
-                } else {
-                    log.warn("猎聘页面导航失败（第{}/{}次），错误: {}，2秒后重试...",
-                            attempt, maxRetries, e.getMessage());
+                // Playwright在并发导航时可能抛出 "Object doesn't exist" 异常，但页面实际已加载
+                boolean pageAccessible = false;
+                try {
+                    String url = liepinPage.url();
+                    pageAccessible = url != null && url.contains("liepin.com");
+                } catch (Exception ignored) {
+                }
+
+                if (pageAccessible) {
+                    navigateSuccess = true;
+                    break;
+                }
+
+                if (attempt < maxRetries) {
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException ie) {
@@ -334,15 +354,15 @@ public class PlaywrightManager {
             }
         }
 
+        if (!navigateSuccess) {
+            log.warn("猎聘页面导航失败");
+        }
+
+        // 等待页面网络空闲，确保头部导航渲染完成
         try {
-            // 检查是否需要登录
-            if (!checkIfLiepinLoggedIn()) {
-                log.info("检测到未登录猎聘，保持在首页等待扫码登录");
-            } else {
-                log.info("猎聘已登录");
-            }
+            liepinPage.waitForLoadState(LoadState.NETWORKIDLE);
         } catch (Exception e) {
-            log.warn("猎聘页面初始化检查失败: {}", e.getMessage());
+            log.debug("等待猎聘页面网络空闲失败: {}", e.getMessage());
         }
 
         // 初始化登录状态并通知（如果有SSE连接会立即推送）
@@ -353,12 +373,68 @@ public class PlaywrightManager {
 
     /**
      * 检查猎聘是否已登录
+     * 已登录：能找到用户头像 <img class="header-quick-menu-user-photo" ...>
+     * 未登录：能找到 <span id="header-quick-menu-login">登录/注册</span>
      */
     private boolean checkIfLiepinLoggedIn() {
         try {
-            // 猎聘登录后顶部会显示用户头像或用户名
-            return liepinPage.locator(".user-info, .user-name, a[data-selector='user-name']").count() > 0;
+            // 优先检测已登录特征：用户信息容器或用户头像是否可见
+            try {
+                Locator userInfo = liepinPage.locator("#header-quick-menu-user-info").first();
+                if (userInfo.isVisible()) {
+                    log.debug("猎聘登录检测：用户信息容器可见，判定已登录");
+                    return true;
+                }
+            } catch (Exception ignored) {}
+
+            try {
+                Locator userPhoto = liepinPage.locator("img.header-quick-menu-user-photo, .header-quick-menu-user-photo").first();
+                if (userPhoto.isVisible()) {
+                    log.debug("猎聘登录检测：用户头像可见，判定已登录");
+                    return true;
+                }
+            } catch (Exception ignored) {}
+
+            // 检测未登录入口是否可见
+            boolean loginEntryVisible = false;
+            try {
+                Locator loginEntry = liepinPage.locator("#header-quick-menu-login, a[href*='login']").first();
+                loginEntryVisible = loginEntry.isVisible();
+            } catch (Exception ignored) {}
+
+            if (!loginEntryVisible) {
+                // 无法明确判定时，保守返回未登录，不做页面跳转（交由 setLoginStatus 时机处理）
+                log.debug("猎聘登录检测：未找到清晰的登录或已登录特征，保守判定未登录");
+                return false;
+            }
+
+            // 明确未登录：若不在登录页，导航到登录页并尝试切换二维码
+            try {
+                String currentUrl = null;
+                try { currentUrl = liepinPage.url(); } catch (Exception ignored) {}
+                if (currentUrl == null || !currentUrl.contains("/login")) {
+                    liepinPage.navigate("https://www.liepin.com/login");
+                    try { Thread.sleep(800); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                }
+
+                try {
+                    Locator qrSwitch = liepinPage.locator(".switch-type-mask-img-box").first();
+                    if (qrSwitch.isVisible()) {
+                        qrSwitch.click();
+                        log.info("已切换到猎聘二维码登录页面，等待用户扫码...");
+                    } else {
+                        log.info("未找到二维码切换按钮，保持当前登录页");
+                    }
+                } catch (Exception e) {
+                    log.debug("切换猎聘二维码登录失败: {}", e.getMessage());
+                }
+            } catch (Exception e) {
+                log.debug("导航到猎聘登录页失败: {}", e.getMessage());
+            }
+
+            return false;
         } catch (Exception e) {
+            log.debug("猎聘登录检测异常: {}", e.getMessage());
             return false;
         }
     }
@@ -382,14 +458,10 @@ public class PlaywrightManager {
     }
 
     /**
-     * 初始化51job平台
+     * 设置51job平台（加载Cookie、导航、监控）
      */
-    private void init51jobPlatform() {
+    private void setup51jobPlatform() {
         log.info("开始初始化51job平台...");
-
-        // 在共享的BrowserContext中创建页面
-        job51Page = context.newPage();
-        job51Page.setDefaultTimeout(DEFAULT_TIMEOUT);
 
         // 尝试从数据库加载51job平台Cookie到上下文
         try {
@@ -413,24 +485,29 @@ public class PlaywrightManager {
 
         // 导航到51job首页（带重试机制）
         int maxRetries = 3;
+        boolean navigateSuccess = false;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                log.info("正在导航到51job首页（第{}/{}次尝试）...", attempt, maxRetries);
-
-                // 使用DOMCONTENTLOADED策略，不等待所有资源加载完成
                 job51Page.navigate(JOB51_URL, new Page.NavigateOptions()
-                        .setTimeout(60000) // 增加超时到60秒
-                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)); // 只等待DOM加载完成
-
-                log.info("51job页面导航成功");
-                break; // 成功则跳出循环
-
+                        .setTimeout(60000)
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+                navigateSuccess = true;
+                break;
             } catch (Exception e) {
-                if (attempt == maxRetries) {
-                    log.error("51job页面导航失败，已重试{}次", maxRetries, e);
-                } else {
-                    log.warn("51job页面导航失败（第{}/{}次），错误: {}，2秒后重试...",
-                            attempt, maxRetries, e.getMessage());
+                // Playwright在并发导航时可能抛出 "Object doesn't exist" 异常，但页面实际已加载
+                boolean pageAccessible = false;
+                try {
+                    String url = job51Page.url();
+                    pageAccessible = url != null && url.contains("51job.com");
+                } catch (Exception ignored) {
+                }
+
+                if (pageAccessible) {
+                    navigateSuccess = true;
+                    break;
+                }
+
+                if (attempt < maxRetries) {
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException ie) {
@@ -438,6 +515,10 @@ public class PlaywrightManager {
                     }
                 }
             }
+        }
+
+        if (!navigateSuccess) {
+            log.warn("51job页面导航失败");
         }
 
         try {
@@ -579,14 +660,10 @@ public class PlaywrightManager {
     }
 
     /**
-     * 初始化智联招聘平台
+     * 设置智联招聘平台（加载Cookie、导航、监控）
      */
-    private void initZhilianPlatform() {
+    private void setupZhilianPlatform() {
         log.info("开始初始化智联招聘平台...");
-
-        // 在共享的BrowserContext中创建页面
-        zhilianPage = context.newPage();
-        zhilianPage.setDefaultTimeout(DEFAULT_TIMEOUT);
 
         // 尝试从数据库加载智联招聘平台Cookie到上下文
         try {
@@ -610,24 +687,29 @@ public class PlaywrightManager {
 
         // 导航到智联招聘首页（带重试机制）
         int maxRetries = 3;
+        boolean navigateSuccess = false;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                log.info("正在导航到智联招聘首页（第{}/{}次尝试）...", attempt, maxRetries);
-
-                // 使用DOMCONTENTLOADED策略，不等待所有资源加载完成
                 zhilianPage.navigate(ZHILIAN_URL, new Page.NavigateOptions()
-                        .setTimeout(60000) // 增加超时到60秒
-                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)); // 只等待DOM加载完成
-
-                log.info("智联招聘页面导航成功");
-                break; // 成功则跳出循环
-
+                        .setTimeout(60000)
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+                navigateSuccess = true;
+                break;
             } catch (Exception e) {
-                if (attempt == maxRetries) {
-                    log.error("智联招聘页面导航失败，已重试{}次", maxRetries, e);
-                } else {
-                    log.warn("智联招聘页面导航失败（第{}/{}次），错误: {}，2秒后重试...",
-                            attempt, maxRetries, e.getMessage());
+                // Playwright在并发导航时可能抛出 "Object doesn't exist" 异常，但页面实际已加载
+                boolean pageAccessible = false;
+                try {
+                    String url = zhilianPage.url();
+                    pageAccessible = url != null && url.contains("zhaopin.com");
+                } catch (Exception ignored) {
+                }
+
+                if (pageAccessible) {
+                    navigateSuccess = true;
+                    break;
+                }
+
+                if (attempt < maxRetries) {
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException ie) {
@@ -635,6 +717,10 @@ public class PlaywrightManager {
                     }
                 }
             }
+        }
+
+        if (!navigateSuccess) {
+            log.warn("智联招聘页面导航失败");
         }
 
         try {
@@ -740,6 +826,22 @@ public class PlaywrightManager {
      */
     public void saveZhilianCookiesToDb(String remark) {
         saveZhilianCookiesToDatabase(remark);
+    }
+
+    /**
+     * 统一按平台保存 Cookie 到数据库
+     *
+     * @param platform 平台标识（boss/liepin/51job/zhilian）
+     * @param remark   备注
+     */
+    public void saveCookiesToDb(String platform, String remark) {
+        switch (platform) {
+            case "boss" -> saveBossCookiesToDatabase(remark);
+            case "liepin" -> saveLiepinCookiesToDatabase(remark);
+            case "51job" -> save51jobCookiesToDatabase(remark);
+            case "zhilian" -> saveZhilianCookiesToDatabase(remark);
+            default -> throw new IllegalArgumentException("Unsupported platform: " + platform);
+        }
     }
 
     /**
@@ -876,7 +978,8 @@ public class PlaywrightManager {
         try {
             boolean isLoggedIn = false;
             if (platform.equals("boss")) {
-                isLoggedIn = page.locator("li.nav-figure span.label-text").count() > 0;
+                // 统一复用更稳健的Boss登录判断逻辑
+                isLoggedIn = checkIfLoggedIn();
             }
             // 如果登录状态发生变化（从未登录变为已登录）
             Boolean previousStatus = loginStatus.get(platform);
@@ -954,21 +1057,21 @@ public class PlaywrightManager {
      * 定时检查登录状态（每5秒）
      * 用于捕获通过DOM元素判断登录状态的场景
      */
-    @Scheduled(fixedDelay = 3000)
-    public void scheduledLoginCheck() {
-        if (bossPage != null && !bossMonitoringPaused) {
-            checkLoginStatus(bossPage, "boss");
-        }
-        if (liepinPage != null && !liepinMonitoringPaused) {
-            checkLiepinLoginStatus(liepinPage);
-        }
-        if (job51Page != null && !job51MonitoringPaused) {
-            check51jobLoginStatus(job51Page);
-        }
-        if (zhilianPage != null && !zhilianMonitoringPaused) {
-            checkZhilianLoginStatus(zhilianPage);
-        }
-    }
+//    @Scheduled(fixedDelay = 3000)
+//    public void scheduledLoginCheck() {
+//        if (bossPage != null && !bossMonitoringPaused) {
+//            checkLoginStatus(bossPage, "boss");
+//        }
+//        if (liepinPage != null && !liepinMonitoringPaused) {
+//            checkLiepinLoginStatus(liepinPage);
+//        }
+//        if (job51Page != null && !job51MonitoringPaused) {
+//            check51jobLoginStatus(job51Page);
+//        }
+//        if (zhilianPage != null && !zhilianMonitoringPaused) {
+//            checkZhilianLoginStatus(zhilianPage);
+//        }
+//    }
 
     /**
      * 暂停Boss页面的后台登录监控（避免与业务流程并发操作页面）
@@ -1080,7 +1183,7 @@ public class PlaywrightManager {
     /**
      * 手动设置平台登录状态（会触发SSE通知）
      *
-     * @param platform 平台名称
+     * @param platform   平台名称
      * @param isLoggedIn 是否已登录
      */
     public void setLoginStatus(String platform, boolean isLoggedIn) {
@@ -1089,6 +1192,50 @@ public class PlaywrightManager {
         // 只有状态真正发生变化时才更新和通知
         if (previousStatus == null || previousStatus != isLoggedIn) {
             loginStatus.put(platform, isLoggedIn);
+
+            // Boss平台：在设置未登录状态时，顺带引导到登录页并切换二维码扫码
+            if ("boss".equals(platform) && !isLoggedIn) {
+                try {
+                    if (bossPage != null) {
+                        String currentUrl = null;
+                        try { currentUrl = bossPage.url(); } catch (Exception ignored) {}
+
+                        // 避免重复导航：若当前已在登录页则不再二次跳转
+                        if (currentUrl == null || !currentUrl.contains("/web/user/")) {
+                            bossPage.navigate(BOSS_URL + "/web/user/?ka=header-login");
+                            try { Thread.sleep(800); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                        }
+
+                        // 尝试切换到二维码登录（点击“APP扫码登录”按钮），优先使用新版选择器
+                        try {
+                            Locator qrSwitch = bossPage.locator(".btn-sign-switch.ewm-switch").first();
+                            if (qrSwitch.isVisible()) {
+                                qrSwitch.click();
+                            } else {
+                                // 兜底：按文本匹配内部提示
+                                Locator tip = bossPage.getByText("APP扫码登录").first();
+                                if (tip.isVisible()) {
+                                    tip.click();
+                                    log.info("已点击包含文本的二维码登录切换提示（APP扫码登录）");
+                                } else {
+                                    // 兼容旧版选择器
+                                    Locator legacy = bossPage.locator("li.sign-switch-tip").first();
+                                    if (legacy.isVisible()) {
+                                        legacy.click();
+                                        log.info("已通过旧版选择器切换二维码登录（li.sign-switch-tip）");
+                                    } else {
+                                        log.info("未找到二维码登录切换按钮，保持当前登录页");
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.debug("切换二维码登录失败: {}", e.getMessage());
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("设置Boss未登录状态时执行登录引导失败: {}", e.getMessage());
+                }
+            }
 
             // 通知所有监听器（触发SSE推送）
             LoginStatusChange change = new LoginStatusChange(platform, isLoggedIn, System.currentTimeMillis());
@@ -1120,8 +1267,8 @@ public class PlaywrightManager {
             for (com.fasterxml.jackson.databind.JsonNode node : jsonArray) {
                 // 创建Cookie对象（name和value是必需的）
                 Cookie cookie = new Cookie(
-                    node.get("name").asText(),
-                    node.get("value").asText()
+                        node.get("name").asText(),
+                        node.get("value").asText()
                 );
 
                 // 设置可选字段
@@ -1144,7 +1291,7 @@ public class PlaywrightManager {
                     String sameSite = node.get("sameSite").asText();
                     if (sameSite != null && !sameSite.isEmpty()) {
                         cookie.sameSite = com.microsoft.playwright.options.SameSiteAttribute.valueOf(
-                            sameSite.toUpperCase()
+                                sameSite.toUpperCase()
                         );
                     }
                 }

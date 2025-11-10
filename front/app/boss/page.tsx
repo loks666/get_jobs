@@ -410,9 +410,16 @@ export default function BossPage() {
       })
 
       if (response.ok) {
+        // 统一保存 Cookie（Boss）
+        try {
+          await fetch('http://localhost:8888/api/cookie/save?platform=boss', { method: 'POST' })
+        } catch (e) {
+          console.warn('保存 Cookie 失败（Boss）:', e)
+        }
+
         fetchAllData()
         if (!silent) {
-          setSaveResult({ success: true, message: '保存成功，配置已更新。' })
+          setSaveResult({ success: true, message: '保存成功，配置与Cookie已更新。' })
           setShowSaveDialog(true)
         }
       } else {

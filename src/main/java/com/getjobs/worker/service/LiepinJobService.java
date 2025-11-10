@@ -1,13 +1,23 @@
 package com.getjobs.worker.service;
 
+import com.getjobs.application.entity.LiepinConfigEntity;
+import com.getjobs.application.service.LiepinDataService;
+import com.getjobs.worker.dto.JobProgressMessage;
+import com.getjobs.worker.liepin.Liepin;
+import com.getjobs.worker.liepin.LiepinConfig;
+import com.getjobs.worker.liepin.LiepinEnum;
 import com.getjobs.worker.manager.PlaywrightManager;
+import com.microsoft.playwright.Page;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * 猎聘任务服务
@@ -15,108 +25,155 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Slf4j
 @Service
-public class LiepinJobService {
+@RequiredArgsConstructor
+public class LiepinJobService implements JobPlatformService {
 
-    @Autowired
-    private PlaywrightManager playwrightManager;
+    private static final String PLATFORM = "liepin";
+
+    private final PlaywrightManager playwrightManager;
+    private final LiepinDataService liepinDataService;
+    private final ObjectProvider<Liepin> liepinProvider;
 
     // 运行状态标志
-    private final AtomicBoolean running = new AtomicBoolean(false);
+    private volatile boolean isRunning = false;
 
     // 停止请求标志
-    private final AtomicBoolean stopRequested = new AtomicBoolean(false);
+    private volatile boolean shouldStop = false;
 
-    /**
-     * 检查任务是否正在运行
-     */
-    public boolean isRunning() {
-        return running.get();
-    }
-
-    /**
-     * 执行猎聘投递任务
-     */
-    public void executeDelivery(java.util.function.Consumer<ProgressMessage> progressCallback) {
-        if (running.getAndSet(true)) {
-            log.warn("猎聘任务已在运行中，跳过本次执行");
+    @Override
+    public void executeDelivery(Consumer<JobProgressMessage> progressCallback) {
+        if (isRunning) {
+            progressCallback.accept(JobProgressMessage.warning(PLATFORM, "任务已在运行中"));
             return;
         }
 
-        stopRequested.set(false);
-
         try {
-            log.info("========================================");
-            log.info("  开始执行猎聘投递任务");
-            log.info("========================================");
-
-            // 暂停后台登录监控，避免并发操作页面
-            playwrightManager.pauseLiepinMonitoring();
-
-            progressCallback.accept(new ProgressMessage("liepin", "猎聘投递任务已启动"));
-
-            // TODO: 这里添加实际的猎聘投递逻辑
-            // 可以参考BossJobService的实现
-
-            // 模拟任务执行
-            Thread.sleep(2000);
-
-            if (stopRequested.get()) {
-                log.info("猎聘任务已被用户停止");
-                progressCallback.accept(new ProgressMessage("liepin", "猎聘投递任务已停止"));
-            } else {
-                log.info("猎聘投递任务执行完成");
-                progressCallback.accept(new ProgressMessage("liepin", "猎聘投递任务执行完成"));
+            Page page = playwrightManager.getLiepinPage();
+            if (page == null) {
+                progressCallback.accept(JobProgressMessage.error(PLATFORM, "猎聘页面未初始化"));
+                return;
             }
 
-        } catch (InterruptedException e) {
-            log.warn("猎聘任务被中断");
-            Thread.currentThread().interrupt();
+            if (!playwrightManager.isLoggedIn(PLATFORM)) {
+                progressCallback.accept(JobProgressMessage.error(PLATFORM, "请先登录猎聘"));
+                return;
+            }
+
+            isRunning = true;
+            shouldStop = false;
+
+            // 暂停后台登录监控，避免并发访问冲突
+            playwrightManager.pauseLiepinMonitoring();
+
+            // 加载配置
+            LiepinConfig config = buildWorkerConfig();
+            progressCallback.accept(JobProgressMessage.info(PLATFORM, "配置加载成功"));
+
+            progressCallback.accept(JobProgressMessage.info(PLATFORM, "开始投递任务..."));
+
+            // 创建并执行 Bean
+            Liepin.ProgressCallback cb = (message, current, total) -> {
+                if (current != null && total != null) {
+                    progressCallback.accept(JobProgressMessage.progress(PLATFORM, message, current, total));
+                } else {
+                    progressCallback.accept(JobProgressMessage.info(PLATFORM, message));
+                }
+            };
+
+            Liepin liepin = liepinProvider.getObject();
+            liepin.setPage(page);
+            liepin.setConfig(config);
+            liepin.setProgressCallback(cb);
+            liepin.setShouldStopCallback(this::shouldStop);
+            liepin.prepare();
+
+            int deliveredCount = liepin.execute();
+
+            progressCallback.accept(JobProgressMessage.success(PLATFORM,
+                String.format("投递任务完成，共发起%d个聊天", deliveredCount)));
         } catch (Exception e) {
-            log.error("猎聘任务执行失败", e);
-            progressCallback.accept(new ProgressMessage("liepin", "猎聘投递任务执行失败: " + e.getMessage()));
+            log.error("猎聘投递任务执行失败", e);
+            progressCallback.accept(JobProgressMessage.error(PLATFORM, "投递失败: " + e.getMessage()));
         } finally {
-            running.set(false);
-            stopRequested.set(false);
-            // 恢复后台登录监控
-            playwrightManager.resumeLiepinMonitoring();
-            log.info("猎聘任务已结束");
+            isRunning = false;
+            shouldStop = false;
+            try {
+                playwrightManager.resumeLiepinMonitoring();
+            } catch (Exception ignored) {}
         }
     }
 
-    /**
-     * 停止猎聘投递任务
-     */
+    @Override
     public void stopDelivery() {
-        if (!running.get()) {
+        if (!isRunning) {
             log.warn("猎聘任务未在运行，无需停止");
             return;
         }
-
         log.info("收到停止猎聘任务请求");
-        stopRequested.set(true);
+        shouldStop = true;
     }
 
     /**
      * 获取任务状态
      */
+    @Override
     public Map<String, Object> getStatus() {
         Map<String, Object> status = new HashMap<>();
-        status.put("running", running.get());
-        status.put("stopRequested", stopRequested.get());
-        status.put("platform", "liepin");
+        status.put("platform", PLATFORM);
+        status.put("isRunning", isRunning);
+        status.put("isLoggedIn", playwrightManager.isLoggedIn(PLATFORM));
         return status;
     }
 
-    /**
-     * 进度消息DTO
-     */
-    public record ProgressMessage(String platform, String message) {
-        public String getPlatform() {
-            return platform;
-        }
+    @Override
+    public String getPlatformName() {
+        return PLATFORM;
+    }
 
-        public String getMessage() {
-            return message;
+    @Override
+    public boolean isRunning() {
+        return isRunning;
+    }
+
+    public boolean shouldStop() {
+        return shouldStop;
+    }
+
+    private LiepinConfig buildWorkerConfig() {
+        LiepinConfigEntity entity = liepinDataService.getFirstConfig();
+
+        LiepinConfig config = new LiepinConfig();
+
+        // 关键词解析：支持逗号、中文逗号、或 [a,b] 格式
+        List<String> keywords = new ArrayList<>();
+        if (entity != null && entity.getKeywords() != null) {
+            String raw = entity.getKeywords().trim();
+            raw = raw.replace('，', ',');
+            if (raw.startsWith("[") && raw.endsWith("]")) {
+                raw = raw.substring(1, raw.length() - 1);
+            }
+            for (String s : raw.split(",")) {
+                String t = s.trim();
+                if (!t.isEmpty()) keywords.add(t);
+            }
         }
+        config.setKeywords(keywords);
+
+        // 城市编码：优先从选项表映射名称->代码；若失败则尝试枚举；默认不限
+        String cityCode = "";
+        if (entity != null && entity.getCity() != null && !entity.getCity().isEmpty()) {
+            cityCode = liepinDataService.getCodeByTypeAndName("city", entity.getCity());
+            if (cityCode == null || cityCode.isEmpty()) {
+                cityCode = LiepinEnum.CityCode.forValue(entity.getCity()).getCode();
+            }
+        }
+        if (cityCode == null) cityCode = "";
+        config.setCityCode(cityCode);
+
+        // 薪资代码
+        String salaryCode = entity != null ? entity.getSalaryCode() : null;
+        config.setSalary(salaryCode != null ? salaryCode : "");
+
+        return config;
     }
 }

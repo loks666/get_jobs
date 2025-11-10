@@ -158,8 +158,15 @@ export default function LiepinPage() {
       })
 
       if (response.ok) {
+        // 统一保存 Cookie（Liepin）
+        try {
+          await fetch('http://localhost:8888/api/cookie/save?platform=liepin', { method: 'POST' })
+        } catch (e) {
+          console.warn('保存 Cookie 失败（Liepin）:', e)
+        }
+
         fetchAllData()
-        setSaveResult({ success: true, message: '保存成功，配置已更新。' })
+        setSaveResult({ success: true, message: '保存成功，配置与Cookie已更新。' })
         setShowSaveDialog(true)
       } else {
         console.warn('保存失败：后端返回非 2xx 状态')

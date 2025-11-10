@@ -96,7 +96,7 @@ export default function ZhilianPage() {
 
   const handleSaveCookie = async () => {
     try {
-      const response = await fetch('http://localhost:8888/api/zhilian/save-cookie', { method: 'POST' })
+      const response = await fetch('http://localhost:8888/api/cookie/save?platform=zhilian', { method: 'POST' })
       const data = await response.json()
       setSaveResult({ success: data.success, message: data.success ? '配置保存成功。' : data.message })
       setShowSaveDialog(true)

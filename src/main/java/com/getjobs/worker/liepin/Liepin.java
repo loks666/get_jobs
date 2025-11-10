@@ -1,11 +1,11 @@
 package com.getjobs.worker.liepin;
 
-import com.getjobs.worker.utils.JobUtils;
 import com.getjobs.worker.utils.PlaywrightUtil;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,10 +16,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static com.getjobs.worker.liepin.Locators.*;
-import static com.getjobs.worker.utils.Bot.sendMessageByTime;
-import static com.getjobs.worker.utils.JobUtils.formatDuration;
 
 
 /**
@@ -27,19 +26,84 @@ import static com.getjobs.worker.utils.JobUtils.formatDuration;
  * 项目链接: <a href="https://github.com/loks666/get_jobs">https://github.com/loks666/get_jobs</a>
  */
 @Slf4j
+@Component
+@Scope("prototype")
 public class Liepin {
     static {
         // 在类加载时就设置日志文件名，确保Logger初始化时能获取到正确的属性
         System.setProperty("log.name", "liepin");
     }
 
-    static String homeUrl = "https://www.liepin.com/";
-    static String cookiePath = "./src/main/java/liepin/cookie.json";
-    static int maxPage = 50;
-    static List<String> resultList = new ArrayList<>();
-    static String baseUrl = "https://www.liepin.com/zhaopin/?";
-    static LiepinConfig config = LiepinConfig.init();
-    static Date startDate;
+    private int maxPage = 50;
+    private final List<String> resultList = new ArrayList<>();
+    private final String baseUrl = "https://www.liepin.com/zhaopin/?";
+    private LiepinConfig config;
+    private Date startDate;
+    private Page page;
+
+    public interface ProgressCallback {
+        void onProgress(String message, Integer current, Integer total);
+    }
+
+    private ProgressCallback progressCallback;
+    private Supplier<Boolean> shouldStopCallback;
+
+    public void setPage(Page page) {
+        this.page = page;
+    }
+
+    public void setConfig(LiepinConfig config) {
+        this.config = config;
+    }
+
+    public void setProgressCallback(ProgressCallback progressCallback) {
+        this.progressCallback = progressCallback;
+    }
+
+    public void setShouldStopCallback(Supplier<Boolean> shouldStopCallback) {
+        this.shouldStopCallback = shouldStopCallback;
+    }
+
+    public void prepare() {
+        this.startDate = new Date();
+        this.resultList.clear();
+    }
+
+    public int execute() {
+        if (page == null) {
+            throw new IllegalStateException("Liepin.page 未设置");
+        }
+        if (config == null) {
+            throw new IllegalStateException("Liepin.config 未设置");
+        }
+
+        List<String> keywords = config.getKeywords();
+        if (keywords == null || keywords.isEmpty()) {
+            log.warn("未配置关键词，执行结束");
+            return 0;
+        }
+
+        for (String keyword : keywords) {
+            if (shouldStop()) {
+                info("收到停止指令，提前结束关键词循环");
+                break;
+            }
+            submit(keyword);
+        }
+        return resultList.size();
+    }
+
+    private boolean shouldStop() {
+        return shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get());
+    }
+
+    private void info(String msg) {
+        if (progressCallback != null) {
+            progressCallback.onProgress(msg, null, null);
+        } else {
+            log.info(msg);
+        }
+    }
 
     /**
      * 保存页面源码到日志和文件，用于调试
@@ -66,28 +130,7 @@ public class Liepin {
 
 
 
-    public static void main(String[] args) {
-        PlaywrightUtil.init();
-        startDate = new Date();
-        login();
-        for (String keyword : config.getKeywords()) {
-            submit(keyword);
-        }
-        printResult();
-    }
-
-    private static void printResult() {
-        String message = String.format("\n猎聘投递完成，共投递%d个岗位，用时%s", resultList.size(), formatDuration(startDate, new Date()));
-        log.info(message);
-        sendMessageByTime(message);
-        resultList.clear();
-        PlaywrightUtil.close();
-    }
-
-
-    @SneakyThrows
-    private static void submit(String keyword) {
-        Page page = PlaywrightUtil.getPageObject();
+    private void submit(String keyword) {
         page.navigate(getSearchUrl() + "&key=" + keyword);
         
         // 等待分页元素加载
@@ -97,6 +140,10 @@ public class Liepin {
         setMaxPage(lis);
         
         for (int i = 0; i < maxPage; i++) {
+            if (shouldStop()) {
+                info("收到停止指令，结束分页循环");
+                return;
+            }
             try {
                 // 尝试关闭订阅弹窗
                 Locator closeBtn = page.locator(SUBSCRIBE_CLOSE_BTN);
@@ -108,9 +155,9 @@ public class Liepin {
             
             // 等待岗位卡片加载
             page.waitForSelector(JOB_CARDS, new Page.WaitForSelectorOptions().setTimeout(10000));
-            log.info("正在投递【{}】第【{}】页...", keyword, i + 1);
+            info(String.format("正在投递【%s】第【%d】页...", keyword, i + 1));
             submitJob();
-            log.info("已投递第【{}】页所有的岗位...\n", i + 1);
+            info(String.format("已投递第【%d】页所有的岗位...", i + 1));
             
             // 查找下一页按钮
             paginationBox = page.locator(PAGINATION_BOX);
@@ -122,19 +169,24 @@ public class Liepin {
                 break;
             }
         }
-        log.info("【{}】关键词投递完成！", keyword);
+        info(String.format("【%s】关键词投递完成！", keyword));
     }
 
-    private static String getSearchUrl() {
-        return baseUrl +
-                JobUtils.appendParam("city", config.getCityCode()) +
-                JobUtils.appendParam("salary", config.getSalary()) +
-                JobUtils.appendParam("pubTime", config.getPubTime()) +
-                "&currentPage=" + 0 + "&dq=" + config.getCityCode();
+    private String getSearchUrl() {
+        StringBuilder sb = new StringBuilder(baseUrl);
+        // 直接拼接参数，参数为空则忽略
+        if (config.getCityCode() != null && !config.getCityCode().isEmpty()) {
+            sb.append("city=").append(config.getCityCode()).append("&");
+            sb.append("dq=").append(config.getCityCode()).append("&");
+        }
+        if (config.getSalary() != null && !config.getSalary().isEmpty()) {
+            sb.append("salary=").append(config.getSalary()).append("&");
+        }
+        sb.append("currentPage=0");
+        return sb.toString();
     }
 
-
-    private static void setMaxPage(Locator lis) {
+    private void setMaxPage(Locator lis) {
         try {
             int count = lis.count();
             if (count >= 2) {
@@ -148,8 +200,7 @@ public class Liepin {
         }
     }
 
-    private static void submitJob() {
-        Page page = PlaywrightUtil.getPageObject();
+    private void submitJob() {
         
         // 等待页面完全加载
         // try {
@@ -171,6 +222,10 @@ public class Liepin {
         int count = jobCards.count();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; i++) {
+            if (shouldStop()) {
+                info("收到停止指令，结束卡片遍历");
+                return;
+            }
 
             Locator jobTitleElements = page.locator(JOB_TITLE);
             Locator companyNameElements = page.locator(COMPANY_NAME);
@@ -394,7 +449,7 @@ public class Liepin {
                         
                         resultList.add(sb.append("【").append(companyName).append(" ").append(jobName).append(" ").append(salary).append(" ").append(recruiterName).append(" ").append("】").toString());
                         sb.setLength(0);
-                        log.info("成功发起聊天:【{}】的【{}·{}】岗位", companyName, jobName, salary);
+                        info(String.format("成功发起聊天:【%s】的【%s·%s】岗位", companyName, jobName, salary));
                         
                     } catch (Exception e) {
                         log.warn("关闭聊天窗口失败，但投递可能已成功: {}", e.getMessage());
@@ -422,99 +477,4 @@ public class Liepin {
             // PlaywrightUtil.sleep(1);
         }
     }
-
-    @SneakyThrows
-    private static void login() {
-        log.info("正在打开猎聘网站...");
-        Page page = PlaywrightUtil.getPageObject();
-        page.navigate(homeUrl);
-        log.info("猎聘正在登录...");
-        
-        if (PlaywrightUtil.isCookieValid(cookiePath)) {
-            PlaywrightUtil.loadCookies(cookiePath);
-            page.reload();
-        }
-        
-        page.waitForSelector(HEADER_LOGO, new Page.WaitForSelectorOptions().setTimeout(10000));
-        
-        if (isLoginRequired()) {
-            log.info("cookie失效，尝试扫码登录...");
-            scanLogin();
-            PlaywrightUtil.saveCookies(cookiePath);
-        } else {
-            log.info("cookie有效，准备投递...");
-        }
-    }
-
-    private static boolean isLoginRequired() {
-        Page page = PlaywrightUtil.getPageObject();
-        String currentUrl = page.url();
-        return !currentUrl.contains("c.liepin.com");
-    }
-
-    private static void scanLogin() {
-        try {
-            Page page = PlaywrightUtil.getPageObject();
-            
-            // 点击切换登录类型按钮
-            Locator switchBtn = page.locator(LOGIN_SWITCH_BTN);
-            if (switchBtn.count() > 0) {
-                switchBtn.click();
-            }
-            
-            log.info("等待扫码..");
-
-            // 记录开始时间
-            long startTime = System.currentTimeMillis();
-            long maxWaitTime = 10 * 60 * 1000; // 10分钟，单位毫秒
-
-            // 主循环，直到登录成功或超时
-            while (true) {
-                try {
-                    // 检查是否已登录
-                    Locator loginButtons = page.locator(LOGIN_BUTTONS);
-                    if (loginButtons.count() > 0) {
-                        String login = loginButtons.first().textContent();
-                        if (!login.contains("登录")) {
-                            log.info("用户扫码成功，继续执行...");
-                            break;
-                        }
-                    }
-                } catch (Exception ignored) {
-                    try {
-                        Locator userInfo = page.locator(USER_INFO);
-                        if (userInfo.count() > 0) {
-                            String login = userInfo.first().textContent();
-                            if (login.contains("你好")){
-                                break;
-                            }
-                        }
-                    } catch (Exception e) {
-                        log.error("获取登录状态失败！");
-                    }
-                }
-
-                // 检查是否超过最大等待时间
-                long elapsedTime = System.currentTimeMillis() - startTime;
-                if (elapsedTime > maxWaitTime) {
-                    log.error("登录超时，10分钟内未完成扫码登录，程序将退出。");
-                    PlaywrightUtil.close(); // 关闭浏览器
-                    return; // 返回而不是退出整个程序
-                }
-                PlaywrightUtil.sleep(1);
-            }
-
-            // 登录成功后，保存Cookie
-            PlaywrightUtil.saveCookies(cookiePath);
-            log.info("登录成功，Cookie已保存。");
-
-        } catch (Exception e) {
-            log.error("scanLogin() 失败: {}", e.getMessage());
-            PlaywrightUtil.close(); // 关闭浏览器
-            return; // 返回而不是退出整个程序
-        }
-    }
-
-
-
 }

@@ -118,7 +118,7 @@ export default function Job51Page() {
 
   const handleSaveCookie = async () => {
     try {
-      const response = await fetch('http://localhost:8888/api/51job/save-cookie', { method: 'POST' })
+      const response = await fetch('http://localhost:8888/api/cookie/save?platform=51job', { method: 'POST' })
       const data = await response.json()
       setSaveResult({ success: data.success, message: data.success ? '配置保存成功。' : data.message })
       setShowSaveDialog(true)

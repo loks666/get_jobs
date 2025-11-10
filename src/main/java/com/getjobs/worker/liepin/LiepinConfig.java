@@ -28,13 +28,6 @@ public class LiepinConfig {
     private String salary;
 
 
-
-    /**
-     * 发布时间
-     */
-    private String pubTime;
-
-
     @SneakyThrows
     public static LiepinConfig init() {
         LiepinConfig config = JobUtils.getConfig(LiepinConfig.class);
