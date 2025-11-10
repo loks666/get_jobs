@@ -15,10 +15,13 @@ export default function AiConfigPage() {
   })
 
   const [loading, setLoading] = useState(false)
+  // 是否启用AI（映射 boss_config.enable_ai）
+  const [enableAi, setEnableAi] = useState<number>(0)
 
   // 加载AI配置
   useEffect(() => {
     fetchAiConfig()
+    fetchEnableAi()
   }, [])
 
   const fetchAiConfig = async () => {
@@ -45,6 +48,54 @@ export default function AiConfigPage() {
       console.error('加载AI配置失败:', error)
       // 如果加载失败，使用默认值，不影响用户使用
       console.log('使用默认配置')
+    }
+  }
+
+  // 加载 boss_config 的 enable_ai 字段
+  const fetchEnableAi = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/boss/config', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      const raw = result?.config?.enableAi
+      const val = String(raw ?? '').trim().toLowerCase()
+      setEnableAi(val === '1' || val === 'true' || val === 'on' ? 1 : Number(raw) === 1 ? 1 : 0)
+    } catch (e) {
+      console.error('加载enable_ai失败:', e)
+    }
+  }
+
+  // 切换 AI 开关并保存到 boss_config
+  const toggleEnableAi = async () => {
+    try {
+      const next = enableAi ? 0 : 1
+      setEnableAi(next)
+      const response = await fetch('http://localhost:8888/api/boss/config', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enableAi: next }),
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      // 可选：校验返回体
+      // const updated = await response.json()
+    } catch (e) {
+      console.error('更新enable_ai失败:', e)
+      // 回滚
+      setEnableAi((prev) => (prev ? 0 : 1))
+      alert('切换失败，请检查后端服务连接')
     }
   }
 
@@ -83,17 +134,42 @@ export default function AiConfigPage() {
         subtitle="配置AI相关的技能介绍和提示词"
         iconClass="text-white"
         accentBgClass="bg-purple-500"
+        actions={
+          <Button
+            onClick={handleSave}
+            size="sm"
+            className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            type="button"
+            disabled={loading}
+          >
+            <BiSave className="mr-1" /> 保存配置
+          </Button>
+        }
       />
 
       <div className="space-y-6">
         {/* AI配置 */}
         <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BiBrain className="text-primary" />
-              AI配置
-            </CardTitle>
-            <CardDescription>配置AI相关的技能介绍和提示词，用于生成个性化求职内容</CardDescription>
+          <CardHeader className="flex items-start gap-4">
+            <div className="min-w-0 space-y-2">
+              <CardTitle className="flex items-center gap-2">
+                <BiBrain className="text-primary" />
+                AI配置
+              </CardTitle>
+              <CardDescription>配置AI相关的技能介绍和提示词，用于生成个性化求职内容</CardDescription>
+            </div>
+            <div>
+              <button
+                type="button"
+                aria-label="AI启用开关"
+                onClick={toggleEnableAi}
+                className={`relative inline-flex h-7 w-14 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400/40 border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,.25)] ${enableAi ? 'bg-emerald-500/80 hover:bg-emerald-500' : 'bg-white/10 hover:bg-white/15'}`}
+              >
+                <span
+                  className={`absolute top-1 left-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${enableAi ? 'translate-x-7' : 'translate-x-0'}`}
+                />
+              </button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
@@ -160,13 +236,7 @@ export default function AiConfigPage() {
           </CardContent>
         </Card>
 
-        {/* 操作按钮 */}
-        <div className="flex justify-center items-center animate-in fade-in slide-in-from-bottom-7 duration-700">
-          <Button onClick={handleSave} size="lg" className="min-w-[180px]" disabled={loading}>
-            <BiSave />
-            {loading ? '保存中...' : '保存AI配置'}
-          </Button>
-        </div>
+        {/* 操作按钮（已迁移到右上角 PageHeader.actions，保持与环境配置一致） */}
       </div>
     </div>
   )

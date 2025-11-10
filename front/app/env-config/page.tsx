@@ -14,11 +14,14 @@ export default function EnvConfig() {
     baseUrl: '',
     apiKey: '',
     model: '',
+    botIsSend: 0,
   })
 
   const [showApiKey, setShowApiKey] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
   // 从数据库加载配置
   const fetchConfig = async () => {
@@ -43,6 +46,11 @@ export default function EnvConfig() {
           baseUrl: result.data.BASE_URL || '',
           apiKey: result.data.API_KEY || '',
           model: result.data.MODEL || '',
+          botIsSend: (() => {
+            const raw = result.data.BOT_IS_SEND
+            const val = String(raw ?? '').trim().toLowerCase()
+            return val === '1' || val === 'true' ? 1 : 0
+          })(),
         })
       }
     } catch (error) {
@@ -57,7 +65,7 @@ export default function EnvConfig() {
     fetchConfig()
   }, [])
 
-  const handleSave = async () => {
+  const handleSave = async (silent: boolean = false) => {
     try {
       setSaving(true)
 
@@ -66,6 +74,7 @@ export default function EnvConfig() {
         BASE_URL: envConfig.baseUrl,
         API_KEY: envConfig.apiKey,
         MODEL: envConfig.model,
+        BOT_IS_SEND: String(envConfig.botIsSend ?? 0),
       }
 
       const response = await fetch('http://localhost:8888/api/config', {
@@ -83,13 +92,19 @@ export default function EnvConfig() {
       const result = await response.json()
 
       if (result.success) {
-        alert(`环境变量配置已保存！共更新 ${result.updateCount} 项`)
+        if (!silent) {
+          setSaveResult({ success: true, message: '保存成功' })
+          setShowSaveDialog(true)
+        }
       } else {
         throw new Error(result.message || '保存配置失败')
       }
     } catch (error) {
       console.error('保存配置失败:', error)
-      alert('保存配置失败: ' + error)
+      if (!silent) {
+        setSaveResult({ success: false, message: '保存配置失败：网络或服务异常。' })
+        setShowSaveDialog(true)
+      }
     } finally {
       setSaving(false)
     }
@@ -101,6 +116,15 @@ export default function EnvConfig() {
         icon={<BiCodeAlt className="text-2xl" />}
         title="环境变量配置"
         subtitle=".env_template 环境变量管理"
+        actions={
+          <Button
+            onClick={() => handleSave(false)}
+            size="sm"
+            className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+          >
+            <BiSave className="mr-1" /> 保存配置
+          </Button>
+        }
       />
 
       {loading && (
@@ -114,12 +138,26 @@ export default function EnvConfig() {
       <div className="space-y-6">
         {/* 企业微信 Webhook */}
         <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BiLinkExternal className="text-primary" />
-              企业微信 Webhook
-            </CardTitle>
-            <CardDescription>配置企业微信群机器人，用于接收通知消息</CardDescription>
+          <CardHeader className="flex items-start gap-4">
+            <div className="min-w-0 space-y-2">
+              <CardTitle className="flex items-center gap-2">
+                <BiLinkExternal className="text-primary" />
+                企业微信 Webhook
+              </CardTitle>
+              <CardDescription>配置企业微信群机器人，用于接收通知消息</CardDescription>
+            </div>
+            <div>
+              <button
+                type="button"
+                aria-label="企业微信发送开关"
+                onClick={() => setEnvConfig({ ...envConfig, botIsSend: envConfig.botIsSend ? 0 : 1 })}
+                className={`relative inline-flex h-7 w-14 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400/40 border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,.25)] ${envConfig.botIsSend ? 'bg-emerald-500/80 hover:bg-emerald-500' : 'bg-white/10 hover:bg-white/15'}`}
+              >
+                <span
+                  className={`absolute top-1 left-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${envConfig.botIsSend ? 'translate-x-7' : 'translate-x-0'}`}
+                />
+              </button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -229,13 +267,34 @@ export default function EnvConfig() {
           </CardContent>
         </Card>
 
-        {/* 操作按钮 */}
-        <div className="flex justify-center items-center animate-in fade-in slide-in-from-bottom-9 duration-700">
-          <Button onClick={handleSave} size="lg" className="min-w-[180px]" disabled={loading || saving}>
-            <BiSave />
-            {saving ? '保存中...' : '保存环境变量'}
-          </Button>
-        </div>
+        {/* 操作按钮已移至页头右上角 */}
+
+        {/* 保存结果弹框 —— 与 Boss 配置一致样式 */}
+        {showSaveDialog && saveResult && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" role="dialog" aria-modal="true">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-[92%] max-w-sm border border-gray-200 dark:border-neutral-800 animate-in fade-in zoom-in-95">
+              <Card className="border-0">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BiSave className={saveResult.success ? 'text-green-500' : 'text-red-500'} />
+                    {saveResult.success ? '保存成功' : '保存失败'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-sm text-muted-foreground mb-4">{saveResult.message}</p>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      onClick={() => setShowSaveDialog(false)}
+                      className={`rounded-full px-4 ${saveResult.success ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white'}`}
+                    >
+                      知道了
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
