@@ -26,6 +26,7 @@ CLAUDE.md
 .claude
 nul
 getjobs.local.db
+getjobs.db
 # Playwright
 .playwright/
 ms-playwright/
