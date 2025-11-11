@@ -1,13 +1,4 @@
-### 驱动配置
-
-driver目前路径：[src/main/resources/chromedriver.exe](../src/main/resources/chromedriver.exe)
-，Chrome需要更新到最新版本。  
-如启动报错，则是因为版本升级导致，需要更新版本  
-driver 下载链接：https://googlechromelabs.github.io/chrome-for-testing
-
-<img src="../src/main/resources/images/driver.png" alt="driver下载页面" width="800" />
-
-### JDK17
+### JDK21
 
 下载链接：https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html
 
@@ -36,7 +27,7 @@ driver 下载链接：https://googlechromelabs.github.io/chrome-for-testing
 注意：你的 JDK 安装目录应该包含 bin、lib 等子目录，以及 src.zip、LICENSE 等文件。例如，如果你在 Windows 上安装了 JDK，那么你的
 JDK 安装目录可能是 C:\Program Files\Java\jdk1.8.0_231（这个路径可能会因为你的 JDK 版本和安装位置不同而不同）。
 
-### Maven
+### Maven or gradle
 
 下载链接：https://maven.apache.org/download.cgi
 

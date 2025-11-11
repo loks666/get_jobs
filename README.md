@@ -24,36 +24,19 @@
 </p>
 </div>
 
-- [如何使用本程序寻找程序兼职岗位?](doc/part_job.md)
-- [你找不到工作，是因为大环境不好吗？【很重要】](doc/doc.md)
-- [少侠，请立即开始，你精彩的人生吧！【源自L站】](doc/just_do_it.md)
-- [许愿墙](https://fcv1y6gslc.feishu.cn/sheets/JS45sElqAhKhawtTzsYcftymnFe)
-
-    - 如果你有你心仪的工作，请在我这里许下愿望，如果实现了，请记得回来更新状态
-    - 许愿墙为飞书文档，你可以编辑好以后，导出为xlsx文档，然后覆盖本项目中resources文件夹中的"**许愿墙.xlsx**"文档
-    - 接下来，你就可以把xlsx文档，提交到main分支，然后……你就是本项目的开发者之一了。
-    - 你可以在你的简历中加上一条，Github，热门开源项目开发者之一。
-    - 但是你需要尽可能的，熟悉本项目的逻辑，去想象某一块功能就是你做的，这样可以更从容，更优雅的"吹牛逼”。
-    - 只要你相信你自己，本项目就会帮你，你要记住，是你自己拯救的你自己。
-
-> 需要注意的是，提交pr的commit:请固定使用"✨I can do it！“，然后提交pr即可，剩下的，我全都搞定啦！
-
 - 📌 **目前该项目存在的问题**
-    - 当前招聘市场，有效的软件仅有 Boss 和 猎聘(有少部分岗位)。
+    - 当前智联招聘平台有问题，其他平台可正常使用。
     - 如果 Boss 出现掉线等问题，请注意两点：
         1. 当天停止投递，第二天接着投，否则可能会封号。
     - **最重要的事情：不要依赖程序投递 Boss！！！**   
       手机上的 Boss，比本程序网页端靠谱得多。当你手机投的很累，又没有投够 100 个，请再使用本程序的 Boss 投递！
-    - 本项目为 GitHub 热门开源项目，目前已申请 Intelli 的开源支持计划。加入开发组意味着你可以获得 Intelli 编辑器官方的*
-      *免费全家桶永久使用权**，欢迎联系我！
-    - 本项目遵循 MIT 协议。是的，你可以商业化，但是——**真心希望你能帮助更多人，团结起来！**
+    - 本项目已改为禁止商业化的开源协议,请勿将此项目进行商业化**
     - [【重要】跳转到文末更新日志](#-更新日志)
 
 ### 🌴源码地址
 
 - Github(国外访问)：https://github.com/loks666/get_jobs
 - Gitee·码云(中国大陆)：https://gitee.com/lok666/get_jobs
-- GitCode(中国大陆)：https://gitcode.com/super_journey/get_jobs
 
 ### AI代理购买
 
@@ -63,7 +46,6 @@
 
 - **💥 AI 智能匹配**：AI检测岗位匹配度，并根据JD自动撰写个性化的打招呼语（仅限 Boss 直聘）。
 - **📷️ 图片简历**：Boos直聘可在发送打招呼语后自动发送图片简历，无须等待HR索要简历，有效提高回复率。
-- **⏰ 定时投递**：一键投递所有平台，可设置定时投递，第二天自动重新投递，省时省力。
 - **🔎 智能过滤**：自动过滤 **不活跃 HR**、**猎头岗位**、**目标薪资**，让你的简历投递更精准。
 - **📢 实时通知**：通过企业微信消息推送，实时掌握简历投递情况，不错过任何机会。
 - **🚫 黑名单功能**：自动更新黑名单企业，避免重复投递不合适的公司，提高投递效率。
@@ -91,30 +73,13 @@ git clone https://github.com/loks666/get_jobs.git
 cd get_jobs
 ```
 
-### 2️⃣ 环境配置:JDK21、Maven、Chrome
+### 2️⃣ 环境配置:Gradle、JDK21
 
 - 目前程序自动判断系统环境，自动下载对应的chromedriver，并进行浏览器操作，需解决网络问题。
 
 更多环境配置详情请点击：📚 [环境配置](https://github.com/loks666/get_jobs/wiki/环境配置)
 
-### 3️⃣ 修改配置文件(一般默认即可,需要修改自己的地区和岗位)
-
-- 🔩 通用配置
-
-    - 日志文件在 **target/logs** 目录下，所有日志都会输出在以运行日期结尾的日志文件中
-    - **Constant.WAIT_TIME**：超时等待时间，单位秒，用于等待页面加载
-    - **cookie登录**: 扫码后会自动保存**cookie.json**文件在代码运行目录下，换号直接删除**cookie.json**即可
-    - 每个平台的配置转换码都在平台文件夹下的Enum类里，找到相应的代码添加到类中即可
-
-- 📢 企业微信消息推送设置
-
-    - 把[.env_template](src/main/resources/.env_template)文件重命名为 `.env`
-    - 在企业微信中创建一个群聊，然后添加机器人，获取到机器人URL，复制到 `.env`文件中的 `HOOK_URL`即可
-    - 保持[config.yaml](src/main/resources/config.yaml)文件中 `bot.is_send`为true
-    - 企业微信推送示例
-      <img src="src/main/resources/images/companyWechat.png" alt="企业微信推送示例">
-
-  > 完成以上配置，在每个平台投递结束简历后，便会在企业微信的群聊内，推送岗位的投递情况，无须改动其他代码
+### 3️⃣ 网页端修改配置，并保存(一般默认即可,需要修改自己的地区和岗位)
 
 - 🤖 AI配置
 
@@ -140,10 +105,6 @@ cd get_jobs
     - AI生成的打招呼语示例  
       <img src="src/main/resources/images/AiSayHi.png" alt="AI生成的打招呼语示例">
 
-- ⚙️ **最重要的配置文件**（[💥config.yaml💥](src/main/resources/config.yaml))
-  > 因为配置文主要改动较多，所以不放在自述文件中，请自己根据需要修改
-
-
 - boss直聘([Boss.java](src/main/java/boss/Boss.java))【喜大普奔，目前Boss打招呼上限已修改为每日150次】
 
   > 注意：设置配置文件的sayHi为你的打招呼语，否则会投递失败
@@ -155,15 +116,6 @@ cd get_jobs
   > 在resources文件夹下，将自己的pdf简历转换为resume.jpg，同时配置项sendImgResume为ture，即可自动发送图片简历
   > pdf转图片需要wps会员，如果找不到相关工具，可联系群主帮忙转换，5r/次
 
-- 目标薪资设置：expectedSalary: [ 25,35 ]
-    - 单位为K，第一个数字为最低薪资，第二个数字为最高薪资，只填一个数字默认为只要求最低薪水，不要求最高薪水
-
-  ```
-  data.json //黑名单数据，在投递结束后会查询聊天记录寻找不合适的公司添加进去
-      ├── blackCompanies: List.of("复深蓝"); // 公司黑名单，多个用逗号分隔
-      ├── blackRecruiters: List.of("猎头"); // 排除招聘人员，比如猎头
-      └── blackJobs: List.of("外包", "外派"); // 排除岗位，比如外包，外派
-  ```
 - 猎聘([Liepin.java](src/main/java/liepin/Liepin.java))【默认打招呼无上限，主动发消息有上限，成功率不高，好在量大，较为推荐】
 
   > 注意：需要在猎聘App最新版设置打招呼语(默或者自定义皆可)，即可自动发送消息，不会被限制
@@ -176,14 +128,6 @@ cd get_jobs
   > 现在投递一段时间后会出现投递上限
   > 目前的解决方式是投一页暂停10秒，先这么着吧
 
-- 拉勾([Lagou.java](src/main/java/lagou/Lagou.java))【拉钩已被51job收购，目前属于僵尸公司，此平台本项目已放弃更新】
-
-  > 默认使用微信扫码，请绑定微信账号
-  > 拉勾需要指定默认投递简历(在线简历 or 附件简历)，否则会投递失败
-  > 拉勾直接使用的是微信扫码登录，运行后直接扫码即可，开箱通用
-  > 但是拉勾由于反爬机制较为严重，代码中嵌套了大量的sleep，导致效率较慢
-  > 这边建议拉勾的脚本运行一段时间后差不多就行了，配合手动在app或者微信小程序投递简历效果更佳！
-
 - 智联招聘([ZhiLian.java](src/main/java/zhilian/ZhiLian.java))【投递上限100左右，烂掉了，不要用】
 
   > 智联招聘需要指定默认投递简历(在线简历 or 附件简历)，否则会投递失败
@@ -191,47 +135,24 @@ cd get_jobs
 
 ### 4️⃣ 运行代码
 
-- 🏃🏻‍♂️‍➡️ 直接运行你想要投递平台的下的代码即可
-  ![运行图片](src/main/resources/images/run1.png)
-
-### 5️⃣ 定时投递
-
-- 目前默认 Boss 会定时投递两次，时间可在代码中调整
-- 定时由 Spring `@Scheduled` 管理，示例：`PlaywrightManager`（`src/main/java/com/getjobs/worker/manager/PlaywrightManager.java`）
-- 首次启动立即投递一次，第二天在设定时间再次投递，时间可以在代码中修改
+- 🏃🏻‍♂️‍➡️ 运行启动类即可[GetJobsApplication.java](src/main/java/com/getjobs/GetJobsApplication.java)
 
 ---
 
-### ️ 6️⃣ 批量投递
+### 运行截图
 
-- 建议直接运行 Spring Boot 应用，统一由 `@Scheduled` 任务触发批量投递
-- 如需自定义批量策略，可在 `PlaywrightManager` 中调整任务启停与时间
-
-### 7️⃣ AI 测试接口
-
-- GET `/api/ai/chat?content=你好`
-- 位置：`src/main/java/com/getjobs/application/controller/AiConfigController.java`
-- 示例：
-  - `curl -G "http://localhost:8080/api/ai/chat" --data-urlencode "content=你好"`
-- 配置要求：`BASE_URL`、`API_KEY`、`MODEL` 正确；兼容 Azure OpenAI（使用 `Authorization: Bearer` 与 `api-key`）
-
-### 更新说明（近期）
-
-- 移除 `src/main/java/com/getjobs/worker/StartAll.java`，批量任务统一由 Spring `@Scheduled` 管理。
-- 移除 `src/main/java/com/getjobs/worker/ai/*`，同时清理相关文档引用。
-- 删除 `SpringContextHolder.java`，所有依赖均通过 Spring 注入与管理。
-
-### ✍🏼 例:Boss投递日志
-
-<img src="src/main/resources/images/boss.png" alt="Boss投递日志">
-
-### ✍🏼 猎聘投递日志
-
-<img src="src/main/resources/images/liepin.png" alt="猎聘投递日志">
-
-### ✍🏼 寻找城市码
-
-<img src="src/main/resources/images/getCity.png" alt="猎聘投递日志">
+![运行日志.png](doc/imgs/%E8%BF%90%E8%A1%8C%E6%97%A5%E5%BF%97.png)
+![环境变量配置.png](doc/imgs/%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E9%85%8D%E7%BD%AE.png)
+![AI配置.png](doc/imgs/AI%E9%85%8D%E7%BD%AE.png)
+![boss配置.png](doc/imgs/boss%E9%85%8D%E7%BD%AE.png)
+![boss岗位分析.png](doc/imgs/boss%E5%B2%97%E4%BD%8D%E5%88%86%E6%9E%90.png)
+![猎聘配置.png](doc/imgs/%E7%8C%8E%E8%81%98%E9%85%8D%E7%BD%AE.png)
+![猎聘岗位分析.png](doc/imgs/%E7%8C%8E%E8%81%98%E5%B2%97%E4%BD%8D%E5%88%86%E6%9E%90.png)
+![51job配置.png](doc/imgs/51job%E9%85%8D%E7%BD%AE.png)
+![51岗位分析.png](doc/imgs/51%E5%B2%97%E4%BD%8D%E5%88%86%E6%9E%90.png)
+![智联配置.png](doc/imgs/%E6%99%BA%E8%81%94%E9%85%8D%E7%BD%AE.png)
+![智联岗位分析.png](doc/imgs/%E6%99%BA%E8%81%94%E5%B2%97%E4%BD%8D%E5%88%86%E6%9E%90.png)
+---
 
 ## 📧 联系方式
 
@@ -239,11 +160,8 @@ cd get_jobs
 
 ## 👨🏻‍🔧 QQ群
 
-- 扫码添加：QQ加群答案为本项目仓库名【get_jobs】
-
-<div style="display: flex;">
-    <img src="src/main/resources/images/qq.jpg" alt="qq群" width="500">
-</div>
+- 点击下方卡片添加即可：QQ加群答案为本项目仓库名【get_jobs】  
+  [![QQ交流群](https://img.shields.io/badge/🐧QQ交流群-get_jobs-0FB5EB?labelColor=235389&logoColor=white&style=flat)][qq-link]
 
 > 点击下面的链接可直接加群，微信群由于没有活跃度，所以停止了
 
@@ -261,65 +179,11 @@ cd get_jobs
 
 ## 📑 更新日志
 
----
-
-* 2025-10-18 14:30:00
-    1. ✨ **内置1494+城市代码和2137+行业代码**：重构城市与行业代码加载方式，从硬编码改为JSON文件动态加载，支持全国所有地区。
-    2. 🗑️ **彻底移除chromedriver依赖**：从Git历史中完全删除chromedriver.exe，项目体积从200MB优化至49MB，减少75%空间占用。
-    3. 🔧 **修复企业微信推送功能**：优化Bot推送配置，支持从resources目录读取.env文件，简化配置流程。
-    4. 🧹 **代码优化与清理**：删除Bark推送冗余代码，移除硬编码的城市枚举，代码更简洁易维护。
-    5. 📋 **行业代码待完善**：city-industry-code.json已包含完整行业数据，后续将支持动态加载（择日更新）。
-    6. 🐛 **修复nul文件问题**：优化bat脚本，解决Windows下产生nul文件的问题。
-
----
-
-* 2025-08-08 04:33:56
-    1. Boss直聘逻辑修正，现已能完整运行所有流程。
-    2. 图片简历不能发送，AI打招呼功能正常。
-    3. 目前boss驱动已从Selenium改为playwright。
-    4. 新增gui分支，该分支为本项目的gui版本，主要为群管理：【凯】提供。
-    5. 砍掉了bark推送，用户地区码，手机端等杂七杂八不重要的功能，返璞归真。
-
----
-
-* 2024-08-12 22:56:20
-    1. 添加企业微信消息推送功能
-* 2024-08-12 22:56:20
-    1. 添加企业微信消息推送功能
-* 2024-08-11 18:39:56
-    1. 修复智联，猎聘等不能投递的问题。
-    2. 添加定时投递功能
-* 2024-06-06 17:41:20
-    1. boss支持多城市投递。
-* 2024-06-06 01:49:38
-    1. boos：若公司名小于2个字或4个字母则不会添加进黑名单
-    2. 添加linux系统支持。
-* 2024-04-28 15:20:06
-    1. boos：自动更新黑名单公司
-* 2024-04-15 01:52:18
-    1. 新增config.yaml,目前仅需修改配置文件即可，已全平台支持
-    2. cookie有效期延长，保持至少一周（拉勾平台除外）【安慰剂】
-
----
+[更新日志.md](doc/%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97.md)
 
 ## 🤝 参与贡献
 
-我们欢迎一切形式的贡献，你可以先查看我们的 [Issues](https://github.com/loks666/get_jobs/issues)
-和 [Discussions](https://github.com/loks666/get_jobs/discussions)，那里藏着无数等待你大展身手的机会！
-
-我们对代码质量有很高的要求，但不要担心 —— 你完全可以使用 GPT 等工具进行风格打磨，只要最终输出优雅且可靠的成果！
-
-如果你希望进入开发组，却一时不知道从哪里开始？  
-没关系，**观察，思考，提出你的见解，与大家讨论，去发现真正有价值的功能！**
-
-不要怕失败，不要畏惧修改。  
-**每一次讨论，每一次提交，每一次调整，都是在为你的成长积蓄力量！**  
-当你的 PR 被成功合并的那一刻，你会明白 —— 所有努力，所有坚持，他们都值得！
-
-待开发列表：
-
-- 51job修改为PlayRight支持
-- 清除所有关于Selenium的依赖
+- 本项目禁止一切未经沟通的pr，会直接拒掉，如有贡献需求，请在issue和discussions中查看自己可以开发的功能和内容，群里与我沟通
 
 ---
 
@@ -332,7 +196,6 @@ cd get_jobs
 4. 提交 Commit 时，请在信息前加上一个符合提交内容的 **Emoji 表情
    **（[emoji网站](https://www.emojiall.com/zh-hans/all-emojis)）自由发挥！
 5. 等待管理员审核，验证无误后，代码将合并到 `main` 分支
-6. 表现优秀者，可提前申请加入开发组，与我们并肩作战！
 
 ---
 
@@ -345,34 +208,13 @@ cd get_jobs
 
 ### 📰 开源协议
 
-<details><summary><h4>📝 License</h4></summary>
-
-[![FOSSA Status](https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs/refs/branch/master/f1c1fbec331aec96694d8ab331fc720bb2aa84b4)](https://app.fossa.com/projects/git%2Bgithub.com%2Floks666%2Fget_jobs/refs/branch/master/f1c1fbec331aec96694d8ab331fc720bb2aa84b4)
-
-</details>
+[LICENSE](LICENSE)
 
 ---
 
 ### 🙅🏻‍♂️ 谨防受骗
 
-- 近日已经有人反馈，有人拿着本项目免费开源的代码，在闲鱼等小红书各处售卖
-- 本项目代码完全开源免费，请勿上当受骗，请大家擦亮眼睛
-- 这是一个将本项目免费源码的网站  
-  <img src="src/main/resources/images/骗子网站.png" alt="骗子网站">
-  <img src="src/main/resources/images/pian1.png" alt="骗子1">
-  <img src="src/main/resources/images/pian2.png" alt="骗子2">
-  <img src="src/main/resources/images/pian3.png" alt="骗子3">
-  <img src="src/main/resources/images/pian4.png" alt="骗子4">
-
----
-
-### 🐦‍🔥 一点碎碎念
-
-- 此项目之初本是我自己用的工具，可不知不觉间，它已经有了茁壮的生命力和影响力。
-- 曾经我也希望我自己的项目能够被更多人使用，可是现在
-- 我更希望，愿终有一天，不会有任何人在使用本项目
-- 愿你我有朝一日，都可以不用再为生计奔波，去追求自己真正热爱的事物
-- 我也努力一点，希望你也可以努力一点，让这一天或许可以早点实现……
+- 市面上充斥着很多使用本项目招摇撞骗的项目，请擦亮眼睛，谨防上当受骗。
 
 ---
 
