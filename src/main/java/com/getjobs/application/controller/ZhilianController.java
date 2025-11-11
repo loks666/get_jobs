@@ -6,17 +6,16 @@ import com.getjobs.application.service.CookieService;
 import com.getjobs.application.service.ZhilianService;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.service.ZhilianJobService;
-import com.getjobs.worker.zhilian.ZhilianEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * 智联招聘控制器（整合版）
@@ -55,7 +54,12 @@ public class ZhilianController {
         }
 
         Map<String, List<Map<String, String>>> options = new HashMap<>();
-        options.put("city", buildCityOptions());
+        options.put("city", zhilianService.getOptionsByType("city").stream().map(e -> {
+            Map<String, String> m = new HashMap<>();
+            m.put("name", e.getName());
+            m.put("code", e.getCode());
+            return m;
+        }).collect(Collectors.toList()));
         // 智联薪资目前不枚举，前端可用文本输入或简单选择"不限"
 
         result.put("config", config);
@@ -76,7 +80,12 @@ public class ZhilianController {
      */
     @GetMapping("/config/options/city")
     public List<Map<String, String>> getCityOptions() {
-        return buildCityOptions();
+        return zhilianService.getOptionsByType("city").stream().map(e -> {
+            Map<String, String> m = new HashMap<>();
+            m.put("name", e.getName());
+            m.put("code", e.getCode());
+            return m;
+        }).collect(Collectors.toList());
     }
 
     // ==================== 登录和认证相关接口 ====================
@@ -100,6 +109,25 @@ public class ZhilianController {
             log.error("检查登录状态失败", e);
             response.put("success", false);
             response.put("message", "检查登录状态失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * 触发智联招聘登录：在未登录时点击二维码入口，等待扫码
+     */
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, Object>> triggerZhilianLogin() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            playwrightManager.triggerZhilianLogin();
+            response.put("success", true);
+            response.put("message", "已尝试打开智联二维码登录入口，请在浏览器扫码登录");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("触发智联登录失败", e);
+            response.put("success", false);
+            response.put("message", "触发登录失败: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -184,6 +212,52 @@ public class ZhilianController {
             response.put("message", "保存智联招聘Cookie失败: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
+    }
+
+    // ==================== 数据分析与列表 ====================
+
+    /** 投递统计（Dashboard） */
+    @GetMapping("/stats")
+    public ZhilianService.StatsResponse stats(
+            @RequestParam(value = "statuses", required = false) String statuses,
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "experience", required = false) String experience,
+            @RequestParam(value = "degree", required = false) String degree,
+            @RequestParam(value = "minK", required = false) Double minK,
+            @RequestParam(value = "maxK", required = false) Double maxK,
+            @RequestParam(value = "keyword", required = false) String keyword
+    ) {
+        java.util.List<String> statusList = null;
+        if (statuses != null && !statuses.trim().isEmpty()) {
+            statusList = java.util.Arrays.stream(statuses.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+        }
+        return zhilianService.getZhilianStats(statusList, location, experience, degree, minK, maxK, keyword);
+    }
+
+    /** 岗位列表（分页 + 筛选） */
+    @GetMapping("/list")
+    public ZhilianService.PagedResult list(
+            @RequestParam(value = "statuses", required = false) String statuses,
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "experience", required = false) String experience,
+            @RequestParam(value = "degree", required = false) String degree,
+            @RequestParam(value = "minK", required = false) Double minK,
+            @RequestParam(value = "maxK", required = false) Double maxK,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+            @RequestParam(value = "size", required = false, defaultValue = "20") Integer size
+    ) {
+        java.util.List<String> statusList = null;
+        if (statuses != null && !statuses.trim().isEmpty()) {
+            statusList = java.util.Arrays.stream(statuses.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+        }
+        return zhilianService.listZhilianJobs(statusList, location, experience, degree, minK, maxK, keyword, page, size);
     }
 
     // ==================== 任务管理相关接口 ====================
@@ -310,14 +384,5 @@ public class ZhilianController {
 
     // ==================== 辅助方法 ====================
 
-    private List<Map<String, String>> buildCityOptions() {
-        List<Map<String, String>> list = new ArrayList<>();
-        for (ZhilianEnum.CityCode c : ZhilianEnum.CityCode.values()) {
-            Map<String, String> item = new HashMap<>();
-            item.put("name", c.getName());
-            item.put("code", c.getCode());
-            list.add(item);
-        }
-        return list;
-    }
+    // 旧枚举构建方法已移除，改为从数据库读取
 }

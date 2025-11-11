@@ -1,5 +1,7 @@
 package com.getjobs.worker.zhilian;
 
+import com.getjobs.application.entity.ZhilianJobDataEntity;
+import com.getjobs.application.service.ZhilianService;
 import com.getjobs.worker.utils.Job;
 import com.getjobs.worker.utils.JobUtils;
 import com.getjobs.worker.utils.PlaywrightUtil;
@@ -42,7 +44,23 @@ public class ZhiLian {
     private boolean isLimit = false;
     private int maxPage = 500;
 
-    private static final String HOME_URL = "https://sou.zhaopin.com/?";
+    private static final String HOME_URL = "https://www.zhaopin.com/sou/";
+
+    private final ZhilianService zhilianService;
+
+    private static class PageJob {
+        int index;
+        String jobId;
+        String jobTitle;
+        String companyName;
+
+        PageJob(int index, String jobId, String jobTitle, String companyName) {
+            this.index = index;
+            this.jobId = jobId;
+            this.jobTitle = jobTitle;
+            this.companyName = companyName;
+        }
+    }
 
     /**
      * 进度回调接口
@@ -78,8 +96,8 @@ public class ZhiLian {
                     break;
                 }
 
-                String searchUrl = buildSearchUrl(keyword, 1);
-                deliverByKeyword(keyword, searchUrl);
+                String baseUrl = buildBaseUrl(1);
+                deliverByKeyword(keyword, baseUrl);
             }
 
             long duration = System.currentTimeMillis() - startTime;
@@ -106,7 +124,7 @@ public class ZhiLian {
     /**
      * 按关键词投递
      */
-    private void deliverByKeyword(String keyword, String searchUrl) {
+    private void deliverByKeyword(String keyword, String baseUrl) {
         if (isLimit) {
             return;
         }
@@ -115,41 +133,49 @@ public class ZhiLian {
             log.info("开始投递关键词: {}", keyword);
             sendProgress("正在搜索关键词: " + keyword, null, null);
 
-            // 导航到搜索页面
-            page.navigate(searchUrl);
+            // 导航到搜索页面（路径参数：jl+城市码 + p1 + sl）
+            page.navigate(baseUrl);
             PlaywrightUtil.sleep(2);
 
-            // 等待岗位列表加载
+            // 在搜索框输入关键词并触发搜索（Enter键更稳健）
             try {
-                page.waitForSelector("//div[contains(@class, 'joblist-box__item')]",
+                Locator keywordInput = findKeywordInput();
+                if (keywordInput == null || keywordInput.count() == 0) {
+                    log.warn("未找到搜索输入框，跳过关键词: {}", keyword);
+                    return;
+                }
+                keywordInput.fill("");
+                keywordInput.fill(keyword);
+                try { keywordInput.press("Enter"); } catch (Exception ignored) {}
+                PlaywrightUtil.sleep(2);
+            } catch (Exception e) {
+                log.warn("搜索框输入关键词失败，跳过当前关键词: {}", e.getMessage());
+                return;
+            }
+
+            // 等待岗位列表加载（CSS选择器）
+            try {
+                page.waitForSelector("div.joblist-box__item",
                     new Page.WaitForSelectorOptions().setTimeout(10_000));
             } catch (Exception e) {
                 log.warn("等待岗位列表超时，跳过当前关键词");
                 return;
             }
 
-            // 设置最大页数
-            setMaxPages();
-
-            // 遍历所有页面
-            for (int pageNum = 1; pageNum <= maxPage; pageNum++) {
+            // 遍历所有页面：仅以“下一页”按钮禁用状态为主，最多50页
+            int pageNum = 1;
+            while (pageNum <= 50) {
                 if (shouldStop() || isLimit) {
                     sendProgress("用户取消投递或已达上限", null, null);
                     return;
                 }
 
                 log.info("开始投递【{}】关键词，第【{}】页...", keyword, pageNum);
-                sendProgress(String.format("正在投递第%d页", pageNum), pageNum, maxPage);
+                sendProgress(String.format("正在投递第%d页", pageNum), pageNum, 50);
 
-                // 如果不是第一页，需要导航到该页
-                if (pageNum > 1) {
-                    page.navigate(buildSearchUrl(keyword, pageNum));
-                    PlaywrightUtil.sleep(2);
-                }
-
-                // 等待岗位列表出现
+                // 等待岗位列表出现（CSS选择器）
                 try {
-                    page.waitForSelector("//div[@class='positionlist']",
+                    page.waitForSelector("div.positionlist",
                         new Page.WaitForSelectorOptions().setTimeout(10_000));
                 } catch (Exception e) {
                     log.warn("等待岗位列表失败，刷新页面重试");
@@ -163,6 +189,24 @@ public class ZhiLian {
                 }
 
                 PlaywrightUtil.sleep(2);
+
+                // 判断是否还有下一页
+                if (isNextDisabled()) {
+                    log.info("下一页按钮不可点击，结束翻页");
+                    break;
+                }
+
+                // 点击下一页
+                Locator nextBtn = page.locator("a.soupager__btn:has-text(\"下一页\")");
+                if (nextBtn.count() > 0) {
+                    try { nextBtn.first().scrollIntoViewIfNeeded(); } catch (Exception ignored) {}
+                    nextBtn.first().click();
+                    PlaywrightUtil.sleep(2);
+                    pageNum++;
+                } else {
+                    log.info("未找到下一页按钮，结束翻页");
+                    break;
+                }
             }
 
             log.info("关键词【{}】投递完成", keyword);
@@ -177,46 +221,149 @@ public class ZhiLian {
      */
     private boolean deliverCurrentPage(String keyword) {
         try {
-            // 点击全选
-            try {
-                Locator allSelectCheckbox = page.locator("//i[@class='betch__checkall__checkbox']");
-                if (allSelectCheckbox.count() == 0) {
-                    log.info("没有全选按钮，跳过当前页");
-                    return false;
-                }
-                allSelectCheckbox.click();
-                PlaywrightUtil.sleep(1);
-            } catch (Exception e) {
-                log.warn("点击全选失败: {}", e.getMessage());
+            page.waitForSelector("div.joblist-box__item",
+                    new Page.WaitForSelectorOptions().setTimeout(15000));
+
+            if (checkIsLimit()) {
+                sendProgress("用户取消投递或已达上限", null, null);
                 return false;
             }
 
-            // 点击批量投递按钮
-            try {
-                Locator submitButton = page.locator("//button[@class='betch__button']");
-                if (submitButton.count() == 0) {
-                    log.warn("未找到批量投递按钮");
+            Locator cards = page.locator("div.joblist-box__item");
+            int count = cards.count();
+            log.info("检测到当前页岗位数量: {}", count);
+
+            List<PageJob> jobs = new ArrayList<>();
+            // 统一采集当前页岗位后再保存（不在循环中逐个入库）
+            List<ZhilianJobDataEntity> toInsert = new ArrayList<>();
+
+            for (int i = 0; i < count; i++) {
+                if (shouldStop()) {
+                    sendProgress("用户取消投递或已达上限", null, null);
                     return false;
                 }
-                submitButton.click();
 
-                // 检查是否达到投递上限
+                Locator card = cards.nth(i);
+                String jobTitle = safeGetText(card, "a.jobinfo__name");
+                String jobLink = null;
+                try { jobLink = card.locator("a.jobinfo__name").getAttribute("href"); } catch (Exception ignored) {}
+                String salary = safeGetText(card, "p.jobinfo__salary");
+                String location = safeGetText(card, "div.jobinfo__other-info div.jobinfo__other-info-item > span");
+                String experience = safeGetText(card, "div.jobinfo__other-info-item:nth-child(2)");
+                String degree = safeGetText(card, "div.jobinfo__other-info-item:nth-child(3)");
+                String companyName = safeGetText(card, "div.companyinfo__name");
+
+                String jobId = extractJobIdFromLink(jobLink);
+
+                try {
+                    String jid = jobId == null ? "" : jobId.trim();
+                    String jtitle = jobTitle == null ? "" : jobTitle.trim();
+                    if (jid.isEmpty() || jtitle.isEmpty()) {
+                        log.info("岗位缺少jobId或jobTitle，跳过采集：title={}，company={}", jtitle, companyName);
+                    } else {
+                        boolean exists = false;
+                        try { exists = zhilianService.existsByJobId(jid); } catch (Exception checkEx) {
+                            log.warn("查询jobId是否已存在失败: {}", checkEx.getMessage());
+                        }
+                        if (exists) {
+                            log.info("jobId已存在，跳过采集：jobId={}，title={}", jid, jtitle);
+                        } else {
+                            ZhilianJobDataEntity entity = new ZhilianJobDataEntity();
+                            entity.setJobId(jid);
+                            entity.setJobTitle(jtitle);
+                            entity.setJobLink(jobLink);
+                            entity.setSalary(salary);
+                            entity.setLocation(location);
+                            entity.setExperience(experience);
+                            entity.setDegree(degree);
+                            entity.setCompanyName(companyName);
+                            entity.setDeliveryStatus("未投递");
+                            toInsert.add(entity);
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.warn("采集岗位数据失败: {}", ex.getMessage());
+                }
+
+                jobs.add(new PageJob(i, jobId, jobTitle, companyName));
+            }
+
+            // 统一保存采集到的一整页岗位
+            if (!toInsert.isEmpty()) {
+                for (ZhilianJobDataEntity entity : toInsert) {
+                    try {
+                        zhilianService.insertJob(entity);
+                        log.info("已保存岗位数据：jobId={}，title={}，company={}", entity.getJobId(), entity.getJobTitle(), entity.getCompanyName());
+                    } catch (Exception ex) {
+                        log.warn("保存岗位数据失败: {}", ex.getMessage());
+                    }
+                }
+            }
+
+            for (PageJob pj : jobs) {
+                if (shouldStop()) {
+                    sendProgress("用户取消投递或已达上限", null, null);
+                    return false;
+                }
+
+                Locator card = page.locator("div.joblist-box__item").nth(pj.index);
+                Locator applyBtn = card.locator("button.collect-and-apply__btn");
+                if (applyBtn.count() == 0) {
+                    log.info("岗位【{}】未找到立即投递按钮，跳过", pj.jobTitle);
+                    continue;
+                }
+                try {
+                    // 点击前：注册监听器，统一关闭由当前页面打开的新窗口（弹出页）
+                    java.util.function.Consumer<Page> closer = (Page newPage) -> {
+                        try {
+                            // 只关闭由当前 page 打开的子窗口，避免误伤
+                            if (newPage.opener() == page) {
+                                try { newPage.waitForLoadState(); } catch (Exception ignored) {}
+                                try { PlaywrightUtil.sleep(200); } catch (Exception ignored) {}
+                                try { newPage.close(); } catch (Exception ignored) {}
+                            }
+                        } catch (Exception ignored) {}
+                    };
+                    page.context().onPage(closer);
+
+                    // 仅通过监听器捕捉并关闭由当前页打开的新窗口，避免与 waitForPopup 产生竞态
+                    try {
+                        applyBtn.click(); /* 点击投递按钮（关键定位注释：delivery-click-line）*/
+                    } finally {
+                        // 取消监听，避免影响后续流程
+                        try { page.context().offPage(closer); } catch (Exception ignored) {}
+                    }
+
+                    try {
+                        if (pj.jobId != null && !pj.jobId.isEmpty()) {
+                            zhilianService.markDeliveredByJobId(pj.jobId);
+                            log.info("已标记投递：jobId={}，title={}，company={}", pj.jobId, pj.jobTitle, pj.companyName);
+                        } else if (pj.jobTitle != null && pj.companyName != null) {
+                            zhilianService.markDeliveredByTitleAndCompany(pj.jobTitle, pj.companyName);
+                            log.info("已标记投递：title={}，company={}", pj.jobTitle, pj.companyName);
+                        }
+                    } catch (Exception ex) {
+                        log.warn("更新投递状态失败: {}", ex.getMessage());
+                    }
+                } catch (Exception clickEx) {
+                    log.warn("投递失败，继续下一个岗位: {}", clickEx.getMessage());
+                }
+
                 if (checkIsLimit()) {
+                    sendProgress("用户取消投递或已达上限", null, null);
                     return false;
                 }
-
-                PlaywrightUtil.sleep(2);
-            } catch (Exception e) {
-                log.error("点击批量投递按钮失败: {}", e.getMessage());
-                return false;
             }
-
-            // 处理投递弹窗（在新打开的页面中）
-            handleDeliveryDialog();
 
             return true;
         } catch (Exception e) {
             log.error("投递当前页面失败", e);
+            try {
+                saveCurrentPageHtml();
+                log.info("已保存当前页面到 src/main/java/com/getjobs/worker/zhilian/page.html 以便排查");
+            } catch (Exception saveEx) {
+                log.warn("保存当前页面HTML失败: {}", saveEx.getMessage());
+            }
             return false;
         }
     }
@@ -237,8 +384,8 @@ public class ZhiLian {
             Page dialogPage = pages.get(pages.size() - 1);
 
             try {
-                // 检查投递结果
-                Locator deliverResult = dialogPage.locator("//div[@class='deliver-dialog']");
+                // 检查投递结果（CSS选择器）
+                Locator deliverResult = dialogPage.locator("div.deliver-dialog");
                 if (deliverResult.count() > 0) {
                     String text = deliverResult.textContent();
                     if (text != null && text.contains("申请成功")) {
@@ -251,7 +398,7 @@ public class ZhiLian {
 
             // 关闭弹窗
             try {
-                Locator closeButton = dialogPage.locator("//img[@title='close-icon']");
+                Locator closeButton = dialogPage.locator("img[title='close-icon']");
                 if (closeButton.count() > 0) {
                     closeButton.click();
                     PlaywrightUtil.sleep(1);
@@ -284,14 +431,14 @@ public class ZhiLian {
     private void deliverSimilarJobs(Page dialogPage) {
         try {
             // 全选相似职位
-            Locator selectAllCheckbox = dialogPage.locator("//div[contains(@class, 'applied-select-all')]//input");
+            Locator selectAllCheckbox = dialogPage.locator("div.applied-select-all input");
             if (selectAllCheckbox.count() > 0 && !selectAllCheckbox.isChecked()) {
                 selectAllCheckbox.click();
                 PlaywrightUtil.sleep(1);
             }
 
             // 获取相似职位列表
-            Locator jobs = dialogPage.locator("//div[@class='recommend-job']");
+            Locator jobs = dialogPage.locator("div.recommend-job");
             int jobCount = jobs.count();
 
             if (jobCount == 0) {
@@ -303,12 +450,12 @@ public class ZhiLian {
             for (int i = 0; i < jobCount; i++) {
                 try {
                     Locator jobElement = jobs.nth(i);
-                    String jobName = safeGetText(jobElement, ".//*[contains(@class, 'recommend-job__position')]");
-                    String salary = safeGetText(jobElement, ".//span[@class='recommend-job__demand__salary']");
-                    String years = safeGetText(jobElement, ".//span[@class='recommend-job__demand__experience']").replace("\n", " ");
-                    String education = safeGetText(jobElement, ".//span[@class='recommend-job__demand__educational']").replace("\n", " ");
-                    String companyName = safeGetText(jobElement, ".//*[contains(@class, 'recommend-job__cname')]");
-                    String companyTag = safeGetText(jobElement, ".//*[contains(@class, 'recommend-job__demand__cinfo')]").replace("\n", " ");
+                    String jobName = safeGetText(jobElement, ".recommend-job__position");
+                    String salary = safeGetText(jobElement, "span.recommend-job__demand__salary");
+                    String years = safeGetText(jobElement, "span.recommend-job__demand__experience").replace("\n", " ");
+                    String education = safeGetText(jobElement, "span.recommend-job__demand__educational").replace("\n", " ");
+                    String companyName = safeGetText(jobElement, ".recommend-job__cname");
+                    String companyTag = safeGetText(jobElement, ".recommend-job__demand__cinfo").replace("\n", " ");
 
                     Job job = new Job();
                     job.setJobName(jobName);
@@ -326,7 +473,7 @@ public class ZhiLian {
             }
 
             // 点击投递按钮
-            Locator postButton = dialogPage.locator("//div[contains(@class, 'applied-select-all')]//button");
+            Locator postButton = dialogPage.locator("div.applied-select-all button");
             if (postButton.count() > 0) {
                 postButton.click();
                 PlaywrightUtil.sleep(2);
@@ -360,47 +507,74 @@ public class ZhiLian {
     }
 
     /**
-     * 设置最大页数
+     * 设置最大页数（已废弃：使用“下一页不可点击”+最多50页）
      */
     private void setMaxPages() {
-        try {
-            // 滚动到底部
-            page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
-            PlaywrightUtil.sleep(1);
-
-            Locator pageInput = page.locator(".soupager__pagebox__goinp");
-            if (pageInput.count() > 0) {
-                pageInput.fill("");
-                pageInput.fill("99999");
-
-                // 获取输入框的实际值
-                String value = pageInput.inputValue();
-                maxPage = Integer.parseInt(value);
-                log.info("设置最大页数：{}", maxPage);
-
-                // 移动到首页位置
-                Locator home = page.locator("//li[@class='listsort__item']");
-                if (home.count() > 0) {
-                    home.first().scrollIntoViewIfNeeded();
-                }
-            }
-        } catch (Exception e) {
-            log.info("setMaxPages@设置最大页数异常！");
-            log.info("设置默认最大页数50，如有需要请自行调整...");
-            maxPage = 50;
-        }
+        // 保留方法避免旧调用报错，但不再依赖输入框改页码
+        maxPage = 50;
     }
 
     /**
-     * 构建搜索URL
+     * 构建基础搜索URL（不含关键词，由搜索框触发）
      */
-    private String buildSearchUrl(String keyword, int pageNum) {
+    private String buildBaseUrl(int pageNum) {
         StringBuilder url = new StringBuilder(HOME_URL);
-        url.append(JobUtils.appendParam("jl", config.getCityCode()));
-        url.append(JobUtils.appendParam("kw", keyword));
+        url.append("jl").append(config.getCityCode()).append("/");
+        url.append("p").append(pageNum).append("?");
         url.append(JobUtils.appendParam("sl", config.getSalary()));
-        url.append("&p=").append(pageNum);
         return url.toString();
+    }
+
+    /**
+     * 查找搜索关键词输入框（多候选选择器，提高鲁棒性）
+     */
+    private Locator findKeywordInput() {
+        String[] candidates = new String[] {
+            "input[placeholder*='职位']",
+            "input[placeholder*='公司']",
+            "input[name='kw']",
+            "input[type='text']",
+            "input[class*='search'], input[class*='sou'], input[class*='input']"
+        };
+        for (String sel : candidates) {
+            try {
+                Locator lc = page.locator(sel);
+                if (lc != null && lc.count() > 0) {
+                    return lc.first();
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    /**
+     * 判断“下一页”是否不可点击
+     */
+    private boolean isNextDisabled() {
+        try {
+            Locator nextBtn = page.locator("a.soupager__btn:has-text(\"下一页\")");
+            if (nextBtn.count() == 0) return true;
+            String cls = null;
+            try { cls = nextBtn.first().getAttribute("class"); } catch (Exception ignored) {}
+            String disabledAttr = null;
+            try { disabledAttr = nextBtn.first().getAttribute("disabled"); } catch (Exception ignored) {}
+            if (cls != null && cls.contains("soupager__btn--disable")) return true;
+            return disabledAttr != null && ("disabled".equalsIgnoreCase(disabledAttr) || "true".equalsIgnoreCase(disabledAttr));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String extractJobIdFromLink(String link) {
+        if (link == null) return null;
+        try {
+            int i = link.indexOf("jobdetail/");
+            int j = link.lastIndexOf(".htm");
+            if (i >= 0 && j > i) {
+                return link.substring(i + "jobdetail/".length(), j);
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
     /**
@@ -432,6 +606,20 @@ public class ZhiLian {
             return String.format("%d分钟%d秒", minutes, seconds % 60);
         } else {
             return String.format("%d秒", seconds);
+        }
+    }
+
+    /**
+     * 将当前页面内容保存到项目内 page.html，覆盖原文件
+     */
+    private void saveCurrentPageHtml() {
+        try {
+            String html = page.content();
+            java.nio.file.Path path = java.nio.file.Paths.get("src/main/java/com/getjobs/worker/zhilian/page.html");
+            java.nio.file.Files.createDirectories(path.getParent());
+            java.nio.file.Files.write(path, html.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            throw new RuntimeException("写入 page.html 失败", e);
         }
     }
 

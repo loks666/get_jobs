@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import AnalysisContent from '@/app/zhilian/analysis/AnalysisContent'
 import PageHeader from '@/app/components/PageHeader'
 
 interface ZhilianConfig {
@@ -29,6 +31,7 @@ export default function ZhilianPage() {
   const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
   const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
   const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [backendAvailable, setBackendAvailable] = useState(true)
 
   const [config, setConfig] = useState<ZhilianConfig>({ keywords: '', cityCode: '', salary: '' })
   const [options, setOptions] = useState<ZhilianOptions>({ city: [] })
@@ -53,6 +56,8 @@ export default function ZhilianPage() {
           handler: (event) => {
             try {
               const data = JSON.parse(event.data)
+              console.log('[智联招聘 SSE] connected事件数据:', data)
+              console.log('[智联招聘 SSE] zhilianLoggedIn状态:', data.zhilianLoggedIn)
               setIsLoggedIn(data.zhilianLoggedIn || false)
               setCheckingLogin(false)
             } catch (error) {
@@ -65,7 +70,9 @@ export default function ZhilianPage() {
           handler: (event) => {
             try {
               const data = JSON.parse(event.data)
+              console.log('[智联招聘 SSE] login-status事件数据:', data)
               if (data.platform === 'zhilian') {
+                console.log('[智联招聘 SSE] 智联登录状态变更:', data.isLoggedIn)
                 setIsLoggedIn(data.isLoggedIn)
                 setCheckingLogin(false)
               }
@@ -125,6 +132,26 @@ export default function ZhilianPage() {
   }
 
   useEffect(() => { fetchAllData() }, [])
+
+  // 探测后端可用性（与 51job 保持一致风格）
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('http://localhost:8888/api/zhilian/config', { method: 'GET' })
+        const ok = !!res && res.ok
+        setBackendAvailable(ok)
+        if (ok) {
+          await fetchAllData()
+        } else {
+          setLoadingConfig(false)
+        }
+      } catch (e) {
+        setBackendAvailable(false)
+        setLoadingConfig(false)
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleStartDelivery = async () => {
     try {
@@ -203,9 +230,6 @@ export default function ZhilianPage() {
         accentBgClass="bg-purple-500"
         actions={
           <div className="flex items-center gap-2">
-            <Button onClick={handleSaveConfig} size="sm" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <BiSave className="mr-1" /> 保存配置
-            </Button>
             {checkingLogin ? (
               <Button size="sm" disabled className="rounded-full bg-gray-300 text-gray-600 cursor-not-allowed px-4 shadow">
                 <BiPlay className="mr-1" /> 检查登录中...
@@ -226,74 +250,87 @@ export default function ZhilianPage() {
             <Button onClick={() => setShowLogoutDialog(true)} size="sm" className="rounded-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <BiLogOut className="mr-1" /> 退出登录
             </Button>
-            <Button onClick={handleSaveCookie} size="sm" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <Button onClick={handleSaveConfig} size="sm" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <BiSave className="mr-1" /> 保存配置
             </Button>
           </div>
         }
       />
 
-      <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BiBriefcase className="text-primary" />
-            智联招聘平台说明
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">请在浏览器标签页中登录智联招聘平台，登录成功后系统会自动检测登录状态。</p>
-            <p className="text-sm text-muted-foreground">登录成功后，点击"开始投递"按钮启动自动投递任务。</p>
-            <p className="text-sm text-muted-foreground">点击"保存配置"按钮可手动保存当前登录相关信息到数据库。</p>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="config" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="config">平台配置</TabsTrigger>
+          <TabsTrigger value="analytics">投递分析</TabsTrigger>
+        </TabsList>
 
-      {/* 配置表单 */}
-      <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BiBriefcase className="text-primary" />
-            配置参数
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingConfig ? (
-            <p className="text-sm text-muted-foreground">配置加载中...</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>搜索关键词（逗号分隔）</Label>
-                <Input
-                  placeholder="如：Java, 后端, Spring"
-                  value={config.keywords || ''}
-                  onChange={(e) => setConfig((c) => ({ ...c, keywords: e.target.value }))}
-                />
+        <TabsContent value="config" className="space-y-6 mt-6">
+          <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BiBriefcase className="text-primary" />
+                智联招聘平台说明
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">请在浏览器标签页中登录智联招聘平台，登录成功后系统会自动检测登录状态。</p>
+                <p className="text-sm text-muted-foreground">登录成功后，点击"开始投递"按钮启动自动投递任务。</p>
+                <p className="text-sm text-muted-foreground">点击"保存配置"按钮可手动保存当前登录相关信息到数据库。</p>
               </div>
-              <div className="space-y-2">
-                <Label>城市</Label>
-                <Select
-                  value={config.cityCode || ''}
-                  onChange={(e) => setConfig((c) => ({ ...c, cityCode: e.target.value }))}
-                  placeholder="请选择城市"
-                >
-                  {options.city.map((o) => (
-                    <option key={o.code} value={o.code}>{o.name}</option>
-                  ))}
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>薪资范围（例：不限 或 代码）</Label>
-                <Input
-                  placeholder="如：不限 或 1-1.5万"
-                  value={config.salary || ''}
-                  onChange={(e) => setConfig((c) => ({ ...c, salary: e.target.value }))}
-                />
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+
+          {/* 配置表单 */}
+          <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BiBriefcase className="text-primary" />
+                配置参数
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingConfig ? (
+                <p className="text-sm text-muted-foreground">配置加载中...</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>搜索关键词（逗号分隔）</Label>
+                    <Input
+                      placeholder="如：Java, 后端, Spring"
+                      value={config.keywords || ''}
+                      onChange={(e) => setConfig((c) => ({ ...c, keywords: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>城市</Label>
+                    <Select
+                      value={config.cityCode || ''}
+                      onChange={(e) => setConfig((c) => ({ ...c, cityCode: e.target.value }))}
+                      placeholder="请选择城市"
+                    >
+                      {options.city.map((o) => (
+                        <option key={o.code} value={o.code}>{o.name}</option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>薪资范围（最低和最高工资，用逗号分割）</Label>
+                    <Input
+                      placeholder="如：12000, 20000 或 不限"
+                      value={config.salary || ''}
+                      onChange={(e) => setConfig((c) => ({ ...c, salary: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6 mt-6">
+          <AnalysisContent />
+        </TabsContent>
+      </Tabs>
 
       {/* 退出确认弹框 */}
       {showLogoutDialog && (

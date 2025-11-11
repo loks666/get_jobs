@@ -9,10 +9,10 @@ public class Locators {
     public static final String PAGINATION_BOX = ".list-pagination-box";
     // Ant Design v5 中下一页为 li.ant-pagination-next 内的按钮
     public static final String NEXT_PAGE = "li.ant-pagination-next";
-    public static final String SUBSCRIBE_CLOSE_BTN = "//div[contains(@class, 'subscribe-close-btn')]";
+    public static final String SUBSCRIBE_CLOSE_BTN = "div[class*='subscribe-close-btn']";
 
     // 岗位列表容器（用于遍历卡片和定位按钮）
-    public static final String JOB_CARDS = "//div[contains(@class, 'job-card-pc-container')]";
+    public static final String JOB_CARDS = "div[class*='job-card-pc-container']";
 
     // 聊天相关元素（用于检测聊天窗口并关闭）
     public static final String CHAT_HEADER = ".__im_basic__header-wrap";

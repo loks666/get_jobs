@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createSSEWithBackoff } from '@/lib/sse'
-import { BiSearch, BiSave, BiTargetLock, BiMap, BiMoney, BiTime, BiBookmark, BiBarChart, BiPlay, BiStop, BiLogOut } from 'react-icons/bi'
+import { BiSearch, BiSave, BiTargetLock, BiMap, BiMoney, BiTime, BiBookmark, BiBarChart, BiPlay, BiStop, BiLogOut, BiBriefcase } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -305,6 +305,24 @@ export default function LiepinPage() {
         </TabsList>
 
         <TabsContent value="config" className="space-y-6 mt-6">
+        {/* 平台说明 */}
+        <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BiBriefcase className="text-primary" />
+              猎聘平台说明
+            </CardTitle>
+            <CardDescription>登录与投递操作提示</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">请在浏览器标签页中登录 猎聘 平台，登录成功后系统会自动检测登录状态。</p>
+              <p className="text-sm text-muted-foreground">登录成功后，点击“开始投递”按钮启动自动投递任务。</p>
+              <p className="text-sm text-muted-foreground">点击“保存配置”按钮可手动保存当前登录相关信息到数据库。</p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* 搜索配置 */}
         <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
           <CardHeader>

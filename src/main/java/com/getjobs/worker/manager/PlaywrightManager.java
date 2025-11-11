@@ -74,6 +74,9 @@ public class PlaywrightManager {
     // 控制是否暂停对zhilianPage的后台监控
     private volatile boolean zhilianMonitoringPaused = false;
 
+    // 记录智联招聘是否已处理过未登录引导（仅初始化时执行一次）
+    private volatile boolean zhilianLoginGuided = false;
+
     // 默认超时时间（毫秒）
   private static final int DEFAULT_TIMEOUT = 30000;
 
@@ -899,15 +902,11 @@ public class PlaywrightManager {
             log.warn("智联招聘页面导航失败");
         }
 
+        // 等待页面加载完成
         try {
-            // 检查是否需要登录
-            if (!checkIfZhilianLoggedIn()) {
-                log.info("检测到未登录智联招聘，保持在首页等待扫码登录");
-            } else {
-                log.info("智联招聘已登录");
-            }
+            zhilianPage.waitForLoadState(LoadState.NETWORKIDLE);
         } catch (Exception e) {
-            log.warn("智联招聘页面初始化检查失败: {}", e.getMessage());
+            log.debug("等待智联页面网络空闲失败: {}", e.getMessage());
         }
 
         // 初始化登录状态并通知（如果有SSE连接会立即推送）
@@ -918,12 +917,127 @@ public class PlaywrightManager {
 
     /**
      * 检查智联招聘是否已登录
+     * 未登录时只在首次检测时引导用户到登录页
      */
     private boolean checkIfZhilianLoggedIn() {
         try {
-            // 智联招聘登录后顶部会显示用户信息
-            return zhilianPage.locator(".user-info, .user-name, .username-text").count() > 0;
+            if (zhilianPage == null) {
+                return false;
+            }
+
+            boolean isLoggedIn = false;
+            boolean loginButtonExists = false;
+
+            // 检查是否存在"登录/注册"按钮
+            try {
+                Locator loginButton = zhilianPage.locator("a.home-header__c-no-login").first();
+                int count = loginButton.count();
+                if (count > 0) {
+                    loginButtonExists = true;
+                    // 尝试获取文本进一步确认
+                    try {
+                        String buttonText = loginButton.textContent();
+                        if (buttonText != null && buttonText.contains("登录")) {
+                            loginButtonExists = true;
+                        }
+                    } catch (Exception e) {
+                        log.debug("智联招聘：获取登录按钮文本失败: {}", e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("智联招聘：检查登录按钮时异常: {}", e.getMessage());
+            }
+
+            // 如果存在登录按钮，说明未登录
+            if (loginButtonExists) {
+                // 只在首次检测到未登录时执行引导操作
+                if (!zhilianLoginGuided) {
+                    log.info("检测到未登录智联招聘，重定向到登录页面");
+                    zhilianLoginGuided = true;
+
+                    // 重定向到登录页面
+                    String currentUrl = null;
+                    try {
+                        currentUrl = zhilianPage.url();
+                    } catch (Exception ignored) {
+                    }
+
+                    try {
+                        if (currentUrl == null || !currentUrl.contains("passport.zhaopin.com/login")) {
+                            boolean loginNavOk = false;
+                            try {
+                                zhilianPage.navigate(
+                                        "https://passport.zhaopin.com/login",
+                                        new Page.NavigateOptions()
+                                                .setTimeout(60000)
+                                                .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
+                                );
+                                loginNavOk = true;
+                            } catch (Exception navEx) {
+                                String urlAfter = null;
+                                try {
+                                    urlAfter = zhilianPage.url();
+                                } catch (Exception ignored2) {}
+
+                                if (urlAfter != null && urlAfter.contains("passport.zhaopin.com")) {
+                                    loginNavOk = true;
+                                    log.debug("智联招聘：登录页导航异常但已在登录域: {}", navEx.getMessage());
+                                } else {
+                                    log.warn("智联招聘：导航至登录页失败: {}", navEx.getMessage());
+                                }
+                            }
+
+                            if (loginNavOk) {
+                                try {
+                                    zhilianPage.waitForLoadState(LoadState.DOMCONTENTLOADED);
+                                } catch (Exception ignored) {}
+                                try {
+                                    zhilianPage.waitForSelector(
+                                            "div.zppp-panel-normal-bar__img, " +
+                                            "div.passport-login, #J_loginWrap, " +
+                                            "div[class*='qrcode'], img[src*='qrcode']",
+                                            new Page.WaitForSelectorOptions().setTimeout(30000)
+                                    );
+                                } catch (Exception e) {
+                                    log.debug("智联招聘：登录页关键元素等待失败: {}", e.getMessage());
+                                }
+                            }
+                        }
+
+                        // 点击二维码登录按钮
+                        Locator qrToggle = zhilianPage.locator("div.zppp-panel-normal-bar__img").first();
+                        if (qrToggle.count() > 0 && qrToggle.isVisible()) {
+                            qrToggle.click(new Locator.ClickOptions().setTimeout(DEFAULT_TIMEOUT));
+                            log.info("已切换到智联二维码登录页面，等待用户扫码...");
+                        } else {
+                            log.info("智联招聘登录页面已打开，等待用户扫码...");
+                        }
+                    } catch (Exception e) {
+//                        log.warn("智联招聘：打开二维码登录面板失败: {}", e.getMessage());
+                    }
+                }
+                return false;
+            }
+
+            // 检查是否有已登录的特征
+            try {
+                String url = zhilianPage.url();
+                if (url != null && url.contains("i.zhaopin.com")) {
+                    log.debug("智联招聘：URL包含i.zhaopin.com，判定为已登录");
+                    isLoggedIn = true;
+                }
+            } catch (Exception ignore) {
+            }
+
+            // 如果没有登录按钮，也认为已登录
+            if (!loginButtonExists) {
+                log.debug("智联招聘：未检测到登录按钮，判定为已登录");
+                isLoggedIn = true;
+            }
+
+            return isLoggedIn;
         } catch (Exception e) {
+            log.warn("智联招聘：检查登录状态异常: {}", e.getMessage());
             return false;
         }
     }
@@ -962,6 +1076,53 @@ public class PlaywrightManager {
         } catch (Exception e) {
             // 忽略检查过程中的异常，避免影响正常流程
             log.debug("检查智联招聘平台登录状态时发生异常: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 主动触发智联招聘登录：点击二维码入口并等待登录成功跳转
+     */
+    public void triggerZhilianLogin() {
+        try {
+            if (zhilianPage == null) {
+                throw new IllegalStateException("智联招聘页面未初始化");
+            }
+
+            // 导航到智联首页，确保DOM就绪
+            zhilianPage.navigate(ZHILIAN_URL, new Page.NavigateOptions()
+                    .setTimeout(60000)
+                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+
+            // 如果看到未登录入口，尝试打开二维码登录面板
+            Locator noLoginAnchor = zhilianPage.locator("a.home-header__c-no-login").first();
+            if (noLoginAnchor.isVisible()) {
+                Locator qrToggle = zhilianPage.locator("div.zppp-panel-normal-bar__img").first();
+                if (qrToggle.isVisible()) {
+                    qrToggle.click(new Locator.ClickOptions().setTimeout(DEFAULT_TIMEOUT));
+                    log.info("已点击智联二维码登录入口，等待用户扫码...");
+                } else {
+                    log.warn("未找到二维码登录入口元素：div.zppp-panel-normal-bar__img");
+                }
+            } else {
+                log.info("未检测到未登录入口，可能已登录或在其他页面");
+            }
+
+            // 监听登录成功：等待URL跳转到 i.zhaopin.com 或用户信息元素出现
+            try {
+                zhilianPage.waitForURL("**i.zhaopin.com**", new Page.WaitForURLOptions().setTimeout(120_000));
+                onZhilianLoginSuccess();
+                return;
+            } catch (Exception ignored) {
+            }
+            try {
+                zhilianPage.waitForSelector(".user-info, .user-name, .username-text", new Page.WaitForSelectorOptions().setTimeout(120_000));
+                onZhilianLoginSuccess();
+            } catch (Exception e) {
+                log.warn("等待智联登录成功超时或失败: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            log.error("触发智联登录流程失败: {}", e.getMessage(), e);
+            throw new RuntimeException("触发智联登录流程失败", e);
         }
     }
 
