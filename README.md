@@ -16,7 +16,7 @@
 再深的寒冬，也将逢迎春阳<br>
 请记得只要不放弃，天总会亮<br>
 <strong>黎明破晓之时，苦难都将化作勋章</strong></p>
-<strong>🏼‍♂️GUI版本盛大登场</strong></p>
+<strong>🪅GUI版本盛大登场</strong></p>
 
 <p align="center">
   <a href="https://trendshift.io/repositories/9608">
