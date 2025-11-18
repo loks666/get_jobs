@@ -66,6 +66,7 @@ public class BossController {
     public ResponseEntity<Map<String, Object>> executeBoss() {
         if (bossJobService.isRunning()) {
             return ResponseEntity.ok(Map.of(
+                    "success", true,
                     "status", "already_running",
                     "message", "Boss投递任务已在运行中"
             ));
@@ -74,6 +75,7 @@ public class BossController {
         CompletableFuture.runAsync(() -> bossJobService.executeDelivery(this::sendBossProgress));
 
         return ResponseEntity.ok(Map.of(
+                "success", true,
                 "status", "started",
                 "message", "Boss投递任务已启动"
         ));
@@ -84,6 +86,7 @@ public class BossController {
     public ResponseEntity<Map<String, Object>> stopBoss() {
         bossJobService.stopDelivery();
         return ResponseEntity.ok(Map.of(
+                "success", true,
                 "status", "stopping",
                 "message", "正在停止Boss投递任务"
         ));

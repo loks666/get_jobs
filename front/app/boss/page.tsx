@@ -473,7 +473,7 @@ export default function BossPage() {
   const handleStartDelivery = async () => {
     try {
       setIsDelivering(true)
-      const response = await fetch('http://localhost:8888/api/boss/start', {
+      const response = await fetch('http://localhost:8888/api/jobs/boss/execute', {
         method: 'POST',
       })
       const data = await response.json()
@@ -494,7 +494,7 @@ export default function BossPage() {
 
   const handleStopDelivery = async () => {
     try {
-      const response = await fetch('http://localhost:8888/api/boss/stop', {
+      const response = await fetch('http://localhost:8888/api/jobs/boss/stop', {
         method: 'POST',
       })
       const data = await response.json()
