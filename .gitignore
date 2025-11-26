@@ -13,7 +13,8 @@ config.yaml
 CLAUDE.md
 .claude
 nul
-
+dist.zip
+db/
 # Playwright
 .playwright/
 ms-playwright/

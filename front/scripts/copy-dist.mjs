@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // 源目录和目标目录
-const sourceDir = path.join(__dirname, '..', 'dist');
+const sourceDir = path.join(__dirname, '..', 'out');
 const targetDir = path.join(__dirname, '..', '..', 'src', 'main', 'resources', 'dist');
 
 console.log('开始复制前端构建文件...');
@@ -56,7 +56,7 @@ function copyFolderRecursive(source, target) {
 try {
   // 检查源目录是否存在
   if (!fs.existsSync(sourceDir)) {
-    console.error('错误: dist目录不存在，请先运行 npm run build');
+    console.error('错误: out目录不存在，请先运行 pnpm run build');
     process.exit(1);
   }
 
