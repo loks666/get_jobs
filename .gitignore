@@ -1,21 +1,9 @@
-# Gradle
-.gradle/
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-# Maven (keeping for reference)
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 config.yaml
 .git-rewrite
-
-# Frontend build output
-dist/
-
 ### IntelliJ IDEA ###
 *.iws
 *.iml
@@ -25,8 +13,7 @@ dist/
 CLAUDE.md
 .claude
 nul
-getjobs.local.db
-getjobs.db
+
 # Playwright
 .playwright/
 ms-playwright/
@@ -46,6 +33,9 @@ playwright-*
 /dist/
 /nbdist/
 /.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
 ### VS Code ###
 .vscode/
 data.json
@@ -57,43 +47,13 @@ cookie.json
 .env
 chromedriver
 *.jpg
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# Database files
+db/
+*.db
 
-# testing
-/coverage
+# Frontend build output
+dist/
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Gradle cache
+.gradle/
