@@ -503,12 +503,14 @@ export default function BossPage() {
         // 停止成功：不弹框
         setIsDelivering(false)
       } else {
-        // 停止失败：不弹框
+        // 停止失败：也要将状态设置为未投递（因为可能任务已经结束）
         console.warn('停止失败：', data.message)
+        setIsDelivering(false)
       }
     } catch (error) {
       console.error('Failed to stop delivery:', error)
-      // 停止失败：不弹框
+      // 停止失败：也要将状态设置为未投递
+      setIsDelivering(false)
     }
   }
 
