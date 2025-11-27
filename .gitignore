@@ -13,6 +13,9 @@ config.yaml
 CLAUDE.md
 .claude
 nul
+dist.zip
+db/
+next-env.d.ts
 
 # Playwright
 .playwright/
@@ -47,3 +50,32 @@ cookie.json
 .env
 chromedriver
 *.jpg
+
+# Database files
+db/
+*.db
+
+# Frontend build output
+dist/
+
+# Gradle cache
+.gradle/
+
+# Frontend - Next.js build files
+front/.next/
+front/out/
+front/dist/
+out/
+
+# Frontend - TypeScript incremental compilation
+front/*.tsbuildinfo
+front/tsconfig.tsbuildinfo
+
+# Frontend - Environment variables
+front/.env.local
+front/.env.development.local
+front/.env.test.local
+front/.env.production.local
+
+# Frontend - Dependencies
+front/node_modules/
