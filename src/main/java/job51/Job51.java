@@ -151,7 +151,7 @@ public class Job51 {
                 return false;
             }
             String content = new String(Files.readAllBytes(Paths.get(path)));
-            return content != null && !content.trim().equals("[]") && !content.trim().isEmpty();
+            return !content.trim().equals("[]") && !content.trim().isEmpty();
         } catch (Exception e) {
             return false;
         }
@@ -282,7 +282,7 @@ public class Job51 {
         } catch (Exception e) { /* 静默 */ }
 
         // 由于51更新，每投递一页之前，停止10秒
-        sleep(10);
+        sleep(3);
 
         // 遍历页面投递
         for (int j = page; j <= maxPage; j++) {
