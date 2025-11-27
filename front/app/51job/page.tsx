@@ -16,11 +16,14 @@ interface Job51Config {
   id?: number
   keywords?: string
   jobArea?: string
-  salary?: string
+  salary?: string // 存储JSON数组字符串，如 ["03","04","05"]
 }
 
 interface Job51Option { name: string; code: string }
 interface Job51Options { jobArea: Job51Option[]; salary: Job51Option[] }
+
+// 薪资选择状态（用于多选）
+const MAX_SALARY_SELECTIONS = 5
 
 export default function Job51Page() {
   const API = process.env.API_BASE_URL || 'http://localhost:8888'
@@ -39,6 +42,10 @@ export default function Job51Page() {
   const [isCustomArea, setIsCustomArea] = useState(false)
   const [backendAvailable, setBackendAvailable] = useState(false)
   const [cookieSavedAfterLogin, setCookieSavedAfterLogin] = useState(false)
+  // 薪资多选状态：存储选中的code数组
+  const [selectedSalaries, setSelectedSalaries] = useState<string[]>([])
+  // 薪资下拉面板开关状态
+  const [salaryDropdownOpen, setSalaryDropdownOpen] = useState(false)
 
   useEffect(() => {
     if (!backendAvailable) {
@@ -114,6 +121,25 @@ export default function Job51Page() {
     }
   }, [backendAvailable])
 
+  // 点击外部关闭薪资下拉面板
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      // 如果点击的不是薪资下拉框或其子元素，则关闭
+      if (!target.closest('.salary-dropdown-container')) {
+        setSalaryDropdownOpen(false)
+      }
+    }
+
+    if (salaryDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [salaryDropdownOpen])
+
   // 解析/序列化关键词（与猎聘保持一致）
   const parseKeywordsFromDb = (raw?: string): string => {
     if (!raw) return ''
@@ -159,6 +185,24 @@ export default function Job51Page() {
     return parts[0] || ''
   }
 
+  // 解析后端存储的薪资列表（多选）
+  const parseMultiTokensFromDb = (raw?: string): string[] => {
+    if (!raw) return []
+    const t = raw.trim()
+    if (t.startsWith('[') && t.endsWith(']')) {
+      try {
+        const arr = JSON.parse(t)
+        if (Array.isArray(arr)) {
+          return arr.map(v => String(v ?? '').trim()).filter(Boolean)
+        }
+      } catch (_) {
+        // ignore, fall through
+      }
+    }
+    // 非 JSON 数组时，按逗号拆分
+    return t.replace(/，/g, ',').split(',').map((s) => s.trim()).filter(Boolean)
+  }
+
   const fetchAllData = async () => {
     try {
       const res = await fetch(`${API}/api/51job/config`)
@@ -176,21 +220,29 @@ export default function Job51Page() {
         // 关键词标准化（展示用）
         const normalizedKeywords = parseKeywordsFromDb(conf.keywords)
 
-        // 从服务端字段提取第一个 token，然后映射到 code
+        // 从服务端字段提取第一个token，然后映射到code
         const rawArea = parseSingleTokenFromDb(conf.jobArea)
-        const rawSalary = parseSingleTokenFromDb(conf.salary)
+        const rawSalaries = parseMultiTokensFromDb(conf.salary) // 薪资支持多个
 
         const areaList = opts.jobArea || []
         const salaryList = opts.salary || []
 
         const matchArea = areaList.find((o) => o.code === rawArea || o.name === rawArea)
-        const matchSalary = salaryList.find((o) => o.code === rawSalary || o.name === rawSalary)
+        
+        // 薪资多选：将每个值映射为code
+        const salaryCodes = rawSalaries
+          .map(raw => {
+            const match = salaryList.find(o => o.code === raw || o.name === raw)
+            return match?.code || raw
+          })
+          .filter(Boolean)
+          .slice(0, MAX_SALARY_SELECTIONS) // 最多5个
 
         const areaCode = matchArea?.code || (areaList.find((o) => o.name === '不限')?.code || areaList.find((o) => o.code === '0')?.code || '')
-        const salaryCode = matchSalary?.code || (salaryList.find((o) => o.name === '不限')?.code || salaryList.find((o) => o.code === '0')?.code || '')
 
         setOptions(opts)
-        setConfig({ ...conf, keywords: normalizedKeywords, jobArea: areaCode, salary: salaryCode })
+        setConfig({ ...conf, keywords: normalizedKeywords, jobArea: areaCode, salary: JSON.stringify(salaryCodes) })
+        setSelectedSalaries(salaryCodes)
         setIsCustomArea(false)
       }
     } catch (e) {
@@ -237,9 +289,30 @@ export default function Job51Page() {
   const handleStopDelivery = async () => {
     try {
       const response = await fetch(`${API}/api/51job/stop`, { method: 'POST' })
+      if (!response.ok) {
+        // 后端返回错误状态码，恢复按钮
+        console.warn('[51job] 停止投递请求失败，状态码:', response.status)
+        setIsDelivering(false)
+        return
+      }
+      
       const data = await response.json()
-      if (data.success) setIsDelivering(false)
-    } catch (error) {}
+      console.log('[51job] 停止投递响应:', data)
+      
+      // 根据后端返回结果切换按钮状态
+      if (data.success) {
+        // 停止成功，恢复按钮
+        setIsDelivering(false)
+      } else {
+        // 停止失败（可能任务未运行），也恢复按钮
+        console.warn('[51job] 停止投递失败:', data.message)
+        setIsDelivering(false)
+      }
+    } catch (error) {
+      // 网络异常或后端未启动，恢复按钮状态
+      console.error('[51job] 停止投递请求异常:', error)
+      setIsDelivering(false)
+    }
   }
 
   const triggerLogout = async () => {
@@ -280,12 +353,16 @@ export default function Job51Page() {
           return `["${name.replace(/"/g, '\\"')}"]`
         }
         if (type === 'salary') {
-          // 薪资仅允许下拉单选，必须映射为中文名
-          const match = (options.salary || []).find((o) => o.code === t || o.name === t)
-          const name = match?.name || ''
-          return name ? `["${name.replace(/"/g, '\\"')}"]` : '[]'
+          // 薪资多选：将selectedSalaries数组映射为中文名数组
+          const names = selectedSalaries
+            .map(code => {
+              const match = (options.salary || []).find(o => o.code === code)
+              return match?.name || ''
+            })
+            .filter(Boolean)
+          return names.length > 0 ? JSON.stringify(names) : '[]'
         }
-        return `["${t.replace(/"/g, '\\"')}"]`
+        return `["${t.replace(/"/g, '\\"')}"]"`
       }
       const payload = {
         ...config,
@@ -437,16 +514,75 @@ export default function Job51Page() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label>薪资范围</Label>
-                    <Select
-                      value={config.salary || ''}
-                      onChange={(e) => setConfig((c) => ({ ...c, salary: e.target.value }))}
-                      placeholder="请选择薪资"
-                    >
-                      {options.salary.map((o) => (
-                        <option key={o.code} value={o.code}>{o.name}</option>
-                      ))}
-                    </Select>
+                    <Label>薪资范围（最多选择5个）</Label>
+                    <div className="relative salary-dropdown-container">
+                      {/* 下拉多选框 */}
+                      <div
+                        className="flex h-10 w-full rounded-full px-4 py-2 text-sm border border-white/40 bg-white/5 shadow-[inset_0_1px_0_rgba(255,255,255,.25)] cursor-pointer hover:bg-white/10 transition-all duration-200"
+                        onClick={() => setSalaryDropdownOpen(!salaryDropdownOpen)}
+                      >
+                        <span className="truncate text-sm">
+                          {selectedSalaries.length > 0
+                            ? selectedSalaries
+                                .map((code) => options.salary.find((o) => o.code === code)?.name)
+                                .filter(Boolean)
+                                .join(', ')
+                            : '请选择薪资范围'}
+                        </span>
+                      </div>
+                      {/* 下拉选项面板 */}
+                      {salaryDropdownOpen && (
+                        <div className="dropdown-panel" style={{ position: 'absolute', marginTop: '8px', width: '100%' }}>
+                          <ul className="py-1">
+                            {options.salary.map((o) => {
+                              const isSelected = selectedSalaries.includes(o.code)
+                              const canSelect = selectedSalaries.length < MAX_SALARY_SELECTIONS || isSelected
+                              return (
+                                <li
+                                  key={o.code}
+                                  className={`group flex items-center gap-3 px-3 py-2 cursor-pointer transition-all border-b border-white/12 last:border-b-0 ${
+                                    !canSelect ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/12'
+                                  } ${
+                                    isSelected ? 'bg-gradient-to-r from-emerald-500/12 to-cyan-500/12' : ''
+                                  }`}
+                                  onClick={() => {
+                                    if (!canSelect) return
+                                    let newSalaries: string[]
+                                    if (isSelected) {
+                                      newSalaries = selectedSalaries.filter((code) => code !== o.code)
+                                    } else {
+                                      if (selectedSalaries.length < MAX_SALARY_SELECTIONS) {
+                                        newSalaries = [...selectedSalaries, o.code]
+                                      } else {
+                                        return
+                                      }
+                                    }
+                                    setSelectedSalaries(newSalaries)
+                                    setConfig((c) => ({ ...c, salary: JSON.stringify(newSalaries) }))
+                                  }}
+                                >
+                                  <span
+                                    className={`inline-flex h-4 w-4 items-center justify-center rounded-md border border-white/30 bg-white/10 shadow-inner transition-all ${
+                                      isSelected ? 'bg-emerald-400/60 border-emerald-300/80' : ''
+                                    }`}
+                                  >
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </span>
+                                  <span className="text-sm truncate">{o.name}</span>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      已选择 {selectedSalaries.length}/{MAX_SALARY_SELECTIONS} 个薪资范围
+                    </p>
                   </div>
                 </div>
               )}

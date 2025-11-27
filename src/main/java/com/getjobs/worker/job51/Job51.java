@@ -6,7 +6,9 @@ import com.getjobs.worker.utils.PlaywrightUtil;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitForSelectorState;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -26,12 +28,17 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class Job51 {
 
+    // 显式setter，避免对 Lombok 的依赖导致编译问题
+    @Setter
     private Page page;
 
+    @Setter
     private Job51Config config;
 
+    @Setter
     private ProgressCallback progressCallback;
 
+    @Setter
     private Supplier<Boolean> shouldStopCallback;
 
     private final List<String> resultList = new ArrayList<>();
@@ -39,16 +46,13 @@ public class Job51 {
     private boolean networkHooked = false;
     private boolean reachedDailyLimit = false;
     private final java.util.Set<String> processedRequestIds = new java.util.HashSet<>();
+    @Getter
     private int currentPageNum = 0;
+    // 当前页从JSON拦截到的jobId列表
+    private final java.util.List<Long> currentPageJobIds = new java.util.ArrayList<>();
 
     private static final int DEFAULT_MAX_PAGE = 50;
     private static final String BASE_URL = "https://we.51job.com/pc/search?";
-
-    // 显式setter，避免对 Lombok 的依赖导致编译问题
-    public void setPage(Page page) { this.page = page; }
-    public void setConfig(Job51Config config) { this.config = config; }
-    public void setProgressCallback(ProgressCallback progressCallback) { this.progressCallback = progressCallback; }
-    public void setShouldStopCallback(Supplier<Boolean> shouldStopCallback) { this.shouldStopCallback = shouldStopCallback; }
 
     /**
      * 进度回调接口
@@ -62,9 +66,7 @@ public class Job51 {
      * 准备工作：加载配置、初始化数据
      */
     public void prepare() {
-        log.info("51job准备工作开始...");
         resultList.clear();
-        log.info("51job准备工作完成");
     }
 
     /**
@@ -72,10 +74,22 @@ public class Job51 {
      * @return 投递数量
      */
     public int execute() {
-        log.info("51job投递任务开始...");
         long startTime = System.currentTimeMillis();
 
         try {
+            // 检查配置是否有效
+            if (config == null) {
+                log.error("[51job] 配置为空，无法执行投递任务");
+                sendProgress("配置为空，无法执行投递任务", null, null);
+                return 0;
+            }
+            
+            if (config.getKeywords() == null || config.getKeywords().isEmpty()) {
+                log.warn("[51job] 关键词列表为空，无法执行投递任务");
+                sendProgress("关键词列表为空，请先配置搜索关键词", null, null);
+                return 0;
+            }
+            
             // 遍历所有关键词进行投递
             for (String keyword : config.getKeywords()) {
                 if (shouldStop()) {
@@ -90,7 +104,6 @@ public class Job51 {
             long duration = System.currentTimeMillis() - startTime;
             String message = String.format("51job投递完成，共投递%d个简历，用时%s",
                 resultList.size(), formatDuration(duration));
-            log.info(message);
             sendProgress(message, null, null);
 
         } catch (Exception e) {
@@ -149,7 +162,16 @@ public class Job51 {
                                         }
                                     } catch (Throwable ignored) {}
                                     if (isJson) {
+                                        // 解析并保存到数据库
                                         job51Service.parseAndPersistJob51SearchJson(text);
+                                        // 📋 提取当前页的jobId列表并缓存
+                                        List<Long> jobIds = extractJobIdsFromJson(text);
+                                        if (jobIds != null && !jobIds.isEmpty()) {
+                                            synchronized (currentPageJobIds) {
+                                                currentPageJobIds.clear();
+                                                currentPageJobIds.addAll(jobIds);
+                                            }
+                                        }
                                         if (requestId != null && !requestId.isBlank()) processedRequestIds.add(requestId);
                                     } // 非JSON静默跳过
                                 }
@@ -286,14 +308,6 @@ public class Job51 {
             // 处理单独投递申请弹窗
             handleSeparateDeliveryDialog();
 
-            // 投递状态写回：采集当前页 jobId 并标记 delivered=1
-            try {
-                List<Long> deliveredIds = collectJobIdsOnPage();
-                if (!deliveredIds.isEmpty()) {
-                    job51Service.markDeliveredBatch(deliveredIds);
-                }
-            } catch (Exception e) { /* 静默 */ }
-
         } catch (Exception e) {
             log.error("投递当前页面失败", e);
         }
@@ -319,6 +333,18 @@ public class Job51 {
                 if (buttons.count() > 1) {
                     PlaywrightUtil.sleep(1);
                     buttons.nth(1).click();
+                    
+                    // 🚨 点击后立即检测“日投递上限”提示（短暂出现，需快速多次检测）
+                    for (int i = 0; i < 10; i++) {
+                        try { Thread.sleep(200); } catch (InterruptedException ignored) {} // 每200ms检测一次
+                        if (detectDailyLimitToast51job()) {
+                            reachedDailyLimit = true;
+                            log.warn("点击投递按钮后，检测到 51job 日投递上限提示，停止投递");
+                            sendProgress("检测到日投递上限，任务已停止", null, null);
+                            return;
+                        }
+                    }
+                    
                     success = true;
                 } else {
                     break;
@@ -366,6 +392,29 @@ public class Job51 {
                     } catch (Exception ignored) {}
                     log.info("[51job] 投递结果：成功 {} 个，未投递 {} 个", successNum, failNum);
                     sendProgress(String.format("投递结果：成功 %s 个，未投递 %s 个", successNum == null ? "?" : successNum, failNum == null ? "?" : failNum), null, null);
+
+                    // ✅ 投递成功后，标记数据库中的岗位为已投递
+                    if (successNum != null && successNum > 0) {
+                        try {
+                            List<Long> deliveredIds = new ArrayList<>();
+                            synchronized (currentPageJobIds) {
+                                deliveredIds.addAll(currentPageJobIds);
+                            }
+                            if (!deliveredIds.isEmpty()) {
+                                // 只标记成功投递的数量（取成功数和缓存数的较小值）
+                                int markCount = Math.min(successNum, deliveredIds.size());
+                                List<Long> toMark = deliveredIds.subList(0, markCount);
+                                job51Service.markDeliveredBatch(toMark);
+                                log.info("[51job] 标记已投递 {} 个职位", toMark.size());
+                            } else {
+                                log.warn("[51job] 当前页没有缓存的jobId，无法标记投递状态");
+                            }
+                        } catch (Exception e) {
+                            log.warn("[51job] 标记投递状态失败: {}", e.getMessage());
+                        }
+                    } else {
+                        log.warn("[51job] 投递成功数量为0或未解析到，不标记投递状态");
+                    }
 
                     // 优先点击“确定/关闭”按钮，其次点右上角关闭，再次退格键
                     try {
@@ -782,5 +831,53 @@ public class Job51 {
      */
     private boolean shouldStop() {
         return shouldStopCallback != null && shouldStopCallback.get();
+    }
+
+    /**
+     * 从JSON文本中提取jobId列表
+     */
+    private List<Long> extractJobIdsFromJson(String json) {
+        List<Long> jobIds = new ArrayList<>();
+        if (json == null || json.trim().isEmpty()) {
+            return jobIds;
+        }
+        
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(json);
+            
+            // 兼容多种列表命名
+            com.fasterxml.jackson.databind.JsonNode list = root.path("data").path("items");
+            if (!list.isArray()) list = root.path("data").path("jobList");
+            if (!list.isArray()) list = root.path("data").path("list");
+            if (!list.isArray()) list = root.path("data").path("jobs");
+            if (!list.isArray()) list = root.path("resultbody").path("job").path("items");
+            if (!list.isArray()) list = root.path("job").path("items");
+            if (!list.isArray()) list = root.path("resultbody").path("items");
+            
+            if (!list.isArray()) {
+                return jobIds;
+            }
+            
+            // 提取每个jobId
+            for (com.fasterxml.jackson.databind.JsonNode item : list) {
+                com.fasterxml.jackson.databind.JsonNode jobIdNode = item.path("jobId");
+                if (!jobIdNode.isMissingNode() && !jobIdNode.isNull()) {
+                    try {
+                        Long jobId = jobIdNode.asLong();
+                        if (jobId != null && jobId > 0) {
+                            jobIds.add(jobId);
+                        }
+                    } catch (Exception e) {
+                        // 忽略单个解析失败
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            log.warn("[51job] 解析JSON提取jobId失败: {}", e.getMessage());
+        }
+        
+        return jobIds;
     }
 }
