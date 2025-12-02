@@ -35,7 +35,7 @@ public class JobUtils {
 
     public static String appendListParam(String name, List<String> values) {
         return Optional.ofNullable(values)
-                .filter(list -> !list.isEmpty() && !Objects.equals(UNLIMITED_CODE, list.getFirst()))
+                .filter(list -> !list.isEmpty() && !Objects.equals(UNLIMITED_CODE, list.get(0)))
                 .map(list -> "&" + name + "=" + String.join(",", list))
                 .orElse("");
     }
