@@ -57,17 +57,17 @@ public class Job implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("【%s, %s, %s, %s, %s, %s】", companyName, jobName, jobArea, salary, companyTag, recruiter);
+        return "【%s, %s, %s, %s, %s, %s】".formatted(companyName, jobName, jobArea, salary, companyTag, recruiter);
     }
 
     public String toString(Platform platform) {
         if (platform == Platform.ZHILIAN) {
-            return String.format("【%s, %s, %s, %s, %s, %s, %s】", companyName, jobName, jobArea, companyTag, salary, recruiter, href);
+            return "【%s, %s, %s, %s, %s, %s, %s】".formatted(companyName, jobName, jobArea, companyTag, salary, recruiter, href);
         }
         if (platform == Platform.BOSS) {
-            return String.format("【%s, %s, %s, %s, %s, %s】", companyName, jobName, jobArea, salary, companyTag, recruiter);
+            return "【%s, %s, %s, %s, %s, %s】".formatted(companyName, jobName, jobArea, salary, companyTag, recruiter);
         }
-        return String.format("【%s, %s, %s, %s, %s, %s, %s】", companyName, jobName, jobArea, salary, companyTag, recruiter, href);
+        return "【%s, %s, %s, %s, %s, %s, %s】".formatted(companyName, jobName, jobArea, salary, companyTag, recruiter, href);
     }
 }
 
