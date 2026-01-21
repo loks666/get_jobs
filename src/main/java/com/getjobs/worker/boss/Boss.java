@@ -217,7 +217,7 @@ public class Boss {
             // 使用 URLEncoder 对关键词进行编码
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
 
-            String url = searchUrl + "&query=" + encodedKeyword;
+            String url = searchUrl + (searchUrl.contains("?") ? "&" : "?") + "query=" + encodedKeyword;
             page.navigate(url, new Page.NavigateOptions()
                     .setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED)
                     .setTimeout(15_000));
@@ -574,26 +574,35 @@ public class Boss {
         return null;
     }
 
+    public static String buildSearchUrl(BossConfig config, String cityCode) {
+        String baseUrl = "https://www.zhipin.com/web/geek/jobs";
+        if (config == null) {
+            return baseUrl;
+        }
+        List<String> params = new ArrayList<>();
+        addParam(params, JobUtils.appendParam("city", cityCode));
+        addParam(params, JobUtils.appendParam("jobType", config.getJobType()));
+        addParam(params, JobUtils.appendListParam("salary", config.getSalary()));
+        addParam(params, JobUtils.appendListParam("experience", config.getExperience()));
+        addParam(params, JobUtils.appendListParam("degree", config.getDegree()));
+        addParam(params, JobUtils.appendListParam("scale", config.getScale()));
+        addParam(params, JobUtils.appendListParam("industry", config.getIndustry()));
+        addParam(params, JobUtils.appendListParam("stage", config.getStage()));
+        if (params.isEmpty()) {
+            return baseUrl;
+        }
+        return baseUrl + "?" + String.join("&", params);
+    }
+
+    private static void addParam(List<String> params, String param) {
+        if (param == null || param.isEmpty()) {
+            return;
+        }
+        params.add(param.startsWith("&") ? param.substring(1) : param);
+    }
+
     private String getSearchUrl(String cityCode) {
-        String baseUrl = "https://www.zhipin.com/web/geek/job?";
-        StringBuilder sb = new StringBuilder(baseUrl);
-        String pCity = JobUtils.appendParam("city", cityCode);
-        sb.append(pCity);
-        String pJobType = JobUtils.appendParam("jobType", config.getJobType());
-        sb.append(pJobType);
-        String pSalary = JobUtils.appendListParam("salary", config.getSalary());
-        sb.append(pSalary);
-        String pExp = JobUtils.appendListParam("experience", config.getExperience());
-        sb.append(pExp);
-        String pDegree = JobUtils.appendListParam("degree", config.getDegree());
-        sb.append(pDegree);
-        String pScale = JobUtils.appendListParam("scale", config.getScale());
-        sb.append(pScale);
-        String pIndustry = JobUtils.appendListParam("industry", config.getIndustry());
-        sb.append(pIndustry);
-        String pStage = JobUtils.appendListParam("stage", config.getStage());
-        sb.append(pStage);
-        return sb.toString();
+        return buildSearchUrl(config, cityCode);
     }
 
     /**
