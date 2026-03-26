@@ -15,8 +15,12 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,7 +68,6 @@ public class PlaywrightManager {
 
     // 控制是否暂停对bossPage的后台监控，避免与任务执行并发访问同一页面
     private volatile boolean bossMonitoringPaused = false;
-
     // 控制是否暂停对liepinPage的后台监控
     private volatile boolean liepinMonitoringPaused = false;
 
@@ -88,6 +91,11 @@ public class PlaywrightManager {
     private static final String LIEPIN_URL = "https://www.liepin.com";
   private static final String JOB51_URL = "https://www.51job.com";
     private static final String ZHILIAN_URL = "https://www.zhaopin.com";
+    private static final String BOSS_DOMAIN = "zhipin.com";
+    private static final String LIEPIN_DOMAIN = "liepin.com";
+    private static final String JOB51_DOMAIN = "51job.com";
+    private static final String ZHILIAN_DOMAIN = "zhaopin.com";
+    private static final String BOSS_INIT_SCRIPT_RESOURCE = "anti-detection.js";
     // 降噪：51job Cookie保存日志节流状态
     private volatile long last51CookieLogMs = 0L;
     private volatile int last51CookieLogCount = -1;
@@ -128,6 +136,7 @@ public class PlaywrightManager {
                     .setUserAgent(
                             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"));
             log.info("✓ BrowserContext已创建（所有平台共享）");
+            injectBossInitScript(context);
 
             // 顺序创建所有Page（避免并发创建Page导致的竞态条件）
             log.info("开始创建所有平台的Page...");
@@ -166,17 +175,44 @@ public class PlaywrightManager {
     }
 
     /**
+     * 在上下文层统一注入 Boss 脚本，仅对 zhipin.com 生效。
+     */
+    private void injectBossInitScript(BrowserContext targetContext) {
+        String script = readResourceText(BOSS_INIT_SCRIPT_RESOURCE);
+        if (script == null || script.isBlank()) {
+            log.warn("Boss 反检测脚本未加载，资源不存在或为空: {}", BOSS_INIT_SCRIPT_RESOURCE);
+            return;
+        }
+        String wrapped = "(function(){try{if(location&&location.origin===\"https://www.zhipin.com\"){"
+                + "if(window.__bossAntiDetectInjected){return;}window.__bossAntiDetectInjected=true;"
+                + script + "}}catch(e){}})();";
+        targetContext.addInitScript(wrapped);
+        log.info("Boss 反检测脚本已注入到Context: {}", BOSS_INIT_SCRIPT_RESOURCE);
+    }
+
+    private String readResourceText(String resourcePath) {
+        try (InputStream input = PlaywrightManager.class.getClassLoader().getResourceAsStream(resourcePath)) {
+            if (input == null) {
+                return null;
+            }
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.warn("读取资源失败: {} - {}", resourcePath, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * 设置Boss直聘平台（加载Cookie、导航、监控）
      */
     private void setupBossPlatform() {
         log.info("开始初始化Boss直聘平台...");
-
         // 尝试从数据库加载Boss平台Cookie到上下文
         try {
             CookieEntity cookieEntity = cookieService.getCookieByPlatform("boss");
             if (cookieEntity != null && cookieEntity.getCookieValue() != null && !cookieEntity.getCookieValue().isBlank()) {
                 String cookieStr = cookieEntity.getCookieValue();
-                List<Cookie> cookies = parseCookiesFromString(cookieStr);
+                List<Cookie> cookies = filterCookiesByDomain(parseCookiesFromString(cookieStr), BOSS_DOMAIN);
 
                 if (!cookies.isEmpty()) {
                     context.addCookies(cookies);
@@ -313,7 +349,7 @@ public class PlaywrightManager {
             CookieEntity cookieEntity = cookieService.getCookieByPlatform("liepin");
             if (cookieEntity != null && cookieEntity.getCookieValue() != null && !cookieEntity.getCookieValue().isBlank()) {
                 String cookieStr = cookieEntity.getCookieValue();
-                List<Cookie> cookies = parseCookiesFromString(cookieStr);
+                List<Cookie> cookies = filterCookiesByDomain(parseCookiesFromString(cookieStr), LIEPIN_DOMAIN);
 
                 if (!cookies.isEmpty()) {
                     context.addCookies(cookies);
@@ -492,7 +528,7 @@ public class PlaywrightManager {
             CookieEntity cookieEntity = cookieService.getCookieByPlatform("51job");
             if (cookieEntity != null && cookieEntity.getCookieValue() != null && !cookieEntity.getCookieValue().isBlank()) {
                 String cookieStr = cookieEntity.getCookieValue();
-                List<Cookie> cookies = parseCookiesFromString(cookieStr);
+                List<Cookie> cookies = filterCookiesByDomain(parseCookiesFromString(cookieStr), JOB51_DOMAIN);
 
                 if (!cookies.isEmpty()) {
                     context.addCookies(cookies);
@@ -716,7 +752,7 @@ public class PlaywrightManager {
      */
   private void save51jobCookiesToDatabase(String remark) {
       try {
-          List<com.microsoft.playwright.options.Cookie> cookies = context.cookies();
+          List<com.microsoft.playwright.options.Cookie> cookies = filterCookiesByDomain(context.cookies(), JOB51_DOMAIN);
           // 使用ObjectMapper序列化为JSON字符串
           String cookieJson = new ObjectMapper().writeValueAsString(cookies);
           boolean result = cookieService.saveOrUpdateCookie("51job", cookieJson, remark);
@@ -849,7 +885,7 @@ public class PlaywrightManager {
             CookieEntity cookieEntity = cookieService.getCookieByPlatform("zhilian");
             if (cookieEntity != null && cookieEntity.getCookieValue() != null && !cookieEntity.getCookieValue().isBlank()) {
                 String cookieStr = cookieEntity.getCookieValue();
-                List<Cookie> cookies = parseCookiesFromString(cookieStr);
+                List<Cookie> cookies = filterCookiesByDomain(parseCookiesFromString(cookieStr), ZHILIAN_DOMAIN);
 
                 if (!cookies.isEmpty()) {
                     context.addCookies(cookies);
@@ -1146,7 +1182,7 @@ public class PlaywrightManager {
      */
     private void saveZhilianCookiesToDatabase(String remark) {
         try {
-            List<com.microsoft.playwright.options.Cookie> cookies = context.cookies();
+            List<com.microsoft.playwright.options.Cookie> cookies = filterCookiesByDomain(context.cookies(), ZHILIAN_DOMAIN);
             // 使用ObjectMapper序列化为JSON字符串
             String cookieJson = new ObjectMapper().writeValueAsString(cookies);
             boolean result = cookieService.saveOrUpdateCookie("zhilian", cookieJson, remark);
@@ -1253,7 +1289,7 @@ public class PlaywrightManager {
      */
     private void saveLiepinCookiesToDatabase(String remark) {
         try {
-            List<com.microsoft.playwright.options.Cookie> cookies = context.cookies();
+            List<com.microsoft.playwright.options.Cookie> cookies = filterCookiesByDomain(context.cookies(), LIEPIN_DOMAIN);
             // 使用ObjectMapper序列化为JSON字符串
             String cookieJson = new ObjectMapper().writeValueAsString(cookies);
             boolean result = cookieService.saveOrUpdateCookie("liepin", cookieJson, remark);
@@ -1353,7 +1389,7 @@ public class PlaywrightManager {
      */
     private void saveBossCookiesToDatabase(String remark) {
         try {
-            List<com.microsoft.playwright.options.Cookie> cookies = context.cookies();
+            List<com.microsoft.playwright.options.Cookie> cookies = filterCookiesByDomain(context.cookies(), BOSS_DOMAIN);
             // 使用ObjectMapper序列化为JSON字符串
             String cookieJson = new ObjectMapper().writeValueAsString(cookies);
             boolean result = cookieService.saveOrUpdateCookie("boss", cookieJson, remark);
@@ -1647,6 +1683,26 @@ public class PlaywrightManager {
         }
 
         return cookies;
+    }
+
+    private List<Cookie> filterCookiesByDomain(List<Cookie> cookies, String domainSuffix) {
+        if (cookies == null || cookies.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        String suffix = domainSuffix == null ? "" : domainSuffix.toLowerCase(Locale.ROOT);
+        List<Cookie> filtered = new ArrayList<>();
+        for (Cookie cookie : cookies) {
+            if (cookie == null || cookie.domain == null || cookie.domain.isBlank()) {
+                continue;
+            }
+            String domain = cookie.domain.toLowerCase(Locale.ROOT);
+            if (domain.equals(suffix) || domain.endsWith("." + suffix)) {
+                filtered.add(cookie);
+            }
+        }
+
+        return filtered;
     }
 
     /**
