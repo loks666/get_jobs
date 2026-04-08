@@ -4,9 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.getjobs.application.entity.CookieEntity;
 import com.getjobs.application.entity.Job51ConfigEntity;
 import com.getjobs.application.entity.Job51OptionEntity;
+import com.getjobs.application.security.LocalRequestGuard;
+import com.getjobs.application.security.SafeCookieRecord;
 import com.getjobs.application.service.CookieService;
 import com.getjobs.application.service.Job51Service;
 import com.getjobs.worker.manager.PlaywrightManager;
+import jakarta.servlet.http.HttpServletRequest;
 // Boss 控制器已独立，移除 Boss 依赖
 import com.getjobs.worker.service.Job51JobService;
 import com.getjobs.worker.dto.JobProgressMessage;
@@ -36,7 +39,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class JobController {
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -336,25 +338,13 @@ public class JobController {
 
     /** 读取数据库中的 51job Cookie 记录 */
     @GetMapping("/51job/cookie")
-    public ResponseEntity<Map<String, Object>> get51jobCookieRecord() {
+    public ResponseEntity<Map<String, Object>> get51jobCookieRecord(HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
         try {
+            LocalRequestGuard.assertLoopback(request);
             CookieEntity cookie = cookieService.getCookieByPlatform("51job");
-            Map<String, Object> data = new HashMap<>();
-            if (cookie != null) {
-                data.put("id", cookie.getId());
-                data.put("platform", cookie.getPlatform());
-                data.put("cookie_value", cookie.getCookieValue());
-                data.put("remark", cookie.getRemark());
-                data.put("created_at", cookie.getCreatedAt());
-                data.put("updated_at", cookie.getUpdatedAt());
-            } else {
-                data.put("platform", "51job");
-                data.put("cookie_value", null);
-                data.put("message", "未找到51job Cookie记录");
-            }
             response.put("success", true);
-            response.put("data", data);
+            response.put("data", SafeCookieRecord.fromEntity(cookie, "51job", "未找到51job Cookie记录"));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("success", false);
@@ -365,9 +355,10 @@ public class JobController {
 
     /** 主动保存51job Cookie到数据库 */
     @PostMapping("/51job/save-cookie")
-    public ResponseEntity<Map<String, Object>> save51jobCookie() {
+    public ResponseEntity<Map<String, Object>> save51jobCookie(HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
         try {
+            LocalRequestGuard.assertLoopback(request);
             playwrightManager.save51jobCookiesToDb("manual save");
             response.put("success", true);
             response.put("message", "已主动保存51job Cookie到数据库");

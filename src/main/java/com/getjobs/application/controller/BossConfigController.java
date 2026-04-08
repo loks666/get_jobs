@@ -5,7 +5,6 @@ import com.getjobs.application.entity.BossOptionEntity;
 import com.getjobs.application.service.BossService;
 import com.getjobs.application.entity.BlacklistEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +17,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
-@CrossOrigin(origins = "*")
 @RequestMapping("/api/boss/config")
 public class BossConfigController {
 

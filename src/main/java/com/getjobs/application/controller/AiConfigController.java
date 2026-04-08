@@ -16,7 +16,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/ai")
-@CrossOrigin(origins = "*")
 @Slf4j
 public class AiConfigController {
 

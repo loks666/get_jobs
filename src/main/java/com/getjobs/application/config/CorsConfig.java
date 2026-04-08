@@ -6,6 +6,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * CORS跨域配置
  */
@@ -15,9 +18,7 @@ public class CorsConfig {
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-
-        // 允许所有域名跨域
-        config.addAllowedOriginPattern("*");
+        resolveAllowedOrigins().forEach(config::addAllowedOrigin);
 
         // 允许所有请求头
         config.addAllowedHeader("*");
@@ -35,5 +36,22 @@ public class CorsConfig {
         source.registerCorsConfiguration("/**", config);
 
         return new CorsFilter(source);
+    }
+
+    private List<String> resolveAllowedOrigins() {
+        String configured = System.getenv("GETJOBS_ALLOWED_ORIGINS");
+        if (configured != null && !configured.isBlank()) {
+            return Arrays.stream(configured.split(","))
+                    .map(String::trim)
+                    .filter(origin -> !origin.isEmpty())
+                    .toList();
+        }
+
+        return List.of(
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:3001",
+                "http://127.0.0.1:3001"
+        );
     }
 }

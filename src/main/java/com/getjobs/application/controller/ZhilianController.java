@@ -2,10 +2,13 @@ package com.getjobs.application.controller;
 
 import com.getjobs.application.entity.CookieEntity;
 import com.getjobs.application.entity.ZhilianConfigEntity;
+import com.getjobs.application.security.LocalRequestGuard;
+import com.getjobs.application.security.SafeCookieRecord;
 import com.getjobs.application.service.CookieService;
 import com.getjobs.application.service.ZhilianService;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.service.ZhilianJobService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +27,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestController
 @RequestMapping("/api/zhilian")
-@CrossOrigin(origins = "*")
 public class ZhilianController {
 
     @Autowired
@@ -169,25 +171,13 @@ public class ZhilianController {
      * 调试接口：读取数据库中的 智联招聘 Cookie 记录
      */
     @GetMapping("/cookie")
-    public ResponseEntity<Map<String, Object>> getZhilianCookieRecord() {
+    public ResponseEntity<Map<String, Object>> getZhilianCookieRecord(HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
         try {
+            LocalRequestGuard.assertLoopback(request);
             CookieEntity cookie = cookieService.getCookieByPlatform("zhilian");
-            Map<String, Object> data = new HashMap<>();
-            if (cookie != null) {
-                data.put("id", cookie.getId());
-                data.put("platform", cookie.getPlatform());
-                data.put("cookie_value", cookie.getCookieValue());
-                data.put("remark", cookie.getRemark());
-                data.put("created_at", cookie.getCreatedAt());
-                data.put("updated_at", cookie.getUpdatedAt());
-            } else {
-                data.put("platform", "zhilian");
-                data.put("cookie_value", null);
-                data.put("message", "未找到智联招聘Cookie记录");
-            }
             response.put("success", true);
-            response.put("data", data);
+            response.put("data", SafeCookieRecord.fromEntity(cookie, "zhilian", "未找到智联招聘Cookie记录"));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("success", false);
@@ -200,9 +190,10 @@ public class ZhilianController {
      * 调试接口：主动保存当前上下文中的 智联招聘 Cookie 到数据库
      */
     @PostMapping("/save-cookie")
-    public ResponseEntity<Map<String, Object>> saveZhilianCookie() {
+    public ResponseEntity<Map<String, Object>> saveZhilianCookie(HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
         try {
+            LocalRequestGuard.assertLoopback(request);
             playwrightManager.saveZhilianCookiesToDb("manual save");
             response.put("success", true);
             response.put("message", "已主动保存智联招聘Cookie到数据库");

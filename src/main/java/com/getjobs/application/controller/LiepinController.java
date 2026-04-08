@@ -3,10 +3,13 @@ package com.getjobs.application.controller;
 import com.getjobs.application.entity.CookieEntity;
 import com.getjobs.application.entity.LiepinConfigEntity;
 import com.getjobs.application.entity.LiepinOptionEntity;
+import com.getjobs.application.security.LocalRequestGuard;
+import com.getjobs.application.security.SafeCookieRecord;
 import com.getjobs.application.service.CookieService;
 import com.getjobs.application.service.LiepinService;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.service.LiepinJobService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +26,6 @@ import java.util.concurrent.CompletableFuture;
  */
 @RestController
 @RequestMapping("/api/liepin")
-@CrossOrigin(origins = "*")
 public class LiepinController {
 
     private static final Logger log = LoggerFactory.getLogger(LiepinController.class);
@@ -265,25 +267,13 @@ public class LiepinController {
      * 调试接口：读取数据库中的猎聘 Cookie 记录
      */
     @GetMapping("/cookie")
-    public ResponseEntity<Map<String, Object>> getLiepinCookieRecord() {
+    public ResponseEntity<Map<String, Object>> getLiepinCookieRecord(HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
         try {
+            LocalRequestGuard.assertLoopback(request);
             CookieEntity cookie = cookieService.getCookieByPlatform("liepin");
-            Map<String, Object> data = new HashMap<>();
-            if (cookie != null) {
-                data.put("id", cookie.getId());
-                data.put("platform", cookie.getPlatform());
-                data.put("cookie_value", cookie.getCookieValue());
-                data.put("remark", cookie.getRemark());
-                data.put("created_at", cookie.getCreatedAt());
-                data.put("updated_at", cookie.getUpdatedAt());
-            } else {
-                data.put("platform", "liepin");
-                data.put("cookie_value", null);
-                data.put("message", "未找到猎聘Cookie记录");
-            }
             response.put("success", true);
-            response.put("data", data);
+            response.put("data", SafeCookieRecord.fromEntity(cookie, "liepin", "未找到猎聘Cookie记录"));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("success", false);
@@ -327,9 +317,10 @@ public class LiepinController {
      * 调试接口：主动保存当前上下文中的猎聘 Cookie 到数据库
      */
     @PostMapping("/save-cookie")
-    public ResponseEntity<Map<String, Object>> saveLiepinCookie() {
+    public ResponseEntity<Map<String, Object>> saveLiepinCookie(HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
         try {
+            LocalRequestGuard.assertLoopback(request);
             playwrightManager.saveLiepinCookiesToDb("manual save");
             response.put("success", true);
             response.put("message", "已主动保存猎聘Cookie到数据库");

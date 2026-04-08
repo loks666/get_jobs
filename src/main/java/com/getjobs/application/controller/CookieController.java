@@ -1,8 +1,11 @@
 package com.getjobs.application.controller;
 
 import com.getjobs.application.entity.CookieEntity;
+import com.getjobs.application.security.LocalRequestGuard;
+import com.getjobs.application.security.SafeCookieRecord;
 import com.getjobs.application.service.CookieService;
 import com.getjobs.worker.manager.PlaywrightManager;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +22,6 @@ import java.util.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/cookie")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class CookieController {
 
@@ -29,9 +31,10 @@ public class CookieController {
     private static final Set<String> ALLOWED_PLATFORMS = Set.of("boss", "liepin", "51job", "zhilian");
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getCookie(@RequestParam("platform") String platform) {
+    public ResponseEntity<Map<String, Object>> getCookie(@RequestParam("platform") String platform, HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
         try {
+            LocalRequestGuard.assertLoopback(request);
             if (!ALLOWED_PLATFORMS.contains(platform)) {
                 response.put("success", false);
                 response.put("message", "不支持的平台: " + platform);
@@ -39,21 +42,8 @@ public class CookieController {
             }
 
             CookieEntity cookie = cookieService.getCookieByPlatform(platform);
-            Map<String, Object> data = new HashMap<>();
-            if (cookie != null) {
-                data.put("id", cookie.getId());
-                data.put("platform", cookie.getPlatform());
-                data.put("cookie_value", cookie.getCookieValue());
-                data.put("remark", cookie.getRemark());
-                data.put("created_at", cookie.getCreatedAt());
-                data.put("updated_at", cookie.getUpdatedAt());
-            } else {
-                data.put("platform", platform);
-                data.put("cookie_value", null);
-                data.put("message", "未找到Cookie记录");
-            }
             response.put("success", true);
-            response.put("data", data);
+            response.put("data", SafeCookieRecord.fromEntity(cookie, platform, "未找到Cookie记录"));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("读取Cookie记录失败", e);
@@ -66,10 +56,12 @@ public class CookieController {
     @PostMapping("/save")
     public ResponseEntity<Map<String, Object>> saveCookie(
             @RequestParam("platform") String platform,
-            @RequestParam(value = "remark", defaultValue = "manual save") String remark
+            @RequestParam(value = "remark", defaultValue = "manual save") String remark,
+            HttpServletRequest request
     ) {
         Map<String, Object> response = new HashMap<>();
         try {
+            LocalRequestGuard.assertLoopback(request);
             if (!ALLOWED_PLATFORMS.contains(platform)) {
                 response.put("success", false);
                 response.put("message", "不支持的平台: " + platform);

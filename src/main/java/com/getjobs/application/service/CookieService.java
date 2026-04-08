@@ -3,6 +3,7 @@ package com.getjobs.application.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.getjobs.application.entity.CookieEntity;
 import com.getjobs.application.mapper.CookieMapper;
+import com.getjobs.application.security.CookieCrypto;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,7 +30,11 @@ public class CookieService {
         wrapper.eq(CookieEntity::getPlatform, platform)
                 .orderByDesc(CookieEntity::getUpdatedAt)
                 .last("LIMIT 1");
-        return cookieMapper.selectOne(wrapper);
+        CookieEntity cookie = cookieMapper.selectOne(wrapper);
+        if (cookie != null) {
+            cookie.setCookieValue(CookieCrypto.decryptIfNeeded(cookie.getCookieValue()));
+        }
+        return cookie;
     }
 
     /**
@@ -40,11 +45,12 @@ public class CookieService {
      * @return 是否成功
      */
     public boolean saveOrUpdateCookie(String platform, String cookieValue, String remark) {
+        String encryptedCookieValue = CookieCrypto.encrypt(cookieValue);
         CookieEntity existingCookie = getCookieByPlatform(platform);
 
         if (existingCookie != null) {
             // 更新现有Cookie
-            existingCookie.setCookieValue(cookieValue);
+            existingCookie.setCookieValue(encryptedCookieValue);
             existingCookie.setRemark(remark);
             existingCookie.setUpdatedAt(LocalDateTime.now());
             return cookieMapper.updateById(existingCookie) > 0;
@@ -52,7 +58,7 @@ public class CookieService {
             // 新建Cookie
             CookieEntity newCookie = new CookieEntity();
             newCookie.setPlatform(platform);
-            newCookie.setCookieValue(cookieValue);
+            newCookie.setCookieValue(encryptedCookieValue);
             newCookie.setRemark(remark);
             newCookie.setCreatedAt(LocalDateTime.now());
             newCookie.setUpdatedAt(LocalDateTime.now());
