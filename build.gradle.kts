@@ -33,6 +33,8 @@ dependencies {
 
     // 不在 BOM 中的依赖（写版本）
     implementation("com.microsoft.playwright:playwright:1.51.0")
+    implementation("org.seleniumhq.selenium:selenium-java:4.31.0")
+    implementation("org.seleniumhq.selenium:selenium-devtools-v135:4.31.0")
     implementation("com.baomidou:mybatis-plus-spring-boot3-starter:3.5.9")
     implementation("org.xerial:sqlite-jdbc:3.45.1.0")
     // 代码生成器（MyBatis-Plus Generator + Freemarker 模板）
