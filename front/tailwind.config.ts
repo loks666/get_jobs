@@ -19,7 +19,8 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ['Microsoft YaHei', 'sans-serif'],
+        sans: ['Outfit', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei', 'sans-serif'],
+        display: ['Outfit', 'PingFang SC', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -55,7 +56,6 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Solid Next.js 模板颜色
         stroke: "var(--color-stroke)",
         strokedark: "var(--color-strokedark)",
         hoverdark: "var(--color-hoverdark)",
@@ -79,8 +79,14 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      // Solid Next.js 阴影系统
       boxShadow: {
+        'card': '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
+        'card-hover': '0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03)',
+        'elevated': '0 8px 30px rgba(0,0,0,0.08)',
+        'glow-amber': '0 0 20px rgba(245, 158, 11, 0.15)',
+        'glow-blue': '0 0 20px rgba(99, 102, 241, 0.15)',
+        'glow-teal': '0 0 20px rgba(13, 148, 136, 0.15)',
+        'sidebar': '4px 0 24px rgba(0,0,0,0.15)',
         'solid-l': '0px 10px 120px 0px rgba(45, 74, 170, 0.1)',
         'solid-2': '0px 2px 10px rgba(122, 135, 167, 0.05)',
         'solid-3': '0px 6px 90px rgba(8, 14, 40, 0.04)',
@@ -95,20 +101,19 @@ const config: Config = {
         'solid-12': '0px 2px 10px rgba(0, 0, 0, 0.05)',
         'solid-13': '0px 2px 19px rgba(0, 0, 0, 0.05)',
       },
-      // Solid Next.js 自定义间距
       spacing: {
-        '7.5': '1.875rem',    // 30px
-        '12.5': '3.125rem',   // 50px
-        '15': '3.75rem',      // 60px
-        '17.5': '4.375rem',   // 70px
-        '20': '5rem',         // 80px
-        '22.5': '5.625rem',   // 90px
-        '25': '6.25rem',      // 100px
-        '27.5': '6.875rem',   // 110px
-        '30': '7.5rem',       // 120px
-        '35': '8.75rem',      // 140px
-        '40': '10rem',        // 160px
-        '46': '11.5rem',      // 184px
+        '7.5': '1.875rem',
+        '12.5': '3.125rem',
+        '15': '3.75rem',
+        '17.5': '4.375rem',
+        '20': '5rem',
+        '22.5': '5.625rem',
+        '25': '6.25rem',
+        '27.5': '6.875rem',
+        '30': '7.5rem',
+        '35': '8.75rem',
+        '40': '10rem',
+        '46': '11.5rem',
       },
       keyframes: {
         "accordion-down": {
@@ -119,10 +124,15 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "slide-in": {
+          from: { transform: "translateX(-8px)", opacity: "0" },
+          to: { transform: "translateX(0)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "slide-in": "slide-in 0.3s ease-out",
       },
     },
   },
