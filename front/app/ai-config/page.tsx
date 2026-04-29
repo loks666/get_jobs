@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { BiSave, BiBrain, BiInfoCircle } from 'react-icons/bi'
+import { BiSave, BiBrain, BiInfoCircle, BiRefresh } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -15,6 +15,7 @@ export default function AiConfigPage() {
   })
 
   const [loading, setLoading] = useState(false)
+  const [generating, setGenerating] = useState(false)
   // 是否启用AI（映射 boss_config.enable_ai）
   const [enableAi, setEnableAi] = useState<number>(0)
 
@@ -99,6 +100,35 @@ export default function AiConfigPage() {
     }
   }
 
+
+  const generateFromBossResume = async () => {
+    setGenerating(true)
+    try {
+      const response = await fetch('http://localhost:8888/api/ai/config/generate-from-boss', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const result = await response.json()
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || '生成失败')
+      }
+
+      setAiConfig({
+        introduce: result.data?.introduce || '',
+        prompt: result.data?.prompt || '',
+      })
+      alert('已根据当前Boss账号简历和求职目标生成AI配置！')
+    } catch (error) {
+      console.error('根据Boss简历生成AI配置失败:', error)
+      alert(error instanceof Error ? error.message : '生成失败，请检查Boss登录和AI配置')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const handleSave = async () => {
     setLoading(true)
     try {
@@ -135,15 +165,28 @@ export default function AiConfigPage() {
         iconClass="text-white"
         accentBgClass="bg-purple-500"
         actions={
-          <Button
-            onClick={handleSave}
-            size="sm"
-            className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-            type="button"
-            disabled={loading}
-          >
-            <BiSave className="mr-1" /> 保存配置
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={generateFromBossResume}
+              size="sm"
+              variant="outline"
+              className="rounded-full px-4"
+              type="button"
+              disabled={loading || generating}
+            >
+              {generating ? <BiRefresh className="mr-1 animate-spin" /> : <BiBrain className="mr-1" />}
+              {generating ? '生成中...' : '根据Boss简历生成'}
+            </Button>
+            <Button
+              onClick={handleSave}
+              size="sm"
+              className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              type="button"
+              disabled={loading || generating}
+            >
+              <BiSave className="mr-1" /> 保存配置
+            </Button>
+          </div>
         }
       />
 
@@ -183,7 +226,7 @@ export default function AiConfigPage() {
                   className="min-h-[150px] resize-y"
                 />
                 <p className="text-xs text-muted-foreground">
-                  详细描述您的技能、经验和专业背景，AI将使用这些信息生成个性化的求职文本
+                  可点击“根据Boss简历生成”，系统会按当前登录账号的Boss简历和求职目标生成候选人画像，不会默认按程序员处理
                 </p>
               </div>
 
@@ -197,7 +240,7 @@ export default function AiConfigPage() {
                   className="min-h-[150px] resize-y"
                 />
                 <p className="text-xs text-muted-foreground">
-                  AI使用的提示词模板，支持使用 %s 作为占位符，用于动态插入内容
+                  AI使用的提示词模板，当前Boss投递会按顺序传入：候选人介绍、搜索关键词、岗位名称、岗位JD、默认招呼语
                 </p>
               </div>
             </div>
@@ -216,7 +259,7 @@ export default function AiConfigPage() {
                 <ul className="text-sm text-muted-foreground space-y-2">
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-0.5">•</span>
-                    <span><strong>技能介绍：</strong>用于AI了解您的专业技能、工作经验和技术背景，是生成个性化内容的基础</span>
+                    <span><strong>技能介绍：</strong>用于AI了解您的求职方向、工作经验、岗位目标和核心优势，是生成个性化内容的基础</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-0.5">•</span>

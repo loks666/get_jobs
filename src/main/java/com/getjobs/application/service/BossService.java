@@ -157,6 +157,20 @@ public class BossService {
 
     // ==================== BossConfig相关方法 ====================
 
+
+    private void ensureBossConfigDistrictFilterColumn() {
+        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
+            try {
+                stmt.execute("ALTER TABLE boss_config ADD COLUMN district_filter TEXT");
+                log.info("已为 boss_config 添加 district_filter 字段");
+            } catch (Exception ignored) {
+                // 字段已存在或表尚未创建时忽略；表不存在时后续 mapper 逻辑会按原流程处理。
+            }
+        } catch (Exception e) {
+            log.debug("检查 boss_config.district_filter 字段失败: {}", e.getMessage());
+        }
+    }
+
     /**
      * 获取所有配置
      */
@@ -175,6 +189,7 @@ public class BossService {
      * 获取第一条配置（通常只有一条）
      */
     public BossConfigEntity getFirstConfig() {
+        ensureBossConfigDistrictFilterColumn();
         QueryWrapper<BossConfigEntity> wrapper = new QueryWrapper<>();
         wrapper.last("LIMIT 1");
         return bossConfigMapper.selectOne(wrapper);
@@ -226,6 +241,7 @@ public class BossService {
 
         if (partial.getKeywords() != null) existing.setKeywords(partial.getKeywords());
         if (partial.getCityCode() != null) existing.setCityCode(partial.getCityCode());
+        if (partial.getDistrictFilter() != null) existing.setDistrictFilter(partial.getDistrictFilter());
         if (partial.getIndustry() != null) existing.setIndustry(partial.getIndustry());
         if (partial.getJobType() != null) existing.setJobType(partial.getJobType());
         if (partial.getExperience() != null) existing.setExperience(partial.getExperience());
@@ -281,6 +297,7 @@ public class BossService {
         // 将中文名转换为代码，供 Worker 使用
         // 城市：单值或列表，统一转换为代码列表
         config.setCityCode(toCodes("city", parseListString(entity.getCityCode())));
+        config.setDistrictFilter(parseListString(entity.getDistrictFilter()));
         // 行业/经验/学历/规模/阶段：名称或代码 -> 统一为代码列表
         config.setIndustry(toCodes("industry", parseListString(entity.getIndustry())));
         config.setExperience(toCodes("experience", parseListString(entity.getExperience())));
@@ -332,6 +349,7 @@ public class BossService {
             s = s.substring(1, s.length() - 1);
         }
         if (s.trim().isEmpty()) return java.util.Collections.emptyList();
+        s = s.replace('，', ',').replace('、', ',').replace(';', ',').replace('；', ',');
         return java.util.Arrays.stream(s.split(","))
                 .map(String::trim)
                 // 去除项内可能存在的双引号，兼容 JSON 数组序列化存储

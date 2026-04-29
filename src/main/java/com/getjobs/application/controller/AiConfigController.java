@@ -85,6 +85,28 @@ public class AiConfigController {
         }
     }
 
+
+    @PostMapping("/config/generate-from-boss")
+    public ResponseEntity<Map<String, Object>> generateAiConfigFromBoss() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            AiEntity aiEntity = aiService.generateAiConfigFromBossResume();
+            response.put("success", true);
+            response.put("data", aiEntity);
+            response.put("message", "已根据Boss在线简历生成AI配置");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("根据Boss在线简历生成AI配置失败", e);
+            response.put("success", false);
+            response.put("message", "根据Boss在线简历生成AI配置失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
     /**
      * 健康检查接口
      * @return 服务状态

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import com.getjobs.worker.manager.PlaywrightManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ import java.time.format.DateTimeFormatter;
 public class AiService {
     private final ConfigService configService;
     private final AiMapper aiMapper;
+    private final PlaywrightManager playwrightManager;
 
     /**
      * 发送 AI 请求（非流式）并返回回复内容。
@@ -244,6 +246,58 @@ public class AiService {
             log.error("Responses API 调用异常", e);
             throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
         }
+    }
+
+
+    public AiEntity generateAiConfigFromBossResume() {
+        String resumeText = playwrightManager.fetchBossOnlineResumeText();
+        String raw = sendRequest(buildAiConfigGenerationPrompt(resumeText));
+        JSONObject json = new JSONObject(extractJson(raw));
+        String introduce = json.optString("introduce", "").trim();
+        String prompt = json.optString("prompt", "").trim();
+        if (introduce.isBlank() || prompt.isBlank()) {
+            throw new IllegalArgumentException("AI未返回有效的技能介绍或提示词");
+        }
+        return saveOrUpdateAiConfig(introduce, prompt);
+    }
+
+    private String buildAiConfigGenerationPrompt(String resumeText) {
+        return """
+                你是求职自动投递系统的配置生成助手。请根据当前Boss账号在线简历和求职目标，生成AI配置页面中的两项内容：introduce 和 prompt。
+
+                重要要求：
+                1. 当前候选人不一定是程序员，不要默认写Java、Python、技术栈、开发经验。必须严格依据简历内容判断候选人的实际职业方向。
+                2. introduce 是给AI使用的候选人画像，需包含：求职方向、目标岗位、期望城市/薪资、工作年限、核心经验、优势、可沟通亮点、需要规避或不要夸大的点。
+                3. prompt 是自动投递时生成HR打招呼语的模板，必须兼容 Java String.format 的5个占位符，且只能包含5个 %%s，占位符含义依次为：候选人介绍、搜索关键词、岗位名称、岗位JD、默认招呼语。
+                4. prompt 必须要求AI输出“只返回一句可直接发给HR的中文招呼语”，不要解释，不要Markdown，不要多余标点；如果岗位JD为空，也要基于候选人介绍、搜索关键词和岗位名称生成通用招呼语。
+                5. prompt 要强调基本符合才表达意向，不编造经历，不出现程序员/技术岗假设，不要出现“false给我”等无关内容。
+                6. 输出严格JSON，不要Markdown代码块，不要JSON以外说明。
+
+                返回结构：
+                {
+                  "introduce": "适合粘贴到技能介绍框的完整文本",
+                  "prompt": "适合粘贴到AI提示词框的模板，必须且只包含5个%%s"
+                }
+
+                Boss在线简历和求职目标：
+                %s
+                """.formatted(resumeText);
+    }
+
+    private String extractJson(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            throw new IllegalArgumentException("AI返回内容为空");
+        }
+        String text = raw.trim();
+        if (text.startsWith("```")) {
+            text = text.replaceFirst("^```(?:json)?\\s*", "").replaceFirst("\\s*```$", "").trim();
+        }
+        int start = text.indexOf('{');
+        int end = text.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            return text.substring(start, end + 1);
+        }
+        return text;
     }
 
     // ================= 合并的 AI 配置管理方法 =================

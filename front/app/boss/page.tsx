@@ -19,6 +19,7 @@ interface BossConfig {
   waitTime?: number
   keywords?: string
   cityCode?: string
+  districtFilter?: string
   industry?: string
   jobType?: string
   experience?: string
@@ -60,10 +61,22 @@ interface BlacklistItem {
   type: string
 }
 
+interface ProgressMessage {
+  platform?: string
+  type?: string
+  message?: string
+  current?: number | null
+  total?: number | null
+  timestamp?: number
+}
+
+const BOSS_PROGRESS_STORAGE_KEY = 'boss-progress-messages'
+
 export default function BossPage() {
   const [config, setConfig] = useState<BossConfig>({
     keywords: '',
     cityCode: '',
+    districtFilter: '',
     industry: '',
     jobType: '',
     experience: '',
@@ -104,9 +117,30 @@ export default function BossPage() {
   const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
   const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
   const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [progressMessages, setProgressMessages] = useState<ProgressMessage[]>([])
+
+  const updateProgressMessages = (updater: ProgressMessage[] | ((prev: ProgressMessage[]) => ProgressMessage[])) => {
+    setProgressMessages((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(BOSS_PROGRESS_STORAGE_KEY, JSON.stringify(next.slice(-50)))
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     fetchAllData()
+
+    try {
+      const cached = sessionStorage.getItem(BOSS_PROGRESS_STORAGE_KEY)
+      if (cached) {
+        const messages = JSON.parse(cached)
+        if (Array.isArray(messages)) setProgressMessages(messages)
+      }
+    } catch (error) {
+      console.warn('恢复Boss投递进度失败:', error)
+    }
 
     // 确保在客户端环境且 EventSource 可用
     if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
@@ -157,6 +191,37 @@ export default function BossPage() {
     return () => {
       client.close()
     }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') return
+
+    const client = createSSEWithBackoff('http://localhost:8888/api/boss/stream', {
+      onOpen: () => console.log('[Boss进度SSE] 连接已打开'),
+      onError: (e, attempt, delay) => {
+        console.warn(`[Boss进度SSE] 连接错误，准备第${attempt}次重连，延迟 ${delay}ms`, e)
+      },
+      listeners: [
+        {
+          name: 'progress',
+          handler: (event) => {
+            try {
+              const data: ProgressMessage = JSON.parse(event.data)
+              updateProgressMessages((prev) => [...prev.slice(-49), data])
+              if (data.type === 'success' || data.type === 'error' || data.message?.includes('用户取消投递')) {
+                setIsDelivering(false)
+              }
+            } catch (error) {
+              console.error('[Boss进度SSE] 解析进度消息失败:', error)
+            }
+          },
+        },
+        { name: 'connected', handler: () => {} },
+        { name: 'ping', handler: () => {} },
+      ],
+    })
+
+    return () => client.close()
   }, [])
 
   const fetchAllData = async () => {
@@ -473,6 +538,7 @@ export default function BossPage() {
   const handleStartDelivery = async () => {
     try {
       setIsDelivering(true)
+      updateProgressMessages([{ type: 'info', message: '正在启动Boss投递任务...', timestamp: Date.now() }])
       const response = await fetch('http://localhost:8888/api/boss/start', {
         method: 'POST',
       })
@@ -483,12 +549,26 @@ export default function BossPage() {
       } else {
         // 启动失败：不弹框
         console.warn('启动失败：', data.message)
+        updateProgressMessages((prev) => [...prev, { type: 'error', message: data.message || '启动失败', timestamp: Date.now() }])
         setIsDelivering(false)
       }
     } catch (error) {
       console.error('Failed to start delivery:', error)
       // 启动失败：不弹框
+      updateProgressMessages((prev) => [...prev, { type: 'error', message: '启动失败：网络或服务异常。', timestamp: Date.now() }])
       setIsDelivering(false)
+    }
+  }
+
+  const handleOpenBossLogin = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/boss/login', { method: 'POST' })
+      const data = await response.json()
+      if (!data.success) {
+        console.warn('打开Boss登录页失败：', data.message)
+      }
+    } catch (error) {
+      console.error('Failed to open Boss login page:', error)
     }
   }
 
@@ -505,11 +585,13 @@ export default function BossPage() {
       } else {
         // 停止失败：也要将状态设置为未投递（因为可能任务已经结束）
         console.warn('停止失败：', data.message)
+        updateProgressMessages((prev) => [...prev, { type: 'warning', message: data.message || '停止失败，任务可能已结束。', timestamp: Date.now() }])
         setIsDelivering(false)
       }
     } catch (error) {
       console.error('Failed to stop delivery:', error)
       // 停止失败：也要将状态设置为未投递
+      updateProgressMessages((prev) => [...prev, { type: 'error', message: '停止失败：网络或服务异常。', timestamp: Date.now() }])
       setIsDelivering(false)
     }
   }
@@ -555,8 +637,8 @@ export default function BossPage() {
                 <BiPlay className="mr-1" /> 检查登录中...
               </Button>
             ) : !isLoggedIn ? (
-              <Button size="sm" disabled className="rounded-full bg-gray-300 text-gray-600 cursor-not-allowed px-4 shadow">
-                <BiPlay className="mr-1" /> 请先登录Boss
+              <Button onClick={handleOpenBossLogin} size="sm" className="rounded-full bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <BiPlay className="mr-1" /> 登录Boss
               </Button>
             ) : isDelivering ? (
               <Button onClick={handleStopDelivery} size="sm" className="rounded-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
@@ -584,6 +666,37 @@ export default function BossPage() {
         </TabsList>
 
         <TabsContent value="config" className="space-y-6 mt-6">
+          {progressMessages.length > 0 && (
+            <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700 border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BiPlay className="text-primary" />
+                  投递进度
+                </CardTitle>
+                <CardDescription>展示 Boss 投递任务的实时状态和最终结果</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-64 space-y-2 overflow-y-auto rounded-lg border bg-background/70 p-3">
+                  {progressMessages.map((item, index) => {
+                    const isDone = item.type === 'success'
+                    const isError = item.type === 'error'
+                    const isWarning = item.type === 'warning'
+                    const progress = item.current != null && item.total != null ? `（${item.current}/${item.total}）` : ''
+
+                    return (
+                      <div key={`${item.timestamp || 0}-${index}`} className="flex items-start gap-2 text-sm">
+                        <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${isDone ? 'bg-green-500' : isError ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-blue-500'}`} />
+                        <span className={isDone ? 'text-green-700 dark:text-green-300' : isError ? 'text-red-700 dark:text-red-300' : 'text-foreground'}>
+                          {item.message || '收到进度更新'}{progress}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* 平台说明 */}
           <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
             <CardHeader>
@@ -638,6 +751,17 @@ export default function BossPage() {
                     ))}
                 </Select>
                 <p className="text-xs text-muted-foreground">目标工作城市（按设定顺序显示）</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="districtFilter">筛选区/县</Label>
+                <Input
+                  id="districtFilter"
+                  value={config.districtFilter || ''}
+                  onChange={(e) => setConfig({ ...config, districtFilter: e.target.value })}
+                  placeholder="例如：浦东新区,徐汇区,闵行区"
+                />
+                <p className="text-xs text-muted-foreground">可选。只投递岗位地区包含这些区/县的岗位；留空表示不限区。</p>
               </div>
 
               <div className="space-y-2">

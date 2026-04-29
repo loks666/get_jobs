@@ -43,8 +43,7 @@ public class StartupRunner implements ApplicationRunner {
         try {
             playwrightManager.init();
         } catch (Exception e) {
-            log.error("Playwright 初始化失败: {}", e.getMessage());
-            throw e;
+            log.error("Playwright 初始化失败，浏览器自动化功能暂不可用，但配置管理服务将继续运行: {}", e.getMessage());
         }
     }
 

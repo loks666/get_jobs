@@ -3,6 +3,7 @@ package com.getjobs.worker.service;
 import com.getjobs.application.service.ConfigService;
 import com.getjobs.worker.boss.Boss;
 import com.getjobs.worker.boss.BossConfig;
+import com.getjobs.application.service.ResumeOptimizationService;
 import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.microsoft.playwright.Page;
@@ -28,6 +29,7 @@ public class BossJobService implements JobPlatformService {
     private final PlaywrightManager playwrightManager;
     private final ConfigService configService;
     private final ObjectProvider<Boss> bossProvider;
+    private final ResumeOptimizationService resumeOptimizationService;
 
     // 任务运行状态
     private volatile boolean isRunning = false;
@@ -42,6 +44,8 @@ public class BossJobService implements JobPlatformService {
         }
 
         try {
+            playwrightManager.ensureInitialized();
+
             // 获取Boss页面实例
             Page page = playwrightManager.getBossPage();
             if (page == null) {
@@ -66,6 +70,18 @@ public class BossJobService implements JobPlatformService {
             BossConfig config = configService.getBossConfig();
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "配置加载成功"));
 
+            String bossResumeText = null;
+            if (Boolean.TRUE.equals(config.getEnableAI())) {
+                try {
+                    progressCallback.accept(JobProgressMessage.info(PLATFORM, "正在读取Boss在线简历，用于逐岗位JD优化..."));
+                    bossResumeText = resumeOptimizationService.fetchBossResumeText();
+                    progressCallback.accept(JobProgressMessage.info(PLATFORM, "Boss在线简历读取成功，将按岗位JD自动优化后投递"));
+                } catch (Exception e) {
+                    log.warn("读取Boss在线简历失败，将继续使用原投递逻辑: {}", e.getMessage());
+                    progressCallback.accept(JobProgressMessage.warning(PLATFORM, "读取Boss在线简历失败，将继续使用原投递逻辑: " + e.getMessage()));
+                }
+            }
+
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "开始投递任务..."));
 
             // 创建Boss实例并执行投递
@@ -80,6 +96,7 @@ public class BossJobService implements JobPlatformService {
             Boss boss = bossProvider.getObject();
             boss.setPage(page);
             boss.setConfig(config);
+            boss.setBossResumeText(bossResumeText);
             boss.setProgressCallback(bossCallback);
             boss.setShouldStopCallback(this::shouldStop);
             boss.prepare();

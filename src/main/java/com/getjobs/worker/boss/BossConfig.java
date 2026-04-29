@@ -35,6 +35,11 @@ public class BossConfig {
     private List<String> cityCode;
 
     /**
+     * 区/县筛选名称列表，空表示不限
+     */
+    private List<String> districtFilter;
+
+    /**
      * 自定义城市编码映射
      */
     private Map<String, String> customCityCode;

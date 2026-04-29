@@ -21,6 +21,8 @@ public class BossConfigEntity {
     private String keywords;
     /** 城市（名称或代码，支持列表） */
     private String cityCode;
+    /** 区/县筛选（名称列表，例如 [浦东新区,徐汇区]；为空表示不限） */
+    private String districtFilter;
     /** 行业（名称或代码，支持列表） */
     private String industry;
     /** 职位类型（名称或代码，单值或列表，优先取第一项） */

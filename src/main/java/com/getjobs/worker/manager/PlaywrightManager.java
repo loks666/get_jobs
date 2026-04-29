@@ -66,6 +66,8 @@ public class PlaywrightManager {
     // 登录状态监听器
     private final List<Consumer<LoginStatusChange>> loginStatusListeners = new CopyOnWriteArrayList<>();
 
+    private volatile boolean initialized = false;
+
     // 控制是否暂停对bossPage的后台监控，避免与任务执行并发访问同一页面
     private volatile boolean bossMonitoringPaused = false;
     // 控制是否暂停对liepinPage的后台监控
@@ -120,15 +122,15 @@ public class PlaywrightManager {
             playwright = Playwright.create();
             log.info("✓ Playwright引擎已启动");
 
-            // 创建浏览器实例，使用固定CDP端口7866，最大化启动
+            // 创建浏览器实例，最大化启动。不要暴露固定 CDP 端口，Boss 会检测 DevTools/CDP 调试特征。
             browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                     .setHeadless(false) // 非无头模式，可视化调试
                     .setSlowMo(50) // 放慢操作速度，便于调试
                     .setArgs(List.of(
-                            "--remote-debugging-port=" + CDP_PORT, // 使用固定CDP端口
-                            "--start-maximized" // 最大化启动窗口
+                            "--start-maximized", // 最大化启动窗口
+                            "--disable-blink-features=AutomationControlled"
                     )));
-            log.info("✓ Chrome浏览器已启动 (调试端口: {})", CDP_PORT);
+            log.info("✓ Chrome浏览器已启动");
 
             // 创建共享的BrowserContext（所有平台在同一个窗口的不同标签页中）
             context = browser.newContext(new Browser.NewContextOptions()
@@ -138,37 +140,19 @@ public class PlaywrightManager {
             log.info("✓ BrowserContext已创建（所有平台共享）");
             injectBossInitScript(context);
 
-            // 顺序创建所有Page（避免并发创建Page导致的竞态条件）
-            log.info("开始创建所有平台的Page...");
+            log.info("开始创建Boss Page...");
             bossPage = context.newPage();
             bossPage.setDefaultTimeout(DEFAULT_TIMEOUT);
             log.info("✓ Boss Page已创建");
 
-            liepinPage = context.newPage();
-            liepinPage.setDefaultTimeout(DEFAULT_TIMEOUT);
-            log.info("✓ 猎聘 Page已创建");
+            log.info("开始初始化Boss直聘平台...");
+            setupBossPlatform();
+            initialized = true;
 
-            job51Page = context.newPage();
-            job51Page.setDefaultTimeout(DEFAULT_TIMEOUT);
-            log.info("✓ 51job Page已创建");
-
-            zhilianPage = context.newPage();
-            zhilianPage.setDefaultTimeout(DEFAULT_TIMEOUT);
-            log.info("✓ 智联招聘 Page已创建");
-
-            // 并发执行各平台的初始化逻辑（导航、Cookie加载等）
-            log.info("开始并发初始化所有平台...");
-            CompletableFuture<Void> bossFuture = CompletableFuture.runAsync(this::setupBossPlatform);
-            CompletableFuture<Void> liepinFuture = CompletableFuture.runAsync(this::setupLiepinPlatform);
-            CompletableFuture<Void> job51Future = CompletableFuture.runAsync(this::setup51jobPlatform);
-            CompletableFuture<Void> zhilianFuture = CompletableFuture.runAsync(this::setupZhilianPlatform);
-
-            // 等待所有平台初始化完成
-            CompletableFuture.allOf(bossFuture, liepinFuture, job51Future, zhilianFuture).join();
-
-            log.info("✓ 浏览器自动化引擎初始化完成（所有平台已并发启动）");
+            log.info("✓ 浏览器自动化引擎初始化完成（Boss-only）");
             log.info("========================================");
         } catch (Exception e) {
+            initialized = false;
             log.error("✗ 浏览器自动化引擎初始化失败", e);
             throw new RuntimeException("Playwright初始化失败", e);
         }
@@ -1520,7 +1504,107 @@ public class PlaywrightManager {
      * 检查Playwright是否已初始化
      */
     public boolean isInitialized() {
-        return playwright != null && browser != null && bossPage != null;
+        return initialized && playwright != null && browser != null && bossPage != null;
+    }
+
+    public void ensureInitialized() {
+        if (!isInitialized()) {
+            init();
+        }
+    }
+
+    public String fetchBossOnlineResumeText() {
+        ensureInitialized();
+        if (bossPage == null) {
+            throw new IllegalStateException("Boss页面未初始化");
+        }
+        if (!isLoggedIn("boss")) {
+            throw new IllegalStateException("请先登录Boss直聘");
+        }
+
+        pauseBossMonitoring();
+        String previousUrl = null;
+        try {
+            previousUrl = bossPage.url();
+            String resumeUrl = BOSS_URL + "/web/geek/resume";
+            bossPage.navigate(resumeUrl, new Page.NavigateOptions()
+                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
+                    .setTimeout(30_000));
+            try {
+                bossPage.waitForLoadState(LoadState.NETWORKIDLE, new Page.WaitForLoadStateOptions().setTimeout(15_000));
+            } catch (Exception e) {
+                log.debug("等待Boss简历页网络空闲失败: {}", e.getMessage());
+            }
+
+            String currentUrl = bossPage.url();
+            if (currentUrl != null && currentUrl.contains("/web/passport")) {
+                throw new IllegalStateException("Boss登录状态失效，请先重新登录");
+            }
+
+            String text = extractBossResumeText();
+            if (text == null || text.isBlank()) {
+                throw new IllegalStateException("未能读取到Boss在线简历内容，请确认Boss简历页已完善且当前账号可访问");
+            }
+            return normalizeResumeText(text);
+        } catch (PlaywrightException e) {
+            throw new IllegalStateException("读取Boss在线简历失败: " + e.getMessage(), e);
+        } finally {
+            try {
+                if (previousUrl != null && !previousUrl.isBlank() && bossPage != null && !bossPage.isClosed()) {
+                    bossPage.navigate(previousUrl, new Page.NavigateOptions()
+                            .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
+                            .setTimeout(15_000));
+                }
+            } catch (Exception e) {
+                log.debug("恢复Boss页面URL失败: {}", e.getMessage());
+            }
+            resumeBossMonitoring();
+        }
+    }
+
+    private String extractBossResumeText() {
+        String script = """
+                () => {
+                  const normalize = (value) => {
+                    let text = (value || '').split(String.fromCharCode(9)).join(' ');
+                    while (text.includes('  ')) text = text.split('  ').join(' ');
+                    const tripleBreak = String.fromCharCode(10) + String.fromCharCode(10) + String.fromCharCode(10);
+                    const doubleBreak = String.fromCharCode(10) + String.fromCharCode(10);
+                    while (text.includes(tripleBreak)) text = text.split(tripleBreak).join(doubleBreak);
+                    return text.trim();
+                  };
+                  ['script', 'style', 'noscript', 'svg', 'canvas'].forEach(selector => {
+                    document.querySelectorAll(selector).forEach(node => node.remove());
+                  });
+                  const candidates = [
+                    '.resume-box', '.resume-content', '.resume-item', '.geek-resume',
+                    '.resume-preview', '.resume-detail', '.user-resume', 'main', '#main', 'body'
+                  ];
+                  for (const selector of candidates) {
+                    const nodes = Array.from(document.querySelectorAll(selector));
+                    const text = normalize(nodes.map(node => node.innerText || node.textContent || '').join(String.fromCharCode(10)));
+                    if (text.length > 200 && /优势|经历|经验|教育|项目|技能|求职|工作|简历/.test(text)) {
+                      return text;
+                    }
+                  }
+                  return normalize(document.body.innerText || '');
+                }
+                """;
+        Object value = bossPage.evaluate(script);
+        return value == null ? "" : value.toString();
+    }
+
+    private String normalizeResumeText(String text) {
+        String normalized = text
+                .replaceAll("(?m)^[ \t]+", "")
+                .replaceAll("[ \t]+", " ")
+                .replaceAll("\n{3,}", "\n\n")
+                .trim();
+        int maxLength = 20_000;
+        if (normalized.length() > maxLength) {
+            normalized = normalized.substring(0, maxLength) + "\n...(Boss在线简历内容过长，已截断)";
+        }
+        return normalized;
     }
 
     /**
@@ -1556,6 +1640,23 @@ public class PlaywrightManager {
      */
     public boolean isLoggedIn(String platform) {
         return loginStatus.getOrDefault(platform, false);
+    }
+
+    /**
+     * 打开 Boss 登录页，供前端显式触发登录。
+     */
+    public void openBossLoginPage() {
+        if (!isInitialized()) {
+            init();
+        }
+        if (bossPage == null) {
+            throw new IllegalStateException("Boss页面未初始化");
+        }
+        bossPage.bringToFront();
+        bossPage.navigate(BOSS_URL + "/web/user/?ka=header-login", new Page.NavigateOptions()
+                .setTimeout(DEFAULT_TIMEOUT)
+                .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+        setLoginStatus("boss", false);
     }
 
     /**

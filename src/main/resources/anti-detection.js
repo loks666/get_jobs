@@ -1,109 +1,140 @@
 (() => {
-    "use strict";
-    /* -------------------------------------------------------
-     * 1. 保存原生 Function.prototype.toString
-     * ----------------------------------------------------- */
-    const nativeFunctionToString = Function.prototype.toString;
+  'use strict';
 
-    /* -------------------------------------------------------
-     * 2. WeakMap：函数 → 伪原生源码
-     * ----------------------------------------------------- */
-    const nativeSourceMap = new WeakMap();
+  const nativeFunctionToString = Function.prototype.toString;
+  const nativeSourceMap = new WeakMap();
+  const registerNativeSource = (fn, source) => {
+    try { nativeSourceMap.set(fn, source); } catch (_) {}
+  };
 
-    /* -------------------------------------------------------
-     * 3. 注册伪原生源码
-     * ----------------------------------------------------- */
-    const registerNativeSource = (fn, source) => {
-      try {
-        nativeSourceMap.set(fn, source);
-      } catch (_) {}
-    };
+  Object.defineProperty(Function.prototype, 'toString', {
+    configurable: true,
+    writable: true,
+    value: function toString() {
+      if (nativeSourceMap.has(this)) return nativeSourceMap.get(this);
+      return nativeFunctionToString.call(this);
+    },
+  });
+  registerNativeSource(Function.prototype.toString, nativeFunctionToString.toString());
 
-    /* -------------------------------------------------------
-     * 4. 劫持 Function.prototype.toString
-     * ----------------------------------------------------- */
-    Object.defineProperty(Function.prototype, "toString", {
+  const nativeGetter = (obj, prop) => {
+    try {
+      const desc = Object.getOwnPropertyDescriptor(obj, prop);
+      return desc && desc.get;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const defineGetter = (obj, prop, getter) => {
+    try {
+      Object.defineProperty(obj, prop, { configurable: true, enumerable: true, get: getter });
+      registerNativeSource(getter, `function get ${prop}() { [native code] }`);
+    } catch (_) {}
+  };
+
+  const stealthify = (obj, prop, handler) => {
+    const original = obj && obj[prop];
+    if (typeof original !== 'function') return;
+    const wrapped = function (...args) { return handler.call(this, original, args); };
+    try { Object.defineProperty(wrapped, 'name', { value: prop, configurable: true }); } catch (_) {}
+    try { Object.setPrototypeOf(wrapped, Object.getPrototypeOf(original)); } catch (_) {}
+    registerNativeSource(wrapped, nativeFunctionToString.call(original));
+    const desc = Object.getOwnPropertyDescriptor(obj, prop) || { configurable: true, writable: true };
+    try { Object.defineProperty(obj, prop, { ...desc, value: wrapped }); } catch (_) {}
+  };
+
+  // webdriver / automation flags
+  defineGetter(Navigator.prototype, 'webdriver', function webdriver() { return false; });
+  defineGetter(Navigator.prototype, 'plugins', function plugins() { return [1, 2, 3, 4, 5]; });
+  defineGetter(Navigator.prototype, 'languages', function languages() { return ['zh-CN', 'zh', 'en-US', 'en']; });
+  defineGetter(Navigator.prototype, 'platform', function platform() { return 'MacIntel'; });
+
+  try { delete window.__playwright; } catch (_) {}
+  try { delete window.__pw_manual; } catch (_) {}
+  try { delete window.__PW_inspect; } catch (_) {}
+
+  // Boss/Chrome DevTools detection often relies on CDP serializing Error.stack or DOM getters.
+  const nativeErrorStackGetter = nativeGetter(Error.prototype, 'stack');
+  if (nativeErrorStackGetter) {
+    defineGetter(Error.prototype, 'stack', function stack() {
+      try { return nativeErrorStackGetter.call(this); } catch (_) { return ''; }
+    });
+  }
+
+  const sanitizeConsoleArgs = (args) => args.map((arg) => {
+    if (arg instanceof Error) return { name: arg.name, message: arg.message };
+    if (arg && typeof arg === 'object') return String(arg);
+    return arg;
+  });
+  ['log', 'debug', 'info', 'warn', 'error', 'dir', 'table'].forEach((name) => {
+    stealthify(console, name, (original, args) => original.apply(console, sanitizeConsoleArgs(args)));
+  });
+
+  // Boss uses disable-devtool-like timing checks. The key hooks discussed in
+  // loks666/get_jobs#250 are console.table and performance.now.
+  const navStart = (performance && performance.timing && performance.timing.navigationStart) || Date.now();
+  const noopTable = function table() {};
+  registerNativeSource(noopTable, 'function table() { [native code] }');
+  try {
+    Object.defineProperty(console, 'table', {
       configurable: true,
       writable: true,
-      value: function toString() {
-        if (nativeSourceMap.has(this)) {
-          return nativeSourceMap.get(this);
-        }
-        return nativeFunctionToString.call(this);
-      },
+      value: noopTable,
     });
+  } catch (_) {}
 
-    /* -------------------------------------------------------
-     * 5. 伪装 Function.prototype.toString 自身
-     * ----------------------------------------------------- */
-    registerNativeSource(
-      Function.prototype.toString,
-      nativeFunctionToString.toString(),
-    );
+  const hookedPerformanceNow = function now() {
+    return Date.now() - navStart;
+  };
+  registerNativeSource(hookedPerformanceNow, 'function now() { [native code] }');
+  try {
+    Object.defineProperty(performance, 'now', {
+      configurable: true,
+      writable: true,
+      value: hookedPerformanceNow,
+    });
+  } catch (_) {}
 
-    /* -------------------------------------------------------
-     * 6. stealthify：包装函数但保持“原生外观”
-     * ----------------------------------------------------- */
-    const stealthify = (obj, prop, handler) => {
-      const original = obj[prop];
-      if (typeof original !== "function") return;
+  // Permissions API consistency
+  if (navigator.permissions && navigator.permissions.query) {
+    stealthify(navigator.permissions, 'query', (original, args) => {
+      const params = args && args[0];
+      if (params && params.name === 'notifications') {
+        return Promise.resolve({ state: Notification.permission });
+      }
+      return original.apply(navigator.permissions, args);
+    });
+  }
 
-      const wrapped = function (...args) {
-        return handler.call(this, original, args);
+  // Chrome runtime shape
+  if (!window.chrome) {
+    try { Object.defineProperty(window, 'chrome', { configurable: true, value: {} }); } catch (_) {}
+  }
+  if (window.chrome && !window.chrome.runtime) {
+    try { Object.defineProperty(window.chrome, 'runtime', { configurable: true, value: {} }); } catch (_) {}
+  }
+
+  // Propagate the two critical hooks to same-origin iframes accessed through contentWindow.
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow');
+    if (descriptor && descriptor.get) {
+      const originalContentWindowGetter = descriptor.get;
+      const hookedContentWindowGetter = function contentWindow() {
+        const iframeWindow = originalContentWindowGetter.call(this);
+        try {
+          if (iframeWindow && iframeWindow.console) iframeWindow.console.table = noopTable;
+          if (iframeWindow && iframeWindow.performance) iframeWindow.performance.now = hookedPerformanceNow;
+        } catch (_) {}
+        return iframeWindow;
       };
-      const namePropertyDescriptor = Object.getOwnPropertyDescriptor(
-        wrapped,
-        "name",
-      );
-      // 处理函数 name 属性
-      Object.defineProperty(wrapped, "name", {
-        ...namePropertyDescriptor,
-        value: prop,
+      registerNativeSource(hookedContentWindowGetter, 'function get contentWindow() { [native code] }');
+      Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+        configurable: true,
+        get: hookedContentWindowGetter,
       });
-      // 保留 prototype（某些函数有）
-      try {
-        Object.setPrototypeOf(wrapped, Object.getPrototypeOf(original));
-      } catch (_) {}
+    }
+  } catch (_) {}
 
-      // 注册伪原生源码（直接复用原函数的 native 表现）
-      registerNativeSource(wrapped, nativeFunctionToString.call(original));
-
-      // 用 defineProperty 保持 descriptor 接近原生
-      const desc = Object.getOwnPropertyDescriptor(obj, prop);
-      Object.defineProperty(obj, prop, {
-        ...desc,
-        value: wrapped,
-      });
-    };
-
-    /* -------------------------------------------------------
-     * 7. 示例：stealth console.log / debug / info
-     * ----------------------------------------------------- */
-    const filterConsoleArgs = (args) =>
-      args.map((arg) => {
-        if (arg && typeof arg === "object") {
-          // 防止 getter / Proxy / 大对象触发
-          return {};
-        }
-        return arg;
-      });
-
-    ["log", "debug", "info", "warn", "error", "dir", "table", "debug"].forEach(
-      (name) => {
-        stealthify(console, name, (original, args) => {
-          // ❗不传递原始对象，避免 DevTools / CDP 展开
-          return original.apply(console, filterConsoleArgs(args));
-        });
-      },
-    );
-
-    /* -------------------------------------------------------
-     * 8. 防御性补丁（可选但强烈建议）
-     * ----------------------------------------------------- */
-
-    // 防止检测 toString 被替换
-    registerNativeSource(
-      registerNativeSource,
-      "function registerNativeSource() { [native code] }",
-    );
-  })();
+  registerNativeSource(registerNativeSource, 'function registerNativeSource() { [native code] }');
+})();

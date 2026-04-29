@@ -38,6 +38,7 @@ public class BossController {
     private final CookieService cookieService;
 
     private final List<SseEmitter> bossProgressEmitters = new CopyOnWriteArrayList<>();
+    private final List<JobProgressMessage> bossProgressHistory = new CopyOnWriteArrayList<>();
 
     /** SSE - Boss投递任务进度推送 */
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -60,6 +61,9 @@ public class BossController {
 
         try {
             emitter.send(SseEmitter.event().name("connected").data(Map.of("message", "已连接到Boss投递进度推送")));
+            for (JobProgressMessage message : bossProgressHistory) {
+                emitter.send(SseEmitter.event().name("progress").data(objectMapper.writeValueAsString(message)));
+            }
         } catch (IOException e) {
             log.error("发送SSE连接消息失败", e);
         }
@@ -101,6 +105,7 @@ public class BossController {
                 response.put("status", "running");
                 return ResponseEntity.badRequest().body(response);
             }
+            bossProgressHistory.clear();
             CompletableFuture.runAsync(() -> bossJobService.executeDelivery(pm -> {
                 sendBossProgress(pm);
                 log.info("[{}] {}", pm.getPlatform(), pm.getMessage());
@@ -115,6 +120,24 @@ public class BossController {
             response.put("success", false);
             response.put("message", "启动Boss任务失败: " + e.getMessage());
             response.put("error", e.getClass().getSimpleName());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /** POST - 打开Boss登录页 */
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, Object>> openBossLoginPage() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            playwrightManager.openBossLoginPage();
+            response.put("success", true);
+            response.put("message", "Boss登录页已打开，请在浏览器中扫码登录");
+            response.put("status", "login_page_opened");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("打开Boss登录页失败", e);
+            response.put("success", false);
+            response.put("message", "打开Boss登录页失败: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -172,6 +195,11 @@ public class BossController {
     }
 
     private void sendBossProgress(JobProgressMessage message) {
+        bossProgressHistory.add(message);
+        if (bossProgressHistory.size() > 100) {
+            bossProgressHistory.remove(0);
+        }
+
         List<SseEmitter> deadEmitters = new CopyOnWriteArrayList<>();
         for (SseEmitter emitter : bossProgressEmitters) {
             try {

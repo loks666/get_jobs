@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { BiEnvelope, BiBriefcase, BiSearch, BiTask, BiUserCircle, BiBrain, BiMoon, BiSun } from 'react-icons/bi'
+import { BiEnvelope, BiBriefcase, BiSearch, BiTask, BiUserCircle, BiBrain, BiMoon, BiSun, BiFile } from 'react-icons/bi'
 import { motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
 
@@ -66,6 +66,7 @@ export default function Sidebar() {
   const envGroup = [
     { href: '/env-config', icon: BiEnvelope, label: '环境配置', color: 'text-cyan-300' },
     { href: '/ai-config', icon: BiBrain, label: 'AI配置', color: 'text-purple-300' },
+    { href: '/resume-optimizer', icon: BiFile, label: '简历优化', color: 'text-emerald-300' },
   ]
 
   const platformGroup = [
