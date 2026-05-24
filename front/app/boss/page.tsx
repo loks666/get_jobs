@@ -12,6 +12,8 @@ import { Select } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PageHeader from '@/app/components/PageHeader'
 import AnalysisContent from '@/app/boss/analysis/AnalysisContent'
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:8888'
+
 
 interface BossConfig {
   id?: number
@@ -115,7 +117,7 @@ export default function BossPage() {
       return
     }
 
-    const client = createSSEWithBackoff('http://localhost:8888/api/jobs/login-status/stream', {
+    const client = createSSEWithBackoff(`${API_BASE}/api/jobs/login-status/stream`, {
       onOpen: () => {
         console.log('[SSE] 连接已打开')
       },
@@ -161,7 +163,7 @@ export default function BossPage() {
 
   const fetchAllData = async () => {
     try {
-      const response = await fetch('http://localhost:8888/api/boss/config')
+      const response = await fetch(`${API_BASE}/api/boss/config`)
       const data = await response.json()
 
       console.log('Fetched data:', data)
@@ -382,7 +384,7 @@ export default function BossPage() {
         stage: toBracketList(selectedStage),
         salary: toBracketList(selectedSalary),
       }
-      const response = await fetch('http://localhost:8888/api/boss/config', {
+      const response = await fetch(`${API_BASE}/api/boss/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -393,7 +395,7 @@ export default function BossPage() {
       if (response.ok) {
         // 统一保存 Cookie（Boss）
         try {
-          await fetch('http://localhost:8888/api/cookie/save?platform=boss', { method: 'POST' })
+          await fetch(`${API_BASE}/api/cookie/save?platform=boss`, { method: 'POST' })
         } catch (e) {
           console.warn('保存 Cookie 失败（Boss）:', e)
         }
@@ -428,7 +430,7 @@ export default function BossPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:8888/api/boss/config/blacklist', {
+      const response = await fetch(`${API_BASE}/api/boss/config/blacklist`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -454,7 +456,7 @@ export default function BossPage() {
 
   const handleDeleteBlacklist = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:8888/api/boss/config/blacklist/${id}`, {
+      const response = await fetch(`${API_BASE}/api/boss/config/blacklist/${id}`, {
         method: 'DELETE',
       })
 
@@ -473,7 +475,7 @@ export default function BossPage() {
   const handleStartDelivery = async () => {
     try {
       setIsDelivering(true)
-      const response = await fetch('http://localhost:8888/api/boss/start', {
+      const response = await fetch(`${API_BASE}/api/boss/start`, {
         method: 'POST',
       })
       const data = await response.json()
@@ -494,7 +496,7 @@ export default function BossPage() {
 
   const handleStopDelivery = async () => {
     try {
-      const response = await fetch('http://localhost:8888/api/boss/stop', {
+      const response = await fetch(`${API_BASE}/api/boss/stop`, {
         method: 'POST',
       })
       const data = await response.json()
@@ -516,7 +518,7 @@ export default function BossPage() {
 
   const triggerLogout = async () => {
     try {
-      const response = await fetch('http://localhost:8888/api/boss/logout', { method: 'POST' })
+      const response = await fetch(`${API_BASE}/api/boss/logout`, { method: 'POST' })
       const data = await response.json()
       if (data.success) {
         setIsLoggedIn(false)

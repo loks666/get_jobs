@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import PageHeader from '@/app/components/PageHeader'
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:8888'
+
 
 export default function EnvConfig() {
   const [envConfig, setEnvConfig] = useState({
@@ -27,7 +29,7 @@ export default function EnvConfig() {
   const fetchConfig = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:8888/api/config', {
+      const response = await fetch(`${API_BASE}/api/config`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +79,7 @@ export default function EnvConfig() {
         BOT_IS_SEND: String(envConfig.botIsSend ?? 0),
       }
 
-      const response = await fetch('http://localhost:8888/api/config', {
+      const response = await fetch(`${API_BASE}/api/config`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

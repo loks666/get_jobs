@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import PageHeader from '@/app/components/PageHeader'
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:8888'
+
 
 export default function AiConfigPage() {
   const [aiConfig, setAiConfig] = useState({
@@ -26,7 +28,7 @@ export default function AiConfigPage() {
 
   const fetchAiConfig = async () => {
     try {
-      const response = await fetch('http://localhost:8888/api/ai/config', {
+      const response = await fetch(`${API_BASE}/api/ai/config`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -54,7 +56,7 @@ export default function AiConfigPage() {
   // 加载 boss_config 的 enable_ai 字段
   const fetchEnableAi = async () => {
     try {
-      const response = await fetch('http://localhost:8888/api/boss/config', {
+      const response = await fetch(`${API_BASE}/api/boss/config`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +81,7 @@ export default function AiConfigPage() {
     try {
       const next = enableAi ? 0 : 1
       setEnableAi(next)
-      const response = await fetch('http://localhost:8888/api/boss/config', {
+      const response = await fetch(`${API_BASE}/api/boss/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +105,7 @@ export default function AiConfigPage() {
     setLoading(true)
     try {
       // 保存AI配置
-      const response = await fetch('http://localhost:8888/api/ai/config', {
+      const response = await fetch(`${API_BASE}/api/ai/config`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
