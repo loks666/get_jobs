@@ -1,0 +1,5 @@
+# pnpm 11 配置入口。批准原生构建脚本，否则 `pnpm install` 退出码为 1，
+# 进而导致 `pnpm dev` 的依赖预检失败。
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
