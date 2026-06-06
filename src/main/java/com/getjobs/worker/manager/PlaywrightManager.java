@@ -124,9 +124,15 @@ public class PlaywrightManager {
             browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                     .setHeadless(false) // 非无头模式，可视化调试
                     .setSlowMo(50) // 放慢操作速度，便于调试
+                    // 移除 Playwright 默认的 --enable-automation（它会置 navigator.webdriver=true，被Boss检测后登录页回退）
+                    .setIgnoreDefaultArgs(List.of("--enable-automation"))
                     .setArgs(List.of(
                             "--remote-debugging-port=" + CDP_PORT, // 使用固定CDP端口
-                            "--start-maximized" // 最大化启动窗口
+                            "--start-maximized", // 最大化启动窗口
+                            "--disable-blink-features=AutomationControlled", // 关闭自动化特征，绕过 navigator.webdriver 检测
+                            "--no-default-browser-check",
+                            "--no-first-run",
+                            "--disable-infobars"
                     )));
             log.info("✓ Chrome浏览器已启动 (调试端口: {})", CDP_PORT);
 
@@ -183,11 +189,11 @@ public class PlaywrightManager {
             log.warn("Boss 反检测脚本未加载，资源不存在或为空: {}", BOSS_INIT_SCRIPT_RESOURCE);
             return;
         }
-        String wrapped = "(function(){try{if(location&&location.origin===\"https://www.zhipin.com\"){"
-                + "if(window.__bossAntiDetectInjected){return;}window.__bossAntiDetectInjected=true;"
-                + script + "}}catch(e){}})();";
+        // 全局注入（共享上下文，对所有平台生效）：核心是隐藏 navigator.webdriver 等自动化特征，必须在页面脚本执行前注入
+        String wrapped = "(function(){try{if(window.__antiDetectInjected){return;}window.__antiDetectInjected=true;"
+                + script + "}catch(e){}})();";
         targetContext.addInitScript(wrapped);
-        log.info("Boss 反检测脚本已注入到Context: {}", BOSS_INIT_SCRIPT_RESOURCE);
+        log.info("反检测脚本已全局注入到Context: {}", BOSS_INIT_SCRIPT_RESOURCE);
     }
 
     private String readResourceText(String resourcePath) {
