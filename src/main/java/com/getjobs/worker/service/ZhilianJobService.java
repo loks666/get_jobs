@@ -5,7 +5,6 @@ import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.zhilian.ZhiLian;
 import com.getjobs.worker.zhilian.ZhilianConfig;
-import com.microsoft.playwright.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -42,9 +41,7 @@ public class ZhilianJobService implements JobPlatformService {
         }
 
         try {
-            // 获取智联招聘页面实例
-            Page page = playwrightManager.getZhilianPage();
-            if (page == null) {
+            if (!playwrightManager.hasPage(PLATFORM)) {
                 progressCallback.accept(JobProgressMessage.error(PLATFORM, "智联招聘页面未初始化"));
                 return;
             }
@@ -77,14 +74,15 @@ public class ZhilianJobService implements JobPlatformService {
                 }
             };
 
-            ZhiLian zhilian = zhilianProvider.getObject();
-            zhilian.setPage(page);
-            zhilian.setConfig(config);
-            zhilian.setProgressCallback(zhilianCallback);
-            zhilian.setShouldStopCallback(this::shouldStop);
-            zhilian.prepare();
-
-            int deliveredCount = zhilian.execute();
+            int deliveredCount = playwrightManager.withPage(PLATFORM, page -> {
+                ZhiLian zhilian = zhilianProvider.getObject();
+                zhilian.setPage(page);
+                zhilian.setConfig(config);
+                zhilian.setProgressCallback(zhilianCallback);
+                zhilian.setShouldStopCallback(this::shouldStop);
+                zhilian.prepare();
+                return zhilian.execute();
+            });
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共投递%d个职位", deliveredCount)));

@@ -5,7 +5,6 @@ import com.getjobs.worker.boss.Boss;
 import com.getjobs.worker.boss.BossConfig;
 import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.manager.PlaywrightManager;
-import com.microsoft.playwright.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -42,9 +41,7 @@ public class BossJobService implements JobPlatformService {
         }
 
         try {
-            // 获取Boss页面实例
-            Page page = playwrightManager.getBossPage();
-            if (page == null) {
+            if (!playwrightManager.hasPage(PLATFORM)) {
                 progressCallback.accept(JobProgressMessage.error(PLATFORM, "Boss页面未初始化"));
                 return;
             }
@@ -77,14 +74,15 @@ public class BossJobService implements JobPlatformService {
                 }
             };
 
-            Boss boss = bossProvider.getObject();
-            boss.setPage(page);
-            boss.setConfig(config);
-            boss.setProgressCallback(bossCallback);
-            boss.setShouldStopCallback(this::shouldStop);
-            boss.prepare();
-
-            int deliveredCount = boss.execute();
+            int deliveredCount = playwrightManager.withPage(PLATFORM, page -> {
+                Boss boss = bossProvider.getObject();
+                boss.setPage(page);
+                boss.setConfig(config);
+                boss.setProgressCallback(bossCallback);
+                boss.setShouldStopCallback(this::shouldStop);
+                boss.prepare();
+                return boss.execute();
+            });
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共发起%d个聊天", deliveredCount)));

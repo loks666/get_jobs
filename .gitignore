@@ -58,3 +58,6 @@ dist/
 
 # Gradle cache
 .gradle/
+
+# Local code graph artifacts
+.codegraph/

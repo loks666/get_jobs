@@ -5,7 +5,6 @@ import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.job51.Job51;
 import com.getjobs.worker.job51.Job51Config;
 import com.getjobs.worker.manager.PlaywrightManager;
-import com.microsoft.playwright.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -42,9 +41,7 @@ public class Job51JobService implements JobPlatformService {
         }
 
         try {
-            // 获取51job页面实例
-            Page page = playwrightManager.getJob51Page();
-            if (page == null) {
+            if (!playwrightManager.hasPage(PLATFORM)) {
                 progressCallback.accept(JobProgressMessage.error(PLATFORM, "51job页面未初始化"));
                 return;
             }
@@ -84,14 +81,15 @@ public class Job51JobService implements JobPlatformService {
                 }
             };
 
-            Job51 job51 = job51Provider.getObject();
-            job51.setPage(page);
-            job51.setConfig(config);
-            job51.setProgressCallback(job51Callback);
-            job51.setShouldStopCallback(this::shouldStop);
-            job51.prepare();
-
-            int deliveredCount = job51.execute();
+            int deliveredCount = playwrightManager.withPage(PLATFORM, page -> {
+                Job51 job51 = job51Provider.getObject();
+                job51.setPage(page);
+                job51.setConfig(config);
+                job51.setProgressCallback(job51Callback);
+                job51.setShouldStopCallback(this::shouldStop);
+                job51.prepare();
+                return job51.execute();
+            });
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共投递%d个职位", deliveredCount)));

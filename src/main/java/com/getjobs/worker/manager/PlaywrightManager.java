@@ -8,7 +8,6 @@ import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.WaitUntilState;
 import com.microsoft.playwright.options.LoadState;
 import jakarta.annotation.PreDestroy;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -22,10 +21,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Playwright管理器
@@ -34,10 +33,11 @@ import java.util.function.Consumer;
  * 所有平台在同一个浏览器窗口的不同标签页中运行
  */
 @Slf4j
-@Getter
 @Component
 @Lazy
 public class PlaywrightManager {
+
+    private final PlaywrightAccessGate gate = new PlaywrightAccessGate();
 
     // Playwright实例
     private Playwright playwright;
@@ -108,14 +108,15 @@ public class PlaywrightManager {
      * 初始化Playwright实例（延迟初始化）
      */
     public void init() {
-        if (isInitialized()) {
-            return;
-        }
-        log.info("========================================");
-        log.info("  初始化浏览器自动化引擎");
-        log.info("========================================");
+        gate.run(() -> {
+            if (isInitialized()) {
+                return;
+            }
+            log.info("========================================");
+            log.info("  初始化浏览器自动化引擎");
+            log.info("========================================");
 
-        try {
+            try {
             // 启动Playwright
             playwright = Playwright.create();
             log.info("✓ Playwright引擎已启动");
@@ -156,22 +157,20 @@ public class PlaywrightManager {
             zhilianPage.setDefaultTimeout(DEFAULT_TIMEOUT);
             log.info("✓ 智联招聘 Page已创建");
 
-            // 并发执行各平台的初始化逻辑（导航、Cookie加载等）
-            log.info("开始并发初始化所有平台...");
-            CompletableFuture<Void> bossFuture = CompletableFuture.runAsync(this::setupBossPlatform);
-            CompletableFuture<Void> liepinFuture = CompletableFuture.runAsync(this::setupLiepinPlatform);
-            CompletableFuture<Void> job51Future = CompletableFuture.runAsync(this::setup51jobPlatform);
-            CompletableFuture<Void> zhilianFuture = CompletableFuture.runAsync(this::setupZhilianPlatform);
+            // 顺序初始化各平台，所有Playwright调用都由共享gate保护
+            log.info("开始顺序初始化所有平台...");
+            setupBossPlatform();
+            setupLiepinPlatform();
+            setup51jobPlatform();
+            setupZhilianPlatform();
 
-            // 等待所有平台初始化完成
-            CompletableFuture.allOf(bossFuture, liepinFuture, job51Future, zhilianFuture).join();
-
-            log.info("✓ 浏览器自动化引擎初始化完成（所有平台已并发启动）");
+            log.info("✓ 浏览器自动化引擎初始化完成（所有平台已顺序启动）");
             log.info("========================================");
-        } catch (Exception e) {
-            log.error("✗ 浏览器自动化引擎初始化失败", e);
-            throw new RuntimeException("Playwright初始化失败", e);
-        }
+            } catch (Exception e) {
+                log.error("✗ 浏览器自动化引擎初始化失败", e);
+                throw new RuntimeException("Playwright初始化失败", e);
+            }
+        });
     }
 
     /**
@@ -330,7 +329,7 @@ public class PlaywrightManager {
             if (frame == page.mainFrame()) {
                 // 事件触发的检查在Playwright内部线程执行，仍需遵守暂停标志
                 if (!bossMonitoringPaused) {
-                    checkLoginStatus(page, "boss");
+                    gate.run(() -> checkLoginStatus(page, "boss"));
                 }
             }
         });
@@ -509,7 +508,7 @@ public class PlaywrightManager {
         page.onFrameNavigated(frame -> {
             if (frame == page.mainFrame()) {
                 if (!liepinMonitoringPaused) {
-                    checkLiepinLoginStatus(page);
+                    gate.run(() -> checkLiepinLoginStatus(page));
                 }
             }
         });
@@ -665,7 +664,7 @@ public class PlaywrightManager {
         page.onFrameNavigated(frame -> {
             if (frame == page.mainFrame()) {
                 if (!job51MonitoringPaused) {
-                    check51jobLoginStatus(page);
+                    gate.run(() -> check51jobLoginStatus(page));
                 }
             }
         });
@@ -716,7 +715,7 @@ public class PlaywrightManager {
                 for (int i = 0; i < maxSeconds; i++) {
                     boolean loggedIn = false;
                     try {
-                        loggedIn = checkIf51jobLoggedIn();
+                        loggedIn = gate.call(this::checkIf51jobLoggedIn);
                     } catch (Exception ignored) {
                     }
 
@@ -780,13 +779,17 @@ public class PlaywrightManager {
      * 主动保存51job Cookie到数据库（用于调试/验证）
      */
     public void save51jobCookiesToDb(String remark) {
-        save51jobCookiesToDatabase(remark);
+        gate.run(() -> save51jobCookiesToDatabase(remark));
     }
 
     /**
      * 清理51job上下文中的Cookie
      */
     public void clear51jobCookies() {
+        gate.run(this::clear51jobCookiesInternal);
+    }
+
+    private void clear51jobCookiesInternal() {
         try {
             if (context != null) {
                 context.clearCookies();
@@ -820,6 +823,10 @@ public class PlaywrightManager {
      * 触发 51job 登录流程：打开登录页并点击“微信扫码登录”按钮
      */
     public void trigger51jobLogin() {
+        gate.run(this::trigger51jobLoginInternal);
+    }
+
+    private void trigger51jobLoginInternal() {
         try {
             if (job51Page == null) {
                 if (context == null) {
@@ -1088,7 +1095,7 @@ public class PlaywrightManager {
         page.onFrameNavigated(frame -> {
             if (frame == page.mainFrame()) {
                 if (!zhilianMonitoringPaused) {
-                    checkZhilianLoginStatus(page);
+                    gate.run(() -> checkZhilianLoginStatus(page));
                 }
             }
         });
@@ -1119,6 +1126,10 @@ public class PlaywrightManager {
      * 主动触发智联招聘登录：点击二维码入口并等待登录成功跳转
      */
     public void triggerZhilianLogin() {
+        gate.run(this::triggerZhilianLoginInternal);
+    }
+
+    private void triggerZhilianLoginInternal() {
         try {
             if (zhilianPage == null) {
                 throw new IllegalStateException("智联招聘页面未初始化");
@@ -1198,7 +1209,7 @@ public class PlaywrightManager {
      * 主动保存智联招聘Cookie到数据库（用于调试/验证）
      */
     public void saveZhilianCookiesToDb(String remark) {
-        saveZhilianCookiesToDatabase(remark);
+        gate.run(() -> saveZhilianCookiesToDatabase(remark));
     }
 
     /**
@@ -1208,6 +1219,10 @@ public class PlaywrightManager {
      * @param remark   备注
      */
     public void saveCookiesToDb(String platform, String remark) {
+        gate.run(() -> saveCookiesToDbInternal(platform, remark));
+    }
+
+    private void saveCookiesToDbInternal(String platform, String remark) {
         switch (platform) {
             case "boss" -> saveBossCookiesToDatabase(remark);
             case "liepin" -> saveLiepinCookiesToDatabase(remark);
@@ -1221,6 +1236,10 @@ public class PlaywrightManager {
      * 清理智联招聘上下文中的Cookie
      */
     public void clearZhilianCookies() {
+        gate.run(this::clearZhilianCookiesInternal);
+    }
+
+    private void clearZhilianCookiesInternal() {
         try {
             if (context != null) {
                 context.clearCookies();
@@ -1305,13 +1324,17 @@ public class PlaywrightManager {
      * 主动保存猎聘Cookie到数据库（用于调试/验证）
      */
     public void saveLiepinCookiesToDb(String remark) {
-        saveLiepinCookiesToDatabase(remark);
+        gate.run(() -> saveLiepinCookiesToDatabase(remark));
     }
 
     /**
      * 清理猎聘上下文中的Cookie
      */
     public void clearLiepinCookies() {
+        gate.run(this::clearLiepinCookiesInternal);
+    }
+
+    private void clearLiepinCookiesInternal() {
         try {
             if (context != null) {
                 context.clearCookies();
@@ -1405,7 +1428,7 @@ public class PlaywrightManager {
      * 主动保存 Boss Cookie 到数据库（用于调试/验证）
      */
     public void saveBossCookiesToDb(String remark) {
-        saveBossCookiesToDatabase(remark);
+        gate.run(() -> saveBossCookiesToDatabase(remark));
     }
 
     /**
@@ -1413,6 +1436,10 @@ public class PlaywrightManager {
      * 用于退出登录时清除浏览器上下文中的所有Cookie
      */
     public void clearBossCookies() {
+        gate.run(this::clearBossCookiesInternal);
+    }
+
+    private void clearBossCookiesInternal() {
         try {
             if (context != null) {
                 context.clearCookies();
@@ -1432,6 +1459,10 @@ public class PlaywrightManager {
      */
     @Scheduled(fixedDelay = 3000)
     public void scheduledLoginCheck() {
+        gate.runIfIdle(this::scheduledLoginCheckInternal);
+    }
+
+    private void scheduledLoginCheckInternal() {
         try {
             if (liepinPage != null && !liepinMonitoringPaused) {
                 checkLiepinLoginStatus(liepinPage);
@@ -1473,6 +1504,10 @@ public class PlaywrightManager {
      */
     @PreDestroy
     public void destroy() {
+        gate.run(this::destroyInternal);
+    }
+
+    private void destroyInternal() {
         log.info("开始关闭Playwright管理器...");
 
         try {
@@ -1521,6 +1556,43 @@ public class PlaywrightManager {
      */
     public boolean isInitialized() {
         return playwright != null && browser != null && bossPage != null;
+    }
+
+    public boolean hasBrowser() {
+        return browser != null;
+    }
+
+    public boolean hasPage(String platform) {
+        return switch (platform) {
+            case "boss" -> bossPage != null;
+            case "liepin" -> liepinPage != null;
+            case "51job" -> job51Page != null;
+            case "zhilian" -> zhilianPage != null;
+            default -> throw new IllegalArgumentException("Unsupported platform: " + platform);
+        };
+    }
+
+    public <T> T withPage(String platform, Function<Page, T> action) {
+        return gate.call(() -> {
+            Page page = switch (platform) {
+                case "boss" -> bossPage;
+                case "liepin" -> liepinPage;
+                case "51job" -> job51Page;
+                case "zhilian" -> zhilianPage;
+                default -> throw new IllegalArgumentException("Unsupported platform: " + platform);
+            };
+            if (page == null) {
+                throw new IllegalStateException("Playwright页面未初始化: " + platform);
+            }
+            return action.apply(page);
+        });
+    }
+
+    public Map<String, String> testBossNavigation() {
+        return withPage("boss", page -> {
+            page.navigate(BOSS_URL);
+            return Map.of("title", page.title(), "url", page.url());
+        });
     }
 
     /**

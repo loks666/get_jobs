@@ -31,8 +31,8 @@ public class PlaywrightController {
         Map<String, Object> status = new HashMap<>();
         status.put("initialized", playwrightManager.isInitialized());
         status.put("cdpPort", playwrightManager.getCdpPort());
-        status.put("hasBossPage", playwrightManager.getBossPage() != null);
-        status.put("hasBrowser", playwrightManager.getBrowser() != null);
+        status.put("hasBossPage", playwrightManager.hasPage("boss"));
+        status.put("hasBrowser", playwrightManager.hasBrowser());
         status.put("bossLoggedIn", playwrightManager.isLoggedIn("boss"));
 
         return ResponseEntity.ok(status);
@@ -44,13 +44,11 @@ public class PlaywrightController {
     @GetMapping("/test-navigate")
     public ResponseEntity<Map<String, String>> testNavigate() {
         try {
-            playwrightManager.getBossPage().navigate("https://www.zhipin.com");
-            String title = playwrightManager.getBossPage().title();
+            Map<String, String> navigation = playwrightManager.testBossNavigation();
 
             Map<String, String> result = new HashMap<>();
             result.put("success", "true");
-            result.put("title", title);
-            result.put("url", playwrightManager.getBossPage().url());
+            result.putAll(navigation);
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {

@@ -5,7 +5,6 @@ import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.liepin.Liepin;
 import com.getjobs.worker.liepin.LiepinConfig;
 import com.getjobs.worker.manager.PlaywrightManager;
-import com.microsoft.playwright.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -46,8 +45,7 @@ public class LiepinJobService implements JobPlatformService {
         }
 
         try {
-            Page page = playwrightManager.getLiepinPage();
-            if (page == null) {
+            if (!playwrightManager.hasPage(PLATFORM)) {
                 progressCallback.accept(JobProgressMessage.error(PLATFORM, "猎聘页面未初始化"));
                 return;
             }
@@ -78,13 +76,15 @@ public class LiepinJobService implements JobPlatformService {
                 }
             };
 
-            Liepin liepin = liepinProvider.getObject();
-            liepin.setPage(page);
-            liepin.setConfig(config);
-            liepin.setProgressCallback(cb);
-            liepin.setShouldStopCallback(this::shouldStop);
-
-            int deliveredCount = liepin.execute();
+            int deliveredCount = playwrightManager.withPage(PLATFORM, page -> {
+                Liepin liepin = liepinProvider.getObject();
+                liepin.setPage(page);
+                liepin.setConfig(config);
+                liepin.setProgressCallback(cb);
+                liepin.setShouldStopCallback(this::shouldStop);
+                liepin.prepare();
+                return liepin.execute();
+            });
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共发起%d个聊天", deliveredCount)));
