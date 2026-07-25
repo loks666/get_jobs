@@ -330,9 +330,13 @@ public class Job51 {
                 Locator parent = page.locator("div.tabs_in");
                 Locator buttons = parent.locator("button.p_but");
 
-                if (buttons.count() > 1) {
+                int buttonCount = buttons.count();
+                if (buttonCount > 0) {
                     PlaywrightUtil.sleep(1);
-                    buttons.nth(1).click();
+                    Locator deliverButton = buttonCount > 1
+                            ? buttons.nth(buttonCount - 1)
+                            : buttons.first();
+                    deliverButton.click();
                     
                     // 🚨 点击后立即检测“日投递上限”提示（短暂出现，需快速多次检测）
                     for (int i = 0; i < 10; i++) {
