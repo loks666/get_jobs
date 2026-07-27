@@ -367,9 +367,11 @@ public class Job51 {
         try {
             PlaywrightUtil.sleep(2);
 
+            boolean appDeliverySucceeded = false;
             Locator successContent = page.locator("//div[@class='successContent']");
             if (successContent.count() > 0) {
                 String text = successContent.textContent();
+                appDeliverySucceeded = text != null && text.contains("投递成功");
                 if (text != null && text.contains("快来扫码下载")) {
                     log.info("检测到下载App弹窗，关闭中...");
                     // 关闭弹窗
@@ -394,6 +396,12 @@ public class Job51 {
                         java.util.regex.Matcher m2 = java.util.regex.Pattern.compile("未投递\\D*(\\d+)").matcher(dialogText);
                         if (m2.find()) failNum = Integer.parseInt(m2.group(1));
                     } catch (Exception ignored) {}
+                    if (successNum == null && appDeliverySucceeded) {
+                        synchronized (currentPageJobIds) {
+                            successNum = currentPageJobIds.size();
+                        }
+                        failNum = 0;
+                    }
                     log.info("[51job] 投递结果：成功 {} 个，未投递 {} 个", successNum, failNum);
                     sendProgress(String.format("投递结果：成功 %s 个，未投递 %s 个", successNum == null ? "?" : successNum, failNum == null ? "?" : failNum), null, null);
 
@@ -514,20 +522,27 @@ public class Job51 {
                 closeAnyModalOverlays();
 
                 Locator pageInput = page.locator("#jump_page");
-                if (pageInput.count() == 0) {
-                    log.warn("未找到页码输入框");
-                    return false;
+                boolean navigated = false;
+                if (pageInput.count() > 0) {
+                    PlaywrightUtil.sleep(1);
+                    pageInput.click();
+                    pageInput.fill("");
+                    pageInput.fill(String.valueOf(pageNum));
+
+                    Locator jumpButton = page.locator("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage");
+                    if (jumpButton.count() > 0) {
+                        jumpButton.click();
+                        navigated = true;
+                    }
                 }
-
-                PlaywrightUtil.sleep(1);
-                pageInput.click();
-                pageInput.fill("");
-                pageInput.fill(String.valueOf(pageNum));
-
-                // 点击跳转按钮
-                Locator jumpButton = page.locator("#app > div > div.post > div > div > div.j_result > div > div:nth-child(2) > div > div.bottom-page > div > div > span.jumpPage");
-                if (jumpButton.count() > 0) {
-                    jumpButton.click();
+                if (!navigated) {
+                    Locator pageNumber = page.locator("div.bottom-page")
+                            .getByText(String.valueOf(pageNum), new Locator.GetByTextOptions().setExact(true));
+                    if (pageNumber.count() == 0) {
+                        log.warn("未找到第{}页按钮", pageNum);
+                        return false;
+                    }
+                    pageNumber.first().click();
                 }
 
                 // 滚动到页面顶部
