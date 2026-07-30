@@ -5,6 +5,7 @@ import com.getjobs.worker.boss.Boss;
 import com.getjobs.worker.boss.BossConfig;
 import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.manager.PlaywrightManager;
+import com.getjobs.worker.utils.DeliveryLimit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -113,6 +114,7 @@ public class BossJobService implements JobPlatformService {
         status.put("platform", PLATFORM);
         status.put("isRunning", isRunning);
         status.put("isLoggedIn", playwrightManager.isLoggedIn(PLATFORM));
+        status.put("maxDeliveryAttempts", DeliveryLimit.configuredMax());
         return status;
     }
 

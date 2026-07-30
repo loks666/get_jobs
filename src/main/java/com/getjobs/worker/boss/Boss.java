@@ -5,6 +5,7 @@ import com.getjobs.application.service.AiService;
 import com.getjobs.application.service.BossService;
 import com.getjobs.worker.utils.Job;
 import com.getjobs.worker.utils.JobUtils;
+import com.getjobs.worker.utils.DeliveryLimit;
 import com.getjobs.worker.utils.PlaywrightUtil;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
@@ -42,6 +43,9 @@ import static com.getjobs.worker.boss.Locators.*;
 @RequiredArgsConstructor
 public class Boss {
 
+    private static final long CHAT_INPUT_TIMEOUT_MS = 60_000;
+    private static final long CHAT_INPUT_POLL_MS = 1_000;
+
     @Setter
     private Page page;
     @Setter
@@ -53,6 +57,9 @@ public class Boss {
     private Set<String> blackJobs;
     // 记录 encryptId -> encryptUserId 的映射，用于后续更新投递状态
     private final ConcurrentMap<String, String> encryptIdToUserId = new ConcurrentHashMap<>();
+    private final int maxDeliveries = DeliveryLimit.configuredMax();
+    private int deliveryAttempts;
+    private boolean platformDeliveryLimitReached;
     @Setter
     private ProgressCallback progressCallback;
     @Setter
@@ -90,7 +97,7 @@ public class Boss {
      */
     public int execute() {
         for (String cityCode : config.getCityCode()) {
-            if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
+            if (deliveryLimitReached() || shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
                 progressCallback.accept("用户取消投递", 0, 0);
                 break;
             }
@@ -101,6 +108,10 @@ public class Boss {
             }
         }
         return resultList.size();
+    }
+
+    private boolean deliveryLimitReached() {
+        return platformDeliveryLimitReached || deliveryAttempts >= maxDeliveries;
     }
 
     /**
@@ -208,7 +219,7 @@ public class Boss {
         String searchUrl = getSearchUrl(cityCode);
         for (String keyword : config.getKeywords()) {
             // 检查是否需要停止
-            if (shouldStopCallback.get()) {
+            if (deliveryLimitReached() || shouldStopCallback.get()) {
                 progressCallback.accept("用户取消投递", 0, 0);
                 return;
             }
@@ -221,8 +232,7 @@ public class Boss {
             page.navigate(url, new Page.NavigateOptions()
                     .setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED)
                     .setTimeout(15_000));
-            // 等待列表容器出现，确保页面完成首屏渲染
-            page.waitForSelector("//ul[contains(@class, 'rec-job-list')]", new Page.WaitForSelectorOptions().setTimeout(60_000));
+            waitForSearchResults();
 
             // 1. 基于 footer 出现滚动到底，确保加载全部岗位
             int lastCount = -1;
@@ -233,30 +243,40 @@ public class Boss {
                     progressCallback.accept("用户取消投递", 0, 0);
                     return;
                 }
-                Locator footer = page.locator("div#footer, #footer");
-                if (footer.count() > 0 && footer.first().isVisible()) {
-                    break; // 到达页面底部
-                }
-                // 按视口高度的90%渐进滚动，触发懒加载
-                page.evaluate("() => window.scrollBy(0, Math.floor(window.innerHeight * 1.5))");
+                try {
+                    Locator footer = page.locator("div#footer, #footer");
+                    if (footer.count() > 0 && footer.first().isVisible()) {
+                        break; // 到达页面底部
+                    }
+                    // 按视口高度的90%渐进滚动，触发懒加载
+                    page.evaluate("() => window.scrollBy(0, Math.floor(window.innerHeight * 1.5))");
 
-                // 获取卡片数量变化，判断是否需要强制触底
-                Locator cardsProbe = page.locator("//ul[contains(@class, 'rec-job-list')]//li[contains(@class, 'job-card-box')]");
-                int currentCount = cardsProbe.count();
-                if (currentCount == lastCount) {
-                    stableTries++;
-                } else {
+                    // 获取卡片数量变化，判断是否需要强制触底
+                    Locator cardsProbe = page.locator(JOB_LIST_SELECTOR);
+                    int currentCount = cardsProbe.count();
+                    if (currentCount == lastCount) {
+                        stableTries++;
+                    } else {
+                        stableTries = 0;
+                    }
+                    lastCount = currentCount;
+
+                    if (stableTries >= 3) { // 连续多次无新增，则强制触底一次
+                        page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)");
+                        // 触底不再等待，继续检测 footer 出现
+                    }
+                } catch (RuntimeException e) {
+                    if (!isNavigationRace(e)) {
+                        throw e;
+                    }
+                    log.info("Boss搜索页发生站内跳转，等待新页面稳定后继续");
+                    waitForSearchResults();
+                    lastCount = -1;
                     stableTries = 0;
-                }
-                lastCount = currentCount;
-
-                if (stableTries >= 3) { // 连续多次无新增，则强制触底一次
-                    page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)");
-                    // 触底不再等待，继续检测 footer 出现
                 }
             }
             // 统计最终岗位数量
-            Locator cardsFinal = page.locator("//ul[contains(@class, 'rec-job-list')]//li[contains(@class, 'job-card-box')]");
+            Locator cardsFinal = page.locator(JOB_LIST_SELECTOR);
             int loadedCount = cardsFinal.count();
             log.info("【{}】岗位已全部加载，总数:{}", keyword, loadedCount);
             progressCallback.accept("岗位加载完成：" + keyword, 0, loadedCount);
@@ -266,17 +286,17 @@ public class Boss {
             PlaywrightUtil.sleep(1);
 
             // 3. 逐个遍历所有岗位
-            Locator cards = page.locator("//ul[contains(@class, 'rec-job-list')]//li[contains(@class, 'job-card-box')]");
+            Locator cards = page.locator(JOB_LIST_SELECTOR);
             int count = cards.count();
             for (int i = 0; i < count; i++) {
                 // 检查是否需要停止
-                if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
+                if (deliveryLimitReached() || shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
                     progressCallback.accept("用户取消投递", i, count);
                     return;
                 }
 
                 // 重新获取卡片，避免元素过期
-                cards = page.locator("//ul[contains(@class, 'rec-job-list')]//li[contains(@class, 'job-card-box')]");
+                cards = page.locator(JOB_LIST_SELECTOR);
                 // 在点击卡片时同步等待岗位详情接口返回，随后解析并入库
                 Response detailResp = null;
                 try {
@@ -356,6 +376,28 @@ public class Boss {
                     }
                 }
 
+                if (!isValidString(jobName)) {
+                    Locator currentCard = cards.nth(i);
+                    jobName = safeText(currentCard, JOB_NAME);
+                    jobSalary = isValidString(jobSalary) ? jobSalary : safeText(currentCard, "span.salary");
+                    if (!isValidString(jobName)) {
+                        try {
+                            jobName = currentCard.innerText().lines()
+                                    .map(String::trim)
+                                    .filter(line -> !line.isEmpty())
+                                    .findFirst()
+                                    .orElse("");
+                        } catch (RuntimeException ignored) {
+                            // Keep the explicit skip below when even the rendered card is unavailable.
+                        }
+                    }
+                }
+                if (!isValidString(jobName)) {
+                    log.warn("未获得岗位详情，跳过当前卡片，避免向未知岗位发起沟通 | 序号：{}/{}", i + 1, count);
+                    progressCallback.accept("岗位详情未加载，已跳过", i + 1, count);
+                    continue;
+                }
+
                 // 过滤（全部基于 JSON 字段），并输出过滤原因
                 if (jobName != null && blackJobs != null && blackJobs.stream().anyMatch(jobName::contains)) {
                     String term = findMatchedTerm(blackJobs, jobName);
@@ -403,6 +445,37 @@ public class Boss {
             }
             log.info("【{}】岗位已投递完毕！已投递岗位数量:{}", keyword, postCount);
         }
+    }
+
+    private void waitForSearchResults() {
+        page.waitForSelector(JOB_LIST_SELECTOR, new Page.WaitForSelectorOptions().setTimeout(60_000));
+    }
+
+    static boolean isNavigationRace(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            String message = cause.getMessage();
+            if (message != null) {
+                String normalized = message.toLowerCase(Locale.ROOT);
+                if (normalized.contains("execution context was destroyed")
+                        || normalized.contains("element was detached from the dom")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    static boolean isPlatformDeliveryLimitMessage(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        return text.contains("今日沟通人数已达上限")
+                || text.contains("今日沟通已达上限")
+                || text.contains("沟通人数已达上限")
+                || text.contains("今日打招呼人数已达上限")
+                || text.contains("今日打招呼已达上限")
+                || text.contains("已达沟通上限")
+                || text.contains("沟通次数已达上限");
     }
 
     /**
@@ -611,7 +684,7 @@ public class Boss {
     @SneakyThrows
     private void resumeSubmission(String keyword, Job job) {
         // 若收到停止指令，直接短路返回
-        if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
+        if (deliveryLimitReached() || shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
             log.info("停止指令已触发，跳过投递 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
             return;
         }
@@ -636,11 +709,13 @@ public class Boss {
         String detailUrl = "https://www.zhipin.com" + href;
         // 2. 在新窗口打开详情页
         Page detailPage = page.context().newPage();
+        try {
         detailPage.navigate(detailUrl);
         PlaywrightUtil.sleep(1);
 
         // 3. 查找"立即沟通"按钮
-        Locator chatBtn = detailPage.locator("a.btn-startchat, a.op-btn-chat");
+        Locator chatBtn = detailPage.locator(
+                "a.btn-startchat, a.op-btn-chat, a:has-text('立即沟通'), button:has-text('立即沟通'), [role='button']:has-text('立即沟通')");
         boolean foundChatBtn = false;
         for (int i = 0; i < 5; i++) {
             if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
@@ -648,8 +723,16 @@ public class Boss {
                 try { detailPage.close(); } catch (Exception ignore) {}
                 return;
             }
-            if (chatBtn.count() > 0 && (chatBtn.first().textContent().contains("立即沟通"))) {
-                foundChatBtn = true;
+            for (int candidateIndex = 0; candidateIndex < chatBtn.count(); candidateIndex++) {
+                Locator candidate = chatBtn.nth(candidateIndex);
+                if (candidate.isVisible() && candidate.textContent() != null
+                        && candidate.textContent().contains("立即沟通")) {
+                    chatBtn = candidate;
+                    foundChatBtn = true;
+                    break;
+                }
+            }
+            if (foundChatBtn) {
                 break;
             }
             PlaywrightUtil.sleep(1);
@@ -663,35 +746,12 @@ public class Boss {
             }
             return;
         }
-        chatBtn.first().click();
-        PlaywrightUtil.sleep(1);
-
-        // 4. 等待聊天输入框
-        Locator inputLocator = detailPage.locator("div#chat-input.chat-input[contenteditable='true'], textarea.input-area");
-        boolean inputReady = false;
-        for (int i = 0; i < 10; i++) {
-            if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
-                log.info("停止指令已触发，结束等待聊天输入框 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
-                try { detailPage.close(); } catch (Exception ignore) {}
-                return;
-            }
-            if (inputLocator.count() > 0 && inputLocator.first().isVisible()) {
-                inputReady = true;
-                break;
-            }
-            PlaywrightUtil.sleep(1);
-        }
-        if (!inputReady) {
-            log.warn("聊天输入框未出现，跳过: {}", job.getJobName());
-            // 关闭详情页
-            try {
-                detailPage.close();
-            } catch (Exception ignore) {
-            }
-            return;
+        Locator exactChatBtn = detailPage.locator("a.btn-startchat").first();
+        if (exactChatBtn.count() > 0 && exactChatBtn.isVisible()) {
+            chatBtn = exactChatBtn;
         }
 
-        // 5. AI智能生成打招呼语
+        // AI 请求可能耗时较长，必须在打开聊天会话前完成，避免聊天页在等待期间失效。
         String aiMessage = null;
         if (config.getEnableAI()) {
             String jd = job.getJobInfo();
@@ -701,23 +761,156 @@ public class Boss {
         }
         String message = isValidString(aiMessage) ? aiMessage : config.getSayHi();
 
-        // 6. 输入打招呼语
-        Locator input = inputLocator.first();
-        input.click();
-        Object tagObj = input.evaluate("el => el.tagName.toLowerCase()");
-        if (tagObj instanceof String && ((String) tagObj).equals("textarea")) {
-            input.fill(message);
-        } else {
-            // 对 contenteditable 节点写入文本并派发 input 事件
-            input.evaluate("(el, msg) => { el.innerText = msg; el.dispatchEvent(new Event('input')); }", message);
+        deliveryAttempts++;
+        String chatRedirectUrl = chatBtn.getAttribute("redirect-url");
+        if (!isValidString(chatRedirectUrl)) {
+            chatRedirectUrl = detailPage.locator("a.btn-startchat[redirect-url], a[redirect-url]").first()
+                    .getAttribute("redirect-url");
+        }
+        if (!isValidString(chatRedirectUrl)) {
+            String chatHtml = String.valueOf(chatBtn.evaluate("el => el.outerHTML"));
+            String marker = "redirect-url=\"";
+            int start = chatHtml.indexOf(marker);
+            if (start >= 0) {
+                start += marker.length();
+                int end = chatHtml.indexOf('"', start);
+                if (end > start) {
+                    chatRedirectUrl = chatHtml.substring(start, end).replace("&amp;", "&");
+                }
+            }
+        }
+        Locator chatButtonForClick = chatBtn.first();
+        Response friendAddResponse = null;
+        boolean[] chatClickTriggered = {false};
+        try {
+            friendAddResponse = detailPage.waitForResponse(response -> {
+                try {
+                    return response.url() != null && response.url().contains("/wapi/zpgeek/friend/add.json");
+                } catch (RuntimeException ignored) {
+                    return false;
+                }
+            }, new Page.WaitForResponseOptions().setTimeout(15_000), () -> {
+                chatClickTriggered[0] = true;
+                chatButtonForClick.click();
+            });
+        } catch (RuntimeException responseError) {
+            log.debug("Boss 好友接口未在等待窗口内返回，继续检查聊天页 | 原因：{}", responseError.getMessage());
+        }
+        if (!chatClickTriggered[0]) {
+            chatButtonForClick.click();
+        }
+        String friendAddBody = null;
+        if (friendAddResponse != null) {
+            friendAddBody = friendAddResponse.text();
+            if (isPlatformDeliveryLimitMessage(friendAddBody)) {
+                markPlatformDeliveryLimit();
+                try {
+                    detailPage.close();
+                } catch (RuntimeException ignored) {
+                }
+                return;
+            }
+            log.debug("friend/add 响应 | status:{} | body:{}", friendAddResponse.status(), friendAddBody);
+        }
+        if (isSoftCommunicationAccepted(friendAddBody)) {
+            log.info("Boss 已受理沟通请求，当前岗位记为投递成功并继续下一个 | 公司：{} | 岗位：{}",
+                    job.getCompanyName(), job.getJobName());
+            try {
+                detailPage.close();
+            } catch (RuntimeException ignored) {
+            }
+            recordSuccessfulDelivery(detailUrl, job, resultList);
+            return;
+        }
+        try {
+            for (Page candidatePage : detailPage.context().pages()) {
+                if (candidatePage != detailPage && candidatePage.url() != null
+                        && candidatePage.url().contains("/web/geek/chat")) {
+                    try {
+                        detailPage.close();
+                    } catch (RuntimeException ignored) {
+                    }
+                    detailPage = candidatePage;
+                    break;
+                }
+            }
+        } catch (RuntimeException ignored) {
+            // 页面未打开新标签页，继续使用当前详情页。
+        }
+        long continueDeadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
+        while (System.nanoTime() < continueDeadline) {
+            Locator continueChatBtn = detailPage.locator(".greet-boss-pop .dialog-container")
+                    .getByText("继续沟通", new Locator.GetByTextOptions().setExact(true));
+            if (continueChatBtn.count() > 0 && continueChatBtn.first().isVisible()) {
+                continueChatBtn.first().click();
+                break;
+            }
+            PlaywrightUtil.sleep(1);
+        }
+        if (!detailPage.url().contains("/web/geek/chat")) {
+            try {
+                detailPage.waitForURL("**/web/geek/chat**", new Page.WaitForURLOptions().setTimeout(10_000));
+            } catch (RuntimeException ignored) {
+                // Native click did not navigate; use the captured redirect URL below.
+            }
+        }
+        if (!detailPage.url().contains("/web/geek/chat") && isValidString(chatRedirectUrl)) {
+            String chatUrl = chatRedirectUrl.startsWith("http")
+                    ? chatRedirectUrl
+                    : "https://www.zhipin.com" + chatRedirectUrl;
+            log.info("Boss 聊天兜底导航 | redirect-url:{}", chatUrl);
+            detailPage.navigate(chatUrl);
+            log.info("Boss 聊天兜底导航完成 | URL:{}", detailPage.url());
+        }
+        detailPage.waitForURL("**/web/geek/chat**", new Page.WaitForURLOptions().setTimeout(15_000));
+
+        // 4. 等待聊天输入框并完成填写；只有填写成功才允许点击发送。
+        String inputSelector =
+                "div#chat-input.chat-input[contenteditable='true'], textarea.input-area, [contenteditable='true'][role='textbox']";
+        if (!waitForChatInputAndFill(detailPage, inputSelector, message, job)) {
+            try {
+                detailPage.close();
+            } catch (Exception ignore) {
+            }
+            return;
         }
 
         // 7. 点击发送按钮（div.send-message 或 button.btn-send）
         Locator sendText = detailPage.locator("div.send-message, button[type='send'].btn-send, button.btn-send");
         boolean sendSuccess = false;
         if (sendText.count() > 0) {
-            sendText.first().click();
+            Locator sendButton = sendText.first();
+            long sendDeadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
+            while (System.nanoTime() < sendDeadline && !isSendButtonReady(sendButton)) {
+                if (detectPlatformDeliveryLimit(detailPage)) {
+                    markPlatformDeliveryLimit();
+                    return;
+                }
+                PlaywrightUtil.sleep(1);
+            }
+            if (!isSendButtonReady(sendButton)) {
+                if (detectPlatformDeliveryLimit(detailPage)) {
+                    markPlatformDeliveryLimit();
+                } else {
+                    log.warn("发送按钮不可用，跳过当前岗位 | 公司：{} | 岗位：{}",
+                            job.getCompanyName(), job.getJobName());
+                }
+                try {
+                    detailPage.close();
+                } catch (Exception ignore) {
+                }
+                return;
+            }
+            sendButton.click();
             PlaywrightUtil.sleep(1);
+            if (detectPlatformDeliveryLimit(detailPage)) {
+                markPlatformDeliveryLimit();
+                try {
+                    detailPage.close();
+                } catch (Exception ignore) {
+                }
+                return;
+            }
             sendSuccess = true;
             try {
                 detailPage.locator("i.icon-close").first().click();
@@ -745,20 +938,7 @@ public class Boss {
 
         // 10. 更新数据库投递状态 & 成功投递加入结果
         if (sendSuccess) {
-            // 从详情链接提取 encrypt_id，并映射到 encrypt_user_id
-            String encryptId = extractEncryptId(detailUrl);
-            String encryptUserId = encryptId != null ? encryptIdToUserId.get(encryptId) : null;
-            if (encryptId != null && encryptUserId != null) {
-                try {
-        bossService.updateDeliveryStatus(encryptId, encryptUserId, "已投递");
-                    log.info("投递成功 | 公司：{} | 岗位：{} | encryptId：{} | encryptUserId：{}", job.getCompanyName(), job.getJobName(), encryptId, encryptUserId);
-                } catch (Exception e) {
-                    log.warn("更新投递状态为已投递失败：{}", e.getMessage());
-                }
-            } else {
-                log.debug("未能找到 encryptId/encryptUserId 用于更新投递状态，detailUrl: {}", detailUrl);
-            }
-            resultList.add(job);
+            recordSuccessfulDelivery(detailUrl, job, resultList);
         } else {
             // 若发生发送失败，也进行状态更新
             String encryptId = extractEncryptId(detailUrl);
@@ -771,6 +951,109 @@ public class Boss {
                     log.warn("更新投递状态为投递失败异常：{}", e.getMessage());
                 }
             }
+        }
+        } catch (RuntimeException error) {
+            try {
+                detailPage.close();
+            } catch (Exception ignore) {
+            }
+            log.warn("当前岗位投递失败，继续下一个 | 公司：{} | 岗位：{} | 原因：{}",
+                    job.getCompanyName(), job.getJobName(), error.getMessage());
+            if (progressCallback != null) {
+                progressCallback.accept("当前岗位投递失败，继续下一个：" + job.getJobName(), null, null);
+            }
+        }
+    }
+
+    private boolean detectPlatformDeliveryLimit(Page detailPage) {
+        try {
+            Locator body = detailPage.locator("body");
+            return body.count() > 0 && isPlatformDeliveryLimitMessage(body.first().innerText());
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
+    static boolean isSoftCommunicationAccepted(String responseBody) {
+        return responseBody != null
+                && responseBody.contains("chatRemindDialog")
+                && !isPlatformDeliveryLimitMessage(responseBody);
+    }
+
+    private void recordSuccessfulDelivery(String detailUrl, Job job, List<Job> resultList) {
+        String encryptId = extractEncryptId(detailUrl);
+        String encryptUserId = encryptId != null ? encryptIdToUserId.get(encryptId) : null;
+        if (encryptId != null && encryptUserId != null) {
+            try {
+                bossService.updateDeliveryStatus(encryptId, encryptUserId, "已投递");
+                log.info("投递成功 | 公司：{} | 岗位：{} | encryptId：{} | encryptUserId：{}",
+                        job.getCompanyName(), job.getJobName(), encryptId, encryptUserId);
+            } catch (Exception e) {
+                log.warn("更新投递状态为已投递失败：{}", e.getMessage());
+            }
+        } else {
+            log.debug("未能找到 encryptId/encryptUserId 用于更新投递状态，detailUrl: {}", detailUrl);
+        }
+        resultList.add(job);
+    }
+
+    private boolean isSendButtonReady(Locator sendButton) {
+        if (!sendButton.isVisible() || !sendButton.isEnabled()) {
+            return false;
+        }
+        String className = sendButton.getAttribute("class");
+        return className == null || !className.contains("disabled");
+    }
+
+    private boolean waitForChatInputAndFill(Page detailPage, String selector, String message, Job job) {
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(CHAT_INPUT_TIMEOUT_MS);
+        while (System.nanoTime() < deadline) {
+            if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
+                log.info("停止指令已触发，结束等待聊天输入框 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
+                return false;
+            }
+            if (detectPlatformDeliveryLimit(detailPage)) {
+                markPlatformDeliveryLimit();
+                return false;
+            }
+
+            long remainingMs = Math.max(1, Math.min(CHAT_INPUT_POLL_MS,
+                    java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime())));
+            try {
+                Locator input = detailPage.locator(selector).first();
+                input.waitFor(new Locator.WaitForOptions().setTimeout(remainingMs));
+                input.fill(message, new Locator.FillOptions().setTimeout(remainingMs));
+                input.dispatchEvent("input");
+                return true;
+            } catch (RuntimeException error) {
+                if (!isChatReadinessRetry(error)) {
+                    throw error;
+                }
+                log.debug("聊天窗口仍在加载，继续等待 | 岗位：{} | 原因：{}", job.getJobName(), error.getMessage());
+            }
+            PlaywrightUtil.sleep(1);
+        }
+        return false;
+    }
+
+    private static boolean isChatReadinessRetry(Throwable error) {
+        if (isNavigationRace(error)) {
+            return true;
+        }
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            String message = cause.getMessage();
+            if (message != null && message.toLowerCase(Locale.ROOT).contains("timeout")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void markPlatformDeliveryLimit() {
+        platformDeliveryLimitReached = true;
+        log.warn("检测到 Boss 今日沟通已达上限，停止投递");
+        if (progressCallback != null) {
+            progressCallback.accept("检测到 Boss 今日沟通已达上限，任务已停止", null, null);
         }
     }
 

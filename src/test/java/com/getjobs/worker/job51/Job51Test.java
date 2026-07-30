@@ -70,11 +70,11 @@ class Job51Test {
         List<Long> ids = (List<Long>) currentPageJobIds.get(job51);
         ids.addAll(List.of(101L, 102L));
 
-        Method handler = Job51.class.getDeclaredMethod("handleDeliverySuccessDialog");
+        Method handler = Job51.class.getDeclaredMethod("handleDeliverySuccessDialog", int.class);
         handler.setAccessible(true);
-        handler.invoke(job51);
+        handler.invoke(job51, 1);
 
-        verify(service).markDeliveredBatch(List.of(101L, 102L));
+        verify(service).markDeliveredBatch(List.of(101L));
     }
 
     @Test

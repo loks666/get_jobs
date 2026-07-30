@@ -1,109 +1,153 @@
 (() => {
-    "use strict";
-    /* -------------------------------------------------------
-     * 1. 保存原生 Function.prototype.toString
-     * ----------------------------------------------------- */
-    const nativeFunctionToString = Function.prototype.toString;
+  "use strict";
 
-    /* -------------------------------------------------------
-     * 2. WeakMap：函数 → 伪原生源码
-     * ----------------------------------------------------- */
-    const nativeSourceMap = new WeakMap();
+  const nativeFunctionToString = Function.prototype.toString;
+  const nativeSourceMap = new WeakMap();
+  const registerNativeSource = (fn, source) => {
+    try {
+      nativeSourceMap.set(fn, source);
+    } catch (_) {}
+  };
 
-    /* -------------------------------------------------------
-     * 3. 注册伪原生源码
-     * ----------------------------------------------------- */
-    const registerNativeSource = (fn, source) => {
-      try {
-        nativeSourceMap.set(fn, source);
-      } catch (_) {}
+  Object.defineProperty(Function.prototype, "toString", {
+    configurable: true,
+    writable: true,
+    value: function toString() {
+      return nativeSourceMap.get(this) || nativeFunctionToString.call(this);
+    },
+  });
+  registerNativeSource(
+    Function.prototype.toString,
+    nativeFunctionToString.toString(),
+  );
+
+  const stealthify = (obj, prop, handler) => {
+    const original = obj[prop];
+    if (typeof original !== "function") return;
+
+    const wrapped = function (...args) {
+      return handler.call(this, original, args);
     };
+    Object.defineProperty(wrapped, "name", {
+      configurable: true,
+      value: prop,
+    });
+    registerNativeSource(wrapped, nativeFunctionToString.call(original));
+    Object.defineProperty(obj, prop, {
+      ...Object.getOwnPropertyDescriptor(obj, prop),
+      value: wrapped,
+    });
+  };
 
-    /* -------------------------------------------------------
-     * 4. 劫持 Function.prototype.toString
-     * ----------------------------------------------------- */
-    Object.defineProperty(Function.prototype, "toString", {
+  const webdriverGetter = function webdriver() {
+    return undefined;
+  };
+  registerNativeSource(
+    webdriverGetter,
+    "function get webdriver() { [native code] }",
+  );
+  try {
+    Object.defineProperty(Navigator.prototype, "webdriver", {
+      configurable: true,
+      get: webdriverGetter,
+    });
+  } catch (_) {}
+
+  const sanitizeConsoleArgs = (args) =>
+    args.map((arg) => (arg && typeof arg === "object" ? {} : arg));
+  ["log", "debug", "info", "warn", "error", "dir"].forEach((name) => {
+    stealthify(console, name, (original, args) =>
+      original.apply(console, sanitizeConsoleArgs(args)),
+    );
+  });
+
+  const noopTable = function table() {};
+  registerNativeSource(noopTable, "function table() { [native code] }");
+  try {
+    Object.defineProperty(console, "table", {
       configurable: true,
       writable: true,
-      value: function toString() {
-        if (nativeSourceMap.has(this)) {
-          return nativeSourceMap.get(this);
-        }
-        return nativeFunctionToString.call(this);
-      },
+      value: noopTable,
     });
+  } catch (_) {}
 
-    /* -------------------------------------------------------
-     * 5. 伪装 Function.prototype.toString 自身
-     * ----------------------------------------------------- */
-    registerNativeSource(
-      Function.prototype.toString,
-      nativeFunctionToString.toString(),
-    );
-
-    /* -------------------------------------------------------
-     * 6. stealthify：包装函数但保持“原生外观”
-     * ----------------------------------------------------- */
-    const stealthify = (obj, prop, handler) => {
-      const original = obj[prop];
-      if (typeof original !== "function") return;
-
-      const wrapped = function (...args) {
-        return handler.call(this, original, args);
-      };
-      const namePropertyDescriptor = Object.getOwnPropertyDescriptor(
-        wrapped,
-        "name",
-      );
-      // 处理函数 name 属性
-      Object.defineProperty(wrapped, "name", {
-        ...namePropertyDescriptor,
-        value: prop,
-      });
-      // 保留 prototype（某些函数有）
-      try {
-        Object.setPrototypeOf(wrapped, Object.getPrototypeOf(original));
-      } catch (_) {}
-
-      // 注册伪原生源码（直接复用原函数的 native 表现）
-      registerNativeSource(wrapped, nativeFunctionToString.call(original));
-
-      // 用 defineProperty 保持 descriptor 接近原生
-      const desc = Object.getOwnPropertyDescriptor(obj, prop);
-      Object.defineProperty(obj, prop, {
-        ...desc,
-        value: wrapped,
-      });
+  const performancePrototype = Object.getPrototypeOf(performance);
+  const performanceNowDescriptor = Object.getOwnPropertyDescriptor(
+    performancePrototype,
+    "now",
+  );
+  if (typeof performanceNowDescriptor?.value === "function") {
+    const nativePerformanceNow = performanceNowDescriptor.value;
+    const timeOrigin = Number.isFinite(performance.timeOrigin)
+      ? performance.timeOrigin
+      : Date.now() - nativePerformanceNow.call(performance);
+    let lastNow = Date.now() - timeOrigin;
+    const monotonicNow = function now() {
+      const current = Date.now() - timeOrigin;
+      lastNow = current > lastNow ? current : lastNow + 0.000001;
+      return lastNow;
     };
-
-    /* -------------------------------------------------------
-     * 7. 示例：stealth console.log / debug / info
-     * ----------------------------------------------------- */
-    const filterConsoleArgs = (args) =>
-      args.map((arg) => {
-        if (arg && typeof arg === "object") {
-          // 防止 getter / Proxy / 大对象触发
-          return {};
-        }
-        return arg;
-      });
-
-    ["log", "debug", "info", "warn", "error", "dir", "table", "debug"].forEach(
-      (name) => {
-        stealthify(console, name, (original, args) => {
-          // ❗不传递原始对象，避免 DevTools / CDP 展开
-          return original.apply(console, filterConsoleArgs(args));
-        });
-      },
-    );
-
-    /* -------------------------------------------------------
-     * 8. 防御性补丁（可选但强烈建议）
-     * ----------------------------------------------------- */
-
-    // 防止检测 toString 被替换
     registerNativeSource(
-      registerNativeSource,
-      "function registerNativeSource() { [native code] }",
+      monotonicNow,
+      nativeFunctionToString.call(nativePerformanceNow),
     );
-  })();
+    try {
+      Object.defineProperty(performancePrototype, "now", {
+        ...performanceNowDescriptor,
+        value: monotonicNow,
+      });
+    } catch (_) {}
+
+    const contentWindowDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLIFrameElement.prototype,
+      "contentWindow",
+    );
+    if (typeof contentWindowDescriptor?.get === "function") {
+      const nativeContentWindowGetter = contentWindowDescriptor.get;
+      const contentWindowGetter = function contentWindow() {
+        const iframeWindow = nativeContentWindowGetter.call(this);
+        try {
+          Object.defineProperty(iframeWindow.console, "table", {
+            configurable: true,
+            writable: true,
+            value: noopTable,
+          });
+          const iframePerformancePrototype = Object.getPrototypeOf(
+            iframeWindow.performance,
+          );
+          const iframeNowDescriptor = Object.getOwnPropertyDescriptor(
+            iframePerformancePrototype,
+            "now",
+          );
+          if (typeof iframeNowDescriptor?.value === "function") {
+            Object.defineProperty(iframePerformancePrototype, "now", {
+              ...iframeNowDescriptor,
+              value: monotonicNow,
+            });
+          }
+          Object.defineProperty(
+            iframeWindow.Function.prototype,
+            "toString",
+            Object.getOwnPropertyDescriptor(Function.prototype, "toString"),
+          );
+        } catch (_) {}
+        return iframeWindow;
+      };
+      registerNativeSource(
+        contentWindowGetter,
+        nativeFunctionToString.call(nativeContentWindowGetter),
+      );
+      try {
+        Object.defineProperty(HTMLIFrameElement.prototype, "contentWindow", {
+          ...contentWindowDescriptor,
+          get: contentWindowGetter,
+        });
+      } catch (_) {}
+    }
+  }
+
+  registerNativeSource(
+    registerNativeSource,
+    "function registerNativeSource() { [native code] }",
+  );
+})();

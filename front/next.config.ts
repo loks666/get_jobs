@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
-
-// 读取服务器配置
-const serverConfig = require('./server.config.js');
+import serverConfig from "./server.config.js";
 
 const nextConfig: NextConfig = {
   // 将API配置暴露给客户端

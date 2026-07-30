@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createSSEWithBackoff } from '@/lib/sse'
 import { createPortal } from 'react-dom'
-import { BiBriefcase, BiSave, BiSearch, BiMap, BiMoney, BiBuilding, BiTime, BiBarChart, BiTrash, BiPlus, BiPlay, BiStop, BiLogOut } from 'react-icons/bi'
+import { BiBriefcase, BiSave, BiSearch, BiMoney, BiBuilding, BiTrash, BiPlus, BiPlay, BiStop, BiLogOut } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PageHeader from '@/app/components/PageHeader'
 import AnalysisContent from '@/app/boss/analysis/AnalysisContent'
@@ -98,6 +99,10 @@ export default function BossPage() {
   const [loading, setLoading] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isDelivering, setIsDelivering] = useState(false)
+  const [statsVersion, setStatsVersion] = useState(0)
+  const [cookieInput, setCookieInput] = useState('')
+  const [cookieLoginLoading, setCookieLoginLoading] = useState(false)
+  const [cookieLoginMessage, setCookieLoginMessage] = useState<{ success: boolean; text: string } | null>(null)
   const [checkingLogin, setCheckingLogin] = useState(true)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
@@ -153,10 +158,32 @@ export default function BossPage() {
         { name: 'ping', handler: () => {} },
       ],
     })
+    const progressClient = createSSEWithBackoff('http://localhost:8888/api/boss/stream', {
+      listeners: [
+        {
+          name: 'progress',
+          handler: (event) => {
+            try {
+              const data = JSON.parse(event.data)
+              if (data.type === 'success' || data.type === 'error') {
+                setIsDelivering(false)
+                setStatsVersion((version) => version + 1)
+              }
+            } catch (error) {
+              console.error('[Boss SSE] 解析投递进度失败:', error)
+            }
+          },
+        },
+        { name: 'ping', handler: () => {} },
+      ],
+    })
 
     return () => {
       client.close()
+      progressClient.close()
     }
+    // 页面配置和 SSE 连接只在挂载时初始化。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchAllData = async () => {
@@ -198,7 +225,7 @@ export default function BossPage() {
               if (Array.isArray(arr)) {
                 return arr.map((v) => String(v).trim()).filter((v) => v.length > 0).join(', ')
               }
-            } catch (_) {
+            } catch {
               // 非严格 JSON，如 [a,b]，走拆括号与逗号分隔
               const inner = s.slice(1, -1)
               return inner
@@ -221,23 +248,6 @@ export default function BossPage() {
         setSelectedSalary(parseListString(data.config.salary))
       }
       if (data.options) {
-        // 按 sort_order 或固定名称顺序排序；都没有时按名称兜底
-        const CITY_ORDER = [
-          // 顶层：全国 + 一线（北上广深）
-          '全国','北京','上海','广州','深圳',
-          // 准一线（图片顺序，从上到下）
-          '杭州','成都','南京',
-          '武汉','苏州','重庆','天津',
-          '长沙','青岛','宁波','无锡',
-          '西安','郑州','合肥','厦门','东莞',
-          // 二线（图片顺序）
-          '济南','福州','佛山','昆明','大连','沈阳','常州','哈尔滨','南昌','泉州',
-          '南通','烟台','温州','贵阳','南宁','石家庄','长春','嘉兴','珠海','太原',
-          '绍兴','金华','潍坊','徐州','惠州','台州','扬州','中山','乌鲁木齐','兰州',
-          // 省会补充（图片底部出现的省会/直辖市）
-          '海口','呼和浩特','银川'
-        ]
-        const orderMap = new Map<string, number>(CITY_ORDER.map((n, i) => [n, i + 1]))
         // 城市排序：仅在后端提供 sortOrder 时按其排序；否则保留后端返回顺序
         const cityList = data.options.city || []
         const cityHasOrder = cityList.some((o: BossOption) => o.sortOrder != null || o.sort_order != null)
@@ -536,6 +546,37 @@ export default function BossPage() {
     }
   }
 
+  const loginWithCookie = async () => {
+    if (!cookieInput.trim()) {
+      setCookieLoginMessage({ success: false, text: '请先粘贴 Cookie。' })
+      return
+    }
+
+    setCookieLoginLoading(true)
+    setCookieLoginMessage(null)
+    try {
+      const response = await fetch('http://localhost:8888/api/boss/cookie-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cookie: cookieInput }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Cookie 登录失败')
+      }
+      setIsLoggedIn(true)
+      setCookieInput('')
+      setCookieLoginMessage({ success: true, text: `登录成功，已导入 ${data.cookieCount} 条 Cookie。` })
+    } catch (error) {
+      setCookieLoginMessage({
+        success: false,
+        text: error instanceof Error ? error.message : 'Cookie 登录失败',
+      })
+    } finally {
+      setCookieLoginLoading(false)
+    }
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">加载中...</div>
   }
@@ -595,9 +636,31 @@ export default function BossPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">请在浏览器标签页中登录 Boss 直聘平台，登录成功后系统会自动检测登录状态。</p>
+                <p className="text-sm text-muted-foreground">从 Cookie-Editor / EditThisCookie 导出 JSON，或从浏览器网络面板复制 Cookie 请求头，粘贴后直接登录。</p>
+                <Textarea
+                  value={cookieInput}
+                  onChange={(event) => setCookieInput(event.target.value)}
+                  placeholder='[{"name":"wt2","value":"...","domain":".zhipin.com"}] 或 wt2=...; zp_at=...'
+                  className="min-h-28 font-mono text-xs"
+                  aria-label="Boss Cookie"
+                />
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    onClick={loginWithCookie}
+                    disabled={cookieLoginLoading || !cookieInput.trim()}
+                    className="bg-teal-500 hover:bg-teal-600 text-white"
+                  >
+                    {cookieLoginLoading ? '正在验证...' : '使用 Cookie 登录'}
+                  </Button>
+                  {cookieLoginMessage && (
+                    <p className={`text-sm ${cookieLoginMessage.success ? 'text-green-600' : 'text-red-600'}`}>
+                      {cookieLoginMessage.text}
+                    </p>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">登录成功后，点击“开始投递”按钮启动自动投递任务。</p>
-                <p className="text-sm text-muted-foreground">点击“保存配置”按钮可手动保存当前登录相关信息到数据库。</p>
+                <p className="text-xs text-muted-foreground">Cookie 只提交到本机后端并保存到本地数据库，请勿发送给他人。</p>
               </div>
             </CardContent>
           </Card>
@@ -906,7 +969,7 @@ export default function BossPage() {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6 mt-6">
-          <AnalysisContent />
+          <AnalysisContent key={statsVersion} />
         </TabsContent>
       </Tabs>
 
@@ -1020,16 +1083,10 @@ function MultiSelect({
   onClose?: () => void
 }) {
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
-
-  // 确保组件已挂载（解决 SSR 问题）
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // 计算下拉框位置
   const updatePosition = useCallback(() => {
@@ -1138,7 +1195,7 @@ function MultiSelect({
         </span>
         <span className={`ml-2 text-xs text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>▼</span>
       </button>
-      {open && mounted && createPortal(
+      {open && createPortal(
         <div
           ref={dropdownRef}
           className="dropdown-panel p-2"
@@ -1155,7 +1212,7 @@ function MultiSelect({
                 <div
                   key={opt.id}
                   className={`group inline-flex items-center justify-between gap-3 rounded-full px-3 py-2 cursor-pointer transition-all border ${checked ? 'border-teal-300/60 bg-gradient-to-r from-teal-500/12 to-cyan-500/12 text-teal-900 dark:text-teal-200 shadow' : 'border-white/20 bg-white/8 text-foreground hover:bg-white/12'}`}
-                  onClick={(e) => {
+                  onClick={() => {
                     console.log('[MultiSelect] div 被点击', {
                       optionCode: opt.code,
                       optionName: opt.name,

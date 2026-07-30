@@ -1,0 +1,182 @@
+> Task :bootBuildInfo
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :resolveMainClassName
+
+> Task :bootRun
+[91m   ______     __         __      __
+[93m  / ____/__  / /_       / /___  / /_  _____
+[92m / / __/ _ \/ __/  __  / / __ \/ __ \/ ___/
+[96m/ /_/ /  __/ /_   / /_/ / /_/ / /_/ (__  )
+[94m\____/\___/\__/   \____/\____/_.___/____/
+[39m
+[1m[92mSpring Boot:  (v3.5.7)[0m[39m
+[91m[1mCreate By Github@loks666.[0m[39m
+[2m2026-07-29 16:03:33.743[0;39m [35m[main][0;39m [32mINFO [0;39m [36mcom.getjobs.GetJobsApplication[0;39m [2m-[0;39m Starting GetJobsApplication using Java 21.0.7 with PID 37296 (E:\project\get_jobs\build\classes\java\main started by ward in E:\project\get_jobs)
+[2m2026-07-29 16:03:33.743[0;39m [35m[main][0;39m [32mINFO [0;39m [36mcom.getjobs.GetJobsApplication[0;39m [2m-[0;39m The following 1 profile is active: "dev"
+[2m2026-07-29 16:03:35.222[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.c.StaticServerConfiguration[0;39m [2m-[0;39m �?查静态资源路�?:
+[2m2026-07-29 16:03:35.222[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.c.StaticServerConfiguration[0;39m [2m-[0;39m   dist路径: src/main/resources/dist (绝对路径: E:\project\get_jobs\src\main\resources\dist)
+[2m2026-07-29 16:03:35.224[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.c.StaticServerConfiguration[0;39m [2m-[0;39m   static路径: src/main/resources/static (绝对路径: E:\project\get_jobs\src\main\resources\static)
+[2m2026-07-29 16:03:35.225[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.c.StaticServerConfiguration[0;39m [2m-[0;39m   dist存在: false
+[2m2026-07-29 16:03:35.225[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.c.StaticServerConfiguration[0;39m [2m-[0;39m   static存在: false
+[2m2026-07-29 16:03:35.225[0;39m [35m[main][0;39m [33mWARN [0;39m [36mc.g.a.c.StaticServerConfiguration[0;39m [2m-[0;39m 未检测到前端�?发服务，也未找到静�?�资�?
+[2m2026-07-29 16:03:35.478[0;39m [35m[main][0;39m [32mINFO [0;39m [36mo.s.b.w.e.tomcat.TomcatWebServer[0;39m [2m-[0;39m Tomcat initialized with port 8888 (http)
+[2m2026-07-29 16:03:35.506[0;39m [35m[main][0;39m [32mINFO [0;39m [36mo.a.catalina.core.StandardService[0;39m [2m-[0;39m Starting service [Tomcat]
+[2m2026-07-29 16:03:35.507[0;39m [35m[main][0;39m [32mINFO [0;39m [36mo.a.catalina.core.StandardEngine[0;39m [2m-[0;39m Starting Servlet engine: [Apache Tomcat/10.1.48]
+[2m2026-07-29 16:03:35.612[0;39m [35m[main][0;39m [32mINFO [0;39m [36mo.a.c.c.C.[Tomcat].[localhost].[/][0;39m [2m-[0;39m Initializing Spring embedded WebApplicationContext
+[2m2026-07-29 16:03:35.613[0;39m [35m[main][0;39m [32mINFO [0;39m [36mo.s.b.w.s.c.ServletWebServerApplicationContext[0;39m [2m-[0;39m Root WebApplicationContext: initialization completed in 1802 ms
+ _ _   |_  _ _|_. ___ _ |    _ 
+| | |\/|_)(_| | |_\  |_)||_|_\ 
+     /               |         
+                        3.5.9 
+[2m2026-07-29 16:03:36.595[0;39m [35m[main][0;39m [32mINFO [0;39m [36mcom.zaxxer.hikari.HikariDataSource[0;39m [2m-[0;39m HikariPool-1 - Starting...
+[2m2026-07-29 16:03:37.050[0;39m [35m[main][0;39m [32mINFO [0;39m [36mcom.zaxxer.hikari.pool.HikariPool[0;39m [2m-[0;39m HikariPool-1 - Added connection org.sqlite.jdbc4.JDBC4Connection@15986dd5
+[2m2026-07-29 16:03:37.053[0;39m [35m[main][0;39m [32mINFO [0;39m [36mcom.zaxxer.hikari.HikariDataSource[0;39m [2m-[0;39m HikariPool-1 - Start completed.
+[2m2026-07-29 16:03:37.078[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.service.LiepinService[0;39m [2m-[0;39m 确保 liepin_data 表已存在
+[2m2026-07-29 16:03:37.332[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.service.ZhilianService[0;39m [2m-[0;39m 确保 zhilian_data 表已存在
+[2m2026-07-29 16:03:37.420[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.application.service.Job51Service[0;39m [2m-[0;39m 确保 job51_data 表已存在
+[2m2026-07-29 16:03:37.714[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.application.config.AsyncConfig[0;39m [2m-[0;39m 异步任务执行器配置完�? - 核心线程�?: 2, �?大线程数: 5, 队列容量: 100
+[2m2026-07-29 16:03:38.083[0;39m [35m[main][0;39m [33mWARN [0;39m [36mc.g.a.c.StaticResourceConfiguration[0;39m [2m-[0;39m 未找到静态资源目�? (dist �? static)
+[2m2026-07-29 16:03:38.433[0;39m [35m[main][0;39m [32mINFO [0;39m [36mo.s.b.w.e.tomcat.TomcatWebServer[0;39m [2m-[0;39m Tomcat started on port 8888 (http) with context path '/'
+[2m2026-07-29 16:03:38.449[0;39m [35m[main][0;39m [32mINFO [0;39m [36mcom.getjobs.GetJobsApplication[0;39m [2m-[0;39m Started GetJobsApplication in 5.426 seconds (process running for 5.998)
+[2m2026-07-29 16:03:38.456[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.init.ZhilianOptionInitializer[0;39m [2m-[0;39m 确保 zhilian_option 表已存在
+[2m2026-07-29 16:03:38.460[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.application.config.StartupRunner[0;39m [2m-[0;39m 未检测到前端服务或静态资�?
+[2m2026-07-29 16:03:38.462[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.application.config.StartupRunner[0;39m [2m-[0;39m 未找到可用的管理页面，跳过自动打�?浏览�?
+[2m2026-07-29 16:03:38.462[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m ========================================
+[2m2026-07-29 16:03:38.462[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m   初始化浏览器自动化引�?
+[2m2026-07-29 16:03:38.462[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m ========================================
+[2m2026-07-29 16:03:48.416[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �? Playwright引擎已启�?
+[2m2026-07-29 16:03:48.967[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �? 系统Chrome干净上下文已启动
+[2m2026-07-29 16:03:48.971[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m Boss 反检测脚本已注入到Context: anti-detection.js
+[2m2026-07-29 16:03:48.972[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �?始创建所有平台的Page...
+[2m2026-07-29 16:03:49.229[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �? Boss Page已创�?
+[2m2026-07-29 16:03:49.312[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �? 猎聘 Page已创�?
+[2m2026-07-29 16:03:49.403[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �? 51job Page已创�?
+[2m2026-07-29 16:03:49.488[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �? 智联招聘 Page已创�?
+[2m2026-07-29 16:03:49.488[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �?始顺序初始化�?有平�?...
+[2m2026-07-29 16:03:49.488[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �?始初始化Boss直聘平台...
+[2m2026-07-29 16:03:49.525[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 已从数据库加载Boss Cookie并注入浏览器上下文，�? 13 �?
+[2m2026-07-29 16:03:55.528[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m boss平台登录状�?�监控已启用
+[2m2026-07-29 16:03:55.528[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �?始初始化猎聘平台...
+[2m2026-07-29 16:03:55.539[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 已从数据库加载猎�? Cookie并注入浏览器上下文，�? 34 �?
+[2m2026-07-29 16:04:00.252[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 猎聘平台登录状�?�监控已启用
+[2m2026-07-29 16:04:00.253[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �?始初始化51job平台...
+[2m2026-07-29 16:04:00.262[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 已从数据库加�?51job Cookie并注入浏览器上下文，�? 10 �?
+[2m2026-07-29 16:04:01.648[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 51job已登�?
+[2m2026-07-29 16:04:01.667[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 51job平台登录状�?�监控已启用
+[2m2026-07-29 16:04:01.667[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �?始初始化智联招聘平台...
+[2m2026-07-29 16:04:01.674[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 已从数据库加载智联招�? Cookie并注入浏览器上下文，�? 13 �?
+[2m2026-07-29 16:04:02.310[0;39m [35m[http-nio-8888-exec-2][0;39m [32mINFO [0;39m [36mo.a.c.c.C.[Tomcat].[localhost].[/][0;39m [2m-[0;39m Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2m2026-07-29 16:04:02.311[0;39m [35m[http-nio-8888-exec-2][0;39m [32mINFO [0;39m [36mo.s.web.servlet.DispatcherServlet[0;39m [2m-[0;39m Initializing Servlet 'dispatcherServlet'
+[2m2026-07-29 16:04:02.313[0;39m [35m[http-nio-8888-exec-2][0;39m [32mINFO [0;39m [36mo.s.web.servlet.DispatcherServlet[0;39m [2m-[0;39m Completed initialization in 2 ms
+[2m2026-07-29 16:04:08.967[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �?测到未登录智联招聘，重定向到登录页面
+[2m2026-07-29 16:04:10.435[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 已切换到智联二维码登录页面，等待用户扫码...
+[2m2026-07-29 16:04:10.436[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 智联招聘平台登录状�?�监控已启用
+[2m2026-07-29 16:04:10.437[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m �? 浏览器自动化引擎初始化完成（�?有平台已顺序启动�?
+[2m2026-07-29 16:04:10.437[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m ========================================
+[2m2026-07-29 16:04:10.442[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.init.CookieSeedInitializer[0;39m [2m-[0;39m 平台 boss 已存�? Cookie 记录 (id=1), 跳过种子创建
+[2m2026-07-29 16:04:10.446[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.init.CookieSeedInitializer[0;39m [2m-[0;39m 平台 liepin 已存�? Cookie 记录 (id=3), 跳过种子创建
+[2m2026-07-29 16:04:10.450[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.init.CookieSeedInitializer[0;39m [2m-[0;39m 平台 51job 已存�? Cookie 记录 (id=4), 跳过种子创建
+[2m2026-07-29 16:04:10.453[0;39m [35m[main][0;39m [32mINFO [0;39m [36mc.g.a.init.CookieSeedInitializer[0;39m [2m-[0;39m 平台 zhilian 已存�? Cookie 记录 (id=2), 跳过种子创建
+[2m2026-07-29 16:04:11.610[0;39m [35m[scheduling-1][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 智联招聘平台登录成功
+[2m2026-07-29 16:04:11.689[0;39m [35m[scheduling-1][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 保存智联招聘Cookie成功，共 13 条，remark=login success
+[2m2026-07-29 16:08:18.774[0;39m [35m[scheduling-1][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m Boss主页面导�?: https://www.zhipin.com/web/user/?ka=header-login
+[2m2026-07-29 16:08:18.999[0;39m [35m[scheduling-1][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m Boss主页面导�?: https://www.zhipin.com/shenzhen/?seoRefer=index
+[2m2026-07-29 16:10:25.951[0;39m [35m[http-nio-8888-exec-7][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m Boss主页面导�?: https://www.zhipin.com/
+[2m2026-07-29 16:10:26.050[0;39m [35m[http-nio-8888-exec-7][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m boss平台登录成功
+[2m2026-07-29 16:10:26.096[0;39m [35m[http-nio-8888-exec-7][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 保存Boss Cookie成功，共 12 条，remark=login success
+[2m2026-07-29 16:10:27.571[0;39m [35m[http-nio-8888-exec-7][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m Boss主页面导�?: https://www.zhipin.com/shenzhen/?seoRefer=index
+[2m2026-07-29 16:10:31.139[0;39m [35m[http-nio-8888-exec-7][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m 保存Boss Cookie成功，共 16 条，remark=frontend cookie login
+[2m2026-07-29 16:11:23.790[0;39m [35m[http-nio-8888-exec-2][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m 通过API启动Boss任务成功
+[2m2026-07-29 16:11:23.926[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.application.service.BossService[0;39m [2m-[0;39m 已从 boss_config 加载Boss配置，并完成括号列表解析
+[2m2026-07-29 16:11:23.927[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 配置加载成功
+[2m2026-07-29 16:11:23.927[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] �?始投递任�?...
+[2m2026-07-29 16:11:23.948[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 黑名单加载完�?: 公司(9) 招聘�?(1) 职位(5)
+[2m2026-07-29 16:11:24.136[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m Boss主页面导�?: https://www.zhipin.com/web/geek/jobs?city=101280600&experience=102,101,103&scale=302,303,304,305,306&industry=100020,100000,100001,100021&query=Java
+[2m2026-07-29 16:11:28.398[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m Boss主页面导�?: https://www.zhipin.com/web/geek/jobs?city=101280600&experience=102,101,103&scale=302,303,304,305,306&industry=100020,100000,100001,100021&query=Java
+[2m2026-07-29 16:12:19.100[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 【Java】岗位已全部加载，�?�数:300
+[2m2026-07-29 16:12:19.100[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 岗位加载完成：Java
+[2m2026-07-29 16:12:25.799[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：某大型互联网公�? | 岗位：�?�招Java！！！（初中高级都在招，项目稳定 | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:12:28.844[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 正在投�?�：Java
+[2m2026-07-29 16:12:34.870[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.application.service.AiService[0;39m [2m-[0;39m AI响应: id=e84ffae1-e00b-49a1-bdef-5c259e20fab3, time=2026-07-29 16:12:33, model=deepseek-v4-flash, promptTokens=649, completionTokens=171, totalTokens=820
+[2m2026-07-29 16:12:35.313[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m Boss 已受理沟通请求，当前岗位记为投�?�成功并继续下一�? | 公司：赛�? | 岗位：Java
+[2m2026-07-29 16:12:35.461[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 投�?�成�? | 公司：赛�? | 岗位：Java | encryptId：baffc28fc8fcdaf20nJ73tm_E1BZ | encryptUserId�?5d453bd6dde6d0fd3n1_3N25FlM~
+[2m2026-07-29 16:12:37.314[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 正在投�?�：软件�?发（安卓/Java~接受应届�?
+[2m2026-07-29 16:12:46.653[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.application.service.AiService[0;39m [2m-[0;39m AI响应: id=7a1ae528-2181-45a4-9847-21b371b74391, time=2026-07-29 16:12:42, model=deepseek-v4-flash, promptTokens=748, completionTokens=426, totalTokens=1174
+[2m2026-07-29 16:12:46.934[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m Boss 已受理沟通请求，当前岗位记为投�?�成功并继续下一�? | 公司：尚米网�? | 岗位：软件开发（安卓/Java~接受应届�?
+[2m2026-07-29 16:12:46.976[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 投�?�成�? | 公司：尚米网�? | 岗位：软件开发（安卓/Java~接受应届�? | encryptId�?45be61a6569fc66c0nJ73t24FlVR | encryptUserId�?6aa939127417e9bb0HZ50tm8ElRT
+[2m2026-07-29 16:12:48.366[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：某大型知名计算机软件公�? | 岗位：JAVA�?发工程师（大�?+可应届） | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:12:49.830[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：某知名移动互联网公�? | 岗位：Java工程�? | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:12:51.254[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：某大型知名计算机软件公�? | 岗位：Java�?26届可投�?�，全流程线上） | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:12:52.583[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：职位黑名单命�? | 公司：睿服科�? | 岗位：java（现场复试）须会存储过程｜高斯数据库 | 关键词：现场
+[2m2026-07-29 16:12:53.889[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：上海某大型内容电商公司 | 岗位：Java后端-供应链方�? | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:12:55.232[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：湖北观舍装饰设�?... | 岗位：JAVA（金蝶） | 活跃：半年前活跃
+[2m2026-07-29 16:12:56.587[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 正在投�?�：Java�?发工程师  接受应届无经�? 线上�?
+[2m2026-07-29 16:13:03.104[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.application.service.AiService[0;39m [2m-[0;39m AI响应: id=868c1087-56e4-43bc-b25d-677759c84469, time=2026-07-29 16:13:00, model=deepseek-v4-flash, promptTokens=920, completionTokens=295, totalTokens=1215
+[2m2026-07-29 16:13:03.420[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m Boss 已受理沟通请求，当前岗位记为投�?�成功并继续下一�? | 公司：华�? | 岗位：Java�?发工程师  接受应届无经�? 线上�?
+[2m2026-07-29 16:13:03.486[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 投�?�成�? | 公司：华�? | 岗位：Java�?发工程师  接受应届无经�? 线上�? | encryptId�?67a259a4d4323fca0nJ739i0F1dQ | encryptUserId�?87fc6c2ada4da69b0Xx939-6E1RR
+[2m2026-07-29 16:13:06.027[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：某知名计算机软件上市公�? | 岗位：中级Java�?发人�? | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:13:07.416[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：银河系科技 | 岗位：java 工程�? | 活跃：半年前活跃
+[2m2026-07-29 16:13:08.789[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：链享云 | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:10.242[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：福州某大型跨境电商+汽车后市场科�?公司 | 岗位：Java | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:13:11.697[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：某知名计算机软件上市公�? | 岗位：高级JAVA�?发工程师（金融行业） | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:13:13.045[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：上海某大型电子商务公司 | 岗位：JAVA-直播 | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:13:14.346[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：华为终端有限公�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:15.633[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：腾�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:16.981[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：天翼智慧城�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:18.288[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：阿里巴巴集�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:19.546[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：牛小伽 | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:20.902[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：华为技术有限公�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:22.363[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：华�? | 岗位：python/java/c/c++/测试/数据�?�? | 活跃：半年前活跃
+[2m2026-07-29 16:13:23.602[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：共骋科�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:24.968[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：JUNO | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:26.260[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：郑州鹧鸪天信息�?�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:27.602[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：对接平�? | 岗位：java工程�? | 活跃：半年前活跃
+[2m2026-07-29 16:13:28.971[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：货拉拉科技 | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:30.201[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：华�? | 岗位：JAVA | 活跃：半年前活跃
+[2m2026-07-29 16:13:31.617[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：华为云计算�?�? | 岗位：JAVA/JS/Python/C/C++/C#初中级开�? | 活跃：半年前活跃
+[2m2026-07-29 16:13:33.273[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：华�? | 岗位：Java�?发工程师 | 活跃：半年前活跃
+[2m2026-07-29 16:13:34.713[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：某大型知名互联网公�? | 岗位：Java后端�?发�?�行业不限�?? | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:13:36.026[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：邦铎网�? | 岗位：JAVA工程�? | 活跃：半年前活跃
+[2m2026-07-29 16:13:37.461[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：牧威智能科�?有限公司 | 岗位：高级Java工程�? | 活跃：半年前活跃
+[2m2026-07-29 16:13:38.879[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：阿里巴巴集�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:40.128[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：深圳华为技术有�?... | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:41.413[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：北京字节跳�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:42.748[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：阿里巴巴集�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:44.014[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：蚂蚁集�? | 岗位：Java 服务端开�? | 活跃：半年前活跃
+[2m2026-07-29 16:13:45.297[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：支付宝 | 岗位：java | 活跃：半年前活跃
+[2m2026-07-29 16:13:46.534[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：华�? | 岗位：C/C++/Java/Python/JS/测试/前端/GO/�?�? | 活跃：半年前活跃
+[2m2026-07-29 16:13:47.951[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：维知科�? | 岗位：Java 软件�?发工程师 | 活跃：半年前活跃
+[2m2026-07-29 16:13:49.398[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：杭州华为企业�?�信�?�? | 岗位：java�?发工程师 | 活跃：半年前活跃
+[2m2026-07-29 16:13:50.704[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：蚂蚁集�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:52.145[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：阿里巴巴集�? | 岗位：JAVA研发工程�? | 活跃：半年前活跃
+[2m2026-07-29 16:13:53.385[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：腾�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:54.627[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：阿里巴巴集�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:55.934[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：阿里巴巴集�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:57.360[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：苏醒数字健康有限公�? | 岗位：JAVA工程�? | 活跃：半年前活跃
+[2m2026-07-29 16:13:58.641[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：名扬科�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:13:59.890[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：今日头�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:14:01.179[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：某500强上市公�? | 岗位：java�?发工程师/大平�?/薪资福利�? | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:14:02.552[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：深圳某大型计算机软件公�? | 岗位：JAVA�?26届可投�?�，全流程线上） | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:14:03.835[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：招聘者黑名单命中 | 公司：某知名互联网公�? | 岗位：Java后端-营销/供应�?/人事 | 招聘者：猎头顾问 | 关键词：猎头
+[2m2026-07-29 16:14:05.084[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 被过滤：HR活跃状�?�包含�?�年�? | 公司：华�? | 岗位：Java | 活跃：半年前活跃
+[2m2026-07-29 16:14:05.705[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m Boss主页面导�?: https://www.zhipin.com/web/passport/zp/verify.html?callbackUrl=https%3A%2F%2Fwww.zhipin.com%2Fweb%2Fgeek%2Fjobs%3Fcity%3D101280600%26experience%3D102%2C101%2C103%26scale%3D302%2C303%2C304%2C305%2C306%26industry%3D100020%2C100000%2C100001%2C100021%26query%3DJava&appName=zhipin_geek_spa_web&code=36
+[2m2026-07-29 16:14:06.762[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 正在投�?�：null
+[2m2026-07-29 16:14:06.774[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [33mWARN [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 未找�?"查看更多信息"按钮，跳�?...
+[2m2026-07-29 16:14:20.968[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m Boss主页面导�?: https://www.zhipin.com/web/geek/jobs?city=101280600&experience=102,101,103&scale=302,303,304,305,306&industry=100020,100000,100001,100021&query=Java&_security_check=1_1785312860860
+[2m2026-07-29 16:14:21.452[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.worker.manager.PlaywrightManager[0;39m [2m-[0;39m Boss主页面导�?: https://www.zhipin.com/web/geek/jobs?city=101280600&experience=102,101,103&scale=302,303,304,305,306&industry=100020,100000,100001,100021&query=Java&_security_check=1_1785312860860
+[2m2026-07-29 16:14:38.859[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 正在投�?�：null
+[2m2026-07-29 16:14:38.875[0;39m [35m[http-nio-8888-exec-7][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m Boss进度SSE连接已完�?
+[2m2026-07-29 16:14:41.643[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m Boss 已受理沟通请求，当前岗位记为投�?�成功并继续下一�? | 公司�? | 岗位�?
+[2m2026-07-29 16:14:41.716[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 投�?�成�? | 公司�? | 岗位�? | encryptId：b0b77665ca33cdbf0nF_3tS-GFdY | encryptUserId：fab2be6a92e24ea703N_09q-E1M~
+[2m2026-07-29 16:15:05.767[0;39m [35m[http-nio-8888-exec-8][0;39m [32mINFO [0;39m [36mc.g.worker.service.BossJobService[0;39m [2m-[0;39m 收到停止Boss投�?�任务的请求
+[2m2026-07-29 16:15:05.767[0;39m [35m[http-nio-8888-exec-8][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m 通过API停止Boss任务
+[2m2026-07-29 16:15:13.811[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 正在投�?�：null
+[2m2026-07-29 16:15:13.811[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mcom.getjobs.worker.boss.Boss[0;39m [2m-[0;39m 停止指令已触发，跳过投�?? | 公司�? | 岗位�?
+[2m2026-07-29 16:15:14.817[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 用户取消投�??
+[2m2026-07-29 16:15:14.821[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 用户取消投�??
+[2m2026-07-29 16:15:14.821[0;39m [35m[ForkJoinPool.commonPool-worker-1][0;39m [32mINFO [0;39m [36mc.g.a.controller.BossController[0;39m [2m-[0;39m [boss] 投�?�任务完成，共发�?4个聊�?
+
+> Task :bootRun FAILED
+5 actionable tasks: 3 executed, 2 up-to-date

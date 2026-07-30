@@ -17,8 +17,10 @@ dist.zip
 db/
 # Playwright
 .playwright/
+.playwright-cli/
 ms-playwright/
 playwright-*
+.chrome-profile/
 
 ### Eclipse ###
 .apt_generated

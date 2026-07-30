@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createSSEWithBackoff } from '@/lib/sse'
 import { BiLogOut, BiSave, BiBriefcase, BiPlay, BiStop } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
@@ -24,9 +24,9 @@ interface Job51Options { jobArea: Job51Option[]; salary: Job51Option[] }
 
 // 薪资选择状态（用于多选）
 const MAX_SALARY_SELECTIONS = 5
+const API = process.env.API_BASE_URL || 'http://localhost:8888'
 
 export default function Job51Page() {
-  const API = process.env.API_BASE_URL || 'http://localhost:8888'
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isDelivering, setIsDelivering] = useState(false)
   const [checkingLogin, setCheckingLogin] = useState(true)
@@ -41,7 +41,7 @@ export default function Job51Page() {
   const [loadingConfig, setLoadingConfig] = useState(true)
   const [isCustomArea, setIsCustomArea] = useState(false)
   const [backendAvailable, setBackendAvailable] = useState(false)
-  const [cookieSavedAfterLogin, setCookieSavedAfterLogin] = useState(false)
+  const cookieSavedAfterLoginRef = useRef(false)
   // 薪资多选状态：存储选中的code数组
   const [selectedSalaries, setSelectedSalaries] = useState<string[]>([])
   // 薪资下拉面板开关状态
@@ -78,9 +78,9 @@ export default function Job51Page() {
             try {
               const data = JSON.parse(event.data)
               setIsLoggedIn(data.job51LoggedIn || false)
-              if (data.job51LoggedIn && !cookieSavedAfterLogin) {
+              if (data.job51LoggedIn && !cookieSavedAfterLoginRef.current) {
                 fetch(`${API}/api/cookie/save?platform=51job`, { method: 'POST' }).catch(() => {})
-                setCookieSavedAfterLogin(true)
+                cookieSavedAfterLoginRef.current = true
               }
               setCheckingLogin(false)
             } catch (error) {
@@ -95,9 +95,9 @@ export default function Job51Page() {
               const data = JSON.parse(event.data)
               if (data.platform === '51job') {
                 setIsLoggedIn(data.isLoggedIn)
-                if (data.isLoggedIn && !cookieSavedAfterLogin) {
+                if (data.isLoggedIn && !cookieSavedAfterLoginRef.current) {
                   fetch(`${API}/api/cookie/save?platform=51job`, { method: 'POST' }).catch(() => {})
-                  setCookieSavedAfterLogin(true)
+                  cookieSavedAfterLoginRef.current = true
                 }
                 setCheckingLogin(false)
               }
@@ -176,7 +176,7 @@ export default function Job51Page() {
         if (Array.isArray(arr) && arr.length > 0) {
           return String(arr[0] ?? '').trim()
         }
-      } catch (_) {
+      } catch {
         // ignore, fall through
       }
     }
@@ -195,7 +195,7 @@ export default function Job51Page() {
         if (Array.isArray(arr)) {
           return arr.map(v => String(v ?? '').trim()).filter(Boolean)
         }
-      } catch (_) {
+      } catch {
         // ignore, fall through
       }
     }
@@ -264,11 +264,13 @@ export default function Job51Page() {
         } else {
           setLoadingConfig(false)
         }
-      } catch (e) {
+      } catch {
         setBackendAvailable(false)
         setLoadingConfig(false)
       }
     })()
+    // 后端可用性只在页面挂载时探测一次。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleStartDelivery = async () => {
@@ -322,21 +324,9 @@ export default function Job51Page() {
       setIsLoggedIn(false)
       setLogoutResult({ success: data.success, message: data.success ? '已退出登录，Cookie已清空。' : data.message })
       setShowLogoutResultDialog(true)
-    } catch (error) {
+    } catch {
       setLogoutResult({ success: false, message: '退出登录失败：网络或服务异常。' })
       setShowLogoutResultDialog(true)
-    }
-  }
-
-  const handleSaveCookie = async () => {
-    try {
-      const response = await fetch(`${API}/api/cookie/save?platform=51job`, { method: 'POST' })
-      const data = await response.json()
-      setSaveResult({ success: data.success, message: data.success ? '配置保存成功。' : data.message })
-      setShowSaveDialog(true)
-    } catch (error) {
-      setSaveResult({ success: false, message: '配置保存失败：网络或服务异常。' })
-      setShowSaveDialog(true)
     }
   }
 

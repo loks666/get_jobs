@@ -30,7 +30,6 @@ public class PlaywrightController {
     public ResponseEntity<Map<String, Object>> getStatus() {
         Map<String, Object> status = new HashMap<>();
         status.put("initialized", playwrightManager.isInitialized());
-        status.put("cdpPort", playwrightManager.getCdpPort());
         status.put("hasBossPage", playwrightManager.hasPage("boss"));
         status.put("hasBrowser", playwrightManager.hasBrowser());
         status.put("bossLoggedIn", playwrightManager.isLoggedIn("boss"));

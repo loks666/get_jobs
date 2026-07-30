@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import ChartCanvas from "@/app/components/ChartCanvas"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -83,150 +84,8 @@ const CATEGORY_COLORS = [
   "#64748b",
 ]
 
-function ChartCanvas({
-  type,
-  labels,
-  data,
-  title,
-  color = "#3b82f6",
-  colors,
-}: {
-  type: "pie" | "bar" | "line"
-  labels: string[]
-  data: number[]
-  title?: string
-  color?: string
-  colors?: string[]
-}) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const chartRef = useRef<any | null>(null)
-  // 颜色统一使用纯色（不透明）
-  const toSolid = (hex: string) => hex
-
-  async function ensureChart(): Promise<any> {
-    if (typeof window !== "undefined" && (window as any).Chart) return (window as any).Chart
-    return new Promise((resolve, reject) => {
-      const existing = document.querySelector("script[data-chartjs-cdn='true']") as HTMLScriptElement | null
-      if (existing) {
-        existing.addEventListener("load", () => resolve((window as any).Chart))
-        existing.addEventListener("error", () => reject(new Error("Chart.js CDN load error")))
-        return
-      }
-      const script = document.createElement("script")
-      script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
-      script.async = true
-      script.setAttribute("data-chartjs-cdn", "true")
-      script.addEventListener("load", () => resolve((window as any).Chart))
-      script.addEventListener("error", () => reject(new Error("Chart.js CDN load error")))
-      document.head.appendChild(script)
-    })
-  }
-
-  useEffect(() => {
-    const ctx = canvasRef.current?.getContext("2d")
-    if (!ctx) return
-
-    // 销毁旧图表
-    if (chartRef.current) {
-      chartRef.current.destroy()
-      chartRef.current = null
-    }
-
-    let cancelled = false
-
-    const pieColorsBase = [
-      "#3b82f6",
-      "#10b981",
-      "#f59e0b",
-      "#ef4444",
-      "#6366f1",
-      "#22c55e",
-      "#fb7185",
-      "#a78bfa",
-      "#f97316",
-      "#06b6d4",
-    ]
-
-    const backgroundColor = (() => {
-      if (type === "pie") {
-        const arr = (colors && colors.length ? colors : pieColorsBase).slice(0, labels.length)
-        return arr
-      }
-      if (type === "bar" && colors && colors.length) {
-        // 柱状图每个分类使用纯色
-        return colors.slice(0, data.length).map((c) => toSolid(c))
-      }
-      // 折线图/默认均使用纯色
-      return toSolid(color ?? "#3b82f6")
-    })()
-
-    const borderColor = (() => {
-      if (type === "pie") {
-        // 饼图无需边框或统一边框
-        return undefined
-      }
-      if (type === "bar" && colors && colors.length) {
-        return colors.slice(0, data.length)
-      }
-      return color
-    })()
-
-    const dataset: any = {
-      label: title || "",
-      data,
-      backgroundColor,
-      borderColor,
-    }
-
-    // 线形图不使用区域填充，点与线均为纯色
-    if (type === "line") {
-      dataset.fill = false
-      dataset.pointBackgroundColor = toSolid(color)
-      dataset.pointBorderColor = toSolid(color)
-    }
-
-    ;(async () => {
-      try {
-        const Chart = await ensureChart()
-        // 检查组件是否已卸载
-        if (cancelled) return
-
-        chartRef.current = new Chart(ctx, {
-          type,
-          data: {
-            labels,
-            datasets: [dataset],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: type === "pie" },
-              title: { display: !!title, text: title },
-            },
-            scales: type !== "pie" ? { x: { ticks: { autoSkip: true } }, y: { beginAtZero: true } } : undefined,
-          },
-        })
-      } catch (error) {
-        console.error("Failed to create chart:", error)
-      }
-    })()
-
-    return () => {
-      cancelled = true
-      if (chartRef.current) {
-        chartRef.current.destroy()
-        chartRef.current = null
-      }
-    }
-  }, [type, labels, data, title, color, colors])
-
-  return <canvas ref={canvasRef} className="w-full h-64" />
-}
-
 export default function AnalysisContent({ showHeader = false }: { showHeader?: boolean }) {
   const [stats, setStats] = useState<StatsResponse | null>(null)
-  const [loadingStats, setLoadingStats] = useState(true)
 
   const [items, setItems] = useState<BossJob[]>([])
   const [total, setTotal] = useState(0)
@@ -269,7 +128,7 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
     try {
       await navigator.clipboard.writeText(textDialogContent || "")
       alert("已复制到剪贴板")
-    } catch (e) {
+    } catch {
       try {
         const ta = document.createElement("textarea")
         ta.value = textDialogContent || ""
@@ -278,7 +137,7 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
         document.execCommand("copy")
         document.body.removeChild(ta)
         alert("已复制到剪贴板")
-      } catch (e2) {
+      } catch {
         alert("复制失败，请手动选中复制")
       }
     }
@@ -289,6 +148,8 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
   useEffect(() => {
     // 初次加载统计（应用当前筛选条件）
     loadStats()
+    // 初始筛选只在页面挂载时加载；后续由“应用筛选”触发。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 当实际页码/每页条数变化时，同步到输入框
@@ -367,14 +228,11 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
     if (filterHeadhunter) params.set("filterHeadhunter", "true")
 
     try {
-      setLoadingStats(true)
       const res = await fetch(`${API_BASE}/api/boss/stats?${params.toString()}`)
       const data: StatsResponse = await res.json()
       setStats(data)
     } catch (e) {
       console.error("fetch stats failed", e)
-    } finally {
-      setLoadingStats(false)
     }
   }
 

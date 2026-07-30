@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BiEnvelope, BiBriefcase, BiSearch, BiTask, BiUserCircle, BiBrain, BiMoon, BiSun } from 'react-icons/bi'
 import { motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
@@ -14,7 +14,7 @@ export default function Sidebar() {
 
   // 健康检查状态：up / degraded / down / unknown
   const [health, setHealth] = useState<'up' | 'degraded' | 'down' | 'unknown'>('unknown')
-  const [checking, setChecking] = useState(false)
+  const checkingRef = useRef(false)
 
   useEffect(() => {
     setMounted(true)
@@ -24,8 +24,8 @@ export default function Sidebar() {
     let interval: NodeJS.Timeout | null = null
 
     const check = async () => {
-      if (checking) return
-      setChecking(true)
+      if (checkingRef.current) return
+      checkingRef.current = true
       const baseUrl = process.env.API_BASE_URL || 'http://localhost:8888'
 
       const controller = new AbortController()
@@ -47,11 +47,11 @@ export default function Sidebar() {
         } else {
           setHealth('down')
         }
-      } catch (e) {
+      } catch {
         setHealth('unknown')
       } finally {
         clearTimeout(timeout)
-        setChecking(false)
+        checkingRef.current = false
       }
     }
 

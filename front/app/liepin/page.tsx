@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createSSEWithBackoff } from '@/lib/sse'
-import { BiSearch, BiSave, BiTargetLock, BiMap, BiMoney, BiTime, BiBookmark, BiBarChart, BiPlay, BiStop, BiLogOut, BiBriefcase } from 'react-icons/bi'
+import { BiSearch, BiSave, BiMoney, BiPlay, BiStop, BiLogOut, BiBriefcase } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -102,6 +102,8 @@ export default function LiepinPage() {
     return () => {
       client.close()
     }
+    // 页面配置和 SSE 连接只在挂载时初始化。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 将数据库中的 JSON 数组字符串转换为逗号分隔的可读字符串

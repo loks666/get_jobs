@@ -1,6 +1,7 @@
 package com.getjobs.worker.job51;
 
 import com.getjobs.application.service.Job51Service;
+import com.getjobs.worker.utils.DeliveryLimit;
 import com.getjobs.worker.utils.JobUtils;
 import com.getjobs.worker.utils.PlaywrightUtil;
 import com.microsoft.playwright.Locator;
@@ -42,6 +43,8 @@ public class Job51 {
     private Supplier<Boolean> shouldStopCallback;
 
     private final List<String> resultList = new ArrayList<>();
+    private final int maxDeliveries = DeliveryLimit.configuredMax();
+    private int deliveryAttempts;
     private final Job51Service job51Service;
     private boolean networkHooked = false;
     private boolean reachedDailyLimit = false;
@@ -92,7 +95,7 @@ public class Job51 {
             
             // 遍历所有关键词进行投递
             for (String keyword : config.getKeywords()) {
-                if (shouldStop()) {
+                if (deliveryLimitReached() || shouldStop()) {
                     sendProgress("用户取消投递", null, null);
                     break;
                 }
@@ -187,14 +190,6 @@ public class Job51 {
             }
 
             // 导航到搜索页面
-            try {
-                java.util.Map<String, String> headers = new java.util.HashMap<>();
-                headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-                headers.put("Accept-Language", "zh-CN,zh;q=0.9");
-                headers.put("Sec-Fetch-Site", "same-site");
-                headers.put("Sec-Fetch-Mode", "navigate");
-                page.setExtraHTTPHeaders(headers);
-            } catch (Throwable ignored) {}
             page.navigate(searchUrl);
             PlaywrightUtil.sleep(1);
 
@@ -215,7 +210,7 @@ public class Job51 {
 
             // 遍历页面投递
             for (int pageNum = 1; pageNum <= DEFAULT_MAX_PAGE; pageNum++) {
-                if (shouldStop()) {
+                if (deliveryLimitReached() || shouldStop()) {
                     sendProgress("用户取消投递", null, null);
                     return;
                 }
@@ -246,7 +241,7 @@ public class Job51 {
 
                 // 投递当前页面的所有职位
                 deliverCurrentPage();
-                if (reachedDailyLimit) break;
+                if (deliveryLimitReached() || reachedDailyLimit) break;
 
                 PlaywrightUtil.sleep(3);
             }
@@ -271,9 +266,13 @@ public class Job51 {
             Locator companies = page.locator("[class*='cname text-cut']");
 
             int jobCount = checkboxes.count();
+            int selectionCount = Math.min(jobCount, maxDeliveries - deliveryAttempts);
+            if (selectionCount <= 0) {
+                return;
+            }
 
-            // 选中所有职位
-            for (int i = 0; i < jobCount; i++) {
+            // 只选中本次硬上限允许的职位
+            for (int i = 0; i < selectionCount; i++) {
                 if (shouldStop()) {
                     return;
                 }
@@ -282,6 +281,7 @@ public class Job51 {
                     Locator checkbox = checkboxes.nth(i);
                     // 使用JavaScript点击，避免元素被遮挡
                     checkbox.evaluate("el => el.click()");
+                    deliveryAttempts++;
 
                     String title = i < titles.count() ? titles.nth(i).textContent() : "未知职位";
                     String company = i < companies.count() ? companies.nth(i).textContent() : "未知公司";
@@ -303,7 +303,7 @@ public class Job51 {
             PlaywrightUtil.sleep(3);
 
             // 处理投递成功弹窗
-            handleDeliverySuccessDialog();
+            handleDeliverySuccessDialog(selectionCount);
 
             // 处理单独投递申请弹窗
             handleSeparateDeliveryDialog();
@@ -363,7 +363,7 @@ public class Job51 {
     /**
      * 处理投递成功弹窗
      */
-    private void handleDeliverySuccessDialog() {
+    private void handleDeliverySuccessDialog(int selectionCount) {
         try {
             PlaywrightUtil.sleep(2);
 
@@ -398,7 +398,7 @@ public class Job51 {
                     } catch (Exception ignored) {}
                     if (successNum == null && appDeliverySucceeded) {
                         synchronized (currentPageJobIds) {
-                            successNum = currentPageJobIds.size();
+                            successNum = Math.min(selectionCount, currentPageJobIds.size());
                         }
                         failNum = 0;
                     }
@@ -850,6 +850,10 @@ public class Job51 {
      */
     private boolean shouldStop() {
         return shouldStopCallback != null && shouldStopCallback.get();
+    }
+
+    private boolean deliveryLimitReached() {
+        return deliveryAttempts >= maxDeliveries;
     }
 
     /**

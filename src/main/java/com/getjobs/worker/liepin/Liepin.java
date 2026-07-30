@@ -1,6 +1,7 @@
 package com.getjobs.worker.liepin;
 
 import com.getjobs.worker.utils.PlaywrightUtil;
+import com.getjobs.worker.utils.DeliveryLimit;
 import com.getjobs.application.service.LiepinService;
 import com.getjobs.application.entity.LiepinEntity;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -40,6 +41,8 @@ public class Liepin {
 
     private int maxPage = 50;
     private final List<String> resultList = new ArrayList<>();
+    private final int maxDeliveries = DeliveryLimit.configuredMax();
+    private int deliveryAttempts;
     private final List<LiepinEntity> lastApiEntities = new ArrayList<>();
     private boolean monitoringRegistered = false;
     @Setter
@@ -119,7 +122,7 @@ public class Liepin {
         }
 
         for (String keyword : keywords) {
-            if (shouldStop()) {
+            if (deliveryLimitReached() || shouldStop()) {
                 info("收到停止指令，提前结束关键词循环");
                 break;
             }
@@ -218,6 +221,10 @@ public class Liepin {
         return shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get());
     }
 
+    private boolean deliveryLimitReached() {
+        return deliveryAttempts >= maxDeliveries;
+    }
+
     private void info(String msg) {
         if (progressCallback != null) {
             progressCallback.onProgress(msg, null, null);
@@ -238,7 +245,7 @@ public class Liepin {
         setMaxPage(lis);
         
         for (int i = 0; i < maxPage; i++) {
-            if (shouldStop()) {
+            if (deliveryLimitReached() || shouldStop()) {
                 info("收到停止指令，结束分页循环");
                 return;
             }
@@ -329,7 +336,7 @@ public class Liepin {
         int count = jobCards.count();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; i++) {
-            if (shouldStop()) {
+            if (deliveryLimitReached() || shouldStop()) {
                 info("收到停止指令，结束卡片遍历");
                 return;
             }
@@ -538,6 +545,7 @@ public class Liepin {
                         log.warn("鼠标微调失败，直接点击按钮: {}", moveError.getMessage());
                     }
                     
+                    deliveryAttempts++;
                     button.click();
                     // PlaywrightUtil.sleep(1); // 等待点击响应
                     

@@ -83,9 +83,6 @@ public class PlaywrightManager {
     // 默认超时时间（毫秒）
   private static final int DEFAULT_TIMEOUT = 30000;
 
-    // Playwright调试端口
-    private static final int CDP_PORT = 7866;
-
     // 平台URL常量
     private static final String BOSS_URL = "https://www.zhipin.com";
     private static final String LIEPIN_URL = "https://www.liepin.com";
@@ -96,6 +93,12 @@ public class PlaywrightManager {
     private static final String JOB51_DOMAIN = "51job.com";
     private static final String ZHILIAN_DOMAIN = "zhaopin.com";
     private static final String BOSS_INIT_SCRIPT_RESOURCE = "anti-detection.js";
+    private static final java.nio.file.Path CHROME_EXECUTABLE = java.nio.file.Path.of(
+            System.getenv().getOrDefault(
+                    "GET_JOBS_CHROME_PATH",
+                    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+            )
+    );
     // 降噪：51job Cookie保存日志节流状态
     private volatile long last51CookieLogMs = 0L;
     private volatile int last51CookieLogCount = -1;
@@ -121,22 +124,20 @@ public class PlaywrightManager {
             playwright = Playwright.create();
             log.info("✓ Playwright引擎已启动");
 
-            // 创建浏览器实例，使用固定CDP端口7866，最大化启动
-            browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+            // 使用干净会话启动真实 Chrome，登录信息只从数据库 Cookie 恢复，避免 Profile 旧 Cookie 冲突
+            browser = playwright.chromium().launch(
+                    new BrowserType.LaunchOptions()
+                    .setExecutablePath(CHROME_EXECUTABLE)
                     .setHeadless(false) // 非无头模式，可视化调试
                     .setSlowMo(50) // 放慢操作速度，便于调试
+                    .setIgnoreDefaultArgs(List.of("--enable-automation"))
                     .setArgs(List.of(
-                            "--remote-debugging-port=" + CDP_PORT, // 使用固定CDP端口
-                            "--start-maximized" // 最大化启动窗口
-                    )));
-            log.info("✓ Chrome浏览器已启动 (调试端口: {})", CDP_PORT);
-
-            // 创建共享的BrowserContext（所有平台在同一个窗口的不同标签页中）
-            context = browser.newContext(new Browser.NewContextOptions()
-                    .setViewportSize(null) // 不设置固定视口，使用浏览器窗口实际大小
-                    .setUserAgent(
-                            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"));
-            log.info("✓ BrowserContext已创建（所有平台共享）");
+                            "--start-maximized", // 最大化启动窗口
+                            "--disable-blink-features=AutomationControlled"
+                    ))
+            );
+            context = browser.newContext(new Browser.NewContextOptions().setViewportSize(null));
+            log.info("✓ 系统Chrome干净上下文已启动");
             injectBossInitScript(context);
 
             // 顺序创建所有Page（避免并发创建Page导致的竞态条件）
@@ -182,11 +183,14 @@ public class PlaywrightManager {
             log.warn("Boss 反检测脚本未加载，资源不存在或为空: {}", BOSS_INIT_SCRIPT_RESOURCE);
             return;
         }
-        String wrapped = "(function(){try{if(location&&location.origin===\"https://www.zhipin.com\"){"
+        targetContext.addInitScript(wrapBossInitScript(script));
+        log.info("Boss 反检测脚本已注入到Context: {}", BOSS_INIT_SCRIPT_RESOURCE);
+    }
+
+    static String wrapBossInitScript(String script) {
+        return "(function(){try{if(location&&/(^|\\.)zhipin\\.com$/.test(location.hostname)){"
                 + "if(window.__bossAntiDetectInjected){return;}window.__bossAntiDetectInjected=true;"
                 + script + "}}catch(e){}})();";
-        targetContext.addInitScript(wrapped);
-        log.info("Boss 反检测脚本已注入到Context: {}", BOSS_INIT_SCRIPT_RESOURCE);
     }
 
     private String readResourceText(String resourcePath) {
@@ -327,6 +331,7 @@ public class PlaywrightManager {
         // 监听页面导航事件，检测URL变化
         page.onFrameNavigated(frame -> {
             if (frame == page.mainFrame()) {
+                log.info("Boss主页面导航: {}", frame.url());
                 // 事件触发的检查在Playwright内部线程执行，仍需遵守暂停标志
                 if (!bossMonitoringPaused) {
                     gate.run(() -> checkLoginStatus(page, "boss"));
@@ -1432,6 +1437,44 @@ public class PlaywrightManager {
     }
 
     /**
+     * 用前端提交的 Cookie 替换 Boss 会话并立即验证。
+     */
+    public BossCookieLoginResult loginBossWithCookies(String rawCookies) {
+        return gate.call(() -> {
+            List<Cookie> cookies = filterCookiesByDomain(parseBossCookies(rawCookies), BOSS_DOMAIN);
+            if (cookies.isEmpty()) {
+                throw new IllegalArgumentException("未解析到有效的 zhipin.com Cookie");
+            }
+
+            replaceCookiesForDomain(BOSS_DOMAIN, cookies);
+            bossPage.navigate(BOSS_URL, new Page.NavigateOptions()
+                    .setTimeout(60000)
+                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+
+            boolean loggedIn = checkIfLoggedIn();
+            setLoginStatus("boss", loggedIn);
+            if (!loggedIn) {
+                throw new IllegalArgumentException("Cookie 无效或已过期，请重新导出后再试");
+            }
+
+            saveBossCookiesToDatabase("frontend cookie login");
+            return new BossCookieLoginResult(true, cookies.size(), bossPage.url());
+        });
+    }
+
+    private void replaceCookiesForDomain(String domainSuffix, List<Cookie> replacement) {
+        List<Cookie> preserved = context.cookies().stream()
+                .filter(cookie -> cookie.domain == null
+                        || !cookie.domain.toLowerCase(Locale.ROOT).endsWith(domainSuffix))
+                .toList();
+        context.clearCookies();
+        if (!preserved.isEmpty()) {
+            context.addCookies(preserved);
+        }
+        context.addCookies(replacement);
+    }
+
+    /**
      * 清理Boss上下文中的Cookie
      * 用于退出登录时清除浏览器上下文中的所有Cookie
      */
@@ -1535,11 +1578,11 @@ public class PlaywrightManager {
                 log.info("共享BrowserContext已关闭");
             }
 
-            // 关闭浏览器
             if (browser != null) {
                 browser.close();
                 log.info("浏览器已关闭");
             }
+
             if (playwright != null) {
                 playwright.close();
                 log.info("Playwright实例已关闭");
@@ -1555,11 +1598,11 @@ public class PlaywrightManager {
      * 检查Playwright是否已初始化
      */
     public boolean isInitialized() {
-        return playwright != null && browser != null && bossPage != null;
+        return playwright != null && context != null && bossPage != null;
     }
 
     public boolean hasBrowser() {
-        return browser != null;
+        return context != null;
     }
 
     public boolean hasPage(String platform) {
@@ -1593,13 +1636,6 @@ public class PlaywrightManager {
             page.navigate(BOSS_URL);
             return Map.of("title", page.title(), "url", page.url());
         });
-    }
-
-    /**
-     * 获取CDP端口号
-     */
-    public int getCdpPort() {
-        return CDP_PORT;
     }
 
     /**
@@ -1643,50 +1679,6 @@ public class PlaywrightManager {
         if (previousStatus == null || previousStatus != isLoggedIn) {
             loginStatus.put(platform, isLoggedIn);
 
-            // Boss平台：在设置未登录状态时，顺带引导到登录页并切换二维码扫码
-            if ("boss".equals(platform) && !isLoggedIn) {
-                try {
-                    if (bossPage != null) {
-                        String currentUrl = null;
-                        try { currentUrl = bossPage.url(); } catch (Exception ignored) {}
-
-                        // 避免重复导航：若当前已在登录页则不再二次跳转
-                        if (currentUrl == null || !currentUrl.contains("/web/user/")) {
-                            bossPage.navigate(BOSS_URL + "/web/user/?ka=header-login");
-                            try { Thread.sleep(800); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
-                        }
-
-                        // 尝试切换到二维码登录（点击“APP扫码登录”按钮），优先使用新版选择器
-                        try {
-                            Locator qrSwitch = bossPage.locator(".btn-sign-switch.ewm-switch").first();
-                            if (qrSwitch.isVisible()) {
-                                qrSwitch.click();
-                            } else {
-                                // 兜底：按文本匹配内部提示
-                                Locator tip = bossPage.getByText("APP扫码登录").first();
-                                if (tip.isVisible()) {
-                                    tip.click();
-                                    log.info("已点击包含文本的二维码登录切换提示（APP扫码登录）");
-                                } else {
-                                    // 兼容旧版选择器
-                                    Locator legacy = bossPage.locator("li.sign-switch-tip").first();
-                                    if (legacy.isVisible()) {
-                                        legacy.click();
-                                        log.info("已通过旧版选择器切换二维码登录（li.sign-switch-tip）");
-                                    } else {
-                                        log.info("未找到二维码登录切换按钮，保持当前登录页");
-                                    }
-                                }
-                            }
-                        } catch (Exception e) {
-                            log.debug("切换二维码登录失败: {}", e.getMessage());
-                        }
-                    }
-                } catch (Exception e) {
-                    log.debug("设置Boss未登录状态时执行登录引导失败: {}", e.getMessage());
-                }
-            }
-
             // 通知所有监听器（触发SSE推送）
             LoginStatusChange change = new LoginStatusChange(platform, isLoggedIn, System.currentTimeMillis());
             loginStatusListeners.forEach(listener -> {
@@ -1707,7 +1699,7 @@ public class PlaywrightManager {
      * @param cookieJson Cookie的JSON字符串
      * @return Cookie列表
      */
-    private List<Cookie> parseCookiesFromString(String cookieJson) {
+    private static List<Cookie> parseCookiesFromString(String cookieJson) {
         List<Cookie> cookies = new ArrayList<>();
 
         try {
@@ -1730,6 +1722,8 @@ public class PlaywrightManager {
                 }
                 if (node.has("expires") && !node.get("expires").isNull()) {
                     cookie.expires = node.get("expires").asDouble();
+                } else if (node.has("expirationDate") && !node.get("expirationDate").isNull()) {
+                    cookie.expires = node.get("expirationDate").asDouble();
                 }
                 if (node.has("httpOnly") && !node.get("httpOnly").isNull()) {
                     cookie.httpOnly = node.get("httpOnly").asBoolean();
@@ -1738,12 +1732,13 @@ public class PlaywrightManager {
                     cookie.secure = node.get("secure").asBoolean();
                 }
                 if (node.has("sameSite") && !node.get("sameSite").isNull()) {
-                    String sameSite = node.get("sameSite").asText();
-                    if (sameSite != null && !sameSite.isEmpty()) {
-                        cookie.sameSite = com.microsoft.playwright.options.SameSiteAttribute.valueOf(
-                                sameSite.toUpperCase()
-                        );
-                    }
+                    String sameSite = node.get("sameSite").asText("").toLowerCase(Locale.ROOT);
+                    cookie.sameSite = switch (sameSite) {
+                        case "strict" -> com.microsoft.playwright.options.SameSiteAttribute.STRICT;
+                        case "lax" -> com.microsoft.playwright.options.SameSiteAttribute.LAX;
+                        case "none", "no_restriction" -> com.microsoft.playwright.options.SameSiteAttribute.NONE;
+                        default -> null;
+                    };
                 }
 
                 cookies.add(cookie);
@@ -1757,7 +1752,41 @@ public class PlaywrightManager {
         return cookies;
     }
 
-    private List<Cookie> filterCookiesByDomain(List<Cookie> cookies, String domainSuffix) {
+    static List<Cookie> parseBossCookies(String rawCookies) {
+        if (rawCookies == null || rawCookies.isBlank()) {
+            return List.of();
+        }
+
+        String value = rawCookies.trim();
+        if (value.startsWith("[")) {
+            List<Cookie> cookies = parseCookiesFromString(value);
+            cookies.forEach(cookie -> {
+                if (cookie.domain == null || cookie.domain.isBlank()) {
+                    cookie.domain = ".zhipin.com";
+                }
+                if (cookie.path == null || cookie.path.isBlank()) {
+                    cookie.path = "/";
+                }
+            });
+            return cookies;
+        }
+
+        List<Cookie> cookies = new ArrayList<>();
+        for (String part : value.split(";")) {
+            String pair = part.trim();
+            int separator = pair.indexOf('=');
+            if (separator <= 0) {
+                continue;
+            }
+            Cookie cookie = new Cookie(pair.substring(0, separator).trim(), pair.substring(separator + 1).trim());
+            cookie.domain = ".zhipin.com";
+            cookie.path = "/";
+            cookies.add(cookie);
+        }
+        return cookies;
+    }
+
+    private static List<Cookie> filterCookiesByDomain(List<Cookie> cookies, String domainSuffix) {
         if (cookies == null || cookies.isEmpty()) {
             return new ArrayList<>();
         }
@@ -1775,6 +1804,9 @@ public class PlaywrightManager {
         }
 
         return filtered;
+    }
+
+    public record BossCookieLoginResult(boolean loggedIn, int cookieCount, String url) {
     }
 
     /**

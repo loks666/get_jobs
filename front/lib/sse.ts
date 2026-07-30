@@ -10,7 +10,7 @@ export type BackoffConfig = {
 export type SSEBackoffOptions = {
   listeners: SSEListener[];
   onOpen?: () => void;
-  onError?: (error: any, attempt: number, delayMs: number) => void;
+  onError?: (error: unknown, attempt: number, delayMs: number) => void;
   backoff?: BackoffConfig;
 };
 

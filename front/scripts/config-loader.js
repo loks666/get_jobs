@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const { spawn } = require('child_process');
-const path = require('path');
 
 // 读取服务器配置
 const serverConfig = require('../server.config.js');

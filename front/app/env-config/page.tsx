@@ -119,10 +119,11 @@ export default function EnvConfig() {
         actions={
           <Button
             onClick={() => handleSave(false)}
+            disabled={saving}
             size="sm"
             className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
           >
-            <BiSave className="mr-1" /> 保存配置
+            <BiSave className="mr-1" /> {saving ? '保存中...' : '保存配置'}
           </Button>
         }
       />

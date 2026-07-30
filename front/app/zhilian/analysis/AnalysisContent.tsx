@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import ChartCanvas from "@/app/components/ChartCanvas"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import PageHeader from "@/app/components/PageHeader"
-import { BiRefresh, BiDownload, BiBarChart, BiLineChart, BiPieChart, BiBriefcase } from "react-icons/bi"
+import { BiRefresh, BiDownload, BiBarChart, BiLineChart, BiBriefcase } from "react-icons/bi"
 import { parseSalary } from "@/lib/salary"
 
 type NameValue = { name: string; value: number }
@@ -72,140 +72,14 @@ const CATEGORY_COLORS = [
   "#64748b",
 ]
 
-function ChartCanvas({
-  type,
-  labels,
-  data,
-  title,
-  color = "#3b82f6",
-  colors,
-}: {
-  type: "pie" | "bar" | "line"
-  labels: string[]
-  data: number[]
-  title?: string
-  color?: string
-  colors?: string[]
-}) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const chartRef = useRef<any | null>(null)
-  const toSolid = (hex: string) => hex
-
-  async function ensureChart(): Promise<any> {
-    if (typeof window !== "undefined" && (window as any).Chart) return (window as any).Chart
-    return new Promise((resolve, reject) => {
-      const existing = document.querySelector("script[data-chartjs-cdn='true']") as HTMLScriptElement | null
-      if (existing) {
-        existing.addEventListener("load", () => resolve((window as any).Chart))
-        existing.addEventListener("error", () => reject(new Error("Chart.js CDN load error")))
-        return
-      }
-      const script = document.createElement("script")
-      script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
-      script.async = true
-      script.setAttribute("data-chartjs-cdn", "true")
-      script.addEventListener("load", () => resolve((window as any).Chart))
-      script.addEventListener("error", () => reject(new Error("Chart.js CDN load error")))
-      document.head.appendChild(script)
-    })
-  }
-
-  useEffect(() => {
-    const ctx = canvasRef.current?.getContext("2d")
-    if (!ctx) return
-
-    if (chartRef.current) {
-      chartRef.current.destroy()
-      chartRef.current = null
-    }
-
-    let cancelled = false
-
-    const pieColorsBase = [
-      "#3b82f6",
-      "#10b981",
-      "#f59e0b",
-      "#ef4444",
-      "#6366f1",
-      "#22c55e",
-      "#fb7185",
-      "#a78bfa",
-      "#f97316",
-      "#06b6d4",
-    ]
-
-    const backgroundColor = (() => {
-      if (type === "pie") {
-        const arr = (colors && colors.length ? colors : pieColorsBase).slice(0, labels.length)
-        return arr
-      }
-      if (type === "bar" && colors && colors.length) {
-        return colors.slice(0, data.length).map((c) => toSolid(c))
-      }
-      return toSolid(color ?? "#3b82f6")
-    })()
-
-    const borderColor = (() => {
-      if (type === "pie") return undefined
-      if (type === "bar" && colors && colors.length) return colors.slice(0, data.length)
-      return color
-    })()
-
-    const dataset: any = {
-      label: title || "",
-      data,
-      backgroundColor,
-      borderColor,
-    }
-
-    if (type === "line") {
-      dataset.fill = false
-      dataset.pointBackgroundColor = toSolid(color)
-      dataset.pointBorderColor = toSolid(color)
-    }
-
-    ;(async () => {
-      try {
-        const Chart = await ensureChart()
-        if (cancelled) return
-        chartRef.current = new Chart(ctx, {
-          type,
-          data: { labels, datasets: [dataset] },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: type === "pie" },
-              title: { display: !!title, text: title },
-            },
-            scales: type !== "pie" ? { x: { ticks: { autoSkip: true } }, y: { beginAtZero: true } } : undefined,
-          },
-        })
-      } catch (error) {
-        console.error("Failed to create chart:", error)
-      }
-    })()
-
-    return () => {
-      cancelled = true
-      if (chartRef.current) {
-        chartRef.current.destroy()
-        chartRef.current = null
-      }
-    }
-  }, [type, labels, data, title, color, colors])
-
-  return <canvas ref={canvasRef} className="w-full h-64" />
-}
-
-function formatDateOnly(s?: string) {
-  if (!s) return ""
+function formatDateOnly(value?: string) {
+  if (!value) return ""
   try {
-    const d = new Date(s)
-    if (isNaN(d.getTime())) return s
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-  } catch (e) {
-    return s
+    const date = new Date(value)
+    if (isNaN(date.getTime())) return value
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+  } catch {
+    return value
   }
 }
 
@@ -241,7 +115,6 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
   const [keyword, setKeyword] = useState<string>("")
 
   const [exporting, setExporting] = useState(false)
-  const [reloading, setReloading] = useState(false)
   const [computedSalaryBuckets, setComputedSalaryBuckets] = useState<BucketValue[]>([])
 
   const statusOptions = ["未投递", "已投递", "已过滤", "投递失败"]
@@ -451,24 +324,6 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
     ]
   }, [stats, items])
 
-  const fallbackSalaryBuckets = useMemo(() => {
-    const ks: number[] = []
-    for (const it of items) {
-      const info = parseSalary(it.salary)
-      if (info && !isNaN(info.medianK)) ks.push(info.medianK)
-    }
-    if (!ks.length) return [] as BucketValue[]
-    const buckets: { key: string; min: number; max: number | null }[] = [
-      { key: "0-10K", min: 0, max: 10 },
-      { key: "10-15K", min: 10, max: 15 },
-      { key: "15-20K", min: 15, max: 20 },
-      { key: "20-25K", min: 20, max: 25 },
-      { key: ">=25K", min: 25, max: null },
-    ]
-    const counts = buckets.map((b) => ks.filter((k) => (b.max == null ? k >= b.min : k >= b.min && k < b.max)).length)
-    return buckets.map((b, i) => ({ bucket: b.key, value: counts[i] }))
-  }, [items])
-
   return (
     <div className="space-y-8">
       {showHeader && (
@@ -630,7 +485,7 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
           </CardHeader>
           <CardContent>
             {stats ? (
-              <ChartCanvas type="line" labels={(computedSalaryBuckets.length ? computedSalaryBuckets : stats.charts.salaryBuckets).map((x) => (x as any).bucket)} data={(computedSalaryBuckets.length ? computedSalaryBuckets : stats.charts.salaryBuckets).map((x) => x.value)} color="#ef4444" />
+              <ChartCanvas type="line" labels={(computedSalaryBuckets.length ? computedSalaryBuckets : stats.charts.salaryBuckets).map((x) => x.bucket)} data={(computedSalaryBuckets.length ? computedSalaryBuckets : stats.charts.salaryBuckets).map((x) => x.value)} color="#ef4444" />
             ) : (
               <div className="text-muted-foreground">加载中...</div>
             )}

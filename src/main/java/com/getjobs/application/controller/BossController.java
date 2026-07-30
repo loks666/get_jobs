@@ -165,6 +165,32 @@ public class BossController {
         }
     }
 
+    /** POST - 从前端导入 Cookie 并登录 Boss */
+    @PostMapping("/cookie-login")
+    public ResponseEntity<Map<String, Object>> loginWithCookie(@RequestBody CookieLoginRequest request) {
+        try {
+            PlaywrightManager.BossCookieLoginResult result =
+                    playwrightManager.loginBossWithCookies(request.cookie());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Cookie 登录成功");
+            response.put("cookieCount", result.cookieCount());
+            response.put("url", result.url() == null ? "" : result.url());
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            log.error("Boss Cookie 登录失败", e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "Cookie 登录失败: " + e.getMessage()
+            ));
+        }
+    }
+
     /** GET - 获取Boss任务状态 */
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getBossStatus() {
@@ -214,5 +240,8 @@ public class BossController {
             }
         }
         bossProgressEmitters.removeAll(deadEmitters);
+    }
+
+    public record CookieLoginRequest(String cookie) {
     }
 }

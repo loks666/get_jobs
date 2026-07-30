@@ -3,6 +3,13 @@ import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 
 type OptionItem = { value: string; label: React.ReactNode }
+type OptionElement = React.ReactElement<{
+  value?: string | number
+  children?: React.ReactNode
+}, "option">
+
+const isOptionElement = (child: React.ReactNode): child is OptionElement =>
+  React.isValidElement(child) && child.type === "option"
 
 export interface SelectProps {
   value?: string
@@ -30,13 +37,16 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
 
     const options = React.useMemo<OptionItem[]>(() => {
       return React.Children.toArray(children)
-        .filter((c) => React.isValidElement(c) && (c as any).type === 'option')
-        .map((c: any) => ({ value: String(c.props.value ?? c.props.children), label: c.props.children }))
+        .filter(isOptionElement)
+        .map((child) => ({
+          value: String(child.props.value ?? child.props.children),
+          label: child.props.children,
+        }))
     }, [children])
 
     const selected = options.find((o) => String(value ?? '') === String(o.value))
 
-    const emitChange = (val: string) => onChange?.({ target: { value: val } } as any)
+    const emitChange = (val: string) => onChange?.({ target: { value: val } })
 
     // 计算下拉框位置
     const updatePosition = React.useCallback(() => {

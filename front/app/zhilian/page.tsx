@@ -31,8 +31,6 @@ export default function ZhilianPage() {
   const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
   const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
   const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
-  const [backendAvailable, setBackendAvailable] = useState(true)
-
   const [config, setConfig] = useState<ZhilianConfig>({ keywords: '', cityCode: '', salary: '' })
   const [options, setOptions] = useState<ZhilianOptions>({ city: [] })
   const [loadingConfig, setLoadingConfig] = useState(true)
@@ -131,22 +129,18 @@ export default function ZhilianPage() {
     }
   }
 
-  useEffect(() => { fetchAllData() }, [])
-
   // 探测后端可用性（与 51job 保持一致风格）
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch('http://localhost:8888/api/zhilian/config', { method: 'GET' })
         const ok = !!res && res.ok
-        setBackendAvailable(ok)
         if (ok) {
           await fetchAllData()
         } else {
           setLoadingConfig(false)
         }
-      } catch (e) {
-        setBackendAvailable(false)
+      } catch {
         setLoadingConfig(false)
       }
     })()
@@ -159,7 +153,7 @@ export default function ZhilianPage() {
       const response = await fetch('http://localhost:8888/api/zhilian/start', { method: 'POST' })
       const data = await response.json()
       if (!data.success) setIsDelivering(false)
-    } catch (error) {
+    } catch {
       setIsDelivering(false)
     }
   }
@@ -169,7 +163,7 @@ export default function ZhilianPage() {
       const response = await fetch('http://localhost:8888/api/zhilian/stop', { method: 'POST' })
       const data = await response.json()
       if (data.success) setIsDelivering(false)
-    } catch (error) {}
+    } catch {}
   }
 
   const triggerLogout = async () => {
@@ -179,21 +173,9 @@ export default function ZhilianPage() {
       setIsLoggedIn(false)
       setLogoutResult({ success: data.success, message: data.success ? '已退出登录，Cookie已清空。' : data.message })
       setShowLogoutResultDialog(true)
-    } catch (error) {
+    } catch {
       setLogoutResult({ success: false, message: '退出登录失败：网络或服务异常。' })
       setShowLogoutResultDialog(true)
-    }
-  }
-
-  const handleSaveCookie = async () => {
-    try {
-      const response = await fetch('http://localhost:8888/api/cookie/save?platform=zhilian', { method: 'POST' })
-      const data = await response.json()
-      setSaveResult({ success: data.success, message: data.success ? '配置保存成功。' : data.message })
-      setShowSaveDialog(true)
-    } catch (error) {
-      setSaveResult({ success: false, message: '配置保存失败：网络或服务异常。' })
-      setShowSaveDialog(true)
     }
   }
 
@@ -274,8 +256,8 @@ export default function ZhilianPage() {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">请在浏览器标签页中登录智联招聘平台，登录成功后系统会自动检测登录状态。</p>
-                <p className="text-sm text-muted-foreground">登录成功后，点击"开始投递"按钮启动自动投递任务。</p>
-                <p className="text-sm text-muted-foreground">点击"保存配置"按钮可手动保存当前登录相关信息到数据库。</p>
+                <p className="text-sm text-muted-foreground">登录成功后，点击“开始投递”按钮启动自动投递任务。</p>
+                <p className="text-sm text-muted-foreground">点击“保存配置”按钮可手动保存当前登录相关信息到数据库。</p>
               </div>
             </CardContent>
           </Card>
