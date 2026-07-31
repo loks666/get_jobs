@@ -42,38 +42,49 @@ public class JobProgressMessage {
      */
     private Long timestamp;
 
+    /** 可选业务错误码 */
+    private String code;
+
     /**
      * 创建进度消息
      */
     public static JobProgressMessage progress(String platform, String message, int current, int total) {
-        return new JobProgressMessage(platform, "progress", message, current, total, System.currentTimeMillis());
+        return new JobProgressMessage(platform, "progress", message, current, total, System.currentTimeMillis(), null);
     }
 
     /**
      * 创建信息消息
      */
     public static JobProgressMessage info(String platform, String message) {
-        return new JobProgressMessage(platform, "info", message, null, null, System.currentTimeMillis());
+        return new JobProgressMessage(platform, "info", message, null, null, System.currentTimeMillis(), null);
     }
 
     /**
      * 创建成功消息
      */
     public static JobProgressMessage success(String platform, String message) {
-        return new JobProgressMessage(platform, "success", message, null, null, System.currentTimeMillis());
+        return new JobProgressMessage(platform, "success", message, null, null, System.currentTimeMillis(), null);
     }
 
     /**
      * 创建错误消息
      */
     public static JobProgressMessage error(String platform, String message) {
-        return new JobProgressMessage(platform, "error", message, null, null, System.currentTimeMillis());
+        return new JobProgressMessage(platform, "error", message, null, null, System.currentTimeMillis(), null);
+    }
+
+    public static JobProgressMessage error(String platform, String message, String code) {
+        return new JobProgressMessage(platform, "error", message, null, null, System.currentTimeMillis(), code);
     }
 
     /**
      * 创建警告消息
      */
     public static JobProgressMessage warning(String platform, String message) {
-        return new JobProgressMessage(platform, "warning", message, null, null, System.currentTimeMillis());
+        return new JobProgressMessage(platform, "warning", message, null, null, System.currentTimeMillis(), null);
+    }
+
+    public static JobProgressMessage warning(String platform, String message, String code) {
+        return new JobProgressMessage(platform, "warning", message, null, null, System.currentTimeMillis(), code);
     }
 }

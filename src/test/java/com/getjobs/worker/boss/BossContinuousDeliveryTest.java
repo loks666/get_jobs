@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,7 +55,7 @@ class BossContinuousDeliveryTest {
         when(detailPage.locator(".greet-boss-pop .dialog-container")).thenReturn(continueRoot);
         when(continueRoot.getByText(eq("继续沟通"), any(Locator.GetByTextOptions.class))).thenReturn(continueButton);
         when(continueButton.count()).thenReturn(0);
-        when(detailPage.locator("div#chat-input.chat-input[contenteditable='true'], textarea.input-area, [contenteditable='true'][role='textbox']"))
+        when(detailPage.locator("#chat-input, textarea.input-area, [contenteditable='true'][role='textbox']"))
                 .thenReturn(input);
         when(input.count()).thenReturn(1);
         when(input.first()).thenReturn(input);
@@ -65,6 +66,7 @@ class BossContinuousDeliveryTest {
         when(sendButton.first()).thenReturn(sendButton);
         when(sendButton.isVisible()).thenReturn(true);
         when(sendButton.isEnabled()).thenReturn(true);
+        when(detailPage.url()).thenReturn("https://www.zhipin.com/web/geek/chat");
         when(empty.first()).thenReturn(empty);
         org.mockito.Mockito.doThrow(new RuntimeException("Timeout 30000ms exceeded"))
                 .when(sendButton).click();
@@ -87,11 +89,14 @@ class BossContinuousDeliveryTest {
         submit.setAccessible(true);
 
         assertDoesNotThrow(() -> submit.invoke(boss, "Java", job));
+        assertEquals(1, boss.getResultList().size());
     }
 
     @Test
     void recognizesBossDailyDeliveryLimitMessages() {
         assertTrue(Boss.isPlatformDeliveryLimitMessage("今日沟通人数已达上限，明天再来吧"));
+        assertTrue(Boss.isPlatformDeliveryLimitMessage("您已达到沟通上限"));
+        assertTrue(Boss.isPlatformDeliveryLimitMessage("您今天已与150位BOSS沟通，休息一下，明天再来吧~"));
         assertFalse(Boss.isPlatformDeliveryLimitMessage("该职位暂时不能沟通"));
     }
 

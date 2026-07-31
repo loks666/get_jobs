@@ -100,6 +100,10 @@ export default function BossPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isDelivering, setIsDelivering] = useState(false)
   const [statsVersion, setStatsVersion] = useState(0)
+  const [activeTab, setActiveTab] = useState('config')
+  const [showBossCookieExpiredDialog, setShowBossCookieExpiredDialog] = useState(false)
+  const [showBossDailyLimitDialog, setShowBossDailyLimitDialog] = useState(false)
+  const [backendUnavailable, setBackendUnavailable] = useState(false)
   const [cookieInput, setCookieInput] = useState('')
   const [cookieLoginLoading, setCookieLoginLoading] = useState(false)
   const [cookieLoginMessage, setCookieLoginMessage] = useState<{ success: boolean; text: string } | null>(null)
@@ -109,9 +113,11 @@ export default function BossPage() {
   const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
   const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
   const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
+  const cookieInputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     fetchAllData()
+    fetchDeliveryStatus()
 
     // 确保在客户端环境且 EventSource 可用
     if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
@@ -165,6 +171,18 @@ export default function BossPage() {
           handler: (event) => {
             try {
               const data = JSON.parse(event.data)
+              if (data.code === 'BOSS_COOKIE_EXPIRED') {
+                setIsDelivering(false)
+                setIsLoggedIn(false)
+                setShowBossCookieExpiredDialog(true)
+                return
+              }
+              if (data.code === 'BOSS_DAILY_DELIVERY_LIMIT_REACHED') {
+                setIsDelivering(false)
+                setStatsVersion((version) => version + 1)
+                setShowBossDailyLimitDialog(true)
+                return
+              }
               if (data.type === 'success' || data.type === 'error') {
                 setIsDelivering(false)
                 setStatsVersion((version) => version + 1)
@@ -186,10 +204,26 @@ export default function BossPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const fetchDeliveryStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:8888/api/boss/status')
+      if (response.ok) {
+        const data = await response.json()
+        setIsDelivering(Boolean(data.isRunning))
+      }
+    } catch (error) {
+      console.warn('Failed to fetch Boss delivery status:', error)
+    }
+  }
+
   const fetchAllData = async () => {
     try {
       const response = await fetch('http://localhost:8888/api/boss/config')
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
       const data = await response.json()
+      setBackendUnavailable(false)
 
       console.log('Fetched data:', data)
       console.log('Blacklist:', data.blacklist)
@@ -350,7 +384,8 @@ export default function BossPage() {
         setBlacklist(normalizedBlacklist)
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error)
+      console.warn('Failed to fetch Boss config:', error instanceof Error ? error.message : error)
+      setBackendUnavailable(true)
     } finally {
       setLoading(false)
     }
@@ -486,6 +521,9 @@ export default function BossPage() {
       const response = await fetch('http://localhost:8888/api/boss/start', {
         method: 'POST',
       })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
       const data = await response.json()
 
       if (data.success) {
@@ -507,6 +545,9 @@ export default function BossPage() {
       const response = await fetch('http://localhost:8888/api/boss/stop', {
         method: 'POST',
       })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
       const data = await response.json()
 
       if (data.success) {
@@ -577,6 +618,15 @@ export default function BossPage() {
     }
   }
 
+  const updateBossCookie = () => {
+    setShowBossCookieExpiredDialog(false)
+    setActiveTab('config')
+    requestAnimationFrame(() => {
+      cookieInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      cookieInputRef.current?.focus()
+    })
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">加载中...</div>
   }
@@ -618,7 +668,13 @@ export default function BossPage() {
         }
       />
 
-      <Tabs defaultValue="config" className="w-full">
+      {backendUnavailable && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          后端服务暂时不可用，当前显示上次成功加载的数据
+        </div>
+      )}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="config">平台配置</TabsTrigger>
           <TabsTrigger value="analytics">投递分析</TabsTrigger>
@@ -637,8 +693,9 @@ export default function BossPage() {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">从 Cookie-Editor / EditThisCookie 导出 JSON，或从浏览器网络面板复制 Cookie 请求头，粘贴后直接登录。</p>
-                <Textarea
-                  value={cookieInput}
+                  <Textarea
+                    ref={cookieInputRef}
+                    value={cookieInput}
                   onChange={(event) => setCookieInput(event.target.value)}
                   placeholder='[{"name":"wt2","value":"...","domain":".zhipin.com"}] 或 wt2=...; zp_at=...'
                   className="min-h-28 font-mono text-xs"
@@ -972,6 +1029,50 @@ export default function BossPage() {
           <AnalysisContent key={statsVersion} />
         </TabsContent>
       </Tabs>
+
+      {showBossCookieExpiredDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
+          <div className="w-[92%] max-w-sm rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-neutral-800 dark:bg-neutral-900">
+            <Card className="border-0">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Boss Cookie 已过期</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="mb-4 text-sm text-muted-foreground">
+                  检测到 Boss 登录已失效，投递已停止。请重新获取 Cookie 并重新登录后再继续投递。
+                </p>
+                <div className="flex justify-end">
+                  <Button onClick={updateBossCookie} className="rounded-full bg-teal-500 px-4 text-white hover:bg-teal-600">
+                    去更新 Cookie
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {showBossDailyLimitDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
+          <div className="w-[92%] max-w-sm rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-neutral-800 dark:bg-neutral-900">
+            <Card className="border-0">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">今日已达投递上限</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="mb-4 text-sm text-muted-foreground">
+                  BOSS 直聘今日沟通人数已达到上限，程序已自动停止投递，请明天再试。
+                </p>
+                <div className="flex justify-end">
+                  <Button onClick={() => setShowBossDailyLimitDialog(false)} className="rounded-full bg-teal-500 px-4 text-white hover:bg-teal-600">
+                    我知道了
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* 统计卡片已移除 */}
       {/* 退出确认弹框 */}

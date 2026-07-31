@@ -1386,6 +1386,12 @@ public class PlaywrightManager {
             Boolean previousStatus = loginStatus.get(platform);
             if (isLoggedIn && (previousStatus == null || !previousStatus)) {
                 onLoginSuccess(platform);
+            } else if (!isLoggedIn && Boolean.TRUE.equals(previousStatus)) {
+                if ("boss".equals(platform)) {
+                    handleBossAuthenticationExpired();
+                } else {
+                    setLoginStatus(platform, false);
+                }
             }
         } catch (Exception e) {
             // 忽略检查过程中的异常，避免影响正常流程
@@ -1690,6 +1696,16 @@ public class PlaywrightManager {
             });
 
 //            log.info("登录状态已更新: platform={}, isLoggedIn={}", platform, isLoggedIn);
+        }
+    }
+
+    /** Boss 会话失效：只清理 Boss 持久化 Cookie，不触碰共享浏览器上下文。 */
+    public void handleBossAuthenticationExpired() {
+        setLoginStatus("boss", false);
+        try {
+            cookieService.clearCookieByPlatform("boss", "authentication expired");
+        } catch (Exception e) {
+            log.warn("清空 Boss 持久化 Cookie 失败: {}", e.getMessage());
         }
     }
 

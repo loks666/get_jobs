@@ -60,6 +60,7 @@ public class Boss {
     private final int maxDeliveries = DeliveryLimit.configuredMax();
     private int deliveryAttempts;
     private boolean platformDeliveryLimitReached;
+    private volatile boolean authenticationResponseDetected;
     @Setter
     private ProgressCallback progressCallback;
     @Setter
@@ -78,6 +79,14 @@ public class Boss {
     // 通过 Lombok @RequiredArgsConstructor 使用构造器注入 bossService 与 aiService
 
     public void prepare() {
+        authenticationResponseDetected = false;
+        if (page != null) {
+            page.onResponse(response -> {
+                if (isAuthenticationResponse(response)) {
+                    authenticationResponseDetected = true;
+                }
+            });
+        }
         // 调整 boss_data 表结构：将 encrypt_id、encrypt_user_id 前置
         try { bossService.ensureBossDataColumnOrder(); } catch (Throwable ignore) {}
         // 从数据库加载黑名单
@@ -97,6 +106,7 @@ public class Boss {
      */
     public int execute() {
         for (String cityCode : config.getCityCode()) {
+            ensureBossSession(page);
             if (deliveryLimitReached() || shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
                 progressCallback.accept("用户取消投递", 0, 0);
                 break;
@@ -232,6 +242,7 @@ public class Boss {
             page.navigate(url, new Page.NavigateOptions()
                     .setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED)
                     .setTimeout(15_000));
+            ensureBossSession(page);
             waitForSearchResults();
 
             // 1. 基于 footer 出现滚动到底，确保加载全部岗位
@@ -324,6 +335,10 @@ public class Boss {
                 } catch (Throwable ignore) {
                 }
                 PlaywrightUtil.sleep(1);
+                ensureBossSession(page);
+                if (isAuthenticationResponse(detailResp)) {
+                    throw new BossAuthenticationExpiredException("Boss 投递接口返回认证失败");
+                }
 
                 // 统一从请求返回的 JSON 中获取数据并做过滤
                 String jobName = null;
@@ -465,6 +480,56 @@ public class Boss {
         return false;
     }
 
+    static boolean isAuthenticationStatus(int status) {
+        return status == 401 || status == 403;
+    }
+
+    private static boolean isAuthenticationResponse(Response response) {
+        try {
+            return response != null && isAuthenticationStatus(response.status());
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
+    private void ensureBossSession(Page targetPage) {
+        if (authenticationResponseDetected) {
+            throw new BossAuthenticationExpiredException("Boss 页面收到认证失败响应");
+        }
+        String url;
+        try {
+            url = targetPage.url();
+        } catch (RuntimeException error) {
+            if (isNavigationRace(error)) {
+                return;
+            }
+            throw error;
+        }
+        String normalizedUrl = url == null ? "" : url.toLowerCase(Locale.ROOT);
+        if (normalizedUrl.contains("login") || normalizedUrl.contains("passport")) {
+            throw new BossAuthenticationExpiredException("Boss 页面已跳转到登录页");
+        }
+
+        try {
+            Locator body = targetPage.locator("body");
+            if (body.count() > 0) {
+                String text = body.first().innerText();
+                if (text != null && (text.contains("立即登录，享受优质服务") || text.contains("登录/注册"))) {
+                    throw new BossAuthenticationExpiredException("Boss 页面出现登录提示");
+                }
+            }
+
+            Locator loginEntry = targetPage.locator(ERROR_PAGE_LOGIN);
+            if (loginEntry.count() > 0 && loginEntry.first().isVisible()) {
+                throw new BossAuthenticationExpiredException("Boss 页面出现登录入口");
+            }
+        } catch (RuntimeException error) {
+            if (!isNavigationRace(error)) {
+                throw error;
+            }
+        }
+    }
+
     static boolean isPlatformDeliveryLimitMessage(String text) {
         if (text == null || text.isBlank()) {
             return false;
@@ -472,10 +537,14 @@ public class Boss {
         return text.contains("今日沟通人数已达上限")
                 || text.contains("今日沟通已达上限")
                 || text.contains("沟通人数已达上限")
+                || text.contains("您已达到沟通上限")
+                || text.contains("已达到沟通上限")
                 || text.contains("今日打招呼人数已达上限")
                 || text.contains("今日打招呼已达上限")
                 || text.contains("已达沟通上限")
-                || text.contains("沟通次数已达上限");
+                || text.contains("沟通次数已达上限")
+                || text.contains("今日已与150位BOSS沟通")
+                || text.contains("今天已与150位BOSS沟通");
     }
 
     /**
@@ -709,9 +778,11 @@ public class Boss {
         String detailUrl = "https://www.zhipin.com" + href;
         // 2. 在新窗口打开详情页
         Page detailPage = page.context().newPage();
+        boolean communicationAccepted = false;
         try {
         detailPage.navigate(detailUrl);
         PlaywrightUtil.sleep(1);
+        ensureBossSession(detailPage);
 
         // 3. 查找"立即沟通"按钮
         Locator chatBtn = detailPage.locator(
@@ -799,8 +870,15 @@ public class Boss {
         if (!chatClickTriggered[0]) {
             chatButtonForClick.click();
         }
+        ensureBossSession(detailPage);
+        if (detectPlatformDeliveryLimit(detailPage)) {
+            markPlatformDeliveryLimit();
+        }
         String friendAddBody = null;
         if (friendAddResponse != null) {
+            if (isAuthenticationResponse(friendAddResponse)) {
+                throw new BossAuthenticationExpiredException("Boss 投递接口返回认证失败");
+            }
             friendAddBody = friendAddResponse.text();
             if (isPlatformDeliveryLimitMessage(friendAddBody)) {
                 markPlatformDeliveryLimit();
@@ -811,16 +889,7 @@ public class Boss {
                 return;
             }
             log.debug("friend/add 响应 | status:{} | body:{}", friendAddResponse.status(), friendAddBody);
-        }
-        if (isSoftCommunicationAccepted(friendAddBody)) {
-            log.info("Boss 已受理沟通请求，当前岗位记为投递成功并继续下一个 | 公司：{} | 岗位：{}",
-                    job.getCompanyName(), job.getJobName());
-            try {
-                detailPage.close();
-            } catch (RuntimeException ignored) {
-            }
-            recordSuccessfulDelivery(detailUrl, job, resultList);
-            return;
+            communicationAccepted = isSoftCommunicationAccepted(friendAddBody);
         }
         try {
             for (Page candidatePage : detailPage.context().pages()) {
@@ -839,6 +908,10 @@ public class Boss {
         }
         long continueDeadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
         while (System.nanoTime() < continueDeadline) {
+            ensureBossSession(detailPage);
+            if (detectPlatformDeliveryLimit(detailPage)) {
+                markPlatformDeliveryLimit();
+            }
             Locator continueChatBtn = detailPage.locator(".greet-boss-pop .dialog-container")
                     .getByText("继续沟通", new Locator.GetByTextOptions().setExact(true));
             if (continueChatBtn.count() > 0 && continueChatBtn.first().isVisible()) {
@@ -854,78 +927,96 @@ public class Boss {
                 // Native click did not navigate; use the captured redirect URL below.
             }
         }
-        if (!detailPage.url().contains("/web/geek/chat") && isValidString(chatRedirectUrl)) {
+        if (isValidString(chatRedirectUrl)) {
             String chatUrl = chatRedirectUrl.startsWith("http")
                     ? chatRedirectUrl
                     : "https://www.zhipin.com" + chatRedirectUrl;
-            log.info("Boss 聊天兜底导航 | redirect-url:{}", chatUrl);
-            detailPage.navigate(chatUrl);
-            log.info("Boss 聊天兜底导航完成 | URL:{}", detailPage.url());
+            if (!chatUrl.equals(detailPage.url())) {
+                log.info("Boss 聊天会话导航 | redirect-url:{}", chatUrl);
+                detailPage.navigate(chatUrl);
+                ensureBossSession(detailPage);
+                log.info("Boss 聊天会话导航完成 | URL:{}", detailPage.url());
+            }
         }
         detailPage.waitForURL("**/web/geek/chat**", new Page.WaitForURLOptions().setTimeout(15_000));
+        ensureBossSession(detailPage);
+        communicationAccepted = true;
 
-        // 4. 等待聊天输入框并完成填写；只有填写成功才允许点击发送。
-        String inputSelector =
-                "div#chat-input.chat-input[contenteditable='true'], textarea.input-area, [contenteditable='true'][role='textbox']";
+        // 4. 沟通已建立；AI 文案是补充消息，发送失败不能撤销本次求职。
+        String inputSelector = "#chat-input, textarea.input-area, div.chat-input[contenteditable], [contenteditable='true'][role='textbox']";
         if (!waitForChatInputAndFill(detailPage, inputSelector, message, job)) {
+            log.warn("沟通已建立，但 AI 消息未能填入 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
             try {
                 detailPage.close();
             } catch (Exception ignore) {
             }
+            if (communicationAccepted) {
+                recordSuccessfulDelivery(detailUrl, job, resultList);
+            }
             return;
         }
+        ensureBossSession(detailPage);
 
         // 7. 点击发送按钮（div.send-message 或 button.btn-send）
         Locator sendText = detailPage.locator("div.send-message, button[type='send'].btn-send, button.btn-send");
         boolean sendSuccess = false;
         if (sendText.count() > 0) {
             Locator sendButton = sendText.first();
-            long sendDeadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
-            while (System.nanoTime() < sendDeadline && !isSendButtonReady(sendButton)) {
+            for (int attempt = 1; attempt <= 2 && !sendSuccess; attempt++) {
+                long sendDeadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
+                while (System.nanoTime() < sendDeadline && !isSendButtonReady(sendButton)) {
+                    ensureBossSession(detailPage);
+                    if (detectPlatformDeliveryLimit(detailPage)) {
+                        markPlatformDeliveryLimit();
+                        return;
+                    }
+                    PlaywrightUtil.sleep(1);
+                }
+                if (!isSendButtonReady(sendButton)) {
+                    log.warn("发送按钮不可用（第{}次），沟通仍记为成功 | 公司：{} | 岗位：{}",
+                            attempt, job.getCompanyName(), job.getJobName());
+                    break;
+                }
+                sendButton.click();
+                PlaywrightUtil.sleep(1);
+                ensureBossSession(detailPage);
                 if (detectPlatformDeliveryLimit(detailPage)) {
                     markPlatformDeliveryLimit();
+                    try {
+                        detailPage.close();
+                    } catch (Exception ignore) {
+                    }
                     return;
                 }
-                PlaywrightUtil.sleep(1);
-            }
-            if (!isSendButtonReady(sendButton)) {
-                if (detectPlatformDeliveryLimit(detailPage)) {
-                    markPlatformDeliveryLimit();
-                } else {
-                    log.warn("发送按钮不可用，跳过当前岗位 | 公司：{} | 岗位：{}",
-                            job.getCompanyName(), job.getJobName());
+                sendSuccess = isChatInputEmpty(detailPage, inputSelector);
+                if (!sendSuccess && attempt == 1) {
+                    waitForChatInputAndFill(detailPage, inputSelector, message, job);
                 }
-                try {
-                    detailPage.close();
-                } catch (Exception ignore) {
-                }
-                return;
-            }
-            sendButton.click();
-            PlaywrightUtil.sleep(1);
-            if (detectPlatformDeliveryLimit(detailPage)) {
-                markPlatformDeliveryLimit();
-                try {
-                    detailPage.close();
-                } catch (Exception ignore) {
-                }
-                return;
-            }
-            sendSuccess = true;
-            try {
-                detailPage.locator("i.icon-close").first().click();
-            } catch (Exception e) {
-                log.error("发送文本小窗口关闭失败！");
             }
         } else {
-            log.warn("未找到发送按钮，自动跳过！岗位：{}", job.getJobName());
+            log.warn("未找到发送按钮，沟通仍记为成功 | 岗位：{}", job.getJobName());
+        }
+
+        if (sendSuccess) {
+            try {
+                Locator closeButton = detailPage.locator("i.icon-close");
+                if (closeButton.count() > 0 && closeButton.first().isVisible()) {
+                    closeButton.first().click();
+                }
+            } catch (Exception e) {
+                log.debug("发送文本后关闭浮层失败，继续后续流程：{}", e.getMessage());
+            }
+        } else {
+            log.warn("沟通已建立，但 AI 补充消息发送失败，仍记录投递成功 | 公司：{} | 岗位：{}",
+                    job.getCompanyName(), job.getJobName());
         }
 
         // 8. 发送图片简历（可选）
         boolean imgResume = false;
-        if (Boolean.TRUE.equals(config.getSendImgResume())) {
+        if (sendSuccess && Boolean.TRUE.equals(config.getSendImgResume())) {
             imgResume = sendImageResume(detailPage);
         }
+        ensureBossSession(detailPage);
 
         log.info("投递完成 | 公司：{} | 岗位：{} | 薪资：{} | 招呼语：{} | 图片简历：{}", job.getCompanyName(), job.getJobName(), job.getSalary(), message, imgResume ? "已发送" : "未发送");
 
@@ -936,26 +1027,24 @@ public class Boss {
         }
         PlaywrightUtil.sleep(1);
 
-        // 10. 更新数据库投递状态 & 成功投递加入结果
-        if (sendSuccess) {
+        // 10. 已建立沟通即更新数据库投递状态 & 加入成功结果
+        if (communicationAccepted) {
             recordSuccessfulDelivery(detailUrl, job, resultList);
-        } else {
-            // 若发生发送失败，也进行状态更新
-            String encryptId = extractEncryptId(detailUrl);
-            String encryptUserId = encryptId != null ? encryptIdToUserId.get(encryptId) : null;
-            if (encryptId != null && encryptUserId != null) {
-                try {
-        bossService.updateDeliveryStatus(encryptId, encryptUserId, "投递失败");
-                    log.warn("投递失败 | 公司：{} | 岗位：{} | encryptId：{} | encryptUserId：{}", job.getCompanyName(), job.getJobName(), encryptId, encryptUserId);
-                } catch (Exception e) {
-                    log.warn("更新投递状态为投递失败异常：{}", e.getMessage());
-                }
-            }
         }
         } catch (RuntimeException error) {
             try {
                 detailPage.close();
             } catch (Exception ignore) {
+            }
+            if (error instanceof BossAuthenticationExpiredException
+                    || error instanceof BossDailyDeliveryLimitReachedException) {
+                throw error;
+            }
+            if (communicationAccepted) {
+                recordSuccessfulDelivery(detailUrl, job, resultList);
+                log.warn("沟通已建立，但补充消息流程异常，仍记录投递成功 | 公司：{} | 岗位：{} | 原因：{}",
+                        job.getCompanyName(), job.getJobName(), error.getMessage());
+                return;
             }
             log.warn("当前岗位投递失败，继续下一个 | 公司：{} | 岗位：{} | 原因：{}",
                     job.getCompanyName(), job.getJobName(), error.getMessage());
@@ -1008,6 +1097,7 @@ public class Boss {
     private boolean waitForChatInputAndFill(Page detailPage, String selector, String message, Job job) {
         long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(CHAT_INPUT_TIMEOUT_MS);
         while (System.nanoTime() < deadline) {
+            ensureBossSession(detailPage);
             if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
                 log.info("停止指令已触发，结束等待聊天输入框 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
                 return false;
@@ -1020,11 +1110,17 @@ public class Boss {
             long remainingMs = Math.max(1, Math.min(CHAT_INPUT_POLL_MS,
                     java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime())));
             try {
-                Locator input = detailPage.locator(selector).first();
-                input.waitFor(new Locator.WaitForOptions().setTimeout(remainingMs));
-                input.fill(message, new Locator.FillOptions().setTimeout(remainingMs));
-                input.dispatchEvent("input");
-                return true;
+                Locator inputs = detailPage.locator(selector);
+                for (int i = 0; i < inputs.count(); i++) {
+                    Locator input = inputs.nth(i);
+                    if (!input.isVisible()) {
+                        continue;
+                    }
+                    input.waitFor(new Locator.WaitForOptions().setTimeout(remainingMs));
+                    input.fill(message, new Locator.FillOptions().setTimeout(remainingMs));
+                    input.dispatchEvent("input");
+                    return true;
+                }
             } catch (RuntimeException error) {
                 if (!isChatReadinessRetry(error)) {
                     throw error;
@@ -1032,6 +1128,21 @@ public class Boss {
                 log.debug("聊天窗口仍在加载，继续等待 | 岗位：{} | 原因：{}", job.getJobName(), error.getMessage());
             }
             PlaywrightUtil.sleep(1);
+        }
+        return false;
+    }
+
+    private boolean isChatInputEmpty(Page detailPage, String selector) {
+        try {
+            Locator inputs = detailPage.locator(selector);
+            for (int i = 0; i < inputs.count(); i++) {
+                Locator input = inputs.nth(i);
+                if (input.isVisible()) {
+                    Object value = input.evaluate("el => el.value ?? el.textContent ?? ''");
+                    return value == null || String.valueOf(value).trim().isEmpty();
+                }
+            }
+        } catch (RuntimeException ignored) {
         }
         return false;
     }
@@ -1051,10 +1162,7 @@ public class Boss {
 
     private void markPlatformDeliveryLimit() {
         platformDeliveryLimitReached = true;
-        log.warn("检测到 Boss 今日沟通已达上限，停止投递");
-        if (progressCallback != null) {
-            progressCallback.accept("检测到 Boss 今日沟通已达上限，任务已停止", null, null);
-        }
+        throw new BossDailyDeliveryLimitReachedException("Boss 今日沟通已达上限");
     }
 
     
@@ -1169,27 +1277,29 @@ public class Boss {
             Locator imageInput = imgContainer.locator("input[type='file'][accept*='image']").first();
             if (imageInput.count() == 0) {
                 // 若未渲染，尝试拦截系统文件选择器；若未出现则普通点击促使 input 出现
-                if (imgContainer.count() > 0) {
-                    boolean chooserHandled = false;
-                    try {
-                        com.microsoft.playwright.FileChooser chooser = page.waitForFileChooser(() -> {
-                            imgContainer.first().click();
-                        });
-                        chooser.setFiles(imagePath);
-                        chooserHandled = true;
-                        log.info("通过 FileChooser 直接提交图片文件，避免系统窗口阻塞");
-                    } catch (com.microsoft.playwright.PlaywrightException ignore) {
-                        // 未弹出系统文件选择器，继续常规流程
-                    }
-                    if (!chooserHandled) {
-                        PlaywrightUtil.sleep(1);
-                        imageInput = imgContainer.locator("input[type='file'][accept*='image']").first();
-                    }
+                if (imgContainer.count() == 0) {
+                    log.warn("未找到图片上传控件，跳过发送图片简历");
+                    return false;
+                }
+                try {
+                    com.microsoft.playwright.FileChooser chooser = page.waitForFileChooser(() -> {
+                        imgContainer.first().click();
+                    });
+                    chooser.setFiles(imagePath);
+                    log.info("通过 FileChooser 直接提交图片文件，避免系统窗口阻塞");
+                    PlaywrightUtil.sleep(1);
+                    return true;
+                } catch (com.microsoft.playwright.PlaywrightException ignore) {
+                    PlaywrightUtil.sleep(1);
+                    imageInput = imgContainer.locator("input[type='file'][accept*='image']").first();
                 }
             }
-            imageInput.waitFor(new Locator.WaitForOptions().setTimeout(10_000));
+            if (imageInput.count() == 0) {
+                log.warn("未找到图片文件输入框，跳过发送图片简历");
+                return false;
+            }
 
-            // 上传图片
+            // file input 通常是隐藏控件，setInputFiles 不要求元素可见。
             imageInput.setInputFiles(imagePath);
             PlaywrightUtil.sleep(1);
             return true;

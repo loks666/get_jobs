@@ -2,7 +2,9 @@ package com.getjobs.worker.service;
 
 import com.getjobs.application.service.ConfigService;
 import com.getjobs.worker.boss.Boss;
+import com.getjobs.worker.boss.BossAuthenticationExpiredException;
 import com.getjobs.worker.boss.BossConfig;
+import com.getjobs.worker.boss.BossDailyDeliveryLimitReachedException;
 import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.utils.DeliveryLimit;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -30,13 +33,13 @@ public class BossJobService implements JobPlatformService {
     private final ObjectProvider<Boss> bossProvider;
 
     // 任务运行状态
-    private volatile boolean isRunning = false;
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
     // 停止标志
     private volatile boolean shouldStop = false;
 
     @Override
     public void executeDelivery(Consumer<JobProgressMessage> progressCallback) {
-        if (isRunning) {
+        if (!isRunning.compareAndSet(false, true)) {
             progressCallback.accept(JobProgressMessage.warning(PLATFORM, "任务已在运行中"));
             return;
         }
@@ -54,7 +57,6 @@ public class BossJobService implements JobPlatformService {
             }
 
             // 通过校验后再标记运行
-            isRunning = true;
             shouldStop = false;
 
             // 暂停后台登录监控，避免与投递流程并发访问同一Page
@@ -87,11 +89,28 @@ public class BossJobService implements JobPlatformService {
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共发起%d个聊天", deliveredCount)));
+        } catch (BossDailyDeliveryLimitReachedException e) {
+            log.warn("[boss] 今日已达到投递上限，任务已自动停止");
+            progressCallback.accept(JobProgressMessage.warning(
+                    PLATFORM,
+                    "今日已达投递上限，程序已自动停止投递。",
+                    "BOSS_DAILY_DELIVERY_LIMIT_REACHED"));
+        } catch (BossAuthenticationExpiredException e) {
+            log.warn("[boss] 检测到 Cookie 已过期，投递任务已停止，请重新获取 Cookie 后登录");
+            try {
+                playwrightManager.handleBossAuthenticationExpired();
+            } catch (Exception cleanupError) {
+                log.warn("[boss] 清理过期 Cookie 失败: {}", cleanupError.getMessage());
+            }
+            progressCallback.accept(JobProgressMessage.error(
+                    PLATFORM,
+                    "检测到 Boss 登录已失效，投递已停止。请重新获取 Cookie 并重新登录后再继续投递。",
+                    "BOSS_COOKIE_EXPIRED"));
         } catch (Exception e) {
             log.error("Boss投递任务执行失败", e);
             progressCallback.accept(JobProgressMessage.error(PLATFORM, "投递失败: " + e.getMessage()));
         } finally {
-            isRunning = false;
+            isRunning.set(false);
             shouldStop = false;
             // 恢复后台登录监控
             try {
@@ -102,7 +121,7 @@ public class BossJobService implements JobPlatformService {
 
     @Override
     public void stopDelivery() {
-        if (isRunning) {
+        if (isRunning.get()) {
             log.info("收到停止Boss投递任务的请求");
             shouldStop = true;
         }
@@ -112,7 +131,7 @@ public class BossJobService implements JobPlatformService {
     public Map<String, Object> getStatus() {
         Map<String, Object> status = new HashMap<>();
         status.put("platform", PLATFORM);
-        status.put("isRunning", isRunning);
+        status.put("isRunning", isRunning.get());
         status.put("isLoggedIn", playwrightManager.isLoggedIn(PLATFORM));
         status.put("maxDeliveryAttempts", DeliveryLimit.configuredMax());
         return status;
@@ -125,7 +144,7 @@ public class BossJobService implements JobPlatformService {
 
     @Override
     public boolean isRunning() {
-        return isRunning;
+        return isRunning.get();
     }
 
     /**

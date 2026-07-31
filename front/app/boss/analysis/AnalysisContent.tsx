@@ -106,6 +106,7 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
   const [reloading, setReloading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [filterHeadhunter, setFilterHeadhunter] = useState<boolean>(false)
+  const [backendUnavailable, setBackendUnavailable] = useState(false)
 
   // 查看全文弹窗
   const [showTextDialog, setShowTextDialog] = useState(false)
@@ -197,7 +198,9 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
     try {
       setLoadingList(true)
       const res = await fetch(`${API_BASE}/api/boss/list?${params.toString()}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data: PagedResult = await res.json()
+      setBackendUnavailable(false)
       // 前端兜底过滤猎头（避免后端未更新导致的显示异常）
       const filteredItems = (data.items || []).filter(it => {
         if (!filterHeadhunter) return true
@@ -209,7 +212,8 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
       setPage(data.page || toPage)
       setSize(data.size || toSize)
     } catch (e) {
-      console.error("fetch list failed", e)
+      console.warn("fetch list failed", e instanceof Error ? e.message : e)
+      setBackendUnavailable(true)
     } finally {
       setLoadingList(false)
     }
@@ -229,10 +233,13 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
 
     try {
       const res = await fetch(`${API_BASE}/api/boss/stats?${params.toString()}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data: StatsResponse = await res.json()
       setStats(data)
+      setBackendUnavailable(false)
     } catch (e) {
-      console.error("fetch stats failed", e)
+      console.warn("fetch stats failed", e instanceof Error ? e.message : e)
+      setBackendUnavailable(true)
     }
   }
 
@@ -245,12 +252,14 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
     try {
       setReloading(true)
       const res = await fetch(`${API_BASE}/api/boss/reload`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       console.log("reload", data)
       await loadList(1, size)
       await loadStats()
     } catch (e) {
-      console.error("reload failed", e)
+      console.warn("reload failed", e instanceof Error ? e.message : e)
+      setBackendUnavailable(true)
     } finally {
       setReloading(false)
     }
@@ -375,6 +384,11 @@ export default function AnalysisContent({ showHeader = false }: { showHeader?: b
 
   return (
     <div className="space-y-8">
+      {backendUnavailable && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          后端服务暂时不可用，当前显示上次成功加载的数据
+        </div>
+      )}
       {showHeader && (
         <PageHeader
           title="Boss 投递分析"
