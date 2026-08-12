@@ -408,6 +408,9 @@ public class BossService {
         List<BlacklistEntity> list = blacklistMapper.selectList(wrapper);
         return list.stream()
                 .map(BlacklistEntity::getValue)
+                .filter(java.util.Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
                 .collect(Collectors.toSet());
     }
 
@@ -440,6 +443,11 @@ public class BossService {
      * @return 是否成功
      */
     public boolean addBlacklist(String type, String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        value = value.trim();
+
         // 检查是否已存在
         LambdaQueryWrapper<BlacklistEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BlacklistEntity::getType, type)

@@ -42,6 +42,12 @@ import static com.getjobs.worker.boss.Locators.*;
 @RequiredArgsConstructor
 public class Boss {
 
+    private static final List<String> REJECTION_PHRASES = List.of(
+            "不合适", "不匹配", "不符合", "暂不考虑", "暂时不考虑",
+            "已招满", "招满了", "岗位已关闭", "职位已关闭", "招聘已结束",
+            "未通过", "没有通过", "很遗憾", "抱歉", "对不起", "感谢投递"
+    );
+
     @Setter
     private Page page;
     @Setter
@@ -161,14 +167,11 @@ public class Boss {
                     }
 
                     if (companyName != null && message != null) {
-                        boolean match = message.contains("不") || message.contains("感谢") || message.contains("但")
-                                || message.contains("遗憾") || message.contains("需要本") || message.contains("对不");
-                        boolean nomatch = message.contains("不是") || message.contains("不生");
-                        if (match && !nomatch) {
-                            if (blackCompanies.stream().anyMatch(companyName::contains)) {
+                        if (isRejectionMessage(message)) {
+                            companyName = companyName.replaceAll("\\.{3}", "").trim();
+                            if (matchesCompanyBlacklist(blackCompanies, companyName)) {
                                 continue;
                             }
-                            companyName = companyName.replaceAll("\\.{3}", "");
                             if (companyName.matches(".*(\\p{IsHan}{2,}|[a-zA-Z]{4,}).*")) {
                                 blackCompanies.add(companyName);
                                 // 保存到数据库
@@ -357,7 +360,7 @@ public class Boss {
                 }
 
                 // 过滤（全部基于 JSON 字段），并输出过滤原因
-                if (jobName != null && blackJobs != null && blackJobs.stream().anyMatch(jobName::contains)) {
+                if (matchesBlacklist(blackJobs, jobName)) {
                     String term = findMatchedTerm(blackJobs, jobName);
                     log.info("被过滤：职位黑名单命中 | 公司：{} | 岗位：{} | 关键词：{}", bossCompany != null ? bossCompany : "", jobName, term != null ? term : "");
                     continue;
@@ -368,12 +371,12 @@ public class Boss {
                     log.info("被过滤：HR活跃状态包含‘年’ | 公司：{} | 岗位：{} | 活跃：{}", bossCompany != null ? bossCompany : "", jobName != null ? jobName : "", bossActive);
                     continue;
                 }
-                if (bossCompany != null && blackCompanies != null && blackCompanies.stream().anyMatch(bossCompany::contains)) {
-                    String term = findMatchedTerm(blackCompanies, bossCompany);
+                if (matchesCompanyBlacklist(blackCompanies, bossCompany)) {
+                    String term = findMatchedCompanyTerm(blackCompanies, bossCompany);
                     log.info("被过滤：公司黑名单命中 | 公司：{} | 岗位：{} | 关键词：{}", bossCompany, jobName != null ? jobName : "", term != null ? term : "");
                     continue;
                 }
-                if (bossJobTitle != null && blackRecruiters != null && blackRecruiters.stream().anyMatch(bossJobTitle::contains)) {
+                if (matchesBlacklist(blackRecruiters, bossJobTitle)) {
                     String term = findMatchedTerm(blackRecruiters, bossJobTitle);
                     log.info("被过滤：招聘者黑名单命中 | 公司：{} | 岗位：{} | 招聘者：{} | 关键词：{}", bossCompany != null ? bossCompany : "", jobName != null ? jobName : "", bossJobTitle, term != null ? term : "");
                     continue;
@@ -466,9 +469,9 @@ public class Boss {
             String positionName = entity.getJobName() != null ? entity.getJobName() : "";
             String hrPosition = entity.getHrPosition() != null ? entity.getHrPosition() : "";
             try {
-                if (blackCompanies != null && blackCompanies.stream().anyMatch(companyName::contains)) filtered = true;
-                if (!filtered && blackJobs != null && blackJobs.stream().anyMatch(positionName::contains)) filtered = true;
-                if (!filtered && blackRecruiters != null && blackRecruiters.stream().anyMatch(hrPosition::contains)) filtered = true;
+                if (matchesCompanyBlacklist(blackCompanies, companyName)) filtered = true;
+                if (!filtered && matchesBlacklist(blackJobs, positionName)) filtered = true;
+                if (!filtered && matchesBlacklist(blackRecruiters, hrPosition)) filtered = true;
             } catch (Throwable ignore) {}
 
             // HR活跃状态过滤：开启过滤且活跃描述包含“年”，则标记为已过滤，但仍入库
@@ -560,18 +563,54 @@ public class Boss {
         return new String[]{company, job};
     }
 
+    static boolean isRejectionMessage(String message) {
+        if (message == null || message.isBlank()) return false;
+        return REJECTION_PHRASES.stream().anyMatch(message::contains);
+    }
+
+    static boolean matchesBlacklist(Collection<String> patterns, String text) {
+        return findMatchedTerm(patterns, text) != null;
+    }
+
     // 匹配命中词条（用于日志输出过滤原因）
-    private String findMatchedTerm(java.util.Collection<String> patterns, String text) {
+    static String findMatchedTerm(Collection<String> patterns, String text) {
         if (patterns == null || text == null) return null;
-        try {
-            for (String p : patterns) {
-                if (p != null && !p.isEmpty() && text.contains(p)) {
-                    return p;
-                }
+        for (String pattern : patterns) {
+            if (pattern == null) continue;
+            String term = pattern.trim();
+            if (!term.isEmpty() && text.contains(term)) {
+                return term;
             }
-        } catch (Exception ignore) {
         }
         return null;
+    }
+
+    static boolean matchesCompanyBlacklist(Collection<String> patterns, String companyName) {
+        return findMatchedCompanyTerm(patterns, companyName) != null;
+    }
+
+    static String findMatchedCompanyTerm(Collection<String> patterns, String companyName) {
+        if (patterns == null || companyName == null) return null;
+        String normalizedCompany = normalizeCompanyName(companyName);
+        if (normalizedCompany.isEmpty()) return null;
+
+        for (String pattern : patterns) {
+            if (pattern == null) continue;
+            String term = pattern.trim();
+            String normalizedTerm = normalizeCompanyName(term);
+            if (normalizedTerm.isEmpty()) continue;
+
+            int termLength = normalizedTerm.codePointCount(0, normalizedTerm.length());
+            boolean matched = termLength < 4
+                    ? normalizedCompany.equals(normalizedTerm)
+                    : normalizedCompany.contains(normalizedTerm);
+            if (matched) return term;
+        }
+        return null;
+    }
+
+    private static String normalizeCompanyName(String value) {
+        return value.trim().replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
     }
 
     public static String buildSearchUrl(BossConfig config, String cityCode) {
