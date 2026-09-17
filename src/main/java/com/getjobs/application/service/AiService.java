@@ -29,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 public class AiService {
     private final ConfigService configService;
     private final AiMapper aiMapper;
+    private final ChatGptService chatGptService;
 
     /**
      * 发送 AI 请求（非流式）并返回回复内容。
@@ -36,6 +37,13 @@ public class AiService {
      * @return AI 回复文本
      */
     public String sendRequest(String content) {
+        String mode = configService.getConfigValue("AI_AUTH_MODE");
+        if ("chatgpt".equalsIgnoreCase(mode)) {
+            return chatGptService.generate(content, configService.getConfigValue("CHATGPT_MODEL"));
+        }
+        if (mode != null && !mode.isBlank() && !"api_key".equalsIgnoreCase(mode)) {
+            throw new IllegalStateException("不支持的 AI 登录方式，请在环境配置中重新选择");
+        }
         // 读取并校验配置
         var cfg = configService.getAiConfigs();
         String baseUrl = cfg.get("BASE_URL");

@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.getjobs.worker.manager.PlaywrightManager;
 
@@ -18,6 +19,7 @@ import java.net.URI;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "getjobs.browser.auto-start", havingValue = "true", matchIfMissing = true)
 public class StartupRunner implements ApplicationRunner {
 
     @Value("${server.port:9527}")

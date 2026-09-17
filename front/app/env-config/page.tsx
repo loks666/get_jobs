@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import PageHeader from '@/app/components/PageHeader'
 import { API_BASE } from '@/lib/api'
+import ChatGptConnection from './ChatGptConnection'
 
 export default function EnvConfig() {
   const [envConfig, setEnvConfig] = useState({
@@ -16,6 +17,11 @@ export default function EnvConfig() {
     apiKey: '',
     model: '',
     botIsSend: 0,
+    feishuHookUrl: '',
+    feishuSecret: '',
+    feishuIsSend: false,
+    authMode: 'api_key',
+    chatGptModel: '',
   })
 
   const [showApiKey, setShowApiKey] = useState(false)
@@ -44,6 +50,11 @@ export default function EnvConfig() {
       if (result.success && result.data) {
         setEnvConfig({
           hookUrl: result.data.HOOK_URL || '',
+          feishuHookUrl: result.data.FEISHU_HOOK_URL || '',
+          feishuSecret: result.data.FEISHU_SECRET || '',
+          feishuIsSend: ['1', 'true'].includes(String(result.data.FEISHU_BOT_IS_SEND || '').trim().toLowerCase()),
+          authMode: result.data.AI_AUTH_MODE || 'api_key',
+          chatGptModel: result.data.CHATGPT_MODEL || '',
           baseUrl: result.data.BASE_URL || '',
           apiKey: result.data.API_KEY || '',
           model: result.data.MODEL || '',
@@ -72,6 +83,11 @@ export default function EnvConfig() {
 
       const configMap = {
         HOOK_URL: envConfig.hookUrl,
+        FEISHU_HOOK_URL: envConfig.feishuHookUrl.trim(),
+        FEISHU_SECRET: envConfig.feishuSecret.trim(),
+        FEISHU_BOT_IS_SEND: String(envConfig.feishuIsSend),
+        AI_AUTH_MODE: envConfig.authMode,
+        CHATGPT_MODEL: envConfig.chatGptModel,
         BASE_URL: envConfig.baseUrl,
         API_KEY: envConfig.apiKey,
         MODEL: envConfig.model,
@@ -115,10 +131,11 @@ export default function EnvConfig() {
     <div className="space-y-6">
       <PageHeader
         icon={<BiCodeAlt className="text-2xl" />}
-        title="环境变量配置"
-        subtitle=".env_template 环境变量管理"
+        title="环境配置"
+        subtitle="通知与模型连接配置"
         actions={
           <Button
+            disabled={loading || saving}
             onClick={() => handleSave(false)}
             size="sm"
             className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
@@ -177,7 +194,53 @@ export default function EnvConfig() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><BiLinkExternal className="text-primary" />飞书 Webhook</CardTitle>
+            <CardDescription>发送运行通知到飞书群，可与企业微信同时开启。</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={envConfig.feishuIsSend}
+                onChange={e => setEnvConfig({ ...envConfig, feishuIsSend: e.target.checked })} />
+              启用飞书通知
+            </label>
+            <div className="space-y-2">
+              <Label htmlFor="feishuHookUrl">飞书 Webhook URL</Label>
+              <Input id="feishuHookUrl" type="password" value={envConfig.feishuHookUrl} autoComplete="off"
+                onChange={e => setEnvConfig({ ...envConfig, feishuHookUrl: e.target.value })}
+                placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/…" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="feishuSecret">签名密钥（可选）</Label>
+              <Input id="feishuSecret" type="password" value={envConfig.feishuSecret} autoComplete="off"
+                onChange={e => setEnvConfig({ ...envConfig, feishuSecret: e.target.value })}
+                placeholder="机器人开启签名校验时填写" />
+              <p className="text-xs text-muted-foreground">在飞书群添加自定义机器人，复制 Webhook 地址；开启签名校验时一并填写密钥。</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>模型登录方式</CardTitle>
+            <CardDescription>选择 ChatGPT 账号登录或兼容 OpenAI 的 API Key。</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Label htmlFor="authMode">登录方式</Label>
+            <select id="authMode" value={envConfig.authMode}
+              onChange={e => setEnvConfig({ ...envConfig, authMode: e.target.value })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="api_key">API Key</option>
+              <option value="chatgpt">ChatGPT 登录</option>
+            </select>
+            {envConfig.authMode === 'chatgpt' && <ChatGptConnection model={envConfig.chatGptModel}
+              onModelChange={chatGptModel => setEnvConfig(previous => ({ ...previous, chatGptModel }))} />}
+          </CardContent>
+        </Card>
+
         {/* API 配置 */}
+        {envConfig.authMode === 'api_key' && <>
         <Card className="animate-in fade-in slide-in-from-bottom-6 duration-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -195,7 +258,7 @@ export default function EnvConfig() {
                   type="text"
                   value={envConfig.baseUrl}
                   onChange={(e) => setEnvConfig({ ...envConfig, baseUrl: e.target.value })}
-                  placeholder="https://api.ruyun.fun"
+                  placeholder="https://api.openai.com"
                 />
                 <p className="text-xs text-muted-foreground">API服务器地址</p>
               </div>
@@ -252,6 +315,8 @@ export default function EnvConfig() {
           </CardContent>
         </Card>
 
+        </>}
+
         {/* 安全提示 */}
         <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <CardContent className="pt-6">
@@ -259,9 +324,9 @@ export default function EnvConfig() {
               <BiInfoCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm text-foreground">
-                  <strong className="font-semibold">提示：</strong> 这些环境变量将保存到{' '}
-                  <code className="bg-primary/10 px-2 py-0.5 rounded text-primary font-mono text-xs">.env</code>{' '}
-                  文件中。请勿将包含敏感信息的 .env 文件提交到版本控制系统。
+                  <strong className="font-semibold">提示：</strong> 这些设置将保存到本机数据库{' '}
+                  <code className="bg-primary/10 px-2 py-0.5 rounded text-primary font-mono text-xs">db/getjobs.db</code>{' '}
+                  中。ChatGPT 登录凭证由官方 Codex 保存在本应用独立目录 .chatgpt/，请勿分享或提交这些文件。
                 </p>
               </div>
             </div>

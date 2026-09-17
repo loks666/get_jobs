@@ -16,8 +16,10 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // 允许所有域名跨域
-        config.addAllowedOriginPattern("*");
+        // 本机管理页面可访问登录态与机器人密钥，禁止任意网站跨域读取。
+        config.setAllowedOrigins(java.util.List.of(
+                "http://localhost:6866", "http://127.0.0.1:6866",
+                "http://localhost:9527", "http://127.0.0.1:9527"));
 
         // 允许所有请求头
         config.addAllowedHeader("*");

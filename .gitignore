@@ -62,3 +62,11 @@ dist/
 .gradle/
 # 持久化浏览器用户数据（含登录态，绝对不能提交）
 browser-data/
+
+# Get Jobs 独立 ChatGPT 登录态（不得提交）
+.chatgpt/
+
+# 本机安装、验证日志
+*-build.log
+*-test.log
+*-install.log

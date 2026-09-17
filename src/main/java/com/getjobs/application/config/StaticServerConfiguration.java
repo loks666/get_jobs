@@ -46,6 +46,7 @@ public class StaticServerConfiguration {
 
                 Connector connector = new Connector(TomcatServletWebServerFactory.DEFAULT_PROTOCOL);
                 connector.setPort(FRONTEND_PORT);
+                connector.setProperty("address", "127.0.0.1");
                 server.addAdditionalTomcatConnectors(connector);
             } else {
                 log.warn("未检测到前端开发服务，也未找到静态资源");
