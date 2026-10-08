@@ -443,8 +443,9 @@ public class Boss {
 
                 // 输出
                 progressCallback.accept("正在投递：" + jobName, i + 1, count);
-                resumeSubmission(keyword, job);
-                postCount++;
+                if (resumeSubmission(keyword, job)) {
+                    postCount++;
+                }
 
                 // 为避免点击下面的卡片触发页面刷新：在点击5个卡片之后，每次点击后适度下滑
                 try {
@@ -995,29 +996,29 @@ public class Boss {
      * 备注：目前Boss无法通过新标签页打开立即沟通按钮，所以只能点击更多详情，然后从更多详情里打开聊天按钮
      */
     @SneakyThrows
-    private void resumeSubmission(String keyword, Job job) {
+    private boolean resumeSubmission(String keyword, Job job) {
         // 若收到停止指令，直接短路返回
         if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
             log.info("停止指令已触发，跳过投递 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
-            return;
+            return false;
         }
         // 调试模式：仅遍历不投递
         if (Boolean.TRUE.equals(config.getDebugger())) {
             log.info("调试模式：仅遍历岗位，不投递 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
-            return;
+            return false;
         }
 
         // 1. 查找"查看更多信息"按钮（必须存在且新开页）
         Locator moreInfoBtn = page.locator("a.more-job-btn");
         if (moreInfoBtn.count() == 0) {
             log.warn("未找到\"查看更多信息\"按钮，跳过...");
-            return;
+            return false;
         }
         // 强制用js新开tab
         String href = moreInfoBtn.first().getAttribute("href");
         if (href == null || !href.startsWith("/job_detail/")) {
             log.warn("未获取到岗位详情链接，跳过...");
-            return;
+            return false;
         }
         String detailUrl = "https://www.zhipin.com" + href;
         // 2. 在新窗口打开详情页
@@ -1032,7 +1033,7 @@ public class Boss {
             if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
                 log.info("停止指令已触发，结束查找聊天按钮 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
                 try { detailPage.close(); } catch (Exception ignore) {}
-                return;
+                return false;
             }
             if (chatBtn.count() > 0 && (chatBtn.first().textContent().contains("立即沟通"))) {
                 foundChatBtn = true;
@@ -1047,7 +1048,7 @@ public class Boss {
                 detailPage.close();
             } catch (Exception ignore) {
             }
-            return;
+            return false;
         }
         chatBtn.first().click();
         PlaywrightUtil.sleep(1);
@@ -1059,7 +1060,7 @@ public class Boss {
             if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
                 log.info("停止指令已触发，结束等待聊天输入框 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
                 try { detailPage.close(); } catch (Exception ignore) {}
-                return;
+                return false;
             }
             if (inputLocator.count() > 0 && inputLocator.first().isVisible()) {
                 inputReady = true;
@@ -1074,15 +1075,25 @@ public class Boss {
                 detailPage.close();
             } catch (Exception ignore) {
             }
-            return;
+            return false;
         }
 
         // 5. AI智能生成打招呼语
         String aiMessage = null;
-        if (config.getEnableAI()) {
+        if (Boolean.TRUE.equals(config.getEnableAI())) {
             String jd = job.getJobInfo();
             if (jd != null && !jd.isEmpty()) {
-                aiMessage = generateAiMessage(keyword, job.getJobName(), jd);
+                AiMessageDecision decision = generateAiMessage(keyword, job.getJobName(), jd);
+                if (decision.skipCurrentJob()) {
+                    log.info("AI返回false，跳过当前岗位投递 | 公司：{} | 岗位：{}",
+                            job.getCompanyName(), job.getJobName());
+                    if (progressCallback != null) {
+                        progressCallback.accept("AI判断不匹配，跳过当前岗位：" + job.getJobName(), 0, 0);
+                    }
+                    try { detailPage.close(); } catch (Exception ignore) {}
+                    return false;
+                }
+                aiMessage = decision.message();
             }
         }
         String message = isValidString(aiMessage) ? aiMessage : config.getSayHi();
@@ -1158,6 +1169,7 @@ public class Boss {
                 }
             }
         }
+        return sendSuccess;
     }
 
     
@@ -1458,7 +1470,10 @@ public class Boss {
         return false;// 如果没有找到，返回 false
     }
 
-    private String generateAiMessage(String keyword, String jobName, String jd) {
+    /** AI 生成结果：skipCurrentJob=true 表示只跳过当前岗位，不影响同企业的其他岗位。 */
+    private record AiMessageDecision(boolean skipCurrentJob, String message) {}
+
+    private AiMessageDecision generateAiMessage(String keyword, String jobName, String jd) {
         AiEntity aiConfig = aiService.getAiConfig();
         String introduce = (aiConfig != null && aiConfig.getIntroduce() != null) ? aiConfig.getIntroduce() : "";
         String prompt = (aiConfig != null) ? aiConfig.getPrompt() : null;
@@ -1470,13 +1485,25 @@ public class Boss {
         try {
             String result = aiService.sendRequest(requestMessage);
             if (result == null) {
-                return config.getSayHi();
+                return new AiMessageDecision(false, config.getSayHi());
             }
-            return result.toLowerCase().contains("false") ? config.getSayHi() : result;
+            if (isAiRejectResponse(result)) {
+                return new AiMessageDecision(true, null);
+            }
+            return new AiMessageDecision(false, result);
         } catch (Exception e) {
             log.warn("AI请求失败，使用原有打招呼语: {}", e.getMessage());
-            return config.getSayHi();
+            return new AiMessageDecision(false, config.getSayHi());
         }
+    }
+
+    /**
+     * 只把独立的 false（允许引号、反引号和常见句末标点）识别为拒绝，
+     * 避免正常招呼语中偶然出现 false 字样时误跳过企业。
+     */
+    private boolean isAiRejectResponse(String result) {
+        return result != null
+                && result.trim().matches("(?i)^[*`'\"\\s]*false[*`'\"。.!！\\s]*$");
     }
 
     private String buildDefaultPrompt(String introduce, String keyword, String jobName, String jd) {
