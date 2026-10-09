@@ -2,13 +2,16 @@ package com.getjobs.worker.boss;
 
 import com.getjobs.application.entity.AiEntity;
 import com.getjobs.application.service.AiService;
+import com.getjobs.application.service.BossResumeImageService;
 import com.getjobs.application.service.BossService;
 import com.getjobs.worker.utils.Job;
 import com.getjobs.worker.utils.JobUtils;
 import com.getjobs.worker.utils.PlaywrightUtil;
+import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -19,7 +22,6 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -49,6 +51,7 @@ public class Boss {
     private BossConfig config;
     private final BossService bossService;
     private final AiService aiService;
+    private final BossResumeImageService bossResumeImageService;
     private Set<String> blackCompanies;
     private Set<String> blackRecruiters;
     private Set<String> blackJobs;
@@ -74,6 +77,8 @@ public class Boss {
     private static final boolean USE_UI_SEARCH = false;
     /** 等待页面加载状态的超时（毫秒），绝不能不设 —— 见 waitForPageSettled 的说明 */
     private static final double LOAD_STATE_TIMEOUT = 10_000;
+    /** 图片选择完成后，等待聊天区出现本人图片消息的最长时间 */
+    private static final int IMAGE_SEND_CONFIRM_TIMEOUT_SECONDS = 45;
 
     /**
      * 进度回调接口
@@ -1116,18 +1121,13 @@ public class Boss {
             sendText.first().click();
             PlaywrightUtil.sleep(1);
             sendSuccess = true;
-            try {
-                detailPage.locator("i.icon-close").first().click();
-            } catch (Exception e) {
-                log.error("发送文本小窗口关闭失败！");
-            }
         } else {
             log.warn("未找到发送按钮，自动跳过！岗位：{}", job.getJobName());
         }
 
         // 8. 发送图片简历（可选）
         boolean imgResume = false;
-        if (Boolean.TRUE.equals(config.getSendImgResume())) {
+        if (sendSuccess && Boolean.TRUE.equals(config.getSendImgResume())) {
             imgResume = sendImageResume(detailPage);
         }
 
@@ -1258,78 +1258,289 @@ public class Boss {
 
     private boolean sendImageResume(Page page) {
         try {
-            // 0) 资源存在性校验，避免后续无效操作
-            URL resourceUrlCheck = Boss.class.getResource("/resume.jpg");
-            if (resourceUrlCheck == null) {
-                log.error("资源文件 resume.jpg 不存在，跳过发送图片简历");
+            Optional<java.nio.file.Path> resumeImage = bossResumeImageService.getCurrentImagePath();
+            if (resumeImage.isEmpty()) {
+                log.warn("未上传图片简历，跳过图片发送；请先在 Boss 管理页面上传");
+                return false;
+            }
+            java.nio.file.Path imagePath = resumeImage.get();
+
+            Locator imageInput = prepareImageUploadInput(page);
+            if (imageInput == null) {
+                log.error("发送图片简历失败：当前聊天层和重新进入的完整聊天页中均未找到图片上传控件，页面：{}",
+                        safePageUrl(page));
                 return false;
             }
 
-            // 进入聊天页
-            if (!page.url().contains("/web/geek/chat")) {
-                Locator chatBtn = page.locator("a.btn-startchat, a.op-btn-chat");
-                if (chatBtn.count() == 0) {
-                    log.warn("未找到【继续沟通/立即沟通】按钮，跳过发送图片简历");
-                    return false;
-                }
-                chatBtn.first().click();
-                page.waitForURL("**/web/geek/chat**", new Page.WaitForURLOptions().setTimeout(15_000));
-            }
+            // 必须在完整聊天页就绪后再记录基线；否则重新进入聊天时加载出的历史图片会被误判为本次发送。
+            JSONObject beforeState = readOwnImageMessageState(page);
+            int imageMessageCountBefore = beforeState.optInt("imageCount", 0);
 
-            // 1) 解析图片路径（在可能触发文件选择器前就准备好）
-            java.nio.file.Path imagePath = resolveResumeImage();
-
-            // 精准定位聊天工具栏内的图片输入，避免匹配到页面其他上传控件
-            Locator imgContainer = page.locator("div.btn-sendimg[aria-label='发送图片'], div[aria-label='发送图片'].btn-sendimg");
-            Locator imageInput = imgContainer.locator("input[type='file'][accept*='image']").first();
-            if (imageInput.count() == 0) {
-                // 若未渲染，尝试拦截系统文件选择器；若未出现则普通点击促使 input 出现
-                if (imgContainer.count() > 0) {
-                    boolean chooserHandled = false;
-                    try {
-                        com.microsoft.playwright.FileChooser chooser = page.waitForFileChooser(() -> {
-                            imgContainer.first().click();
-                        });
-                        chooser.setFiles(imagePath);
-                        chooserHandled = true;
-                        log.info("通过 FileChooser 直接提交图片文件，避免系统窗口阻塞");
-                    } catch (com.microsoft.playwright.PlaywrightException ignore) {
-                        // 未弹出系统文件选择器，继续常规流程
-                    }
-                    if (!chooserHandled) {
-                        PlaywrightUtil.sleep(1);
-                        imageInput = imgContainer.locator("input[type='file'][accept*='image']").first();
-                    }
-                }
-            }
-            imageInput.waitFor(new Locator.WaitForOptions().setTimeout(10_000));
-
-            // 上传图片
             imageInput.setInputFiles(imagePath);
-            PlaywrightUtil.sleep(1);
-            return true;
+            log.info("已选择图片简历，等待 Boss 确认发送：{}", imagePath.getFileName());
+
+            // 必须等到聊天记录中出现新的本人图片消息，并且上传/发送状态已经结束。
+            // 这一步完成前不能关闭详情页，否则大图片或网络较慢时上传会被中断。
+            return waitForImageMessageSent(page, imageMessageCountBefore, imagePath.getFileName().toString());
         } catch (Throwable e) {
             log.error("发送图片简历失败：{}", e.getMessage(), e);
             return false;
         }
     }
 
-    private java.nio.file.Path resolveResumeImage() throws Exception {
-        URL resourceUrl = Boss.class.getResource("/resume.jpg");
-        if (resourceUrl == null) {
-            throw new IllegalStateException("资源文件 /resume.jpg 未找到，请将图片放置到 src/main/resources 目录下");
+    /**
+     * 获取可用的图片上传控件。
+     * <p>
+     * Boss 第一次“立即沟通”有时只打开简化打招呼层，发完文字后该层不会提供图片按钮。
+     * 此时关闭简化层并重新点击“继续沟通”，等待完整聊天 DOM；不等待 URL，避免导航期间
+     * Patchright 持有旧 frame 而出现 Object doesn't exist: frame@...。
+     */
+    private Locator prepareImageUploadInput(Page page) {
+        Locator currentInput = waitForImageUploadInput(page, 2);
+        if (currentInput != null) {
+            log.info("当前聊天层已找到图片上传控件");
+            return currentInput;
         }
-        if ("file".equalsIgnoreCase(resourceUrl.getProtocol())) {
-            return java.nio.file.Paths.get(resourceUrl.toURI());
+
+        log.info("当前打招呼层没有图片上传控件，尝试重新进入完整聊天页面");
+        closeLightweightChatPanel(page);
+
+        Locator chatButton = findVisibleChatButton(page);
+        if (chatButton == null) {
+            log.warn("重新进入完整聊天失败：未找到【继续沟通/立即沟通】按钮，页面：{}", safePageUrl(page));
+            return null;
         }
-        java.nio.file.Path temp = java.nio.file.Files.createTempFile("resume-", ".jpg");
-        try (java.io.InputStream in = Boss.class.getResourceAsStream("/resume.jpg")) {
-            if (in == null) {
-                throw new IllegalStateException("无法从类路径读取 /resume.jpg 资源");
+
+        try {
+            String buttonText = Optional.ofNullable(chatButton.textContent()).orElse("").trim();
+            chatButton.click(new Locator.ClickOptions().setTimeout(10_000));
+            log.info("已点击【{}】，等待完整聊天页面的图片控件", buttonText.isEmpty() ? "继续沟通" : buttonText);
+        } catch (Throwable clickError) {
+            // 点击可能已经触发导航，只是旧 frame 在回包时被销毁；继续通过新 Locator 探测 DOM。
+            log.debug("点击沟通按钮时页面发生切换，将继续检查新聊天页面：{}", clickError.getMessage());
+        }
+
+        Locator reopenedInput = waitForImageUploadInput(page, 15);
+        if (reopenedInput != null) {
+            log.info("重新进入完整聊天页面后已找到图片上传控件");
+        }
+        return reopenedInput;
+    }
+
+    private void closeLightweightChatPanel(Page page) {
+        try {
+            Locator closeButtons = page.locator("i.icon-close");
+            int count = closeButtons.count();
+            for (int i = 0; i < count; i++) {
+                Locator closeButton = closeButtons.nth(i);
+                if (closeButton.isVisible()) {
+                    closeButton.click(new Locator.ClickOptions().setTimeout(5_000));
+                    PlaywrightUtil.sleep(1);
+                    log.debug("已关闭不含图片控件的简化打招呼层");
+                    return;
+                }
             }
-            java.nio.file.Files.copy(in, temp, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (Throwable closeError) {
+            log.debug("关闭简化打招呼层失败，将直接尝试重新进入聊天：{}", closeError.getMessage());
         }
-        return temp;
+    }
+
+    private Locator findVisibleChatButton(Page page) {
+        try {
+            Locator buttons = page.locator("a.btn-startchat, a.op-btn-chat");
+            int count = buttons.count();
+            for (int i = 0; i < count; i++) {
+                Locator button = buttons.nth(i);
+                if (button.isVisible()) {
+                    return button;
+                }
+            }
+        } catch (Throwable findError) {
+            log.debug("查找沟通按钮失败：{}", findError.getMessage());
+        }
+        return null;
+    }
+
+    /** 每轮都重新创建 Locator，以适应点击沟通按钮后发生的主 frame 替换。 */
+    private Locator waitForImageUploadInput(Page page, int timeoutSeconds) {
+        for (int second = 0; second < timeoutSeconds; second++) {
+            if (page.isClosed()) {
+                return null;
+            }
+            Locator input = findAttachedImageUploadInput(page);
+            if (input != null) {
+                return input;
+            }
+            PlaywrightUtil.sleep(1);
+        }
+        return null;
+    }
+
+    private Locator findAttachedImageUploadInput(Page page) {
+        List<String> selectors = List.of(
+                "div.btn-sendimg[aria-label='发送图片'] input[type='file']",
+                "div[aria-label='发送图片'].btn-sendimg input[type='file']",
+                "[aria-label='发送图片'] input[type='file']",
+                "input[type='file'][accept*='image/gif'][accept*='image/jpeg']"
+        );
+
+        try {
+            // 完整聊天页在不同版本中可能位于主 frame 或子 frame，因此逐个检查。
+            for (Frame frame : page.frames()) {
+                if (frame.isDetached()) {
+                    continue;
+                }
+                for (String selector : selectors) {
+                    try {
+                        Locator candidate = frame.locator(selector).first();
+                        if (candidate.count() > 0) {
+                            // 文件输入框通常隐藏，只需确认已挂载，不能要求 visible。
+                            candidate.waitFor(new Locator.WaitForOptions()
+                                    .setState(WaitForSelectorState.ATTACHED)
+                                    .setTimeout(1_000));
+                            return candidate;
+                        }
+                    } catch (Throwable staleFrame) {
+                        // 页面切换中的旧 frame 会失效，下一轮会重新获取 page.frames()。
+                    }
+                }
+            }
+        } catch (Throwable frameListError) {
+            log.debug("检查图片上传控件时页面正在切换：{}", frameListError.getMessage());
+        }
+        return null;
+    }
+
+    private String safePageUrl(Page page) {
+        try {
+            return page.url();
+        } catch (Throwable ignore) {
+            return "无法读取";
+        }
+    }
+
+    /**
+     * 等待图片真正进入本人消息列表，而不是仅确认文件已选择。
+     */
+    private boolean waitForImageMessageSent(Page page, int imageMessageCountBefore, String filename) {
+        JSONObject lastState = null;
+        int stableSeconds = 0;
+        for (int second = 1; second <= IMAGE_SEND_CONFIRM_TIMEOUT_SECONDS; second++) {
+            if (page.isClosed()) {
+                log.error("图片简历发送确认失败：聊天页面已关闭，文件：{}", filename);
+                return false;
+            }
+
+            try {
+                lastState = readOwnImageMessageState(page);
+                int currentCount = lastState.optInt("imageCount", 0);
+                boolean failed = lastState.optBoolean("failed", false);
+                boolean sending = lastState.optBoolean("sending", false);
+                String status = lastState.optString("status", "");
+
+                if (currentCount > imageMessageCountBefore && failed) {
+                    log.error("图片简历发送失败，聊天消息显示失败状态，文件：{}，状态：{}", filename, status);
+                    return false;
+                }
+                if (currentCount > imageMessageCountBefore && !sending) {
+                    stableSeconds++;
+                    // 新图片消息连续稳定三秒后再关闭页面，避免刚插入的临时消息仍在后台上传。
+                    if (stableSeconds >= 3) {
+                        log.info("图片简历已出现在本人聊天记录中，确认发送完成，文件：{}，状态：{}",
+                                filename, status);
+                        return true;
+                    }
+                } else {
+                    stableSeconds = 0;
+                }
+            } catch (Throwable probeError) {
+                stableSeconds = 0;
+                log.debug("等待图片简历发送确认时读取聊天状态失败（第{}秒）：{}", second, probeError.getMessage());
+            }
+            PlaywrightUtil.sleep(1);
+        }
+
+        log.error("图片简历已选择，但{}秒内没有确认出现在本人聊天记录中，按发送失败处理。文件：{}，最后状态：{}",
+                IMAGE_SEND_CONFIRM_TIMEOUT_SECONDS,
+                filename,
+                lastState != null ? lastState.toString() : "无法读取");
+        return false;
+    }
+
+    /**
+     * 读取 Boss 聊天区本人图片消息的数量及最后一条图片消息状态。
+     * item-myself 是本人消息，item-friend 是招聘者消息；只检查 message-content，避免把头像误判为图片消息。
+     */
+    private JSONObject readOwnImageMessageState(Page page) {
+        String probeScript = """
+                () => {
+                  const root = document.querySelector('.chat-message .im-list')
+                    || document.querySelector('.chat-record');
+                  if (!root) {
+                    return JSON.stringify({ imageCount: 0, sending: false, failed: false, status: '', rootFound: false });
+                  }
+
+                  const ownMessages = Array.from(root.querySelectorAll('li.message-item.item-myself'));
+                  const imageMessages = ownMessages.filter(item => {
+                    const content = item.querySelector('.message-content');
+                    if (!content) return false;
+                    return Boolean(content.querySelector(
+                      'img, [class*="image-content"], [class*="message-image"], [class*="message-img"], ' +
+                      '[class*="picture"], [style*="background-image"]'
+                    ));
+                  });
+
+                  const last = imageMessages.length > 0 ? imageMessages[imageMessages.length - 1] : null;
+                  if (!last) {
+                    return JSON.stringify({ imageCount: 0, sending: false, failed: false, status: '', rootFound: true });
+                  }
+
+                  const statusEl = last.querySelector('.message-status');
+                  const status = statusEl ? (statusEl.textContent || '').trim() : '';
+                  const classText = [last, ...last.querySelectorAll('*')]
+                    .map(el => typeof el.className === 'string' ? el.className : '')
+                    .join(' ')
+                    .toLowerCase();
+                  const messageText = (last.textContent || '').trim();
+                  const sending = /uploading|sending|upload-progress|send-progress/.test(classText)
+                    || /上传中|发送中/.test(messageText + status);
+                  const failed = /upload-fail|upload-error|send-fail|send-error|message-fail/.test(classText)
+                    || /上传失败|发送失败|重新发送|点击重试/.test(messageText + status);
+
+                  return JSON.stringify({
+                    imageCount: imageMessages.length,
+                    sending,
+                    failed,
+                    status,
+                    rootFound: true
+                  });
+                }
+                """;
+
+        try {
+            for (Frame frame : page.frames()) {
+                if (frame.isDetached()) {
+                    continue;
+                }
+                try {
+                    Object stateJson = frame.evaluate(probeScript);
+                    JSONObject state = new JSONObject(String.valueOf(stateJson));
+                    if (state.optBoolean("rootFound", false)) {
+                        return state;
+                    }
+                } catch (Throwable staleFrame) {
+                    // frame 正在替换时忽略，本轮按未找到聊天记录处理。
+                }
+            }
+        } catch (Throwable frameListError) {
+            log.debug("读取聊天图片状态时页面正在切换：{}", frameListError.getMessage());
+        }
+        return new JSONObject()
+                .put("imageCount", 0)
+                .put("sending", false)
+                .put("failed", false)
+                .put("status", "")
+                .put("rootFound", false);
     }
 
     /**
