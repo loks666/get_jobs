@@ -42,6 +42,10 @@ public class ZhilianJobService implements JobPlatformService {
         }
 
         try {
+            // 浏览器可能已被手动关闭 / 崩溃，先确保可用，必要时重新拉起
+            progressCallback.accept(JobProgressMessage.info(PLATFORM, "检查浏览器状态..."));
+            playwrightManager.ensureReady();
+
             // 获取智联招聘页面实例
             Page page = playwrightManager.getZhilianPage();
             if (page == null) {
@@ -84,7 +88,8 @@ public class ZhilianJobService implements JobPlatformService {
             zhilian.setShouldStopCallback(this::shouldStop);
             zhilian.prepare();
 
-            int deliveredCount = zhilian.execute();
+            // 必须跑在 Playwright 专用线程上，否则会和后台登录监控并发操作同一条连接
+            int deliveredCount = playwrightManager.callOnPlaywright(zhilian::execute);
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共投递%d个职位", deliveredCount)));

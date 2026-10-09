@@ -46,6 +46,10 @@ public class LiepinJobService implements JobPlatformService {
         }
 
         try {
+            // 浏览器可能已被手动关闭 / 崩溃，先确保可用，必要时重新拉起
+            progressCallback.accept(JobProgressMessage.info(PLATFORM, "检查浏览器状态..."));
+            playwrightManager.ensureReady();
+
             Page page = playwrightManager.getLiepinPage();
             if (page == null) {
                 progressCallback.accept(JobProgressMessage.error(PLATFORM, "猎聘页面未初始化"));
@@ -84,7 +88,8 @@ public class LiepinJobService implements JobPlatformService {
             liepin.setProgressCallback(cb);
             liepin.setShouldStopCallback(this::shouldStop);
 
-            int deliveredCount = liepin.execute();
+            // 必须跑在 Playwright 专用线程上，否则会和后台登录监控并发操作同一条连接
+            int deliveredCount = playwrightManager.callOnPlaywright(liepin::execute);
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共发起%d个聊天", deliveredCount)));

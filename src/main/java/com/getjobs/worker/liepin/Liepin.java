@@ -229,6 +229,7 @@ public class Liepin {
     private void submit(String keyword) {
         // 清洗关键词：去掉前后引号与多余空白
         String cleanKeyword = keyword == null ? "" : keyword.replace("\"", "").trim();
+        lastApiEntities.clear();
         page.navigate(getSearchUrl() + "&key=" + cleanKeyword);
         
         // 等待分页元素加载
@@ -258,15 +259,18 @@ public class Liepin {
                 .setState(WaitForSelectorState.ATTACHED)
                 .setTimeout(15000)
         );
-            // 额外等待一次接口响应，确保 lastApiEntities 刷新（精确匹配PC搜索接口）
-            try {
-                page.waitForResponse(r -> {
-                    try {
-                        String u = r.url();
-                        return u != null && u.contains("com.liepin.searchfront4c.pc-search-job") && r.status() == 200;
-                    } catch (Exception ignored) { return false; }
-                }, () -> {});
-            } catch (Exception ignored) {}
+            // 接口响应在卡片渲染前就已到达并被 onResponse 处理，这里不能再等 30 秒默认超时，
+            // 否则每页白白卡住半分钟。lastApiEntities 为空时才短暂等一下。
+            if (lastApiEntities.isEmpty()) {
+                try {
+                    page.waitForResponse(r -> {
+                        try {
+                            String u = r.url();
+                            return u != null && u.contains("com.liepin.searchfront4c.pc-search-job") && r.status() == 200;
+                        } catch (Exception ignored) { return false; }
+                    }, new Page.WaitForResponseOptions().setTimeout(3000), () -> {});
+                } catch (Exception ignored) {}
+            }
             info(String.format("正在投递【%s】第【%d】页...", cleanKeyword, i + 1));
             submitJob();
             info(String.format("已投递第【%d】页所有的岗位...", i + 1));
@@ -278,6 +282,7 @@ public class Liepin {
                 String cls = nextLi.first().getAttribute("class");
                 boolean disabled = cls != null && cls.contains("ant-pagination-disabled");
                 if (!disabled) {
+                    lastApiEntities.clear(); // 下一页接口数据到达前不要沿用上一页的
                     Locator btn = nextLi.first().locator("button.ant-pagination-item-link");
                     if (btn.count() > 0) {
                         btn.first().click();
@@ -589,6 +594,20 @@ public class Liepin {
 
     // 从岗位卡片的 data 属性中提取 jobId（兼容 lastApiEntities 缺失场景）
     private Long extractJobIdFromCard(Locator card) {
+        try {
+            // 新版页面：jobId 在"聊一聊"容器的 data-tlg-ext 里（%7B%22jobId%22%3A%22...）
+            Locator chatBox = card.locator("[data-tlg-elem-id='c_pc_search_job_listcard_chat_btn']");
+            if (chatBox.count() > 0) {
+                String chatExt = chatBox.first().getAttribute("data-tlg-ext");
+                if (chatExt != null && !chatExt.isEmpty()) {
+                    String decoded = java.net.URLDecoder.decode(chatExt, java.nio.charset.StandardCharsets.UTF_8);
+                    String id = new com.fasterxml.jackson.databind.ObjectMapper().readTree(decoded).path("jobId").asText(null);
+                    if (id != null && !id.isEmpty()) {
+                        return Long.parseLong(id);
+                    }
+                }
+            }
+        } catch (Exception ignore) {}
         try {
             String ext = card.getAttribute("data-tlg-ext");
             if (ext != null && !ext.isEmpty()) {

@@ -821,7 +821,8 @@ public class PlaywrightManager {
         // 监听页面导航事件，检测URL变化
         page.onFrameNavigated(frame -> {
             if (frame == page.mainFrame()) {
-                if (!liepinMonitoringPaused) {
+                // 事件回调里再调 Playwright 属于重入，会打断前台任务正在进行的导航
+                if (!liepinMonitoringPaused && !isPlaywrightBusy()) {
                     checkLiepinLoginStatus(page);
                 }
             }
@@ -977,7 +978,7 @@ public class PlaywrightManager {
         // 监听页面导航事件，检测URL变化
         page.onFrameNavigated(frame -> {
             if (frame == page.mainFrame()) {
-                if (!job51MonitoringPaused) {
+                if (!job51MonitoringPaused && !isPlaywrightBusy()) {
                     check51jobLoginStatus(page);
                 }
             }
@@ -1026,19 +1027,30 @@ public class PlaywrightManager {
         Thread waitThread = new Thread(() -> {
             try {
                 int maxSeconds = 300; // 最长等待 5 分钟
+                final java.util.concurrent.atomic.AtomicBoolean loggedIn = new java.util.concurrent.atomic.AtomicBoolean(false);
                 for (int i = 0; i < maxSeconds; i++) {
-                    boolean loggedIn = false;
-                    try {
-                        loggedIn = checkIf51jobLoggedIn();
-                    } catch (Exception ignored) {
-                    }
-
-                    if (loggedIn) {
-                        // 交由统一回调处理登录成功逻辑（包含状态更新与保存 Cookie）
-                        on51jobLoginSuccess();
-                        log.info("后台等待检测到 51job 登录成功，用时约 {} 秒", i);
+                    // 这个线程不能直接调 Playwright：它和 playwright-thread 同时读同一条连接，
+                    // 会抢走对方的事件，导致投递时报 "Object doesn't exist: response@..."。
+                    // 所以检测动作交给专用线程；专用线程正忙（比如在投递）就跳过这一秒。
+                    // tryRunOnPlaywright 是异步提交的，结果在下一轮循环开头再看
+                    if (loggedIn.get()) {
                         return;
                     }
+                    final int elapsed = i;
+                    tryRunOnPlaywright(() -> {
+                        if (job51MonitoringPaused) {
+                            return;
+                        }
+                        try {
+                            if (checkIf51jobLoggedIn()) {
+                                // 交由统一回调处理登录成功逻辑（包含状态更新与保存 Cookie）
+                                on51jobLoginSuccess();
+                                log.info("后台等待检测到 51job 登录成功，用时约 {} 秒", elapsed);
+                                loggedIn.set(true);
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    });
 
                     try {
                         Thread.sleep(1000);
@@ -1400,7 +1412,7 @@ public class PlaywrightManager {
         // 监听页面导航事件，检测URL变化
         page.onFrameNavigated(frame -> {
             if (frame == page.mainFrame()) {
-                if (!zhilianMonitoringPaused) {
+                if (!zhilianMonitoringPaused && !isPlaywrightBusy()) {
                     checkZhilianLoginStatus(page);
                 }
             }

@@ -12,7 +12,8 @@ public class Locators {
     public static final String SUBSCRIBE_CLOSE_BTN = "div[class*='subscribe-close-btn']";
 
     // 岗位列表容器（用于遍历卡片和定位按钮）
-    public static final String JOB_CARDS = "div[class*='job-card-pc-container']";
+    // 猎聘前端改版：class 由 job-card-pc-container 变为 jobCardPcContainer（同时兼容旧名）
+    public static final String JOB_CARDS = "div[class*='jobCardPcContainer'], div[class*='job-card-pc-container']";
 
     // 聊天相关元素（用于检测聊天窗口并关闭）
     public static final String CHAT_HEADER = ".__im_basic__header-wrap";
