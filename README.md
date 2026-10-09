@@ -221,8 +221,12 @@ cd get_jobs
 2. 从 `main` 分支新建你的个人开发分支
 3. 开发完成后，提交 Pull Request 到 **loks666/get_jobs 的 `dev` 分支**  
    （❗ **注意：不是 main，是 dev！**）
-4. 提交 Commit 时，请在信息前加上一个符合提交内容的 **Emoji 表情
-   **（[emoji网站](https://www.emojiall.com/zh-hans/all-emojis)）自由发挥！
+4. 提交 Commit 时，第一行必须符合格式：`<emoji> <小写英文>.`，即以一个 **Emoji 表情**
+   开头（[emoji网站](https://www.emojiall.com/zh-hans/all-emojis)），空格后接**全小写英文**，并以 **`.`** 结尾。
+   例如：`🐛 fix cookie table creation on startup.`
+   - PR 标题也需符合同样格式（合并时会作为提交信息）。
+   - CI 会自动检查，不符合会无法合并。
+   - 本地可运行 `sh .githooks/setup.sh` 启用提交前检查和提交模板。
 5. 等待管理员审核，验证无误后，代码将合并到 `main` 分支
 
 > 📑 本项目已启用[贡献者许可协议（CLA）](CLA.md)，提交 PR 时需在模板中勾选同意。
