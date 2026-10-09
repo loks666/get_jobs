@@ -1,0 +1,43 @@
+#!/bin/sh
+# subject (first line) must be: <emoji> <lowercase english text ending with '.'>
+# merge/revert/fixup/squash commits are skipped.
+
+subject=$(grep -v '^#' "$1" | sed -n '1p' | tr -d '\r')
+
+case "$subject" in
+  "Merge "*|"Revert "*|"fixup! "*|"squash! "*) exit 0 ;;
+esac
+
+fail() {
+  echo "commit rejected: $1" >&2
+  echo "  your subject : $subject" >&2
+  echo "  expected     : <emoji> <lowercase english text ending with a period.>" >&2
+  echo "  example      : ð fix cookie table creation on startup." >&2
+  exit 1
+}
+
+# first byte must be non-ascii (emoji)
+first=$(printf '%s' "$subject" | LC_ALL=C cut -c1 | LC_ALL=C od -An -tu1 | tr -d ' ')
+[ -n "$first" ] && [ "$first" -ge 128 ] || fail "subject must start with an emoji."
+# the emoji prefix must not contain cjk/kana characters
+prefix=$(printf '%s' "$subject" | LC_ALL=C sed 's/^\([^ -~]*\).*/\1/')
+if printf '%s' "$prefix" | LC_ALL=C.UTF-8 grep -qP '[\x{3000}-\x{9FFF}]'; then fail "subject text must be english (ascii only)."; fi
+
+
+# drop leading emoji bytes (and variation selectors), then require a single space
+rest=$(printf '%s' "$subject" | LC_ALL=C sed 's/^[^ -~]*//')
+case "$rest" in
+  " "*) rest=${rest# } ;;
+  *) fail "put one space between the emoji and the text." ;;
+esac
+
+[ -n "$rest" ] || fail "subject text is empty."
+
+# lowercase ascii only: no uppercase letters, no cjk or other non-ascii
+if printf '%s' "$rest" | LC_ALL=C grep -q '[^ -~]'; then fail "subject text must be english (ascii only)."; fi
+if printf '%s' "$rest" | grep -q '[A-Z]'; then fail "subject text must be lowercase."; fi
+case "$rest" in
+  *.) ;;
+  *) fail "subject must end with a period." ;;
+esac
+exit 0

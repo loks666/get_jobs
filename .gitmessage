@@ -1,0 +1,11 @@
+# <emoji> <lowercase english subject ending with a period.>
+#
+# rules:
+#   1. subject starts with one emoji, then a space.
+#   2. the rest of the subject is lowercase english and ends with ".".
+#   3. enforced by .githooks/commit-msg (setup: sh .githooks/setup.sh).
+#
+# common emojis:
+#   ✨ feature     🐛 bug fix      ♻️ refactor    📝 docs
+#   💄 ui/style    ⚡ performance   🔥 remove      🔧 config
+#   🔐 security    ✅ tests         🚀 deploy      🩹 minor fix
