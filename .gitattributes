@@ -49,3 +49,6 @@
 *.woff2 binary
 *.ttf binary
 *.eot binary
+
+.githooks/* text eol=lf
+.gitmessage text eol=lf
