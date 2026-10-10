@@ -107,9 +107,26 @@ export default function BossPage() {
   const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
   const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
 
+  const getDeliveryStatus = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/boss/status`)
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const data = await response.json()
+      return typeof data.isRunning === 'boolean' ? data.isRunning : null
+    } catch (error) {
+      console.warn('[Boss] 获取投递状态失败:', error)
+      return null
+    }
+  }, [])
+
+  useEffect(() => {
+    getDeliveryStatus().then((isRunning) => {
+      if (isRunning) setIsDelivering(true)
+    })
+  }, [getDeliveryStatus])
+
   useEffect(() => {
     fetchAllData()
-
     // 确保在客户端环境且 EventSource 可用
     if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
       console.warn('EventSource 不可用，无法连接SSE')
@@ -489,7 +506,7 @@ export default function BossPage() {
         console.warn('启动失败：', data.message)
         setSaveResult({ success: false, title: '启动失败', message: data.message || '启动投递失败，请查看后端日志' })
         setShowSaveDialog(true)
-        setIsDelivering(false)
+        setIsDelivering(data.status === 'running')
       }
     } catch (error) {
       console.error('Failed to start delivery:', error)
@@ -499,7 +516,8 @@ export default function BossPage() {
         message: `无法连接后端服务（${API_BASE}），请确认服务已启动`,
       })
       setShowSaveDialog(true)
-      setIsDelivering(false)
+      const isRunning = await getDeliveryStatus()
+      if (isRunning !== null) setIsDelivering(isRunning)
     }
   }
 
@@ -514,14 +532,15 @@ export default function BossPage() {
         // 停止成功：不弹框
         setIsDelivering(false)
       } else {
-        // 停止失败：也要将状态设置为未投递（因为可能任务已经结束）
+        // 停止失败时以服务端状态为准，避免运行中的任务失去停止入口
         console.warn('停止失败：', data.message)
-        setIsDelivering(false)
+        const isRunning = await getDeliveryStatus()
+        if (isRunning !== null) setIsDelivering(isRunning)
       }
     } catch (error) {
       console.error('Failed to stop delivery:', error)
-      // 停止失败：也要将状态设置为未投递
-      setIsDelivering(false)
+      const isRunning = await getDeliveryStatus()
+      if (isRunning !== null) setIsDelivering(isRunning)
     }
   }
 
