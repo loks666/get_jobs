@@ -3,7 +3,17 @@ package com.getjobs.application.controller;
 import com.getjobs.application.entity.BossConfigEntity;
 import com.getjobs.application.entity.BossOptionEntity;
 import com.getjobs.application.service.BossService;
+import com.getjobs.application.service.BossResumeImageService;
+import com.getjobs.application.service.BossResumeImageService.ResumeImageInfo;
 import com.getjobs.application.entity.BlacklistEntity;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.CrossOrigin;
 
@@ -23,9 +33,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class BossConfigController {
 
     private final BossService bossService;
+    private final BossResumeImageService bossResumeImageService;
 
-    public BossConfigController(BossService bossService) {
+    public BossConfigController(BossService bossService, BossResumeImageService bossResumeImageService) {
         this.bossService = bossService;
+        this.bossResumeImageService = bossResumeImageService;
     }
 
     /**
@@ -58,6 +70,7 @@ public class BossConfigController {
         result.put("config", config);
         result.put("options", options);
         result.put("blacklist", blacklist);
+        result.put("resumeImage", bossResumeImageService.getMetadata());
 
         return result;
     }
@@ -215,5 +228,52 @@ public class BossConfigController {
             return bossService.removeBlacklist(entity.getType(), entity.getValue());
         }
         return false;
+    }
+
+    /** 上传或替换 Boss 图片简历。 */
+    @PostMapping(value = "/resume-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Object>> uploadResumeImage(@RequestParam("file") MultipartFile file) {
+        try {
+            bossResumeImageService.save(file);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "图片简历上传成功",
+                    "resumeImage", bossResumeImageService.getMetadata()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "图片简历保存失败：" + e.getMessage()
+            ));
+        }
+    }
+
+    /** 返回图片内容供管理页面预览。 */
+    @GetMapping("/resume-image/content")
+    public ResponseEntity<Resource> getResumeImageContent() {
+        return bossResumeImageService.getCurrentImage()
+                .map(this::resumeImageResponse)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleMaxUploadSizeExceeded() {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of(
+                "success", false,
+                "message", "图片大小不能超过 10MB"
+        ));
+    }
+
+    private ResponseEntity<Resource> resumeImageResponse(ResumeImageInfo info) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(info.contentType()))
+                .contentLength(info.size())
+                .cacheControl(CacheControl.noStore())
+                .body(new FileSystemResource(info.path()));
     }
 }

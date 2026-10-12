@@ -1,5 +1,6 @@
 import java.time.LocalDate
 import org.springframework.boot.gradle.tasks.run.BootRun
+import org.gradle.language.jvm.tasks.ProcessResources
 
 plugins {
     java
@@ -228,8 +229,11 @@ val buildFrontend = tasks.register("buildFrontend") {
 }
 
 // 打包时也要把管理页面带进 jar：dist 在 src/main/resources 下，由 processResources 收集
-tasks.named("processResources") {
+tasks.named<ProcessResources>("processResources") {
     dependsOn(buildFrontend)
+    // 旧版要求用户把个人简历放进 src/main/resources；即使被 Git 忽略，它仍会被打进 JAR。
+    // 新版改为运行时上传，因此明确排除旧文件，避免个人简历随安装包泄露。
+    exclude("resume", "resume.*")
 }
 
 // 正确地配置 BootRun（注意类型是 BootRun）

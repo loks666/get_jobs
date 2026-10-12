@@ -50,6 +50,10 @@ cookies/
 .env
 chromedriver
 *.jpg
+# 运行时上传的个人图片简历，绝不能提交
+/data/boss/resume/
+# 兼容旧版手动放置的图片简历，防止误提交个人文件
+/src/main/resources/resume*
 
 # Database files
 db/

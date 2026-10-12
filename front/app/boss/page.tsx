@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { createSSEWithBackoff } from '@/lib/sse'
 import { createPortal } from 'react-dom'
-import { BiBriefcase, BiSave, BiSearch, BiMap, BiMoney, BiBuilding, BiTime, BiBarChart, BiTrash, BiPlus, BiPlay, BiStop, BiLogOut } from 'react-icons/bi'
+import { BiBriefcase, BiSave, BiSearch, BiMap, BiMoney, BiBuilding, BiTime, BiBarChart, BiTrash, BiPlus, BiPlay, BiStop, BiLogOut, BiImage, BiUpload, BiZoomIn, BiX } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -61,6 +62,15 @@ interface BlacklistItem {
   type: string
 }
 
+interface ResumeImageInfo {
+  exists: boolean
+  fileName?: string
+  contentType?: string
+  size?: number
+  updatedAt?: number
+  previewUrl?: string
+}
+
 export default function BossPage() {
   const [config, setConfig] = useState<BossConfig>({
     keywords: '',
@@ -72,6 +82,7 @@ export default function BossPage() {
     salary: '',
     scale: '',
     stage: '',
+    sendImgResume: 0,
     filterDeadHr: 0,
   })
   // 关键词显示用（无括号无引号，逗号分隔）
@@ -106,6 +117,33 @@ export default function BossPage() {
   const [saveResult, setSaveResult] = useState<{ success: boolean; message: string; title?: string } | null>(null)
   const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
   const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [resumeImage, setResumeImage] = useState<ResumeImageInfo>({ exists: false })
+  const [resumeImageUploading, setResumeImageUploading] = useState(false)
+  const [resumeImageMessage, setResumeImageMessage] = useState<{ success: boolean; text: string } | null>(null)
+  const [localResumePreviewUrl, setLocalResumePreviewUrl] = useState<string | null>(null)
+  const [showResumePreview, setShowResumePreview] = useState(false)
+  const resumeImageInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (localResumePreviewUrl) URL.revokeObjectURL(localResumePreviewUrl)
+    }
+  }, [localResumePreviewUrl])
+
+  useEffect(() => {
+    if (!showResumePreview) return
+
+    const previousOverflow = document.body.style.overflow
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowResumePreview(false)
+    }
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [showResumePreview])
 
   useEffect(() => {
     fetchAllData()
@@ -169,6 +207,11 @@ export default function BossPage() {
       console.log('Fetched data:', data)
       console.log('Blacklist:', data.blacklist)
 
+      const fetchedResumeImage: ResumeImageInfo = data.resumeImage?.exists
+        ? data.resumeImage
+        : { exists: false }
+      setResumeImage(fetchedResumeImage)
+
       if (data.config) {
         // 规范化城市编码：后端可能返回单值或括号列表，此处取第一个值用于下拉回显
         const normalizeCityCode = (raw?: string): string => {
@@ -188,6 +231,8 @@ export default function BossPage() {
           ...data.config,
           cityCode: normalizeCityCode(data.config.cityCode),
           jobType: normalizeJobType(data.config.jobType),
+          // 没有图片时不能保留开启状态，否则开关会处于“开启但不可用”。
+          sendImgResume: fetchedResumeImage.exists ? (data.config.sendImgResume ?? 0) : 0,
         })
         // 将后端存储的关键词（可能是 JSON 数组或括号列表）转为展示用逗号分隔文本
         const toDisplayKeywords = (raw?: string): string => {
@@ -423,6 +468,64 @@ export default function BossPage() {
     }
   }
 
+  const handleResumeImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/gif'])
+    const allowedExtension = /\.(png|jpe?g|gif)$/i.test(file.name)
+    if ((!allowedTypes.has(file.type) && !allowedExtension) || file.size === 0) {
+      setResumeImageMessage({ success: false, text: '请选择有效的 PNG、JPG、JPEG 或 GIF 图片。' })
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setResumeImageMessage({ success: false, text: '图片大小不能超过 10MB。' })
+      return
+    }
+
+    setLocalResumePreviewUrl(URL.createObjectURL(file))
+    setResumeImageUploading(true)
+    setResumeImageMessage(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await fetch(`${API_BASE}/api/boss/config/resume-image`, {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data.message || `上传失败（HTTP ${response.status}）`)
+      }
+
+      setResumeImage(data.resumeImage || { exists: true })
+      setLocalResumePreviewUrl(null)
+      setResumeImageMessage({ success: true, text: '图片简历上传成功，可以预览或重新上传。' })
+    } catch (error) {
+      setLocalResumePreviewUrl(null)
+      setResumeImageMessage({
+        success: false,
+        text: error instanceof Error ? error.message : '图片简历上传失败，请确认后端服务已启动。',
+      })
+    } finally {
+      setResumeImageUploading(false)
+    }
+  }
+
+  const formatFileSize = (size?: number) => {
+    if (size == null) return ''
+    return size >= 1024 * 1024
+      ? `${(size / 1024 / 1024).toFixed(2)} MB`
+      : `${Math.max(1, Math.round(size / 1024))} KB`
+  }
+
+  const resumePreviewUrl = localResumePreviewUrl || (
+    resumeImage.exists && resumeImage.previewUrl
+      ? `${API_BASE}${resumeImage.previewUrl}?v=${resumeImage.updatedAt || 0}`
+      : null
+  )
+
   const handleAddBlacklist = async () => {
     if (!newBlacklistKeyword.trim()) {
       // 输入为空：不弹框，直接返回
@@ -609,6 +712,114 @@ export default function BossPage() {
                 <p className="text-sm text-muted-foreground">请在浏览器标签页中登录 Boss 直聘平台，登录成功后系统会自动检测登录状态。</p>
                 <p className="text-sm text-muted-foreground">登录成功后，点击“开始投递”按钮启动自动投递任务。</p>
                 <p className="text-sm text-muted-foreground">点击“保存配置”按钮可手动保存当前登录相关信息到数据库。</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 投递行为 */}
+          <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BiImage className="text-primary" />
+                投递行为
+              </CardTitle>
+              <CardDescription>设置发送打招呼语后的自动操作</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid gap-4 rounded-lg border bg-muted/20 p-4 md:grid-cols-[minmax(0,1fr)_220px]">
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-base font-medium">图片简历</Label>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        支持 PNG、JPG、JPEG、GIF，单张不超过 10MB。重新上传会替换当前图片。
+                      </p>
+                    </div>
+                    <input
+                      ref={resumeImageInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif,.png,.jpg,.jpeg,.gif"
+                      onChange={handleResumeImageChange}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={resumeImageUploading}
+                      onClick={() => resumeImageInputRef.current?.click()}
+                    >
+                      <BiUpload className="mr-2" />
+                      {resumeImageUploading ? '正在上传…' : resumeImage.exists ? '重新上传' : '选择并上传图片'}
+                    </Button>
+                    {resumeImage.exists && (
+                      <p className="text-xs text-muted-foreground">
+                        当前文件：{resumeImage.fileName || 'resume'}{resumeImage.size != null ? `（${formatFileSize(resumeImage.size)}）` : ''}
+                      </p>
+                    )}
+                    {resumeImageMessage && (
+                      <p className={`text-sm ${resumeImageMessage.success ? 'text-green-600' : 'text-red-600'}`}>
+                        {resumeImageMessage.text}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex min-h-36 items-center justify-center overflow-hidden rounded-md border bg-background">
+                    {resumePreviewUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowResumePreview(true)}
+                        className="group relative flex h-full w-full cursor-zoom-in items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                        aria-label="放大查看图片简历"
+                        title="点击查看大图"
+                      >
+                        <Image
+                          src={resumePreviewUrl}
+                          alt="图片简历预览"
+                          width={220}
+                          height={224}
+                          unoptimized
+                          className="max-h-56 w-full object-contain"
+                        />
+                        <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-black/60 py-1.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                          <BiZoomIn className="text-base" /> 点击查看大图
+                        </span>
+                      </button>
+                    ) : (
+                      <div className="px-4 text-center text-sm text-muted-foreground">尚未上传图片简历</div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="sendImgResume" className="text-base font-medium">
+                      自动发送图片简历
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      开启后，系统会在打招呼语发送成功后发送上方图片；上传图片不会自动开启。
+                    </p>
+                    {!resumeImage.exists && (
+                      <p className="text-xs text-amber-600">请先上传图片简历，再开启此选项。</p>
+                    )}
+                  </div>
+                  <button
+                    id="sendImgResume"
+                    type="button"
+                    role="switch"
+                    disabled={!resumeImage.exists}
+                    aria-checked={config.sendImgResume === 1}
+                    aria-label="自动发送图片简历"
+                    onClick={() => setConfig({ ...config, sendImgResume: config.sendImgResume === 1 ? 0 : 1 })}
+                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                      config.sendImgResume === 1 ? 'bg-primary' : 'bg-muted-foreground/40'
+                    } ${resumeImage.exists ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                        config.sendImgResume === 1 ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -920,6 +1131,42 @@ export default function BossPage() {
           <AnalysisContent />
         </TabsContent>
       </Tabs>
+
+      {/* 图片简历大图预览 */}
+      {showResumePreview && resumePreviewUrl && createPortal(
+        <div
+          className="fixed inset-0 z-[100] overflow-auto bg-black/85 p-4 backdrop-blur-sm sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label="图片简历大图预览"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setShowResumePreview(false)
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setShowResumePreview(false)}
+            className="fixed right-4 top-4 z-[101] inline-flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white text-3xl text-gray-900 shadow-[0_4px_20px_rgba(0,0,0,0.65)] transition duration-200 hover:border-red-500 hover:bg-red-500 hover:text-white hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70 sm:right-6 sm:top-6"
+            aria-label="关闭大图预览"
+            title="关闭（Esc）"
+          >
+            <BiX />
+          </button>
+          <div className="flex min-h-full items-start justify-center py-10">
+            <Image
+              src={resumePreviewUrl}
+              alt="图片简历大图"
+              width={1400}
+              height={2000}
+              unoptimized
+              priority
+              className="h-auto w-[94vw] max-w-[1200px] rounded-md bg-white shadow-2xl"
+              onMouseDown={(event) => event.stopPropagation()}
+            />
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* 统计卡片已移除 */}
       {/* 退出确认弹框 */}

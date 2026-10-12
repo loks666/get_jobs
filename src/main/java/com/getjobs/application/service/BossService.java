@@ -42,6 +42,8 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class BossService {
 
+    private static final String NATIONWIDE_CITY_CODE = "100010000";
+
     private final BossOptionMapper bossOptionMapper;
     private final BossIndustryMapper bossIndustryMapper;
     private final BossConfigMapper bossConfigMapper;
@@ -71,6 +73,25 @@ public class BossService {
             unlimited.setCreatedAt(java.time.LocalDateTime.now());
             unlimited.setUpdatedAt(java.time.LocalDateTime.now());
             bossOptionMapper.insert(unlimited);
+        }
+
+        // Boss 的“全国”是一个实际城市筛选项，不能复用“不限(0)”。
+        // code=0 会被构建 URL 时忽略，随后 Boss 会按当前定位城市（常见为北京）搜索。
+        if ("city".equals(type)) {
+            QueryWrapper<BossOptionEntity> nationwideWrapper = new QueryWrapper<>();
+            nationwideWrapper.eq("type", "city");
+            nationwideWrapper.eq("code", NATIONWIDE_CITY_CODE);
+            Long nationwideCount = bossOptionMapper.selectCount(nationwideWrapper);
+            if (nationwideCount == null || nationwideCount == 0) {
+                BossOptionEntity nationwide = new BossOptionEntity();
+                nationwide.setType("city");
+                nationwide.setName("全国");
+                nationwide.setCode(NATIONWIDE_CITY_CODE);
+                nationwide.setSortOrder(1);
+                nationwide.setCreatedAt(LocalDateTime.now());
+                nationwide.setUpdatedAt(LocalDateTime.now());
+                bossOptionMapper.insert(nationwide);
+            }
         }
 
         // 排序：city/industry 按 sort_order 优先，其次 id；其他类型维持原有 id 升序
