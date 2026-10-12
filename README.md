@@ -33,10 +33,11 @@
 </div>
 
 - 🔔 *重要更新*
-    - boss已可投递使用，其他平台暂未测试，仍然建议手动在boss端投递，使用本项目在PC兜底使用。
+    - boss，猎聘已更新，目前两平台都可正常使用
+    - boss仍然建议手动在boss端投递，使用本项目在PC兜底使用。
     - 本项目采用 PolyForm Noncommercial 1.0.0 协议，允许免费的非商业使用，禁止任何形式的商业使用；商业授权请联系作者
-    - [【重要】跳转到文末更新日志](#-更新日志)
     - 前端项目的编译版本会发布在release页面，如不想启动前端，可将dist文件夹放到resources文件夹下直接启动后端使用
+    - [【重要】跳转到文末更新日志](#-更新日志)
 
 ### 🌴源码地址
 
@@ -217,8 +218,8 @@ cd get_jobs
 
 ## 🚀 PR 提交流程（非常重要！）
 
-1. Fork 本项目
-2. 从 `main` 分支新建你的个人开发分支
+1. Fork 本项目，提issue或联系群主，讨论你的想法是否有开发的必要
+2. 确认通过后，从 `dev` 分支新建你的个人开发分支
 3. 开发完成后，提交 Pull Request 到 **loks666/get_jobs 的 `dev` 分支**  
    （❗ **注意：不是 main，是 dev！**）
 4. 提交 Commit 时，第一行必须符合格式：`<emoji> <小写英文>.`，即以一个 **Emoji 表情**
@@ -263,26 +264,26 @@ cd get_jobs
 
 #### 🧠 AI 与算法
 
-| 方向 | 项目 | 简介 | 推荐 |
-|:-----|:-----|:-----|:----:|
-|🕹️强化学习·神经网络|[**RL-MiniGames**](https://github.com/loks666/RL-MiniGames)| 神经网络 + 强化学习小游戏，训练 NeuralBot 自主决策 | ⭐⭐⭐⭐⭐ |
-|👻搜索·启发式规划|[**pacman-engine**](https://github.com/loks666/pacman-engine)| 吃豆人 AI 智能体，用搜索与启发式规划让它自动玩游戏 | ⭐⭐⭐⭐⭐ |
-|🚦深度学习|[**yolov5-5.0**](https://github.com/loks666/yolov5-5.0)| 基于 YOLOv5 识别交通标志 | ⭐⭐⭐⭐⭐ |
-|📈机器学习·金融|[**FinancialMachineLearning**](https://github.com/loks666/FinancialMachineLearning)| CAPM + 均值方差优化，用二次规划构建最优投资组合 | ⭐⭐⭐⭐ |
-|🏥大模型·医疗|[**medicine_llm**](https://github.com/loks666/medicine_llm)| 医疗大模型对话测试平台（FastAPI + Vue3），多模型切换、SSE 流式对话、会话管理与消息评价 | ⭐⭐⭐⭐ |
-|🖼️深度学习|[**gan_fixed_img**](https://github.com/loks666/gan_fixed_img)| GAN 对抗网络修复破损图片（效果未到终极目标，仅供学习） | ⭐⭐⭐ |
-|🩺机器学习·医疗|[**disease-prediction**](https://github.com/loks666/disease-prediction) | 疾病预测分析系统：数据处理、模型训练评估、结果展示 | ⭐⭐⭐ |
+| 方向                | 项目                                                                                | 简介                                                                                   |    推荐    |
+|:--------------------|:------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------|:----------:|
+| 🕹️强化学习·神经网络 | [**RL-MiniGames**](https://github.com/loks666/RL-MiniGames)                         | 神经网络 + 强化学习小游戏，训练 NeuralBot 自主决策                                     | ⭐⭐⭐⭐⭐ |
+| 👻搜索·启发式规划   | [**pacman-engine**](https://github.com/loks666/pacman-engine)                       | 吃豆人 AI 智能体，用搜索与启发式规划让它自动玩游戏                                     | ⭐⭐⭐⭐⭐ |
+| 🚦深度学习          | [**yolov5-5.0**](https://github.com/loks666/yolov5-5.0)                             | 基于 YOLOv5 识别交通标志                                                               | ⭐⭐⭐⭐⭐ |
+| 📈机器学习·金融     | [**FinancialMachineLearning**](https://github.com/loks666/FinancialMachineLearning) | CAPM + 均值方差优化，用二次规划构建最优投资组合                                        |  ⭐⭐⭐⭐  |
+| 🏥大模型·医疗       | [**medicine_llm**](https://github.com/loks666/medicine_llm)                         | 医疗大模型对话测试平台（FastAPI + Vue3），多模型切换、SSE 流式对话、会话管理与消息评价 |  ⭐⭐⭐⭐  |
+| 🖼️深度学习          | [**gan_fixed_img**](https://github.com/loks666/gan_fixed_img)                       | GAN 对抗网络修复破损图片（效果未到终极目标，仅供学习）                                 |   ⭐⭐⭐   |
+| 🩺机器学习·医疗     | [**disease-prediction**](https://github.com/loks666/disease-prediction)             | 疾病预测分析系统：数据处理、模型训练评估、结果展示                                     |   ⭐⭐⭐   |
 
 
 #### 🛠️ 应用与工具
 
-| 项目 | 简介 | 推荐 |
-|:-----|:-----|:----:|
-| 🗄️ [**WeChatVault**](https://github.com/loks666/WeChatVault) | PC 端微信数据库工具，聊天记录一键导出（Rust） | ⭐⭐⭐⭐⭐ |
-| 💬 [**FlyAI**](https://github.com/loks666/FlyAI) | 微信群聊统计助手，AI 统计群聊数据并推送（Go） | ⭐⭐⭐⭐⭐ |
-| 📥 [**idm_crack**](https://github.com/loks666/idm_crack) | IDM 破解文件备份仓库 | ⭐⭐⭐⭐⭐ |
-| 👤 [**loks666**](https://github.com/loks666/loks666) | GitHub 个人主页，自动统计数据并更新描述文件 | ⭐⭐⭐⭐⭐ |
-| 🤖 [**anyrouter-autolog**](https://github.com/loks666/anyrouter-autolog) | AnyRouter 多账号自动签到（Fork） | ⭐⭐⭐⭐ |
+| 项目                                                                     | 简介                                          |    推荐    |
+|:-------------------------------------------------------------------------|:----------------------------------------------|:----------:|
+| 🗄️ [**WeChatVault**](https://github.com/loks666/WeChatVault)             | PC 端微信数据库工具，聊天记录一键导出（Rust） | ⭐⭐⭐⭐⭐ |
+| 💬 [**FlyAI**](https://github.com/loks666/FlyAI)                         | 微信群聊统计助手，AI 统计群聊数据并推送（Go） | ⭐⭐⭐⭐⭐ |
+| 📥 [**idm_crack**](https://github.com/loks666/idm_crack)                 | IDM 破解文件备份仓库                          | ⭐⭐⭐⭐⭐ |
+| 👤 [**loks666**](https://github.com/loks666/loks666)                     | GitHub 个人主页，自动统计数据并更新描述文件   | ⭐⭐⭐⭐⭐ |
+| 🤖 [**anyrouter-autolog**](https://github.com/loks666/anyrouter-autolog) | AnyRouter 多账号自动签到（Fork）              |  ⭐⭐⭐⭐  |
 
 ---
 
