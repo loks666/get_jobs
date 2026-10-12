@@ -32,7 +32,7 @@
 
 </div>
 
-- 🔔 *重要更新*  
+- 🔔 *重要更新*
     - boss已可投递使用，其他平台暂未测试，仍然建议手动在boss端投递，使用本项目在PC兜底使用。
     - 本项目采用 PolyForm Noncommercial 1.0.0 协议，允许免费的非商业使用，禁止任何形式的商业使用；商业授权请联系作者
     - [【重要】跳转到文末更新日志](#-更新日志)
@@ -224,9 +224,9 @@ cd get_jobs
 4. 提交 Commit 时，第一行必须符合格式：`<emoji> <小写英文>.`，即以一个 **Emoji 表情**
    开头（[emoji网站](https://www.emojiall.com/zh-hans/all-emojis)），空格后接**全小写英文**，并以 **`.`** 结尾。
    例如：`🐛 fix cookie table creation on startup.`
-   - PR 标题也需符合同样格式（合并时会作为提交信息）。
-   - CI 会自动检查，不符合会无法合并。
-   - 本地可运行 `sh .githooks/setup.sh` 启用提交前检查和提交模板。
+    - PR 标题也需符合同样格式（合并时会作为提交信息）。
+    - CI 会自动检查，不符合会无法合并。
+    - 本地可运行 `sh .githooks/setup.sh` 启用提交前检查和提交模板。
 5. 等待管理员审核，验证无误后，代码将合并到 `main` 分支
 
 > 📑 本项目已启用[贡献者许可协议（CLA）](CLA.md)，提交 PR 时需在模板中勾选同意。
@@ -256,21 +256,23 @@ cd get_jobs
 
 ---
 
-### 🧰 作者的其他开源项目
+### 🧰 其他开源项目
 
-> 除了求职工具，还做过 **机器学习 · 深度学习 · 强化学习 · 神经网络** 方向的项目，以及一些实用工具，希望可以帮到你，欢迎 Star 👇
+> 除了求职工具，以下为 **机器学习 · 深度学习 · 强化学习 · 神经网络** 方向的项目，以及一些实用工具，希望可以帮到你，欢迎 Star 👇
+> 可能你觉得是推广，我不否认这样的说法，但我也真心希望你能在我这学到点东西
 
 #### 🧠 AI 与算法
 
 | 方向 | 项目 | 简介 | 推荐 |
 |:-----|:-----|:-----|:----:|
-| 🕹️ 强化学习 · 神经网络 | [**RL-MiniGames**](https://github.com/loks666/RL-MiniGames) | 神经网络 + 强化学习小游戏，训练 NeuralBot 自主决策 | ⭐⭐⭐⭐⭐ |
-| 👻 搜索 · 启发式规划 | [**pacman-engine**](https://github.com/loks666/pacman-engine) | 吃豆人 AI 智能体，用搜索与启发式规划让它自动玩游戏 | ⭐⭐⭐⭐⭐ |
-| 🚦 深度学习 | [**yolov5-5.0**](https://github.com/loks666/yolov5-5.0) | 基于 YOLOv5 识别交通标志 | ⭐⭐⭐⭐⭐ |
-| 📈 机器学习 · 金融 | [**FinancialMachineLearning**](https://github.com/loks666/FinancialMachineLearning) | CAPM + 均值方差优化，用二次规划构建最优投资组合 | ⭐⭐⭐⭐ |
-| 🏥 大模型 · 医疗 | [**medicine_llm**](https://github.com/loks666/medicine_llm) | 医疗大模型对话测试平台（FastAPI + Vue3），多模型切换、SSE 流式对话、会话管理与消息评价 | ⭐⭐⭐⭐ |
-| 🖼️ 深度学习 | [**gan_fixed_img**](https://github.com/loks666/gan_fixed_img) | GAN 对抗网络修复破损图片（效果未到终极目标，仅供学习） | ⭐⭐⭐ |
-| 🩺 机器学习 · 医疗 | [**disease-prediction**](https://github.com/loks666/disease-prediction) | 疾病预测分析系统：数据处理、模型训练评估、结果展示 | ⭐⭐⭐ |
+|🕹️强化学习·神经网络|[**RL-MiniGames**](https://github.com/loks666/RL-MiniGames)| 神经网络 + 强化学习小游戏，训练 NeuralBot 自主决策 | ⭐⭐⭐⭐⭐ |
+|👻搜索·启发式规划|[**pacman-engine**](https://github.com/loks666/pacman-engine)| 吃豆人 AI 智能体，用搜索与启发式规划让它自动玩游戏 | ⭐⭐⭐⭐⭐ |
+|🚦深度学习|[**yolov5-5.0**](https://github.com/loks666/yolov5-5.0)| 基于 YOLOv5 识别交通标志 | ⭐⭐⭐⭐⭐ |
+|📈机器学习·金融|[**FinancialMachineLearning**](https://github.com/loks666/FinancialMachineLearning)| CAPM + 均值方差优化，用二次规划构建最优投资组合 | ⭐⭐⭐⭐ |
+|🏥大模型·医疗|[**medicine_llm**](https://github.com/loks666/medicine_llm)| 医疗大模型对话测试平台（FastAPI + Vue3），多模型切换、SSE 流式对话、会话管理与消息评价 | ⭐⭐⭐⭐ |
+|🖼️深度学习|[**gan_fixed_img**](https://github.com/loks666/gan_fixed_img)| GAN 对抗网络修复破损图片（效果未到终极目标，仅供学习） | ⭐⭐⭐ |
+|🩺机器学习·医疗|[**disease-prediction**](https://github.com/loks666/disease-prediction) | 疾病预测分析系统：数据处理、模型训练评估、结果展示 | ⭐⭐⭐ |
+
 
 #### 🛠️ 应用与工具
 
