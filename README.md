@@ -41,8 +41,8 @@
 
 ### 🌴源码地址
 
-- Github(国外访问)：https://github.com/loks666/get_jobs
-- Gitee·码云(中国大陆)：https://gitee.com/lok666/get_jobs
+- Github (国外访问)：https://github.com/loks666/get_jobs
+- Gitee·码云 (中国大陆)：https://gitee.com/lok666/get_jobs
 
 ### 📢 广告位招租
 
@@ -54,7 +54,7 @@
 - **🖥️ 图形化界面**：直观的网页管理界面，方便配置与运行，降低上手成本。
 - **💥 AI 智能匹配**：AI检测岗位匹配度，并根据JD自动撰写个性化的打招呼语（仅限 Boss 直聘）。
 - **📷️ 图片简历**：Boos直聘可在发送打招呼语后自动发送图片简历，无须等待HR索要简历，有效提高回复率。
-- **🔎 智能过滤**：自动过滤 **不活跃 HR**、**猎头岗位**、**目标薪资**，让你的简历投递更精准。
+- **🔎 智能过滤**：自动过滤 **不活跃 HR**、 **猎头岗位**、 **目标薪资**，让你的简历投递更精准。
 - **📢 实时通知**：通过企业微信消息推送，实时掌握简历投递情况，不错过任何机会。
 - **🚫 黑名单功能**：自动更新黑名单企业，避免重复投递不合适的公司，提高投递效率。
 - **🛠️ 易于配置**：集中化配置，只需修改配置文件即可自定义筛选条件，轻松上手。
@@ -65,11 +65,11 @@
 - ❌必须要关闭墙外代理，由于主要针对的国内平台，墙外代理会导致页面加载缓慢
 - 💪🏻如你有“折腾精神”希望自己配置，QQ群内提供免费答疑，如你不想麻烦，可进入群聊查看群公告
 - 📰由于不同系统的页面不一样，导致可能不兼容，文末会给出文档，尽可能让大家能自定义修改
-- 🚩如您不方便访问github，可使用码云镜像(中国大陆)版本：[gitee/getjobs](https://gitee.com/lok666/get_jobs)
+- 🚩如您不方便访问github，可使用码云镜像 (中国大陆)版本：[gitee/getjobs](https://gitee.com/lok666/get_jobs)
 
 > 已经有人在交流群里 **发广告** 等与本项目无关的信息
 > 如果带着不同目的或者没想清楚就进群的
-> 一经发现群主会对您的家人及朋友进行亲切(**没有素质**)的问候
+> 一经发现群主会对您的家人及朋友进行亲切 (**没有素质**)的问候
 > 并将您请出群聊，请珍惜交流的机会，谢谢！
 
 ## 🚀 如何使用？
@@ -89,7 +89,8 @@ cd get_jobs
 
 ### 3️⃣ 下载数据库文件（新用户必做）
 
-本项目不会自动建表，**没有数据库文件无法启动**。为避免把开发者本机的配置和登录态一起发布，仓库中不包含数据库文件，请从 release 页面下载空数据库：
+本项目不会自动建表， **没有数据库文件无法启动**。为避免把开发者本机的配置和登录态一起发布，仓库中不包含数据库文件，请从
+release 页面下载空数据库：
 
 1. 到 [最新 release](https://github.com/loks666/get_jobs/releases/latest) 下载 `getjobs.db.template`
 2. **把它重命名为 `getjobs.db`**
@@ -99,7 +100,7 @@ cd get_jobs
 
 > ⚠️ 老用户升级时不要覆盖自己已有的 `db/getjobs.db`，否则配置和登录态会全部丢失。
 
-### 4️⃣ 网页端修改配置，并保存(一般默认即可,需要修改自己的地区和岗位)
+### 4️⃣ 网页端修改配置，并保存 (一般默认即可,需要修改自己的地区和岗位)
 
 - 🤖 AI配置
 
@@ -115,13 +116,13 @@ cd get_jobs
     - `API_KEY`：调用的API KEY
     - `MODEL`：需要使用的模型名称
 
-  > 根据测试，boss直聘在每天所有的岗位投递结束后消耗的额度(gpt-5-nano)大约在0.06美元(6美分)左右，日常使用成本很低  
+  > 根据测试，boss直聘在每天所有的岗位投递结束后消耗的额度 (gpt-5-nano)大约在0.06美元 (6美分)左右，日常使用成本很低  
   > 💥`BASE_URL` 填任意兼容 OpenAI 接口格式的地址即可（官方接口或你自己的中转服务都可以），本项目不绑定、不推荐任何第三方代理商
 
     - AI生成的打招呼语示例  
       <img src="src/main/resources/images/AiSayHi.png" alt="AI生成的打招呼语示例">
 
-- boss直聘([Boss.java](src/main/java/boss/Boss.java))【喜大普奔，目前Boss打招呼上限已修改为每日150次】
+- boss直聘 ([Boss.java](src/main/java/boss/Boss.java))【喜大普奔，目前Boss打招呼上限已修改为每日150次】
 
   > 注意：设置配置文件的sayHi为你的打招呼语，否则会投递失败
   > 投递结束后会自动更新黑名单企业，发送过不合适等消息的HR的公司会加入黑名单，不会在投递该公司
@@ -132,22 +133,24 @@ cd get_jobs
   > 在resources文件夹下，将自己的pdf简历转换为resume.jpg，同时配置项sendImgResume为ture，即可自动发送图片简历
   > pdf转图片需要wps会员，如果找不到相关工具，可联系群主帮忙转换，5r/次
 
-- 猎聘([Liepin.java](src/main/java/liepin/Liepin.java))【默认打招呼无上限，主动发消息有上限，成功率不高，好在量大，较为推荐】
+- 猎聘 ([Liepin.java](src/main/java/liepin/Liepin.java))【默认打招呼无上限，主动发消息有上限，成功率不高，好在量大，较为推荐】
 
-  > 注意：需要在猎聘App最新版设置打招呼语(默或者自定义皆可)，即可自动发送消息，不会被限制
+  > 注意：需要在猎聘App最新版设置打招呼语 (默或者自定义皆可)，即可自动发送消息，不会被限制
   > 只可微信扫码，请绑定微信账号
   > 需要使用最新版猎聘手机app设置打招呼文本，只要不主动发消息，可以无限制对猎头打招呼，程序默认为该配置。
 
-- 51job([Job.java](src/main/java/job51/Job51.java))【投递有上限，且限制搜索到的岗位数量，没什么活人】
+- 51job ([Job.java](src/main/java/job51/Job51.java))【投递有上限，且限制搜索到的岗位数量，没什么活人】
 
   > 51job现在已经烂掉了，不建议使用
   > 现在投递一段时间后会出现投递上限
   > 目前的解决方式是投一页暂停10秒，先这么着吧
 
-- 智联招聘([ZhiLian.java](src/main/java/zhilian/ZhiLian.java))【投递上限100左右，烂掉了，不要用】
+- 智联招聘 ([ZhiLian.java](src/main/java/zhilian/ZhiLian.java))【投递上限100左右，烂掉了，不要用】
 
-  > 智联招聘需要指定默认投递简历(在线简历 or 附件简历)，否则会投递失败
+  > 智联招聘需要指定默认投递简历 (在线简历 or 附件简历)，否则会投递失败
   > 只可微信扫码，请绑定微信账号
+
+- 本项目目前维护的平台为boss，猎聘，由于51、智联、拉钩使用人太少，已停止维护，如有人修复了这三项平台问题，可经沟通后提交pr.
 
 ### 5️⃣ 运行代码
 
@@ -170,10 +173,10 @@ cd get_jobs
 ![智联岗位分析.png](doc/imgs/%E6%99%BA%E8%81%94%E5%B2%97%E4%BD%8D%E5%88%86%E6%9E%90.png)
 ---
 
-## 👨🏻‍🔧 QQ群
-[![get_jobs交流①群](https://img.shields.io/badge/🐧get__jobs交流①群-1890人-0FB5EB?labelColor=235389&logoColor=white&style=flat)][qq-link]  
-[![get_jobs交流②群](https://img.shields.io/badge/🐧get__jobs交流②群-322人-0FB5EB?labelColor=235389&logoColor=white&style=flat)][qq-link-2]
-
+### 💬 加入 get_jobs 交流群
+欢迎交流求职经验、技术问题与项目使用心得。  
+- [![get_jobs交流①群](https://img.shields.io/badge/🐧get__jobs交流①群(2000人群·开放申请)-0FB5EB?labelColor=235389&logoColor=white&style=flat)][qq-link]  
+- [![get_jobs交流②群](https://img.shields.io/badge/🐧get__jobs交流②群(500人群·开放申请)-0FB5EB?labelColor=235389&logoColor=white&style=flat)][qq-link-2]
 
 ## ☕ 赞赏支持
 
@@ -223,7 +226,7 @@ cd get_jobs
 3. 开发完成后，提交 Pull Request 到 **loks666/get_jobs 的 `dev` 分支**  
    （❗ **注意：不是 main，是 dev！**）
 4. 提交 Commit 时，第一行必须符合格式：`<emoji> <小写英文>.`，即以一个 **Emoji 表情**
-   开头（[emoji网站](https://www.emojiall.com/zh-hans/all-emojis)），空格后接**全小写英文**，并以 **`.`** 结尾。
+   开头（[emoji网站](https://www.emojiall.com/zh-hans/all-emojis)），空格后接 **全小写英文**，并以 **`.`** 结尾。
    例如：`🐛 fix cookie table creation on startup.`
     - PR 标题也需符合同样格式（合并时会作为提交信息）。
     - CI 会自动检查，不符合会无法合并。
@@ -259,8 +262,9 @@ cd get_jobs
 
 ### 🧰 其他开源项目
 
-> 除了求职工具，以下为 **机器学习 · 深度学习 · 强化学习 · 神经网络** 方向的项目，以及一些实用工具，希望可以帮到你，欢迎 Star 👇
-> 可能你觉得是推广，我不否认这样的说法，但我也真心希望你能在我这学到点东西
+> 除了求职工具，以下为 **机器学习 · 深度学习 · 强化学习 · 神经网络** 方向的项目，以及一些实用工具，希望可以帮到你，欢迎 Star
+> 👇
+> 可能你觉得是推广，不否认这样的说法，但也真心希望你能在我这学到点东西
 
 #### 🧠 AI 与算法
 
@@ -273,7 +277,6 @@ cd get_jobs
 | 🏥大模型·医疗       | [**medicine_llm**](https://github.com/loks666/medicine_llm)                         | 医疗大模型对话测试平台（FastAPI + Vue3），多模型切换、SSE 流式对话、会话管理与消息评价 |  ⭐⭐⭐⭐  |
 | 🖼️深度学习          | [**gan_fixed_img**](https://github.com/loks666/gan_fixed_img)                       | GAN 对抗网络修复破损图片（效果未到终极目标，仅供学习）                                 |   ⭐⭐⭐   |
 | 🩺机器学习·医疗     | [**disease-prediction**](https://github.com/loks666/disease-prediction)             | 疾病预测分析系统：数据处理、模型训练评估、结果展示                                     |   ⭐⭐⭐   |
-
 
 #### 🛠️ 应用与工具
 
