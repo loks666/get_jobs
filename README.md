@@ -176,7 +176,8 @@ release 页面下载空数据库：
 ### 💬 加入 get_jobs 交流群
 欢迎交流求职经验、技术问题与项目使用心得。  
 - [![get_jobs交流①群](https://img.shields.io/badge/🐧get__jobs交流①群-(2000人群·开放申请)-0FB5EB?labelColor=235389&logoColor=white&style=flat)][qq-link]  
-- [![get_jobs交流②群](https://img.shields.io/badge/🐧get__jobs交流②群-(500人群·开放申请)-0FB5EB?labelColor=235389&logoColor=white&style=flat)][qq-link-2]
+
+[//]: # (- [![get_jobs交流②群]&#40;https://img.shields.io/badge/🐧get__jobs交流②群-&#40;500人群·开放申请&#41;-0FB5EB?labelColor=235389&logoColor=white&style=flat&#41;][qq-link-2])
 
 ## ☕ 赞赏支持
 
