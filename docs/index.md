@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "Get Jobs"
   text: "让 AI 替你海投简历"
-  tagline: "把时间留给面试准备 · 全平台自动化投递 · AI 智能定制打招呼语 · 精准企业黑名单过滤"
+  tagline: "把时间留给面试准备 · 全平台自动化投递<br>AI 智能定制打招呼语 · 精准企业黑名单过滤"
   actions:
     - theme: brand
       text: 🚀 5分钟快速上手
