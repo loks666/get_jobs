@@ -5,8 +5,8 @@ export default defineConfig({
   title: 'Getjobs - AI 找工作助手',
   description: '全平台自动投简历脚本，支持 Boss直聘、猎聘、智联、前程无忧、拉勾，内置 AI 岗位匹配与打招呼语生成。',
   
-  // 自适应 base 路径：已绑定自定义域名 getjobs.js.org，根路径为 /；若后续未绑域名仅使用 GitHub Pages 二级目录，可通过环境变量切换
-  base: process.env.BASE_PATH || '/',
+  // 适配 GitHub Pages 默认二级路径 /get_jobs/
+  base: '/get_jobs/',
 
   head: [
     ['link', { rel: 'icon', href: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍀</text></svg>' }],
