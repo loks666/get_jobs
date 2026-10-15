@@ -31,6 +31,7 @@ interface BossConfig {
   sayHi?: string
   enableAi?: number
   sendImgResume?: number
+  allowRepeatChat?: number
   filterDeadHr?: number
   deadStatus?: string
 }
@@ -83,6 +84,7 @@ export default function BossPage() {
     scale: '',
     stage: '',
     sendImgResume: 0,
+    allowRepeatChat: 0,
     filterDeadHr: 0,
   })
   // 关键词显示用（无括号无引号，逗号分隔）
@@ -229,6 +231,7 @@ export default function BossPage() {
         }
         setConfig({
           ...data.config,
+          allowRepeatChat: data.config.allowRepeatChat ?? 0,
           cityCode: normalizeCityCode(data.config.cityCode),
           jobType: normalizeJobType(data.config.jobType),
           // 没有图片时不能保留开启状态，否则开关会处于“开启但不可用”。
@@ -723,10 +726,29 @@ export default function BossPage() {
                 <BiImage className="text-primary" />
                 投递行为
               </CardTitle>
-              <CardDescription>设置发送打招呼语后的自动操作</CardDescription>
+              <CardDescription>设置重复沟通与图片简历发送行为，保存后在下次启动投递时生效</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                <div className="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="allowRepeatChat" className="text-base font-medium">向已沟通 Boss 再次发送消息</Label>
+                    <p className="text-sm text-muted-foreground">
+                      开启后，遇到“继续沟通”会再次发送 AI 或默认打招呼语；关闭时跳过该岗位，继续下一个。默认关闭。
+                    </p>
+                  </div>
+                  <button
+                    id="allowRepeatChat"
+                    type="button"
+                    role="switch"
+                    aria-checked={config.allowRepeatChat === 1}
+                    aria-label="向已沟通 Boss 再次发送消息"
+                    onClick={() => setConfig(prev => ({ ...prev, allowRepeatChat: prev.allowRepeatChat === 1 ? 0 : 1 }))}
+                    className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${config.allowRepeatChat === 1 ? 'bg-primary' : 'bg-muted-foreground/40'}`}
+                  >
+                    <span aria-hidden="true" className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${config.allowRepeatChat === 1 ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
                 <div className="grid gap-4 rounded-lg border bg-muted/20 p-4 md:grid-cols-[minmax(0,1fr)_220px]">
                   <div className="space-y-3">
                     <div>

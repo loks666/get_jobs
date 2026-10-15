@@ -56,10 +56,11 @@ dependencies {
     compileOnly(lombok)
     annotationProcessor(lombok)
 
-    // 本工程没有 src/test，测试相关依赖（spring-boot-starter-test、junit-platform-launcher、
-    // lombok 的 test 配置）和 tasks.test 的 useJUnitPlatform() 已一并移除。
-    // 以后要加 Java 测试，把它们连同 src/test 一起加回来。
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+tasks.test { useJUnitPlatform() }
 
 // 显示已过时 API 的详细告警，便于定位并修复
 tasks.withType<JavaCompile> {

@@ -51,6 +51,27 @@ public class BossService {
     private final BossJobDataMapper bossJobDataMapper;
     private final javax.sql.DataSource dataSource;
 
+    /** 为旧数据库补充开关，不覆盖已有配置；新空库也会在首次启动时补齐。 */
+    @jakarta.annotation.PostConstruct
+    public void ensureRepeatChatColumn() {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
+            boolean tableExists = false;
+            try (ResultSet columns = statement.executeQuery("PRAGMA table_info('boss_config')")) {
+                while (columns.next()) {
+                    tableExists = true;
+                    if ("allow_repeat_chat".equals(columns.getString("name"))) return;
+                }
+            }
+            if (tableExists) {
+                statement.executeUpdate("ALTER TABLE boss_config ADD COLUMN allow_repeat_chat INTEGER NOT NULL DEFAULT 0");
+                log.info("已添加Boss重复沟通开关，默认关闭");
+            }
+        } catch (java.sql.SQLException e) {
+            throw new IllegalStateException("无法初始化Boss重复沟通配置", e);
+        }
+    }
+
     // ==================== Option相关方法 ====================
 
     /**
@@ -243,6 +264,7 @@ public class BossService {
         if (partial.getEnableAi() != null) existing.setEnableAi(partial.getEnableAi());
         if (partial.getFilterDeadHr() != null) existing.setFilterDeadHr(partial.getFilterDeadHr());
         if (partial.getSendImgResume() != null) existing.setSendImgResume(partial.getSendImgResume());
+        if (partial.getAllowRepeatChat() != null) existing.setAllowRepeatChat(partial.getAllowRepeatChat());
         if (partial.getWaitTime() != null) existing.setWaitTime(partial.getWaitTime());
 
         if (partial.getKeywords() != null) existing.setKeywords(partial.getKeywords());
@@ -294,6 +316,7 @@ public class BossService {
         config.setEnableAI(entity.getEnableAi() != null && entity.getEnableAi() == 1);
         config.setFilterDeadHR(entity.getFilterDeadHr() != null && entity.getFilterDeadHr() == 1);
         config.setSendImgResume(entity.getSendImgResume() != null && entity.getSendImgResume() == 1);
+        config.setAllowRepeatChat(Integer.valueOf(1).equals(entity.getAllowRepeatChat()));
         config.setWaitTime(entity.getWaitTime() != null ? String.valueOf(entity.getWaitTime()) : null);
 
         // 关键词（允许逗号或括号列表），直接解析为列表

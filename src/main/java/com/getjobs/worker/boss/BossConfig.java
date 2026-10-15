@@ -88,6 +88,8 @@ public class BossConfig {
      * 是否发送图片简历
      */
     private Boolean sendImgResume;
+    /** 允许对“继续沟通”的Boss再次发送消息，默认关闭。 */
+    private Boolean allowRepeatChat = false;
 
     /**
      * 目标薪资

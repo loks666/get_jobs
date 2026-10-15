@@ -1031,7 +1031,7 @@ public class Boss {
         detailPage.navigate(detailUrl);
         PlaywrightUtil.sleep(1);
 
-        // 3. 查找"立即沟通"按钮
+        // 3. 根据开关选择是否允许对已沟通过的Boss再次发送消息
         Locator chatBtn = detailPage.locator("a.btn-startchat, a.op-btn-chat");
         boolean foundChatBtn = false;
         for (int i = 0; i < 5; i++) {
@@ -1040,14 +1040,24 @@ public class Boss {
                 try { detailPage.close(); } catch (Exception ignore) {}
                 return false;
             }
-            if (chatBtn.count() > 0 && (chatBtn.first().textContent().contains("立即沟通"))) {
-                foundChatBtn = true;
-                break;
+            if (chatBtn.count() > 0) {
+                String buttonText = chatBtn.first().textContent();
+                if (buttonText != null && buttonText.contains("继续沟通")
+                        && !Boolean.TRUE.equals(config.getAllowRepeatChat())) {
+                    log.info("已关闭重复沟通，跳过已沟通Boss | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
+                    try { detailPage.close(); } catch (Exception ignore) {}
+                    return false;
+                }
+                if (buttonText != null && (buttonText.contains("立即沟通")
+                        || (buttonText.contains("继续沟通") && Boolean.TRUE.equals(config.getAllowRepeatChat())))) {
+                    foundChatBtn = true;
+                    break;
+                }
             }
             PlaywrightUtil.sleep(1);
         }
         if (!foundChatBtn) {
-            log.warn("未找到立即沟通按钮，跳过岗位: {}", job.getJobName());
+            log.warn("未找到可用的沟通按钮，跳过岗位: {}", job.getJobName());
             // 关闭详情页
             try {
                 detailPage.close();
