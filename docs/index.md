@@ -1,0 +1,95 @@
+---
+layout: home
+
+hero:
+  name: "Getjobs"
+  text: "让 AI 替你海投简历"
+  tagline: "把时间留给面试准备 · 全平台自动化投递 · AI 智能定制打招呼语 · 精准企业黑名单过滤"
+  actions:
+    - theme: brand
+      text: 🚀 5分钟快速上手
+      link: /guide/quick-start
+    - theme: alt
+      text: ⭐ GitHub 点赞支持
+      link: https://github.com/loks666/get_jobs
+
+features:
+  - icon: 🌐
+    title: 全平台覆盖
+    details: 一站式打通 Boss直聘、猎聘、智联招聘、前程无忧、拉勾网，满足各梯队求职渠道需求。
+  - icon: 🤖
+    title: AI 智能打招呼
+    details: 接入兼容 OpenAI 格式的大模型，基于个人求职简历与岗位 JD 动态撰写高匹配打招呼语。
+  - icon: 🛡️
+    title: 黑名单与精准过滤
+    details: 智能跳过不活跃 HR、猎头岗位、外包公司，自动将沟通不顺企业加入黑名单，拒绝无效沟通。
+  - icon: 📱
+    title: 实时消息推送
+    details: 支持企业微信 Webhook 实时通知，投递状态、沟通反馈随时掌握，不在电脑前也能洞察全局。
+  - icon: 💾
+    title: 本地数据持久化
+    details: 基于轻量级 SQLite 存储配置与投递日志，无隐私泄露风险，智能记录状态杜绝重复海投。
+  - icon: ⚡
+    title: 优雅开箱即用
+    details: 配套直观的前端 Web GUI 管理面板，开箱即用，无需繁琐调试即可轻松开启批量投递。
+---
+
+<div style="text-align: center; margin-top: 2rem;">
+
+### 📊 社区实时动态
+
+<p class="badge-group">
+  <a href="https://github.com/loks666/get_jobs" target="_blank">
+    <img src="https://img.shields.io/github/stars/loks666/get_jobs?style=for-the-badge&logo=github&color=ff5c5c&label=Stars" alt="Stars" />
+  </a>
+  <a href="https://github.com/loks666/get_jobs/forks" target="_blank">
+    <img src="https://img.shields.io/github/forks/loks666/get_jobs?style=for-the-badge&logo=github&color=912cee&label=Forks" alt="Forks" />
+  </a>
+  <a href="https://github.com/loks666/get_jobs/issues" target="_blank">
+    <img src="https://img.shields.io/github/issues/loks666/get_jobs?style=for-the-badge&color=00cccc&label=Issues" alt="Issues" />
+  </a>
+  <a href="https://github.com/loks666/get_jobs/blob/main/LICENSE" target="_blank">
+    <img src="https://img.shields.io/badge/License-PolyForm-34D058?style=for-the-badge" alt="License" />
+  </a>
+</p>
+
+</div>
+
+---
+
+## ⚡ 三步极简启动
+
+仅需 3 步，即可在本地启动 AI 自动求职引擎：
+
+```bash
+# 1. 克隆项目仓库
+git clone https://github.com/loks666/get_jobs.git
+cd get_jobs
+
+# 2. 放置空数据库文件（从 Release 下载 getjobs.db.template 重命名为 getjobs.db）
+mkdir -p db
+# 将下载的 getjobs.db 放入 db/ 目录
+
+# 3. 启动项目后端
+./gradlew bootRun
+```
+
+::: tip 💡 提示
+启动后访问本地管理面板，配置好个人城市、期望薪资及 AI Key，即可开启全自动投递体验。详细步骤请查看 [5分钟快速上手教程](/guide/quick-start)。
+:::
+
+---
+
+## 📈 Star 增长趋势
+
+感谢广大开发者与打工人们的支持与喜爱，黑暗无论多么长，光明迟早总是会来的：
+
+<p align="center" style="margin-top: 1.5rem;">
+  <a href="https://star-history.com/#loks666/get_jobs&Date" target="_blank">
+    <img src="https://api.star-history.com/svg?repos=loks666/get_jobs&type=Date" alt="Getjobs Star History" style="max-width: 100%; border-radius: 8px;" />
+  </a>
+</p>
+
+<div style="text-align: center; margin-top: 2rem; color: var(--vp-c-text-2);">
+  <em>"每一个伟大，都有一个平凡的开始。黎明破晓之时，苦难都将化作勋章。"</em>
+</div>

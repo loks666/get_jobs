@@ -1,0 +1,42 @@
+/**
+ * 自定义主题样式
+ */
+:root {
+  --vp-c-brand-1: #10b981;
+  --vp-c-brand-2: #059669;
+  --vp-c-brand-3: #047857;
+  --vp-c-brand-soft: rgba(16, 185, 129, 0.14);
+}
+
+.busuanzi-stats-container {
+  margin-top: 2rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--vp-c-bg-soft);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--vp-c-text-2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px dashed var(--vp-c-divider);
+}
+
+.stat-label {
+  font-weight: 500;
+}
+
+.stat-value {
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+
+/* 首页徽章栏美化 */
+.badge-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 1.5rem 0;
+}

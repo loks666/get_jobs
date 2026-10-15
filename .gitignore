@@ -66,3 +66,8 @@ dist/
 .gradle/
 # 持久化浏览器用户数据（含登录态，绝对不能提交）
 browser-data/
+
+# VitePress Documentation
+docs/node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
