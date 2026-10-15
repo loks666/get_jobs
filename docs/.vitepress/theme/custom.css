@@ -40,3 +40,10 @@
   gap: 8px;
   margin: 1.5rem 0;
 }
+
+/* 与 README 保持一致的紧凑徽章，按屏幕宽度自然换行。 */
+.readme-badges p { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin: 12px 0; }
+.readme-badges img { display: inline-block; vertical-align: middle; }
+.support-codes { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; text-align: center; }
+.support-codes figure { margin: 0; max-width: 100%; }
+.support-codes img { max-width: 100%; border-radius: 12px; }

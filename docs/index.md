@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: "Getjobs"
+  name: "Get Jobs"
   text: "让 AI 替你海投简历"
   tagline: "把时间留给面试准备 · 全平台自动化投递 · AI 智能定制打招呼语 · 精准企业黑名单过滤"
   actions:
@@ -16,10 +16,10 @@ hero:
 features:
   - icon: 🌐
     title: 全平台覆盖
-    details: 一站式打通 Boss直聘、猎聘、智联招聘、前程无忧、拉勾网，满足各梯队求职渠道需求。
+    details: 覆盖 Boss直聘、猎聘等招聘平台；当前主要维护 Boss 与猎聘，其他平台已停止维护。
   - icon: 🤖
     title: AI 智能打招呼
-    details: 接入兼容 OpenAI 格式的大模型，基于个人求职简历与岗位 JD 动态撰写高匹配打招呼语。
+    details: 接入兼容 OpenAI 格式的大模型，基于个人求职简历与岗位 JD 动态撰写打招呼语，目前仅限 Boss直聘。
   - icon: 🛡️
     title: 黑名单与精准过滤
     details: 智能跳过不活跃 HR、猎头岗位、外包公司，自动将沟通不顺企业加入黑名单，拒绝无效沟通。
@@ -28,7 +28,7 @@ features:
     details: 支持企业微信 Webhook 实时通知，投递状态、沟通反馈随时掌握，不在电脑前也能洞察全局。
   - icon: 💾
     title: 本地数据持久化
-    details: 基于轻量级 SQLite 存储配置与投递日志，无隐私泄露风险，智能记录状态杜绝重复海投。
+    details: 基于轻量级 SQLite 存储配置与投递日志，配置与投递记录保留在本机，方便追踪投递进度。
   - icon: ⚡
     title: 优雅开箱即用
     details: 配套直观的前端 Web GUI 管理面板，开箱即用，无需繁琐调试即可轻松开启批量投递。
@@ -38,24 +38,27 @@ features:
 
 ### 📊 社区实时动态
 
-<p class="badge-group">
-  <a href="https://github.com/loks666/get_jobs" target="_blank">
-    <img src="https://img.shields.io/github/stars/loks666/get_jobs?style=for-the-badge&logo=github&color=ff5c5c&label=Stars" alt="Stars" />
-  </a>
-  <a href="https://github.com/loks666/get_jobs/forks" target="_blank">
-    <img src="https://img.shields.io/github/forks/loks666/get_jobs?style=for-the-badge&logo=github&color=912cee&label=Forks" alt="Forks" />
-  </a>
-  <a href="https://github.com/loks666/get_jobs/issues" target="_blank">
-    <img src="https://img.shields.io/github/issues/loks666/get_jobs?style=for-the-badge&color=00cccc&label=Issues" alt="Issues" />
-  </a>
-  <a href="https://github.com/loks666/get_jobs/blob/main/LICENSE" target="_blank">
-    <img src="https://img.shields.io/badge/License-PolyForm-34D058?style=for-the-badge" alt="License" />
-  </a>
-</p>
+<div class="readme-badges">
+
+<!--@include: ./snippets/badges.md-->
+
+</div>
 
 </div>
 
 ---
+
+## 🖥️ 看得见的求职工作台
+
+从配置到岗位分析，再到投递日志，在网页端完成日常操作。
+
+![Get Jobs 运行日志](/images/运行日志.png)
+
+[浏览全部界面截图 →](/guide/screenshots) · [了解完整功能 →](/guide/introduction)
+
+::: warning 使用前先了解
+当前主要维护 **Boss直聘、猎聘**；智联招聘、前程无忧和拉勾已停止维护。README 建议 Boss 仍以手动投递为主，本项目用于 PC 端辅助。非商业使用免费，AI 接口费用由所选服务商收取。
+:::
 
 ## ⚡ 三步极简启动
 
@@ -86,10 +89,21 @@ mkdir -p db
 
 <p align="center" style="margin-top: 1.5rem;">
   <a href="https://star-history.com/#loks666/get_jobs&Date" target="_blank">
-    <img src="https://api.star-history.com/svg?repos=loks666/get_jobs&type=Date" alt="Getjobs Star History" style="max-width: 100%; border-radius: 8px;" />
+    <img src="https://api.star-history.com/svg?repos=loks666/get_jobs&type=Date" alt="Get Jobs Star History" style="max-width: 100%; border-radius: 8px;" />
   </a>
 </p>
 
 <div style="text-align: center; margin-top: 2rem; color: var(--vp-c-text-2);">
   <em>"每一个伟大，都有一个平凡的开始。黎明破晓之时，苦难都将化作勋章。"</em>
 </div>
+
+## 💬 与社区一起前进
+
+欢迎交流求职经验、技术问题与使用心得。
+
+- [加入 QQ 交流群](https://qm.qq.com/q/qJwmIrqPU)
+- [社区、贡献流程与赞赏支持](/guide/community)
+- [作者的其他开源项目](/guide/resources)
+- [查看更新日志](/guide/changelog)
+
+<a href="https://trendshift.io/repositories/9608"><img src="https://trendshift.io/api/badge/trendshift/repositories/9608/daily?language=Java" alt="#1 Java Repository Of The Day" height="55" /></a>

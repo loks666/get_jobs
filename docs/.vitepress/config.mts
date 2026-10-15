@@ -2,15 +2,24 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   lang: 'zh-CN',
-  title: 'Getjobs - AI 找工作助手',
+  title: 'Get Jobs - AI 找工作助手',
   description: '全平台自动投简历脚本，支持 Boss直聘、猎聘、智联、前程无忧、拉勾，内置 AI 岗位匹配与打招呼语生成。',
   
-  // 适配 GitHub Pages 默认二级路径 /get_jobs/
-  base: '/get_jobs/',
+  // GitHub Pages 使用仓库路径，本地开发使用根路径。
+  base: process.env.DOCS_BASE || (process.env.GITHUB_ACTIONS ? '/get_jobs/' : '/'),
+  lastUpdated: true,
+
+  vite: {
+    server: {
+      watch: {
+        ignored: ['**/dist/**', '**/.vitepress/dist/**']
+      }
+    }
+  },
 
   head: [
     ['link', { rel: 'icon', href: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍀</text></svg>' }],
-    ['meta', { name: 'keywords', content: 'Getjobs, 找工作, 自动投简历, AI打招呼, Boss直聘, 猎聘, 智联招聘, 前程无忧, 开源求职助手' }],
+    ['meta', { name: 'keywords', content: 'Get Jobs, 找工作, 自动投简历, AI打招呼, Boss直聘, 猎聘, 智联招聘, 前程无忧, 开源求职助手' }],
     ['meta', { name: 'author', content: 'loks666' }],
     // 不蒜子统计脚本（防刷异步加载）
     ['script', { async: '', src: '//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js' }]
@@ -18,7 +27,7 @@ export default defineConfig({
 
   themeConfig: {
     logo: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍀</text></svg>',
-    siteTitle: 'Getjobs',
+    siteTitle: 'Get Jobs',
 
     // 内置本地离线全文搜索（支持中文分词与提示词）
     search: {
@@ -58,6 +67,9 @@ export default defineConfig({
         items: [
           { text: 'GitHub 仓库', link: 'https://github.com/loks666/get_jobs' },
           { text: 'Gitee 镜像', link: 'https://gitee.com/lok666/get_jobs' },
+          { text: '界面截图', link: '/guide/screenshots' },
+          { text: '社区与贡献', link: '/guide/community' },
+          { text: '其他开源项目', link: '/guide/resources' },
           { text: '更新日志', link: '/guide/changelog' }
         ]
       }
@@ -83,7 +95,10 @@ export default defineConfig({
         text: '🛡️ 进阶与运维',
         items: [
           { text: '常见问题与排错指南', link: '/guide/faq' },
-          { text: '更新日志与版本历史', link: '/guide/changelog' }
+          { text: '更新日志与版本历史', link: '/guide/changelog' },
+          { text: '界面与运行截图', link: '/guide/screenshots' },
+          { text: '社区、贡献与支持', link: '/guide/community' },
+          { text: '其他开源项目', link: '/guide/resources' }
         ]
       }
     ],
@@ -109,7 +124,7 @@ export default defineConfig({
     // 页脚配置
     footer: {
       message: 'Released under the PolyForm Noncommercial 1.0.0 License.',
-      copyright: 'Copyright © 2024-PRESENT loks666 & Getjobs Contributors'
+      copyright: 'Copyright © 2024-PRESENT loks666 & Get Jobs Contributors'
     },
 
     docFooter: {

@@ -1,7 +1,7 @@
 {
   "name": "getjobs-docs",
   "version": "1.0.0",
-  "description": "Getjobs AI 找工作助手官方文档",
+  "description": "Get Jobs AI 找工作助手官方文档",
   "type": "module",
   "scripts": {
     "docs:dev": "vitepress dev",
