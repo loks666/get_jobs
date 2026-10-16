@@ -54,6 +54,10 @@ public class BossConfigController {
         }
 
         // 获取所有选项并按类型分组
+        if (config.getRepeatChatMessages() == null) {
+            config.setRepeatChatMessages(com.getjobs.worker.boss.BossConfig.DEFAULT_REPEAT_CHAT_MESSAGES);
+        }
+
         Map<String, List<BossOptionEntity>> options = new HashMap<>();
         options.put("city", bossService.getOptionsByType("city"));
         options.put("industry", bossService.getOptionsByType("industry"));

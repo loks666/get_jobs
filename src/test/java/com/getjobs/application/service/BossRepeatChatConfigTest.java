@@ -28,10 +28,12 @@ class BossRepeatChatConfigTest {
                 assertEquals(0, rows.getInt(2));
             }
             statement.execute("UPDATE boss_config SET allow_repeat_chat = 1");
+            statement.execute("UPDATE boss_config SET repeat_chat_messages = '用户编辑的消息'");
             service.ensureRepeatChatColumn();
-            try (var rows = statement.executeQuery("SELECT allow_repeat_chat FROM boss_config")) {
+            try (var rows = statement.executeQuery("SELECT allow_repeat_chat, repeat_chat_messages FROM boss_config")) {
                 assertTrue(rows.next());
                 assertEquals(1, rows.getInt(1));
+                assertEquals("用户编辑的消息", rows.getString(2));
             }
         }
     }
@@ -46,9 +48,14 @@ class BossRepeatChatConfigTest {
         BossService service = new BossService(null, null, mapper, null, null, null);
         BossConfigEntity patch = new BossConfigEntity();
         patch.setAllowRepeatChat(1);
+        patch.setRepeatChatMessages("第一条\n第二条");
         assertEquals(1, service.saveOrUpdateFirstSelective(patch).getAllowRepeatChat());
+        assertEquals("第一条\n第二条", existing.getRepeatChatMessages());
         assertEquals(1, service.saveOrUpdateFirstSelective(new BossConfigEntity()).getAllowRepeatChat());
+        assertEquals("第一条\n第二条", existing.getRepeatChatMessages());
+        patch.setRepeatChatMessages("");
         patch.setAllowRepeatChat(0);
         assertEquals(0, service.saveOrUpdateFirstSelective(patch).getAllowRepeatChat());
+        assertEquals("", existing.getRepeatChatMessages());
     }
 }

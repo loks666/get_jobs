@@ -14,6 +14,23 @@ import java.util.Map;
  */
 @Data
 public class BossConfig {
+    public static final String DEFAULT_REPEAT_CHAT_MESSAGES = String.join("\n",
+            "请问是有什么顾虑需要沟通吗？",
+            "我可以去贵公司面试吗？",
+            "请问贵公司还招人吗？",
+            "对于这个岗位有什么技术需求呢？",
+            "我可以把我的简历发给您看看吗？",
+            "能问一下贵公司办公地点在哪里吗？需不需要经常出差");
+
+    /** 每行一条跟进消息；空列表时跳过，不回退到首次打招呼语。 */
+    private String repeatChatMessages = DEFAULT_REPEAT_CHAT_MESSAGES;
+
+    public String randomRepeatChatMessage() {
+        List<String> messages = repeatChatMessages == null ? List.of()
+                : repeatChatMessages.lines().map(String::strip).filter(s -> !s.isEmpty()).toList();
+        return messages.isEmpty() ? null
+                : messages.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(messages.size()));
+    }
     /**
      * 用于打招呼的语句
      */

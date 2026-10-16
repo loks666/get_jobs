@@ -1034,6 +1034,8 @@ public class Boss {
         // 3. 根据开关选择是否允许对已沟通过的Boss再次发送消息
         Locator chatBtn = detailPage.locator("a.btn-startchat, a.op-btn-chat");
         boolean foundChatBtn = false;
+        boolean repeatChat = false;
+        String repeatMessage = null;
         for (int i = 0; i < 5; i++) {
             if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
                 log.info("停止指令已触发，结束查找聊天按钮 | 公司：{} | 岗位：{}", job.getCompanyName(), job.getJobName());
@@ -1051,6 +1053,7 @@ public class Boss {
                 if (buttonText != null && (buttonText.contains("立即沟通")
                         || (buttonText.contains("继续沟通") && Boolean.TRUE.equals(config.getAllowRepeatChat())))) {
                     foundChatBtn = true;
+                    repeatChat = buttonText.contains("继续沟通");
                     break;
                 }
             }
@@ -1064,6 +1067,14 @@ public class Boss {
             } catch (Exception ignore) {
             }
             return false;
+        }
+        if (repeatChat) {
+            repeatMessage = config.randomRepeatChatMessage();
+            if (repeatMessage == null) {
+                log.info("重复沟通消息列表为空，跳过岗位：{}", job.getJobName());
+                try { detailPage.close(); } catch (Exception ignore) {}
+                return false;
+            }
         }
         chatBtn.first().click();
         PlaywrightUtil.sleep(1);
@@ -1095,7 +1106,7 @@ public class Boss {
 
         // 5. AI智能生成打招呼语
         String aiMessage = null;
-        if (Boolean.TRUE.equals(config.getEnableAI())) {
+        if (!repeatChat && Boolean.TRUE.equals(config.getEnableAI())) {
             String jd = job.getJobInfo();
             if (jd != null && !jd.isEmpty()) {
                 AiMessageDecision decision = generateAiMessage(keyword, job.getJobName(), jd);
@@ -1111,7 +1122,7 @@ public class Boss {
                 aiMessage = decision.message();
             }
         }
-        String message = isValidString(aiMessage) ? aiMessage : config.getSayHi();
+        String message = repeatChat ? repeatMessage : (isValidString(aiMessage) ? aiMessage : config.getSayHi());
 
         // 6. 输入打招呼语
         Locator input = inputLocator.first();

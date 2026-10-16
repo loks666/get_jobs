@@ -32,6 +32,7 @@ interface BossConfig {
   enableAi?: number
   sendImgResume?: number
   allowRepeatChat?: number
+  repeatChatMessages?: string
   filterDeadHr?: number
   deadStatus?: string
 }
@@ -232,6 +233,7 @@ export default function BossPage() {
         setConfig({
           ...data.config,
           allowRepeatChat: data.config.allowRepeatChat ?? 0,
+          repeatChatMessages: data.config.repeatChatMessages ?? '',
           cityCode: normalizeCityCode(data.config.cityCode),
           jobType: normalizeJobType(data.config.jobType),
           // 没有图片时不能保留开启状态，否则开关会处于“开启但不可用”。
@@ -734,7 +736,7 @@ export default function BossPage() {
                   <div className="space-y-1">
                     <Label htmlFor="allowRepeatChat" className="text-base font-medium">向已沟通 Boss 再次发送消息</Label>
                     <p className="text-sm text-muted-foreground">
-                      开启后，遇到“继续沟通”会再次发送 AI 或默认打招呼语；关闭时跳过该岗位，继续下一个。默认关闭。
+                      开启后，遇到“继续沟通”会随机发送下方一行消息；关闭时跳过该岗位。首次沟通仍使用 AI 或默认打招呼语。
                     </p>
                   </div>
                   <button
@@ -748,6 +750,18 @@ export default function BossPage() {
                   >
                     <span aria-hidden="true" className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${config.allowRepeatChat === 1 ? 'translate-x-5' : 'translate-x-0.5'}`} />
                   </button>
+                </div>
+                <div className="space-y-2 rounded-lg border bg-muted/20 p-4">
+                  <Label htmlFor="repeatChatMessages">重复沟通消息（每行一条）</Label>
+                  <textarea
+                    id="repeatChatMessages"
+                    rows={7}
+                    value={config.repeatChatMessages ?? ''}
+                    onChange={event => setConfig(prev => ({ ...prev, repeatChatMessages: event.target.value }))}
+                    placeholder="每行填写一条想发送的消息"
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm leading-7 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <p className="text-sm text-muted-foreground">可自由编辑、添加或删除。每次从非空行中随机选一条，可能重复；全部清空时跳过重复沟通。点击“保存配置”后，下次启动投递生效。</p>
                 </div>
                 <div className="grid gap-4 rounded-lg border bg-muted/20 p-4 md:grid-cols-[minmax(0,1fr)_220px]">
                   <div className="space-y-3">

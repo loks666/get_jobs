@@ -47,6 +47,8 @@ public class BossConfigEntity {
     private Integer sendImgResume;
     /** 是否向已沟通Boss再次发送消息（1=启用，0=关闭） */
     private Integer allowRepeatChat;
+    /** 重复沟通消息，每行一条。 */
+    private String repeatChatMessages;
     /** 是否过滤不在线HR（1=启用，0=关闭） */
     private Integer filterDeadHr;
     /** HR不在线状态列表（逗号或括号列表） */
