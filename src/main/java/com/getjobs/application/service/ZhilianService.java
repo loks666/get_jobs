@@ -46,7 +46,7 @@ public class ZhilianService {
         if (entity == null) {
             log.warn("zhilian_config 表为空，使用默认空配置");
             config.setKeywords(new ArrayList<>());
-            config.setCityCode("0");
+            config.setCityCode(new ArrayList<>(Collections.singletonList("0")));
             config.setSalary("0");
             return config;
         }
@@ -54,21 +54,33 @@ public class ZhilianService {
         // 关键词解析：支持逗号或括号列表
         config.setKeywords(parseListString(entity.getKeywords()));
 
-        // 城市：中文名映射到代码；缺省或“不限”映射为 0
-        String city = safeTrim(entity.getCityCode());
-        if (city == null || city.isEmpty() || "不限".equals(city)) {
-            config.setCityCode("0");
-        } else if (city.chars().allMatch(Character::isDigit)) {
-            config.setCityCode(city);
-        } else {
-            String code = getCodeByTypeAndName("city", city);
+        // 城市：支持多城市。中文名列表或代码列表 -> 统一为代码列表
+        // 约定：缺省 / 不限 -> ["0"]（对应 URL 中的 jl0，即不按城市筛选）
+        List<String> cityInputs = parseListString(entity.getCityCode());
+        List<String> cityCodes = new ArrayList<>();
+        boolean unlimited = false;
+        for (String input : cityInputs) {
+            if (input == null || input.isEmpty()) continue;
+            if ("不限".equals(input) || "0".equals(input)) {
+                unlimited = true;
+                continue;
+            }
+            if (input.chars().allMatch(Character::isDigit)) {
+                cityCodes.add(input);
+                continue;
+            }
+            String code = getCodeByTypeAndName("city", input);
             if (code == null) {
-                log.warn("智联配置中的城市 {} 未在 zhilian_option 表中找到，回退为 0", city);
-                config.setCityCode("0");
+                log.warn("智联配置中的城市 {} 未在 zhilian_option 表中找到，已跳过", input);
             } else {
-                config.setCityCode(code);
+                cityCodes.add(code);
             }
         }
+        if (unlimited || cityCodes.isEmpty()) {
+            cityCodes.clear();
+            cityCodes.add("0");
+        }
+        config.setCityCode(cityCodes);
 
         // 薪资：缺省或“不限”映射为 0，其它保持原值
         String salary = safeTrim(entity.getSalary());
@@ -93,6 +105,35 @@ public class ZhilianService {
     }
 
     private String safeTrim(String s) { return s == null ? null : s.trim(); }
+
+    /**
+     * 将列表转换为括号列表字符串，例如 [a,b,c]
+     */
+    public String toBracketListString(List<String> list) {
+        if (list == null || list.isEmpty()) return "";
+        return "[" + String.join(",", list) + "]";
+    }
+
+    /**
+     * 规范化城市配置：把前端传来的城市列表（可能是代码，也可能是中文名）
+     * 统一保存为『中文名称的括号列表』，与其它平台保持一致。
+     *
+     * 『不限 / 0』与其它城市互斥：选中不限时清空其它城市，避免产生无效的城市遍历。
+     */
+    public String normalizeCityListToNames(String raw) {
+        List<String> items = parseListString(raw);
+        boolean unlimited = items.stream().anyMatch(v -> "0".equals(v) || "不限".equals(v));
+        List<String> names = new ArrayList<>();
+        if (unlimited) {
+            names.add("不限");
+        } else {
+            for (String item : items) {
+                String name = getNameByTypeAndCode("city", item);
+                names.add(name != null ? name : item);
+            }
+        }
+        return toBracketListString(names);
+    }
 
     private String stripWrapperQuotes(String value) {
         if (value == null || value.length() < 2) return value;

@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
 import PageHeader from '@/app/components/PageHeader'
+import CityMultiSelect from '@/app/components/CityMultiSelect'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AnalysisContent from '@/app/51job/analysis/AnalysisContent'
 import { API_BASE } from '@/lib/api'
@@ -45,6 +45,8 @@ export default function Job51Page() {
   const [cookieSavedAfterLogin, setCookieSavedAfterLogin] = useState(false)
   // 薪资多选状态：存储选中的code数组
   const [selectedSalaries, setSelectedSalaries] = useState<string[]>([])
+  // 城市多选状态：存储选中的code数组（支持同时投递多个城市）
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([])
   // 薪资下拉面板开关状态
   const [salaryDropdownOpen, setSalaryDropdownOpen] = useState(false)
 
@@ -221,14 +223,20 @@ export default function Job51Page() {
         // 关键词标准化（展示用）
         const normalizedKeywords = parseKeywordsFromDb(conf.keywords)
 
-        // 从服务端字段提取第一个token，然后映射到code
-        const rawArea = parseSingleTokenFromDb(conf.jobArea)
         const rawSalaries = parseMultiTokensFromDb(conf.salary) // 薪资支持多个
 
         const areaList = opts.jobArea || []
         const salaryList = opts.salary || []
 
-        const matchArea = areaList.find((o) => o.code === rawArea || o.name === rawArea)
+        // 城市：支持多选。DB 保存的是中文名列表，需映射回 code
+        const rawAreas = parseMultiTokensFromDb(conf.jobArea)
+        const areaCodes = rawAreas
+          .map((raw) => {
+            const match = areaList.find((o) => o.code === raw || o.name === raw)
+            return match?.code || (isCustomArea ? raw : '')
+          })
+          .filter(Boolean)
+        const matchArea = areaList.find((o) => o.code === rawAreas[0] || o.name === rawAreas[0])
         
         // 薪资多选：将每个值映射为code
         const salaryCodes = rawSalaries
@@ -244,6 +252,7 @@ export default function Job51Page() {
         setOptions(opts)
         setConfig({ ...conf, keywords: normalizedKeywords, jobArea: areaCode, salary: JSON.stringify(salaryCodes) })
         setSelectedSalaries(salaryCodes)
+        setSelectedAreas(areaCodes)
         setIsCustomArea(false)
       }
     } catch (e) {
@@ -365,10 +374,16 @@ export default function Job51Page() {
         }
         return `["${t.replace(/"/g, '\\"')}"]"`
       }
+      // 城市多选：把选中的 code 映射为中文名列表，保存为 JSON 数组字符串
+      const areaNames = selectedAreas
+        .map((code) => (options.jobArea || []).find((o) => o.code === code)?.name || '')
+        .filter(Boolean)
       const payload = {
         ...config,
         keywords: serializeKeywordsForDb(config.keywords),
-        jobArea: toBracketListString(config.jobArea, 'jobArea'),
+        jobArea: isCustomArea
+          ? toBracketListString(config.jobArea, 'jobArea')
+          : (areaNames.length > 0 ? JSON.stringify(areaNames) : '[]'),
         salary: toBracketListString(config.salary, 'salary'),
       }
       const response = await fetch(`${API}/api/51job/config`, {
@@ -499,19 +514,18 @@ export default function Job51Page() {
                         onChange={(e) => setConfig((c) => ({ ...c, jobArea: e.target.value }))}
                       />
                     ) : (
-                      <Select
-                        value={config.jobArea || ''}
-                        onChange={(e) => setConfig((c) => ({ ...c, jobArea: e.target.value }))}
-                        placeholder="请选择城市"
-                      >
-                        <option value="">请选择城市</option>
-                        {options.jobArea.map((o) => (
-                          <option key={o.code} value={o.code}>{o.name}</option>
-                        ))}
-                      </Select>
+                      <CityMultiSelect
+                        options={options.jobArea}
+                        selected={selectedAreas}
+                        onChange={setSelectedAreas}
+                        placeholder="选择城市区域"
+                        searchPlaceholder="搜索城市，如：成都"
+                      />
                     )}
                     <p className="text-xs text-muted-foreground">
-                      {isCustomArea ? '手动输入城市码（例如：410代表北京）' : '从列表选择城市，或点击"手动输入"自定义'}
+                      {isCustomArea
+                        ? '手动输入城市码（例如：410代表北京）'
+                        : '可多选；多个城市会在一次搜索中同时命中'}
                     </p>
                   </div>
                   <div className="space-y-2">

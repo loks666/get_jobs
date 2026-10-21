@@ -91,10 +91,15 @@ public class BossConfigController {
         config.setKeywords(normalizeKeywords(config.getKeywords()));
 
         // 将前端可能传来的『代码列表』转换并保存成『中文名称列表/值』
-        // 城市：保存中文名（单值）
+        // 城市：支持多城市投递，保存为中文名称的括号列表（Worker 会逐个城市循环执行）
         if (config.getCityCode() != null) {
-            String cityName = bossService.normalizeCityToName(config.getCityCode());
-            config.setCityCode(cityName);
+            java.util.List<String> rawCities = bossService.parseListString(config.getCityCode());
+            // 『不限/0』表示不按城市筛选：与其它城市互斥，避免出现无效的城市遍历
+            boolean unlimited = rawCities.stream().anyMatch(v -> "0".equals(v) || "不限".equals(v));
+            java.util.List<String> names = unlimited
+                    ? java.util.Collections.singletonList("不限")
+                    : bossService.toNames("city", rawCities);
+            config.setCityCode(bossService.toBracketListString(names));
         }
         // 其它多选：保存为中文名称的括号列表
         if (config.getIndustry() != null) {

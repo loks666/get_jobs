@@ -699,7 +699,11 @@ public class Job51 {
      */
     private String buildSearchUrl(String keyword) {
         StringBuilder url = new StringBuilder(BASE_URL);
-        url.append(JobUtils.appendListParam("jobArea", config.getJobArea()));
+        String jobAreaParam = JobUtils.appendListParam("jobArea", config.getJobArea());
+        if (!jobAreaParam.isEmpty()) {
+            log.info("本次搜索的城市区域: {}", config.getJobArea());
+        }
+        url.append(jobAreaParam);
         url.append(JobUtils.appendListParam("salary", config.getSalary()));
         url.append("&keyword=").append(keyword);
         return url.toString();

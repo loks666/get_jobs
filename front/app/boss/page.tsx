@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PageHeader from '@/app/components/PageHeader'
+import CityMultiSelect from '@/app/components/CityMultiSelect'
 import AnalysisContent from '@/app/boss/analysis/AnalysisContent'
 import { API_BASE } from '@/lib/api'
 
@@ -102,6 +103,7 @@ export default function BossPage() {
   // 关键词显示用（无括号无引号，逗号分隔）
   const [keywordsDisplay, setKeywordsDisplay] = useState<string>('')
   // 多选选中的代码集合（按括号列表保存）
+  const [selectedCity, setSelectedCity] = useState<string[]>([])
   const [selectedIndustry, setSelectedIndustry] = useState<string[]>([])
   const [selectedExperience, setSelectedExperience] = useState<string[]>([])
   const [selectedDegree, setSelectedDegree] = useState<string[]>([])
@@ -392,6 +394,7 @@ export default function BossPage() {
         setConfig(prev => ({ ...prev, filterDeadHr: normalizedFilterDeadHr }))
 
         // 其它多选选项：将中文名称转换为代码以匹配 MultiSelect 的 selected
+        setSelectedCity(toCodes(data.options.city || [], parseListString(data.config?.cityCode)))
         setSelectedIndustry(toCodes(data.options.industry || [], parseListString(data.config?.industry)))
         setSelectedExperience(toCodes(data.options.experience || [], parseListString(data.config?.experience)))
         setSelectedDegree(toCodes(data.options.degree || [], parseListString(data.config?.degree)))
@@ -444,6 +447,8 @@ export default function BossPage() {
         ...(overrides || {}),
         // 关键词：前端发送逗号分隔的纯文本，后端统一组装为 JSON 列表
         keywords: keywordsDisplay,
+        // 城市：支持多城市，Worker 会按城市逐个循环投递
+        cityCode: toBracketList(selectedCity),
         industry: toBracketList(selectedIndustry),
         experience: toBracketList(selectedExperience),
         degree: toBracketList(selectedDegree),
@@ -1053,20 +1058,18 @@ export default function BossPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="city">工作城市</Label>
-                  <Select
-                    id="city"
-                    value={config.cityCode || ''}
-                    onChange={(e) => setConfig({ ...config, cityCode: e.target.value })}
-                  >
-                    {options.city.map((city) => (
-                      <option key={city.id} value={city.code}>
-                        {city.name}
-                      </option>
-                    ))}
-                </Select>
-                <p className="text-xs text-muted-foreground">目标工作城市（按设定顺序显示）</p>
-              </div>
+                  <Label>工作城市（可多选）</Label>
+                  <CityMultiSelect
+                    options={options.city}
+                    selected={selectedCity}
+                    onChange={setSelectedCity}
+                    placeholder="选择目标城市"
+                    searchPlaceholder="搜索城市，如：成都"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    可多选；Worker 会按所选城市逐个循环投递，城市越多单次任务耗时越长
+                  </p>
+                </div>
 
               <div className="space-y-2">
                 <Label htmlFor="jobType">职位类型</Label>

@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AnalysisContent from '@/app/zhilian/analysis/AnalysisContent'
 import PageHeader from '@/app/components/PageHeader'
+import CityMultiSelect from '@/app/components/CityMultiSelect'
 import { API_BASE } from '@/lib/api'
 
 interface ZhilianConfig {
@@ -37,6 +37,23 @@ export default function ZhilianPage() {
   const [config, setConfig] = useState<ZhilianConfig>({ keywords: '', cityCode: '', salary: '' })
   const [options, setOptions] = useState<ZhilianOptions>({ city: [] })
   const [loadingConfig, setLoadingConfig] = useState(true)
+  // 城市多选状态：保存选中的 code 数组（智联 Worker 会按城市逐个循环投递）
+  const [selectedCities, setSelectedCities] = useState<string[]>([])
+
+  // 后端保存的是中文名列表（如 [重庆,成都]），需映射回 code 供多选控件回显
+  const mapCityNamesToCodes = (raw?: string): string[] => {
+    if (!raw) return []
+    let text = raw.trim()
+    try {
+      if (text.startsWith('[') && text.endsWith(']')) {
+        const arr = JSON.parse(text)
+        if (Array.isArray(arr)) return arr.map((v) => String(v ?? '').trim()).filter(Boolean)
+      }
+    } catch (_) {
+      // 非标准 JSON 时走下面的逗号拆分
+    }
+    return text.replace(/^\[|\]$/g, '').replace(/，/g, ',').split(',').map((s) => s.replace(/^"|"$/g, '').trim()).filter(Boolean)
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
@@ -125,6 +142,14 @@ export default function ZhilianPage() {
         setConfig(normalized)
       }
       if (data.options) setOptions(data.options)
+      // 城市多选回显：中文名列表 -> code 列表
+      const cityNames = mapCityNamesToCodes(data.config?.cityCode)
+      const cityList: Option[] = data.options?.city || []
+      setSelectedCities(
+        cityNames
+          .map((n) => cityList.find((o) => o.code === n || o.name === n)?.code || '')
+          .filter(Boolean)
+      )
     } catch (e) {
       console.error('[智联] 获取配置失败:', e)
     } finally {
@@ -200,7 +225,12 @@ export default function ZhilianPage() {
 
   const handleSaveConfig = async () => {
     try {
-      const payload = { ...config, keywords: serializeKeywordsForDb(config.keywords) }
+      // 城市：发送选中的 code 列表，后端会统一转为中文名列表保存
+      const payload = {
+        ...config,
+        keywords: serializeKeywordsForDb(config.keywords),
+        cityCode: selectedCities.length > 0 ? JSON.stringify(selectedCities) : '[]',
+      }
       const response = await fetch(`${API_BASE}/api/zhilian/config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -303,16 +333,17 @@ export default function ZhilianPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>城市</Label>
-                    <Select
-                      value={config.cityCode || ''}
-                      onChange={(e) => setConfig((c) => ({ ...c, cityCode: e.target.value }))}
-                      placeholder="请选择城市"
-                    >
-                      {options.city.map((o) => (
-                        <option key={o.code} value={o.code}>{o.name}</option>
-                      ))}
-                    </Select>
+                    <Label>城市（可多选）</Label>
+                    <CityMultiSelect
+                      options={options.city}
+                      selected={selectedCities}
+                      onChange={setSelectedCities}
+                      placeholder="选择目标城市"
+                      searchPlaceholder="搜索城市，如：成都"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      可多选；Worker 会按所选城市逐个循环投递，城市越多单次任务耗时越长
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>薪资范围（最低和最高工资，用逗号分割）</Label>

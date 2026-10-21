@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -89,15 +90,28 @@ public class ZhiLian {
         long startTime = System.currentTimeMillis();
 
         try {
-            // 遍历所有关键词进行投递
-            for (String keyword : config.getKeywords()) {
-                if (shouldStop() || isLimit) {
-                    sendProgress("用户取消投递或已达上限", null, null);
-                    break;
-                }
+            // 解析本次要投递的城市列表
+            List<String> cityCodes = (config.getCityCode() == null || config.getCityCode().isEmpty())
+                    ? Collections.singletonList("0")
+                    : config.getCityCode();
+            if (cityCodes.size() > 1) {
+                log.info("智联本次将依次投递 {} 个城市", cityCodes.size());
+            }
 
-                String baseUrl = buildBaseUrl(1);
-                deliverByKeyword(keyword, baseUrl);
+            // 外层遍历城市，内层遍历关键词
+            boolean stopped = false;
+            for (String cityCode : cityCodes) {
+                if (stopped) break;
+                for (String keyword : config.getKeywords()) {
+                    if (shouldStop() || isLimit) {
+                        sendProgress("用户取消投递或已达上限", null, null);
+                        stopped = true;
+                        break;
+                    }
+
+                    String baseUrl = buildBaseUrl(1, cityCode);
+                    deliverByKeyword(keyword, baseUrl);
+                }
             }
 
             long duration = System.currentTimeMillis() - startTime;
@@ -517,9 +531,9 @@ public class ZhiLian {
     /**
      * 构建基础搜索URL（不含关键词，由搜索框触发）
      */
-    private String buildBaseUrl(int pageNum) {
+    private String buildBaseUrl(int pageNum, String cityCode) {
         StringBuilder url = new StringBuilder(HOME_URL);
-        url.append("jl").append(config.getCityCode()).append("/");
+        url.append("jl").append(cityCode).append("/");
         url.append("p").append(pageNum).append("?");
         url.append(JobUtils.appendParam("sl", config.getSalary()));
         return url.toString();

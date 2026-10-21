@@ -109,7 +109,13 @@ public class Boss {
      * 执行投递
      */
     public int execute() {
-        for (String cityCode : config.getCityCode()) {
+        java.util.List<String> cityCodes = config.getCityCode() == null
+                ? java.util.Collections.emptyList() : config.getCityCode();
+        if (cityCodes.size() > 1) {
+            log.info("本次将依次投递 {} 个城市", cityCodes.size());
+        }
+        for (String cityCode : cityCodes) {
+            log.info("========== 开始投递城市: {} ==========", cityCode);
             if (shouldStopCallback != null && Boolean.TRUE.equals(shouldStopCallback.get())) {
                 progressCallback.accept("用户取消投递", 0, 0);
                 break;

@@ -19,9 +19,9 @@ public class ZhilianConfig {
     private List<String> keywords;
 
     /**
-     * 城市编码
+     * 城市编码列表（支持多城市投递，Worker 会按城市逐个循环执行）
      */
-    private String cityCode;
+    private List<String> cityCode;
 
     /**
      * 薪资范围

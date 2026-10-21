@@ -72,6 +72,10 @@ public class ZhilianController {
      */
     @PutMapping("/config")
     public ZhilianConfigEntity updateConfig(@RequestBody ZhilianConfigEntity config) {
+        // 城市：支持多城市投递。前端传来代码列表 -> 统一保存成『中文名称的括号列表』
+        if (config != null && config.getCityCode() != null) {
+            config.setCityCode(zhilianService.normalizeCityListToNames(config.getCityCode()));
+        }
         return zhilianService.updateConfig(config);
     }
 
