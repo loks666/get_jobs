@@ -4,6 +4,7 @@ import com.getjobs.application.entity.AiEntity;
 import com.getjobs.application.service.AiService;
 import com.getjobs.application.service.BossResumeImageService;
 import com.getjobs.application.service.BossService;
+import com.getjobs.worker.utils.Bot;
 import com.getjobs.worker.utils.Job;
 import com.getjobs.worker.utils.JobUtils;
 import com.getjobs.worker.utils.PlaywrightUtil;
@@ -1830,28 +1831,41 @@ public class Boss {
                 || url.contains("security-check");
     }
 
+    /** 滑块验证最长等待时间（毫秒） */
+    private static final long VERIFY_TIMEOUT_MS = 5 * 60 * 1000L;
+
+    /**
+     * 遇到 Boss 安全验证页时，等待用户手动完成。
+     * <p>
+     * 原实现在这里阻塞调用 {@code System.in.read()} 等待控制台回车。通过 Web 界面运行时
+     * 根本没有控制台可输入，任务会一直卡到超时为止，而人又不在电脑前 —— 完全无从得知。
+     * 这里改成轮询页面 URL：用户在客户端完成验证后会自动继续，同时在触发时推送一条通知。
+     */
     private void waitForSliderVerify(Page page) {
-        // 最多等待5分钟（防呆，防止死循环）
         long start = System.currentTimeMillis();
-        while (true) {
-            String url = page.url();
-            if (isSecurityVerifyUrl(url)) {
-                progressCallback.accept("请手动完成Boss直聘滑块验证，通过后在控制台回车继续...", 0, 0);
-                System.out.println("\n【滑块验证】请手动完成Boss直聘滑块验证，通过后在控制台回车继续…");
-                try {
-                    System.in.read();
-                } catch (Exception e) {
-                    log.error("等待滑块验证输入异常: {}", e.getMessage());
-                }
-                PlaywrightUtil.sleep(1);
-                // 验证通过后页面url会变，循环再检测一次
+        boolean notified = false;
+        while (System.currentTimeMillis() - start < VERIFY_TIMEOUT_MS) {
+            String url;
+            try {
+                url = page.url();
+            } catch (Exception e) {
+                // 页面可能正在跳转，忽略本次检测
+                PlaywrightUtil.sleep(2);
                 continue;
             }
-            if ((System.currentTimeMillis() - start) > 5 * 60 * 1000) {
-                throw new RuntimeException("滑块验证超时！");
+            if (!isSecurityVerifyUrl(url)) {
+                return;
             }
-            break;
+            if (!notified) {
+                notified = true;
+                String tip = "遇到 Boss 安全验证，请手动完成滑块验证，完成后将自动继续（最长等待 5 分钟）";
+                progressCallback.accept(tip, 0, 0);
+                log.warn(tip);
+                Bot.sendMessage("【getJobs·需处理】Boss直聘\n" + tip);
+            }
+            PlaywrightUtil.sleep(3);
         }
+        throw new RuntimeException("滑块验证超时！");
     }
 
 

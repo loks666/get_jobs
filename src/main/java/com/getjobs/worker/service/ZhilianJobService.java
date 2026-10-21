@@ -1,6 +1,7 @@
 package com.getjobs.worker.service;
 
 import com.getjobs.application.service.ConfigService;
+import com.getjobs.application.service.NotifyService;
 import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.zhilian.ZhiLian;
@@ -28,6 +29,7 @@ public class ZhilianJobService implements JobPlatformService {
     private final PlaywrightManager playwrightManager;
     private final ObjectProvider<ZhiLian> zhilianProvider;
     private final ConfigService configService;
+    private final NotifyService notifyService;
 
     // 任务运行状态
     private volatile boolean isRunning = false;
@@ -50,12 +52,16 @@ public class ZhilianJobService implements JobPlatformService {
             Page page = playwrightManager.getZhilianPage();
             if (page == null) {
                 progressCallback.accept(JobProgressMessage.error(PLATFORM, "智联招聘页面未初始化"));
+                notifyService.needsAttention("智联招聘", "页面未初始化",
+                        "浏览器会话可能已关闭，请重启应用或重新打开智联登录页。");
                 return;
             }
 
             // 检查是否已登录
             if (!playwrightManager.isLoggedIn(PLATFORM)) {
                 progressCallback.accept(JobProgressMessage.error(PLATFORM, "请先登录智联招聘"));
+                notifyService.needsAttention("智联招聘", "登录已失效",
+                        "投递任务未能启动，请重新扫码登录智联招聘。");
                 return;
             }
 
@@ -71,6 +77,8 @@ public class ZhilianJobService implements JobPlatformService {
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "配置加载成功"));
 
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "开始投递任务..."));
+
+            notifyService.deliveryStarted("智联招聘", config.getKeywords(), config.getCityCode());
 
             // 创建ZhiLian实例并执行投递
             ZhiLian.ProgressCallback zhilianCallback = (message, current, total) -> {
@@ -89,13 +97,19 @@ public class ZhilianJobService implements JobPlatformService {
             zhilian.prepare();
 
             // 必须跑在 Playwright 专用线程上，否则会和后台登录监控并发操作同一条连接
+            long startedAt = System.currentTimeMillis();
             int deliveredCount = playwrightManager.callOnPlaywright(zhilian::execute);
+            long durationMs = System.currentTimeMillis() - startedAt;
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共投递%d个职位", deliveredCount)));
+
+            notifyService.deliveryFinished("智联招聘", deliveredCount, durationMs);
         } catch (Exception e) {
             log.error("智联招聘投递任务执行失败", e);
-            progressCallback.accept(JobProgressMessage.error(PLATFORM, "投递失败: " + e.getMessage()));
+            String reason = e.getMessage();
+            progressCallback.accept(JobProgressMessage.error(PLATFORM, "投递失败: " + reason));
+            notifyService.deliveryFailed("智联招聘", reason);
         } finally {
             isRunning = false;
             shouldStop = false;

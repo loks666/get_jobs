@@ -1,6 +1,7 @@
 package com.getjobs.worker.service;
 
 import com.getjobs.application.service.ConfigService;
+import com.getjobs.application.service.NotifyService;
 import com.getjobs.worker.dto.JobProgressMessage;
 import com.getjobs.worker.job51.Job51;
 import com.getjobs.worker.job51.Job51Config;
@@ -28,6 +29,7 @@ public class Job51JobService implements JobPlatformService {
     private final PlaywrightManager playwrightManager;
     private final ObjectProvider<Job51> job51Provider;
     private final ConfigService configService;
+    private final NotifyService notifyService;
 
     // 任务运行状态
     private volatile boolean isRunning = false;
@@ -72,11 +74,15 @@ public class Job51JobService implements JobPlatformService {
 
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "开始投递任务..."));
 
+            notifyService.deliveryStarted("51job", config.getKeywords(), config.getJobArea());
+
             // 创建Job51实例并执行投递
             Job51.ProgressCallback job51Callback = (message, current, total) -> {
                 // 拦截特定警告：当前页未采集到任何 jobId => 视为达到投递上限，自动停止并告警
                 if (message != null && message.contains("当前页未采集到任何 jobId")) {
                     progressCallback.accept(JobProgressMessage.warning(PLATFORM, "检测到当前页无岗位ID，疑似达到上限或页面变化，任务已停止"));
+                    notifyService.needsAttention("51job", "疑似达到投递上限",
+                            "当前页未采集到任何职位ID，可能是今日投递已达上限或页面结构变化，任务已停止。");
                     // 设置停止标志，Job51 将在下一次 shouldStop() 检查时退出
                     stopDelivery();
                     return;
@@ -96,13 +102,19 @@ public class Job51JobService implements JobPlatformService {
             job51.prepare();
 
             // 必须跑在 Playwright 专用线程上，否则会和后台登录监控并发操作同一条连接
+            long startedAt = System.currentTimeMillis();
             int deliveredCount = playwrightManager.callOnPlaywright(job51::execute);
+            long durationMs = System.currentTimeMillis() - startedAt;
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共投递%d个职位", deliveredCount)));
+
+            notifyService.deliveryFinished("51job", deliveredCount, durationMs);
         } catch (Exception e) {
             log.error("51job投递任务执行失败", e);
-            progressCallback.accept(JobProgressMessage.error(PLATFORM, "投递失败: " + e.getMessage()));
+            String reason = e.getMessage();
+            progressCallback.accept(JobProgressMessage.error(PLATFORM, "投递失败: " + reason));
+            notifyService.deliveryFailed("51job", reason);
         } finally {
             isRunning = false;
             shouldStop = false;

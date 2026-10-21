@@ -1,6 +1,7 @@
 package com.getjobs.worker.service;
 
 import com.getjobs.application.service.ConfigService;
+import com.getjobs.application.service.NotifyService;
 import com.getjobs.worker.boss.Boss;
 import com.getjobs.worker.boss.BossConfig;
 import com.getjobs.worker.dto.JobProgressMessage;
@@ -28,6 +29,7 @@ public class BossJobService implements JobPlatformService {
     private final PlaywrightManager playwrightManager;
     private final ConfigService configService;
     private final ObjectProvider<Boss> bossProvider;
+    private final NotifyService notifyService;
 
     // 任务运行状态
     private volatile boolean isRunning = false;
@@ -53,12 +55,16 @@ public class BossJobService implements JobPlatformService {
             Page page = playwrightManager.getBossPage();
             if (page == null) {
                 progressCallback.accept(JobProgressMessage.error(PLATFORM, "Boss页面未初始化"));
+                notifyService.needsAttention("Boss直聘", "Boss页面未初始化",
+                        "浏览器会话可能已关闭，请重启应用或在页面上重新打开 Boss 登录页。");
                 return;
             }
 
             // 检查是否已登录
             if (!playwrightManager.isLoggedIn(PLATFORM)) {
                 progressCallback.accept(JobProgressMessage.error(PLATFORM, "请先登录Boss直聘"));
+                notifyService.needsAttention("Boss直聘", "登录已失效",
+                        "投递任务未能启动，请重新扫码登录 Boss直聘。");
                 return;
             }
 
@@ -75,6 +81,8 @@ public class BossJobService implements JobPlatformService {
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "配置加载成功"));
 
             progressCallback.accept(JobProgressMessage.info(PLATFORM, "开始投递任务..."));
+
+            notifyService.deliveryStarted("Boss直聘", config.getKeywords(), config.getCityCode());
 
             // 创建Boss实例并执行投递
             Boss.ProgressCallback bossCallback = (message, current, total) -> {
@@ -95,13 +103,19 @@ public class BossJobService implements JobPlatformService {
             // 整个投递流程必须跑在 Playwright 专用线程上。
             // 原来跑在 ForkJoinPool 上，会和 scheduling-1 的登录监控同时操作同一条
             // Playwright 连接，导航被打断报 net::ERR_ABORTED，整个任务直接挂掉。
+            long startedAt = System.currentTimeMillis();
             int deliveredCount = playwrightManager.callOnPlaywright(boss::execute);
+            long durationMs = System.currentTimeMillis() - startedAt;
 
             progressCallback.accept(JobProgressMessage.success(PLATFORM,
                 String.format("投递任务完成，共发起%d个聊天", deliveredCount)));
+
+            notifyService.deliveryFinished("Boss直聘", deliveredCount, durationMs);
         } catch (Exception e) {
             log.error("Boss投递任务执行失败", e);
-            progressCallback.accept(JobProgressMessage.error(PLATFORM, "投递失败: " + e.getMessage()));
+            String reason = e.getMessage();
+            progressCallback.accept(JobProgressMessage.error(PLATFORM, "投递失败: " + reason));
+            notifyService.deliveryFailed("Boss直聘", reason);
         } finally {
             isRunning = false;
             shouldStop = false;

@@ -1,6 +1,7 @@
 package com.getjobs.worker.job51;
 
 import com.getjobs.application.service.Job51Service;
+import com.getjobs.worker.utils.Bot;
 import com.getjobs.worker.utils.JobUtils;
 import com.getjobs.worker.utils.PlaywrightUtil;
 import com.microsoft.playwright.Locator;
@@ -193,6 +194,7 @@ public class Job51 {
             // 检查是否需要登录
             if (checkNeedLogin()) {
                 sendProgress("需要重新登录，跳过关键词: " + keyword, null, null);
+                notifyOnce("NEED_LOGIN", "[getJobs] 51job\n登录已失效，投递任务已中断，请重新扫码登录 51job。");
                 return;
             }
 
@@ -333,6 +335,7 @@ public class Job51 {
                             reachedDailyLimit = true;
                             log.warn("点击投递按钮后，检测到 51job 日投递上限提示，停止投递");
                             sendProgress("检测到日投递上限，任务已停止", null, null);
+                            notifyOnce("DAILY_LIMIT", "[getJobs] 51job\n今日投递已达上限，任务已停止。明天再继续。");
                             return;
                         }
                     }
@@ -458,6 +461,7 @@ public class Job51 {
                 if (detectDailyLimitToast51job()) {
                     reachedDailyLimit = true;
                     log.warn("处理成功弹窗后，检测到 51job 日投递上限提示，停止当前页");
+                    notifyOnce("DAILY_LIMIT", "[getJobs] 51job\n今日投递已达上限，已停止当前页投递。");
                 }
             } catch (Exception ignored) {}
         } catch (Exception e) {
@@ -766,6 +770,7 @@ public class Job51 {
                     log.warn("[51job] 当前页未采集到任何 jobId，可能页面结构变化或选择器不匹配");
                     // 向前端推送警告，便于按钮重置
                     sendProgress("[51job] 当前页未采集到任何 jobId，可能页面结构变化或选择器不匹配", null, null);
+                    notifyOnce("PAGE_CHANGED", "[getJobs] 51job\n当前页未采集到任何职位ID，可能是页面结构变化或已达投递上限，任务即将停止。");
                     // 设置达上限标记，外层循环将终止
                     reachedDailyLimit = true;
                 }
@@ -820,6 +825,17 @@ public class Job51 {
         if (progressCallback != null) {
             progressCallback.accept(message, current, total);
         }
+    }
+
+    /** 同一类事件在一次任务内只推送一次，避免群里被同一条告警刷屏 */
+    private final java.util.Set<String> notifiedKeys =
+            java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
+    private void notifyOnce(String key, String message) {
+        if (!notifiedKeys.add(key)) {
+            return;
+        }
+        Bot.sendMessage(message);
     }
 
     /**

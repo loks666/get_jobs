@@ -23,6 +23,8 @@ export default function EnvConfig() {
   const [saving, setSaving] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [testing, setTesting] = useState(false)
+  const [testMessage, setTestMessage] = useState<{ success: boolean; text: string } | null>(null)
 
   // 从数据库加载配置
   const fetchConfig = async () => {
@@ -65,6 +67,29 @@ export default function EnvConfig() {
   useEffect(() => {
     fetchConfig()
   }, [])
+
+  /**
+   * 发送一条企业微信测试消息，用于验证 Webhook 是否已正确配置。
+   * 注意：这里先静默保存一次，确保后端发出去的是页面上当前填写的 Webhook。
+   */
+  const handleTestNotify = async () => {
+    try {
+      setTesting(true)
+      setTestMessage(null)
+      await handleSave(true)
+      const response = await fetch(`${API_BASE}/api/notify/test`, { method: 'POST' })
+      const result = await response.json()
+      setTestMessage({
+        success: !!result.success,
+        text: result.message || (result.success ? '已发送，请查看群消息。' : '发送失败。'),
+      })
+    } catch (error) {
+      console.error('测试推送失败:', error)
+      setTestMessage({ success: false, text: '发送失败：网络或服务异常。' })
+    } finally {
+      setTesting(false)
+    }
+  }
 
   const handleSave = async (silent: boolean = false) => {
     try {
@@ -173,6 +198,24 @@ export default function EnvConfig() {
               <p className="text-xs text-muted-foreground">
                 企业微信群机器人webhook地址，用于接收通知消息
               </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={testing}
+                onClick={handleTestNotify}
+                className="rounded-full px-4"
+              >
+                {testing ? '发送中...' : '发送测试消息'}
+              </Button>
+              {testMessage && (
+                <span className={`text-xs ${testMessage.success ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {testMessage.text}
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
