@@ -73,3 +73,11 @@ browser-data/
 docs/node_modules/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
+
+# next build 前 mv 走的构建缓存备份（体积上百 MB，勿提交）
+front/.next_bak_*/
+front/out_bak_*/
+front/tb_bak_*
+# 数据库导出备份与临时诊断脚本
+zhilian_data_backup_*.csv
+/eval.py
