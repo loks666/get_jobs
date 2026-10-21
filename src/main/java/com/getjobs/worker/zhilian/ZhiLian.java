@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
@@ -63,6 +64,43 @@ public class ZhiLian {
             "我目前在找工作，%s，我期望的岗位方向是【%s】，目前我需要投递的岗位名称是【%s】，"
                     + "这个岗位的要求是【%s】。如果这个岗位和我的期望与经历基本符合，请只回复 true；"
                     + "如果完全不相干，请只回复 false。不要输出任何其他内容。";
+
+    /**
+     * 渝东北、渝东南各区县：离重庆主城太远，用户明确不投。
+     * （例如开州、万州、黔江、武隆等；主城与渝西不在其中）
+     */
+    private static final List<String> EXCLUDED_REGIONS = Arrays.asList(
+            // 渝东北
+            "万州", "梁平", "城口", "丰都", "垫江", "忠县", "开州", "云阳", "奉节", "巫山", "巫溪",
+            // 渝东南
+            "黔江", "武隆", "石柱", "秀山", "酉阳", "彭水"
+    );
+
+    /**
+     * 岗位是否落在渝东北/渝东南。传入岗位标题、地点、公司名等多个文本，
+     * 任一包含目标区县名即判定为排除（地区信息可能写在任一字段里）。
+     */
+    private boolean isExcludedRegion(String... texts) {
+        if (texts == null) {
+            return false;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String t : texts) {
+            if (t != null) {
+                sb.append(t);
+            }
+        }
+        if (sb.length() == 0) {
+            return false;
+        }
+        String all = sb.toString();
+        for (String region : EXCLUDED_REGIONS) {
+            if (all.contains(region)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private static class PageJob {
         int index;
@@ -264,6 +302,14 @@ public class ZhiLian {
                 String companyName = trimOrNull(safeGetText(card, "a.job-card__company-name"));
 
                 if (jobTitle == null) {
+                    continue;
+                }
+
+                // 渝东北、渝东南离主城太远，明确不投。
+                // 放在去重之前：纯字符串判断最省，不必浪费后续的点卡片、落库和 AI 请求。
+                if (isExcludedRegion(jobTitle, location, companyName)) {
+                    log.info("岗位位于渝东北/渝东南，跳过：title={}，location={}，company={}",
+                            jobTitle, location, companyName);
                     continue;
                 }
 
