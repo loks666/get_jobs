@@ -88,7 +88,8 @@ export default defineConfig({
         text: '⚙️ 系统配置详解',
         items: [
           { text: '核心与各平台配置', link: '/guide/config' },
-          { text: 'AI 大模型与消息推送', link: '/guide/ai-and-push' }
+          { text: 'AI 大模型与消息推送', link: '/guide/ai-and-push' },
+          { text: '多城市投递', link: '/guide/multi-city' }
         ]
       },
       {
