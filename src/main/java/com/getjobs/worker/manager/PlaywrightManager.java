@@ -1286,8 +1286,29 @@ public class PlaywrightManager {
                 return false;
             }
 
+            // ★ 最可靠的判据：只要页面仍停留在登录域(passport.zhaopin.com)，就一定是未登录。
+            // 原实现仅靠"页面里能否找到 a.home-header__c-no-login"来判断，而该按钮只存在于
+            // 智联首页的 header 中；一旦被重定向到 passport 登录页就永远找不到它，
+            // 于是落入下方"未检测到登录按钮 => 判定为已登录"的兜底分支，产生误判。
+            // 后果：投递任务在登录页上空跑，waitForSelector(div.joblist-box__item)
+            // 每轮都超时，最终显示"共投递0个岗位"。
+            String currentUrl;
+            try {
+                currentUrl = zhilianPage.url();
+            } catch (Exception ignored) {
+                currentUrl = null;
+            }
+            if (currentUrl != null && currentUrl.contains("passport.zhaopin.com")) {
+                log.debug("智联招聘：当前处于登录域，判定为未登录: {}", currentUrl);
+                return false;
+            }
+
             boolean isLoggedIn = false;
             boolean loginButtonExists = false;
+
+            // 说明：下方"未检测到登录按钮 => 判定为已登录"是兜底逻辑，
+            // 只在页面确实停留在智联业务域（而非登录域）时才可信，
+            // 登录域的情况已在上面提前返回 false。
 
             // 检查是否存在"登录/注册"按钮
             try {
@@ -1316,8 +1337,8 @@ public class PlaywrightManager {
                     log.info("检测到未登录智联招聘，重定向到登录页面");
                     zhilianLoginGuided = true;
 
-                    // 重定向到登录页面
-                    String currentUrl = null;
+                    // 重定向到登录页面（页面可能已跳转，重新取一次 URL）
+                    currentUrl = null;
                     try {
                         currentUrl = zhilianPage.url();
                     } catch (Exception ignored) {

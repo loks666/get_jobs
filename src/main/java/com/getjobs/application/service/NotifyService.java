@@ -43,7 +43,14 @@ public class NotifyService {
      */
     public void deliveryFinished(String platform, int count, long durationMs) {
         StringBuilder sb = new StringBuilder();
-        sb.append("【get_jobs】").append(platform).append(" 投递完成\n");
+        if (count <= 0) {
+            // 0 投递几乎总是异常信号，不能按"顺利完成"来报，
+            // 否则用户会以为程序正常、只是恰好没有新岗位。
+            sb.append("【getJobs·需处理】").append(platform).append(" 投递完成，但数量为 0\n");
+            sb.append("常见原因：登录已失效（需重新扫码）、搜索页结构变化、关键词无匹配结果。\n");
+        } else {
+            sb.append("【get_jobs】").append(platform).append(" 投递完成\n");
+        }
         sb.append("本次投递：").append(count).append(" 个\n");
         sb.append("耗时：").append(formatDuration(durationMs)).append("\n");
         sb.append("时间：").append(LocalDateTime.now().format(CLOCK));

@@ -6,6 +6,8 @@ import com.getjobs.application.service.CookieService;
 import com.getjobs.application.service.ZhilianService;
 import com.getjobs.worker.manager.PlaywrightManager;
 import com.getjobs.worker.service.ZhilianJobService;
+import com.getjobs.worker.utils.PlaywrightUtil;
+import com.microsoft.playwright.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -114,6 +116,111 @@ public class ZhilianController {
             response.put("success", false);
             response.put("message", "检查登录状态失败: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * 诊断用：导航到智联搜索页并导出真实 DOM 结构中各选择器命中数量。
+     * 站点改版导致选择器失效时，用它可以快速定位新结构，而不必靠猜。
+     * 用法：GET /api/zhilian/debug/dom?kw=宠物&jl=551
+     */
+    @GetMapping("/debug/dom")
+    public ResponseEntity<Map<String, Object>> debugDom(
+            @RequestParam(name = "kw", defaultValue = "宠物") String kw,
+            @RequestParam(name = "jl", defaultValue = "551") String jl) {
+        Map<String, Object> r = new HashMap<>();
+        try {
+            String url = "https://www.zhaopin.com/jobs/?jl=" + jl
+                    + "&pageMode=search&kw=" + java.net.URLEncoder.encode(kw, java.nio.charset.StandardCharsets.UTF_8);
+            r.put("navigateTo", url);
+
+            // 浏览器被手动关掉后字段仍非空，直接操作会一路 TargetClosedError，先自愈
+            playwrightManager.ensureReady();
+
+            // Playwright 对象只能在专用线程上操作，必须走 callOnPlaywright，
+            // 否则会抛 "Object doesn't exist"。
+            Map<String, Object> probe = playwrightManager.callOnPlaywright(() -> {
+                Map<String, Object> m = new HashMap<>();
+                Page page = playwrightManager.getZhilianPage();
+                if (page == null) {
+                    m.put("error", "zhilianPage 未初始化");
+                    return m;
+                }
+                page.navigate(url);
+                PlaywrightUtil.sleep(6);
+                m.put("url", page.url());
+                m.put("title", page.title());
+
+                String[] sels = {
+                    "div.job-card", "div.joblist-box__item", "div.job-list-panel", "div.positionlist",
+                    "a.job-card__name", "a.jobinfo__name",
+                    "span.job-card__salary", "p.jobinfo__salary",
+                    "a.job-card__company-name", "div.companyinfo__name",
+                    "span.job-card__location", "div.job-card__location",
+                    "a.soupager__btn", "button.collect-and-apply__btn"
+                };
+                Map<String, Integer> counts = new HashMap<>();
+                for (String s : sels) {
+                    int c;
+                    try { c = page.locator(s).count(); } catch (Exception e) { c = -1; }
+                    counts.put(s, c);
+                }
+                m.put("counts", counts);
+
+                try {
+                    if (page.locator("div.job-card").count() > 0) {
+                        Object html = page.locator("div.job-card").first().evaluate("e => e.outerHTML");
+                        String s = String.valueOf(html);
+                        m.put("firstCardHtml", s.length() > 6000 ? s.substring(0, 6000) : s);
+                    }
+                } catch (Exception e) {
+                    m.put("firstCardHtmlError", String.valueOf(e));
+                }
+
+                try {
+                    Object btns = page.evaluate("() => Array.from(document.querySelectorAll('button,a'))"
+                            + ".filter(b => /投递|申请/.test(b.textContent || ''))"
+                            + ".slice(0, 15).map(b => b.tagName + '.' + b.className + ' | ' + (b.textContent||'').trim())");
+                    m.put("applyButtons", btns);
+                } catch (Exception e) {
+                    m.put("applyButtonsError", String.valueOf(e));
+                }
+                return m;
+            });
+            r.putAll(probe);
+            return ResponseEntity.ok(r);
+        } catch (Exception e) {
+            log.error("诊断智联 DOM 失败", e);
+            r.put("error", String.valueOf(e));
+            return ResponseEntity.ok(r);
+        }
+    }
+
+    /**
+     * 诊断用：在智联页面上下文里执行一段 JS 并返回结果，用于快速摸清改版后的 DOM 结构。
+     * 例如：GET /api/zhilian/debug/eval?js=()=>document.querySelectorAll('button').length
+     * 注意：仅本地自用的排障工具，不要对外暴露。
+     */
+    @GetMapping("/debug/eval")
+    public ResponseEntity<Map<String, Object>> debugEval(@RequestParam(name = "js") String js) {
+        Map<String, Object> r = new HashMap<>();
+        try {
+            // 浏览器被手动关掉后字段仍非空，直接 evaluate 会抛 TargetClosedError，先自愈
+            playwrightManager.ensureReady();
+
+            Object out = playwrightManager.callOnPlaywright(() -> {
+                Page page = playwrightManager.getZhilianPage();
+                if (page == null) {
+                    return "zhilianPage 未初始化";
+                }
+                return page.evaluate(js);
+            });
+            r.put("result", out);
+            return ResponseEntity.ok(r);
+        } catch (Exception e) {
+            log.error("在智联页面执行 JS 失败", e);
+            r.put("error", String.valueOf(e));
+            return ResponseEntity.ok(r);
         }
     }
 
