@@ -17,6 +17,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.CrossOrigin;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +77,7 @@ public class BossConfigController {
         result.put("options", options);
         result.put("blacklist", blacklist);
         result.put("resumeImage", bossResumeImageService.getMetadata());
+        result.put("resumeRules", bossResumeImageService.listRules());
 
         return result;
     }
@@ -263,6 +266,74 @@ public class BossConfigController {
         return bossResumeImageService.getCurrentImage()
                 .map(this::resumeImageResponse)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /** 列出「关键词 → 专属简历」绑定规则。 */
+    @GetMapping("/resume-rules")
+    public List<Map<String, Object>> listResumeRules() {
+        return bossResumeImageService.listRules();
+    }
+
+    /** 为某个搜索关键词上传专属简历。 */
+    @PostMapping(value = "/resume-rules", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Object>> uploadResumeRule(
+            @RequestParam("keyword") String keyword,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            ResumeImageInfo info = bossResumeImageService.saveForKeyword(keyword, file);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "已为关键词「" + keyword.trim() + "」绑定简历：" + info.fileName(),
+                    "resumeRules", bossResumeImageService.listRules()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "关键词简历保存失败：" + e.getMessage()
+            ));
+        }
+    }
+
+    /** 删除某条关键词简历绑定。 */
+    @DeleteMapping("/resume-rules/{id}")
+    public ResponseEntity<Map<String, Object>> deleteResumeRule(@PathVariable("id") long id) {
+        boolean removed = bossResumeImageService.deleteRule(id);
+        return removed
+                ? ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "已删除该关键词简历绑定",
+                        "resumeRules", bossResumeImageService.listRules()))
+                : ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "success", false,
+                        "message", "未找到该绑定规则"));
+    }
+
+    /** 预览某个关键词绑定的简历图片。 */
+    @GetMapping("/resume-rules/{id}/content")
+    public ResponseEntity<Resource> getResumeRuleContent(@PathVariable("id") long id) {
+        java.nio.file.Path path = bossResumeImageService.getRuleImagePath(id).orElse(null);
+        if (path == null) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            String lower = path.getFileName().toString().toLowerCase();
+            String contentType = lower.endsWith(".png") ? "image/png"
+                    : lower.endsWith(".gif") ? "image/gif" : "image/jpeg";
+            return resumeImageResponse(new ResumeImageInfo(
+                    path,
+                    path.getFileName().toString(),
+                    contentType,
+                    Files.size(path),
+                    Files.getLastModifiedTime(path).toMillis()
+            ));
+        } catch (IOException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

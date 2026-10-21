@@ -1,6 +1,6 @@
 allowBuilds:
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+  sharp: false
+  unrs-resolver: false
 
 # pnpm 11 起 overrides 从 package.json 移到本文件。
 # 以下均为传递依赖的安全补丁，用于消除 Dependabot 告警：

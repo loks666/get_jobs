@@ -73,6 +73,17 @@ interface ResumeImageInfo {
   previewUrl?: string
 }
 
+/** 关键词 → 专属简历 的绑定规则 */
+interface ResumeRule {
+  id: number
+  keyword: string
+  exists?: boolean
+  fileName?: string
+  size?: number
+  updatedAt?: string | number
+  previewUrl?: string
+}
+
 export default function BossPage() {
   const [config, setConfig] = useState<BossConfig>({
     keywords: '',
@@ -126,6 +137,11 @@ export default function BossPage() {
   const [localResumePreviewUrl, setLocalResumePreviewUrl] = useState<string | null>(null)
   const [showResumePreview, setShowResumePreview] = useState(false)
   const resumeImageInputRef = useRef<HTMLInputElement>(null)
+  const [resumeRules, setResumeRules] = useState<ResumeRule[]>([])
+  const [newRuleKeyword, setNewRuleKeyword] = useState('')
+  const [ruleUploading, setRuleUploading] = useState(false)
+  const [ruleMessage, setRuleMessage] = useState<{ success: boolean; text: string } | null>(null)
+  const ruleImageInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     return () => {
@@ -214,6 +230,7 @@ export default function BossPage() {
         ? data.resumeImage
         : { exists: false }
       setResumeImage(fetchedResumeImage)
+      setResumeRules(Array.isArray(data.resumeRules) ? data.resumeRules : [])
 
       if (data.config) {
         // 规范化城市编码：后端可能返回单值或括号列表，此处取第一个值用于下拉回显
@@ -515,6 +532,68 @@ export default function BossPage() {
       })
     } finally {
       setResumeImageUploading(false)
+    }
+  }
+
+  const handleRuleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    const keyword = newRuleKeyword.trim()
+    if (!keyword) {
+      setRuleMessage({ success: false, text: '请先填写要绑定的搜索关键词。' })
+      return
+    }
+    const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/gif'])
+    const allowedExtension = /\.(png|jpe?g|gif)$/i.test(file.name)
+    if ((!allowedTypes.has(file.type) && !allowedExtension) || file.size === 0) {
+      setRuleMessage({ success: false, text: '请选择有效的 PNG、JPG、JPEG 或 GIF 图片。' })
+      return
+    }
+
+    setRuleUploading(true)
+    setRuleMessage(null)
+    try {
+      const formData = new FormData()
+      formData.append('keyword', keyword)
+      formData.append('file', file)
+      const response = await fetch(`${API_BASE}/api/boss/config/resume-rules`, {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data.message || `绑定失败（HTTP ${response.status}）`)
+      }
+      setResumeRules(Array.isArray(data.resumeRules) ? data.resumeRules : [])
+      setNewRuleKeyword('')
+      setRuleMessage({ success: true, text: data.message || `已为「${keyword}」绑定简历。` })
+    } catch (error) {
+      setRuleMessage({
+        success: false,
+        text: error instanceof Error ? error.message : '绑定失败，请确认后端服务已启动。',
+      })
+    } finally {
+      setRuleUploading(false)
+    }
+  }
+
+  const handleDeleteRule = async (id: number) => {
+    setRuleMessage(null)
+    try {
+      const response = await fetch(`${API_BASE}/api/boss/config/resume-rules/${id}`, { method: 'DELETE' })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data.message || `删除失败（HTTP ${response.status}）`)
+      }
+      setResumeRules(Array.isArray(data.resumeRules) ? data.resumeRules : [])
+      setRuleMessage({ success: true, text: '已删除该关键词简历绑定。' })
+    } catch (error) {
+      setRuleMessage({
+        success: false,
+        text: error instanceof Error ? error.message : '删除失败，请确认后端服务已启动。',
+      })
     }
   }
 
@@ -857,6 +936,97 @@ export default function BossPage() {
                   </button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* 按关键词绑定专属简历 */}
+          <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BiImage className="text-primary" />
+                按关键词投递不同简历
+              </CardTitle>
+              <CardDescription>
+                给指定搜索关键词绑定专属图片简历，未绑定的关键词仍使用上方默认简历
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-end">
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="newRuleKeyword">搜索关键词</Label>
+                  <Input
+                    id="newRuleKeyword"
+                    value={newRuleKeyword}
+                    onChange={(event) => setNewRuleKeyword(event.target.value)}
+                    placeholder="例如：高中化学教师"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    需与下方「搜索配置」里的关键词完全一致才会命中
+                  </p>
+                </div>
+                <input
+                  ref={ruleImageInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,.png,.jpg,.jpeg,.gif"
+                  onChange={handleRuleFileChange}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={ruleUploading || !newRuleKeyword.trim()}
+                  onClick={() => ruleImageInputRef.current?.click()}
+                >
+                  <BiUpload className="mr-2" />
+                  {ruleUploading ? '正在上传…' : '选择图片并绑定'}
+                </Button>
+              </div>
+
+              {ruleMessage && (
+                <p className={`text-sm ${ruleMessage.success ? 'text-green-600' : 'text-red-600'}`}>
+                  {ruleMessage.text}
+                </p>
+              )}
+
+              {resumeRules.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  还没有绑定任何关键词，当前所有岗位都会使用默认简历
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {resumeRules.map((rule) => (
+                    <div key={rule.id} className="flex items-center gap-3 rounded-lg border p-3">
+                      {rule.exists && rule.previewUrl ? (
+                        <img
+                          src={`${API_BASE}${rule.previewUrl}?v=${rule.updatedAt || 0}`}
+                          alt={`${rule.keyword} 的简历`}
+                          className="h-14 w-14 shrink-0 rounded border object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded border bg-muted text-center text-xs text-muted-foreground">
+                          缺图
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{rule.keyword}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {rule.exists
+                            ? `${rule.fileName || '简历'}${rule.size != null ? ` · ${formatFileSize(rule.size)}` : ''}`
+                            : '图片文件缺失，将回落到默认简历'}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteRule(rule.id)}
+                      >
+                        <BiTrash className="mr-1" /> 删除
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -1149,10 +1149,13 @@ public class Boss {
         // 8. 发送图片简历（可选）
         boolean imgResume = false;
         if (sendSuccess && Boolean.TRUE.equals(config.getSendImgResume())) {
-            imgResume = sendImageResume(detailPage);
+            imgResume = sendImageResume(detailPage, keyword);
         }
 
-        log.info("投递完成 | 公司：{} | 岗位：{} | 薪资：{} | 招呼语：{} | 图片简历：{}", job.getCompanyName(), job.getJobName(), job.getSalary(), message, imgResume ? "已发送" : "未发送");
+        log.info("投递完成 | 公司：{} | 岗位：{} | 薪资：{} | 招呼语：{} | 图片简历：{}（{}）",
+                job.getCompanyName(), job.getJobName(), job.getSalary(), message,
+                imgResume ? "已发送" : "未发送",
+                bossResumeImageService.describeResolution(keyword));
 
         // 9. 关闭新打开的详情页
         try {
@@ -1277,14 +1280,17 @@ public class Boss {
         return str != null && !str.isEmpty();
     }
 
-    private boolean sendImageResume(Page page) {
+    private boolean sendImageResume(Page page, String keyword) {
         try {
-            Optional<java.nio.file.Path> resumeImage = bossResumeImageService.getCurrentImagePath();
+            // 优先用该关键词绑定的专属简历，没有绑定或文件缺失时回落默认简历
+            Optional<java.nio.file.Path> resumeImage = bossResumeImageService.resolveImagePath(keyword);
             if (resumeImage.isEmpty()) {
-                log.warn("未上传图片简历，跳过图片发送；请先在 Boss 管理页面上传");
+                log.warn("未上传图片简历，跳过图片发送；请先在 Boss 管理页面上传（关键词：{}）", keyword);
                 return false;
             }
             java.nio.file.Path imagePath = resumeImage.get();
+            log.info("本次图片简历来源：{} | 关键词：{} | 文件：{}",
+                    bossResumeImageService.describeResolution(keyword), keyword, imagePath.getFileName());
 
             Locator imageInput = prepareImageUploadInput(page);
             if (imageInput == null) {
