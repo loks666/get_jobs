@@ -46,9 +46,9 @@
 
 ### 📢 广告位招租
 
-- 本项目月均访问量可观，Star 8.4k+，QQ 交流群活跃，欢迎与求职、AI、开发工具相关的产品洽谈合作
+- 本项目月均访问量可观，Star 9.1k+，QQ 交流群活跃，欢迎与求职、AI、开发工具相关的产品洽谈合作
 - 合作邮箱：`super_xiang@126.com`，或通过 QQ 群联系
-
+  本项目月均访问量可观，Star [![Stars](https://img.shields.io/github/stars/loks666/get_jobs?label=%E2%AD%90&style=flat&color=ff5a5f)](https://github.com/loks666/get_jobs)，QQ 交流群活跃，欢迎与求职、AI、开发工具相关的产品洽谈合作
 ## 🌟 特色功能
 
 - **🖥️ 图形化界面**：直观的网页管理界面，方便配置与运行，降低上手成本。
