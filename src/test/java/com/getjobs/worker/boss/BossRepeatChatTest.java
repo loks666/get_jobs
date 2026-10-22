@@ -54,7 +54,13 @@ class BossRepeatChatTest {
         submission.setAccessible(true);
         Job job = new Job();
         if ("继续沟通".equals(text)) job.setJobInfo("已有会话不会调用AI重新分析此JD");
-        try (var ignored = mockStatic(PlaywrightUtil.class)) {
+        try (var ignored = mockStatic(PlaywrightUtil.class);
+             var navigators = mockConstruction(BossChatNavigator.class, (navigator, construction) -> {
+                 when(navigator.open(any(), anyBoolean(), anyBoolean(), any(), anyLong())).thenAnswer(invocation -> {
+                     button.click();
+                     return new BossChatNavigator.Chat(detail, input, "继续沟通".equals(text));
+                 });
+             })) {
             assertEquals(expected, submission.invoke(boss, "Java", job));
         }
         verify(button, times(expected ? 1 : 0)).click();
