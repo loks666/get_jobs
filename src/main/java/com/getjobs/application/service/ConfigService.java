@@ -264,6 +264,19 @@ public class ConfigService {
             config.setSalary((codeByName != null && !codeByName.isEmpty()) ? codeByName : salaryCode.trim());
         }
 
+        // 招聘者活跃：直接透传 pub_time 代码值（空=不限）
+        config.setPubTime(entity != null && entity.getPubTime() != null ? entity.getPubTime().trim() : "");
+
+        // 批次投递配置透传（null 由 worker 按默认处理）
+        if (entity != null) {
+            config.setBatchSize(entity.getBatchSize());
+            config.setApplyIntervalMin(entity.getApplyIntervalMin());
+            config.setApplyIntervalMax(entity.getApplyIntervalMax());
+            config.setBatchWaitMin(entity.getBatchWaitMin());
+            config.setBatchWaitMax(entity.getBatchWaitMax());
+            config.setBatchAction(entity.getBatchAction());
+        }
+
         return config;
     }
 

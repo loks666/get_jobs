@@ -23,6 +23,27 @@ public class LiepinConfigEntity {
     /** 薪资代码或范围 */
     private String salaryCode;
 
+    /** 招聘者活跃（pubTime 代码值：空=不限，1=一天内，3=三天内，7=一周内，30=一月内） */
+    private String pubTime;
+
+    /** 每批投递份数（0=不限） */
+    private Integer batchSize;
+
+    /** 每次投递间隔最小秒数 */
+    private Integer applyIntervalMin;
+
+    /** 每次投递间隔最大秒数 */
+    private Integer applyIntervalMax;
+
+    /** 批次完成后等待最小秒数 */
+    private Integer batchWaitMin;
+
+    /** 批次完成后等待最大秒数 */
+    private Integer batchWaitMax;
+
+    /** 批次完成后动作：continue=等待后继续，stop=停止任务 */
+    private String batchAction;
+
     /** 创建时间 */
     private LocalDateTime createdAt;
 

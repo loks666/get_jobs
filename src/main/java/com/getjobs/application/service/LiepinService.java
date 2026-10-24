@@ -73,7 +73,33 @@ public class LiepinService {
             try { stmt.execute("ALTER TABLE liepin_data DROP COLUMN job_city"); } catch (Exception ignored) {}
             try { stmt.execute("ALTER TABLE liepin_data DROP COLUMN comp_full_name"); } catch (Exception ignored) {}
             try { stmt.execute("ALTER TABLE liepin_data DROP COLUMN comp_kind"); } catch (Exception ignored) {}
-            log.info("确保 liepin_data 表已存在");
+            // 确保 liepin_config 表存在（含 pub_time/批次投递列），兼容旧库缺列
+            stmt.execute("CREATE TABLE IF NOT EXISTS liepin_config (" +
+                    " id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    " keywords VARCHAR(500)," +
+                    " city VARCHAR(200)," +
+                    " salary_code VARCHAR(200)," +
+                    " pub_time VARCHAR(20)," +
+                    " batch_size INTEGER," +
+                    " apply_interval_min INTEGER," +
+                    " apply_interval_max INTEGER," +
+                    " batch_wait_min INTEGER," +
+                    " batch_wait_max INTEGER," +
+                    " batch_action VARCHAR(20)," +
+                    " created_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                    " updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+            try {
+                stmt.execute("ALTER TABLE liepin_config ADD COLUMN pub_time VARCHAR(20)");
+            } catch (Exception ignored) {}
+            try {
+                stmt.execute("ALTER TABLE liepin_config ADD COLUMN batch_size INTEGER");
+                stmt.execute("ALTER TABLE liepin_config ADD COLUMN apply_interval_min INTEGER");
+                stmt.execute("ALTER TABLE liepin_config ADD COLUMN apply_interval_max INTEGER");
+                stmt.execute("ALTER TABLE liepin_config ADD COLUMN batch_wait_min INTEGER");
+                stmt.execute("ALTER TABLE liepin_config ADD COLUMN batch_wait_max INTEGER");
+                stmt.execute("ALTER TABLE liepin_config ADD COLUMN batch_action VARCHAR(20)");
+            } catch (Exception ignored) {}
+            log.info("确保 liepin_data / liepin_config 表已存在");
         } catch (Exception e) {
             log.warn("创建 liepin_data 表失败: {}", e.getMessage());
         }
@@ -289,6 +315,27 @@ public class LiepinService {
         }
         if (config.getSalaryCode() != null) {
             existing.setSalaryCode(config.getSalaryCode());
+        }
+        if (config.getPubTime() != null) {
+            existing.setPubTime(config.getPubTime());
+        }
+        if (config.getBatchSize() != null) {
+            existing.setBatchSize(config.getBatchSize());
+        }
+        if (config.getApplyIntervalMin() != null) {
+            existing.setApplyIntervalMin(config.getApplyIntervalMin());
+        }
+        if (config.getApplyIntervalMax() != null) {
+            existing.setApplyIntervalMax(config.getApplyIntervalMax());
+        }
+        if (config.getBatchWaitMin() != null) {
+            existing.setBatchWaitMin(config.getBatchWaitMin());
+        }
+        if (config.getBatchWaitMax() != null) {
+            existing.setBatchWaitMax(config.getBatchWaitMax());
+        }
+        if (config.getBatchAction() != null) {
+            existing.setBatchAction(config.getBatchAction());
         }
         existing.setUpdatedAt(LocalDateTime.now());
         liepinConfigMapper.updateById(existing);

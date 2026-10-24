@@ -1,149 +1,69 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import Image from 'next/image'
+import { useState, useEffect } from 'react'
 import { createSSEWithBackoff } from '@/lib/sse'
-import { createPortal } from 'react-dom'
-import { BiBriefcase, BiSave, BiSearch, BiMap, BiMoney, BiBuilding, BiTime, BiBarChart, BiTrash, BiPlus, BiPlay, BiStop, BiLogOut, BiImage, BiUpload, BiZoomIn, BiX } from 'react-icons/bi'
+import { BiSearch, BiSave, BiTargetLock, BiMap, BiMoney, BiTime, BiBookmark, BiBarChart, BiPlay, BiStop, BiLogOut, BiBriefcase } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import AnalysisContent from '@/app/liepin/analysis/AnalysisContent'
 import PageHeader from '@/app/components/PageHeader'
-import AnalysisContent from '@/app/boss/analysis/AnalysisContent'
 import { API_BASE } from '@/lib/api'
 
-interface BossConfig {
+interface LiepinConfig {
   id?: number
-  debugger?: number
-  waitTime?: number
   keywords?: string
-  cityCode?: string
-  industry?: string
-  jobType?: string
-  experience?: string
-  degree?: string
-  salary?: string
-  scale?: string
-  stage?: string
-  sayHi?: string
-  enableAi?: number
-  sendImgResume?: number
-  filterDeadHr?: number
-  deadStatus?: string
+  city?: string
+  salaryCode?: string
+  pubTime?: string
+  batchSize?: number
+  applyIntervalMin?: number
+  applyIntervalMax?: number
+  batchWaitMin?: number
+  batchWaitMax?: number
+  batchAction?: string
 }
 
-interface BossOption {
+interface LiepinOption {
   id: number
   type: string
   name: string
   code: string
-  // 可选的排序字段（来自后端/数据库），用于前端排序显示
-  sort_order?: number
-  sortOrder?: number
 }
 
-interface BossOptions {
-  city: BossOption[]
-  industry: BossOption[]
-  experience: BossOption[]
-  jobType: BossOption[]
-  salary: BossOption[]
-  degree: BossOption[]
-  scale: BossOption[]
-  stage: BossOption[]
+interface LiepinOptions {
+  city: LiepinOption[]
 }
 
-interface BlacklistItem {
-  id: number
-  value: string
-  type: string
-}
-
-interface ResumeImageInfo {
-  exists: boolean
-  fileName?: string
-  contentType?: string
-  size?: number
-  updatedAt?: number
-  previewUrl?: string
-}
-
-export default function BossPage() {
-  const [config, setConfig] = useState<BossConfig>({
+export default function LiepinPage() {
+  const [config, setConfig] = useState<LiepinConfig>({
     keywords: '',
-    cityCode: '',
-    industry: '',
-    jobType: '',
-    experience: '',
-    degree: '',
-    salary: '',
-    scale: '',
-    stage: '',
-    sendImgResume: 0,
-    filterDeadHr: 0,
+    city: '',
+    salaryCode: '',
+    pubTime: '',
+    batchSize: 10,
+    applyIntervalMin: 8,
+    applyIntervalMax: 15,
+    batchWaitMin: 60,
+    batchWaitMax: 180,
+    batchAction: 'continue',
   })
-  // 关键词显示用（无括号无引号，逗号分隔）
-  const [keywordsDisplay, setKeywordsDisplay] = useState<string>('')
-  // 多选选中的代码集合（按括号列表保存）
-  const [selectedIndustry, setSelectedIndustry] = useState<string[]>([])
-  const [selectedExperience, setSelectedExperience] = useState<string[]>([])
-  const [selectedDegree, setSelectedDegree] = useState<string[]>([])
-  const [selectedScale, setSelectedScale] = useState<string[]>([])
-  const [selectedStage, setSelectedStage] = useState<string[]>([])
-  const [selectedSalary, setSelectedSalary] = useState<string[]>([])
-  const [options, setOptions] = useState<BossOptions>({
+  const [options, setOptions] = useState<LiepinOptions>({
     city: [],
-    industry: [],
-    experience: [],
-    jobType: [],
-    salary: [],
-    degree: [],
-    scale: [],
-    stage: [],
   })
-  const [blacklist, setBlacklist] = useState<BlacklistItem[]>([])
-  const [newBlacklistKeyword, setNewBlacklistKeyword] = useState('')
-  const [blacklistType, setBlacklistType] = useState('company') // 默认为公司
   const [loading, setLoading] = useState(true)
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [isCustomCity, setIsCustomCity] = useState(false) // 是否手动输入城市
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isDelivering, setIsDelivering] = useState(false)
   const [checkingLogin, setCheckingLogin] = useState(true)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
-  const [showSaveDialog, setShowSaveDialog] = useState(false)
-  // title 可选：这个弹框既用于保存结果，也用于投递启动失败等提示
-  const [saveResult, setSaveResult] = useState<{ success: boolean; message: string; title?: string } | null>(null)
   const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
   const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
-  const [resumeImage, setResumeImage] = useState<ResumeImageInfo>({ exists: false })
-  const [resumeImageUploading, setResumeImageUploading] = useState(false)
-  const [resumeImageMessage, setResumeImageMessage] = useState<{ success: boolean; text: string } | null>(null)
-  const [localResumePreviewUrl, setLocalResumePreviewUrl] = useState<string | null>(null)
-  const [showResumePreview, setShowResumePreview] = useState(false)
-  const resumeImageInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    return () => {
-      if (localResumePreviewUrl) URL.revokeObjectURL(localResumePreviewUrl)
-    }
-  }, [localResumePreviewUrl])
-
-  useEffect(() => {
-    if (!showResumePreview) return
-
-    const previousOverflow = document.body.style.overflow
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setShowResumePreview(false)
-    }
-    document.body.style.overflow = 'hidden'
-    document.addEventListener('keydown', handleEscape)
-    return () => {
-      document.body.style.overflow = previousOverflow
-      document.removeEventListener('keydown', handleEscape)
-    }
-  }, [showResumePreview])
 
   useEffect(() => {
     fetchAllData()
@@ -169,7 +89,7 @@ export default function BossPage() {
           handler: (event) => {
             try {
               const data = JSON.parse(event.data)
-              setIsLoggedIn(data.bossLoggedIn || false)
+              setIsLoggedIn(data.liepinLoggedIn || false)
               setCheckingLogin(false)
             } catch (error) {
               console.error('[SSE] 解析连接消息失败:', error)
@@ -181,7 +101,7 @@ export default function BossPage() {
           handler: (event) => {
             try {
               const data = JSON.parse(event.data)
-              if (data.platform === 'boss') {
+              if (data.platform === 'liepin') {
                 setIsLoggedIn(data.isLoggedIn)
                 setCheckingLogin(false)
               }
@@ -199,237 +119,65 @@ export default function BossPage() {
     }
   }, [])
 
+  // 将数据库中的 JSON 数组字符串转换为逗号分隔的可读字符串
+  const parseKeywordsFromDb = (raw?: string): string => {
+    if (!raw) return ''
+    const t = raw.trim()
+    if (t.startsWith('[') && t.endsWith(']')) {
+      try {
+        const arr = JSON.parse(t)
+        if (Array.isArray(arr)) return arr.filter(Boolean).join(', ')
+      } catch (e) {
+        console.warn('解析关键词JSON失败，使用原值:', e)
+      }
+    }
+    // 兼容逗号或中文逗号分隔的原始字符串
+    return t.replace(/，/g, ',')
+  }
+
+  // 将输入的逗号分隔字符串转换为 JSON 数组字符串保存到数据库
+  const serializeKeywordsForDb = (display?: string): string => {
+    const raw = (display || '').trim()
+    if (!raw) return '[]'
+    const norm = raw.replace(/，/g, ',')
+    const tokens = norm
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+    return JSON.stringify(tokens)
+  }
+
   const fetchAllData = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/boss/config`)
+      const response = await fetch(`${API_BASE}/api/liepin/config`)
       const data = await response.json()
 
-      console.log('Fetched data:', data)
-      console.log('Blacklist:', data.blacklist)
-
-      const fetchedResumeImage: ResumeImageInfo = data.resumeImage?.exists
-        ? data.resumeImage
-        : { exists: false }
-      setResumeImage(fetchedResumeImage)
+      console.log('Fetched liepin data:', data)
 
       if (data.config) {
-        // 规范化城市编码：后端可能返回单值或括号列表，此处取第一个值用于下拉回显
-        const normalizeCityCode = (raw?: string): string => {
-          if (!raw) return ''
-          const list = parseListString(raw)
-          if (list.length > 0) return list[0]
-          return raw
+        const normalized = { ...data.config }
+        normalized.keywords = parseKeywordsFromDb(data.config.keywords)
+        setConfig(normalized)
+        // 检查当前城市是否在选项列表中
+        if (data.options?.city && data.config.city) {
+          const cityExists = data.options.city.some((c: LiepinOption) => c.name === data.config.city || c.code === data.config.city)
+          setIsCustomCity(!cityExists)
         }
-        // 规范化职位类型：后端可能返回单值或括号列表，此处取第一个值用于下拉回显
-        const normalizeJobType = (raw?: string): string => {
-          if (!raw) return ''
-          const list = parseListString(raw)
-          if (list.length > 0) return list[0]
-          return raw
-        }
-        setConfig({
-          ...data.config,
-          cityCode: normalizeCityCode(data.config.cityCode),
-          jobType: normalizeJobType(data.config.jobType),
-          // 没有图片时不能保留开启状态，否则开关会处于“开启但不可用”。
-          sendImgResume: fetchedResumeImage.exists ? (data.config.sendImgResume ?? 0) : 0,
-        })
-        // 将后端存储的关键词（可能是 JSON 数组或括号列表）转为展示用逗号分隔文本
-        const toDisplayKeywords = (raw?: string): string => {
-          if (!raw) return ''
-          const s = raw.trim()
-          // 尝试作为 JSON 数组解析
-          if (s.startsWith('[') && s.endsWith(']')) {
-            try {
-              const arr = JSON.parse(s)
-              if (Array.isArray(arr)) {
-                return arr.map((v) => String(v).trim()).filter((v) => v.length > 0).join(', ')
-              }
-            } catch (_) {
-              // 非严格 JSON，如 [a,b]，走拆括号与逗号分隔
-              const inner = s.slice(1, -1)
-              return inner
-                .split(',')
-                .map((v) => v.trim().replace(/^"|"$/g, ''))
-                .filter((v) => v.length > 0)
-                .join(', ')
-            }
-          }
-          // 普通文本：直接返回，去掉多余空格
-          return s
-        }
-        setKeywordsDisplay(toDisplayKeywords(data.config.keywords))
-        // 解析括号列表为数组
-        setSelectedIndustry(parseListString(data.config.industry))
-        setSelectedExperience(parseListString(data.config.experience))
-        setSelectedDegree(parseListString(data.config.degree))
-        setSelectedScale(parseListString(data.config.scale))
-        setSelectedStage(parseListString(data.config.stage))
-        setSelectedSalary(parseListString(data.config.salary))
       }
       if (data.options) {
-        // 按 sort_order 或固定名称顺序排序；都没有时按名称兜底
-        const CITY_ORDER = [
-          // 顶层：全国 + 一线（北上广深）
-          '全国','北京','上海','广州','深圳',
-          // 准一线（图片顺序，从上到下）
-          '杭州','成都','南京',
-          '武汉','苏州','重庆','天津',
-          '长沙','青岛','宁波','无锡',
-          '西安','郑州','合肥','厦门','东莞',
-          // 二线（图片顺序）
-          '济南','福州','佛山','昆明','大连','沈阳','常州','哈尔滨','南昌','泉州',
-          '南通','烟台','温州','贵阳','南宁','石家庄','长春','嘉兴','珠海','太原',
-          '绍兴','金华','潍坊','徐州','惠州','台州','扬州','中山','乌鲁木齐','兰州',
-          // 省会补充（图片底部出现的省会/直辖市）
-          '海口','呼和浩特','银川'
-        ]
-        const orderMap = new Map<string, number>(CITY_ORDER.map((n, i) => [n, i + 1]))
-        // 城市排序：仅在后端提供 sortOrder 时按其排序；否则保留后端返回顺序
-        const cityList = data.options.city || []
-        const cityHasOrder = cityList.some((o: BossOption) => o.sortOrder != null || o.sort_order != null)
-        let sortedCity = cityHasOrder
-          ? [...cityList]
-              .map((o, idx) => ({ o, idx }))
-              .sort((a, b) => {
-                const ar = a.o.sortOrder ?? a.o.sort_order
-                const br = b.o.sortOrder ?? b.o.sort_order
-                if (ar == null && br == null) return a.idx - b.idx // 都无排序，保持原序
-                if (ar == null) return 1 // 无排序的排在已排序之后，保持原序
-                if (br == null) return -1
-                if (ar !== br) return ar - br
-                return a.idx - b.idx // 稳定排序
-              })
-              .map(({ o }) => o)
-          : cityList
-
-        // 兜底：如果后端未返回『不限』（code='0'），前端补充一个，确保可选
-        const hasUnlimitedCity = sortedCity.some((c: BossOption) => c.code === '0' || c.name === '不限')
-        if (!hasUnlimitedCity) {
-          sortedCity = [{ id: -1, type: 'city', name: '不限', code: '0', sortOrder: 0 }, ...sortedCity]
-        }
-
-        // 行业排序：仅在后端提供 sortOrder 时按其排序；否则保留后端返回顺序
-        const industryList = data.options.industry || []
-        const industryHasOrder = industryList.some((o: BossOption) => o.sortOrder != null || o.sort_order != null)
-        const sortedIndustry = industryHasOrder
-          ? [...industryList]
-              .map((o, idx) => ({ o, idx }))
-              .sort((a, b) => {
-                const ar = a.o.sortOrder ?? a.o.sort_order
-                const br = b.o.sortOrder ?? b.o.sort_order
-                if (ar == null && br == null) return a.idx - b.idx
-                if (ar == null) return 1
-                if (br == null) return -1
-                if (ar !== br) return ar - br
-                return a.idx - b.idx
-              })
-              .map(({ o }) => o)
-          : industryList
-
-        setOptions({
-          ...data.options,
-          city: sortedCity,
-          industry: sortedIndustry,
-        })
-
-        // 将配置中的中文值映射为代码，用于UI显示与选择匹配
-        const toCodes = (opts: BossOption[], items: string[]) => {
-          const codeSet = new Set(opts.map(o => o.code))
-          return items.map(it => {
-            if (codeSet.has(it)) return it
-            const byName = opts.find(o => o.name === it)
-            return byName ? byName.code : it
-          })
-        }
-
-        // 城市：若当前为中文名，转换为对应的 code 以在下拉中回显
-        const currentCityRaw = data.config?.cityCode || ''
-        const currentCityHead = (() => {
-          const list = parseListString(currentCityRaw)
-          return list.length > 0 ? list[0] : currentCityRaw
-        })()
-        const cityMatchByCode = sortedCity.find((c: BossOption) => c.code === currentCityHead)
-        const cityMatchByName = sortedCity.find((c: BossOption) => c.name === currentCityHead)
-        const normalizedCityCode = cityMatchByCode ? cityMatchByCode.code : (cityMatchByName ? cityMatchByName.code : '0')
-        setConfig(prev => ({ ...prev, cityCode: normalizedCityCode }))
-
-        // 职位类型：若当前为中文名，转换为对应的 code 以在下拉中回显
-        const currentJobTypeRaw = data.config?.jobType || ''
-        const currentJobTypeHead = (() => {
-          const list = parseListString(currentJobTypeRaw)
-          return list.length > 0 ? list[0] : currentJobTypeRaw
-        })()
-        const jobTypeMatchByCode = (data.options.jobType || []).find((t: BossOption) => t.code === currentJobTypeHead)
-        const jobTypeMatchByName = (data.options.jobType || []).find((t: BossOption) => t.name === currentJobTypeHead)
-        const normalizedJobType = jobTypeMatchByCode ? jobTypeMatchByCode.code : (jobTypeMatchByName ? jobTypeMatchByName.code : '')
-        setConfig(prev => ({ ...prev, jobType: normalizedJobType }))
-
-        // HR活跃过滤开关：后端为 0/1，前端直接回显为数字
-        const normalizedFilterDeadHr = (data.config?.filterDeadHr ?? 0)
-        setConfig(prev => ({ ...prev, filterDeadHr: normalizedFilterDeadHr }))
-
-        // 其它多选选项：将中文名称转换为代码以匹配 MultiSelect 的 selected
-        setSelectedIndustry(toCodes(data.options.industry || [], parseListString(data.config?.industry)))
-        setSelectedExperience(toCodes(data.options.experience || [], parseListString(data.config?.experience)))
-        setSelectedDegree(toCodes(data.options.degree || [], parseListString(data.config?.degree)))
-        setSelectedScale(toCodes(data.options.scale || [], parseListString(data.config?.scale)))
-        setSelectedStage(toCodes(data.options.stage || [], parseListString(data.config?.stage)))
-        setSelectedSalary(toCodes(data.options.salary || [], parseListString(data.config?.salary)))
-      }
-      if (data.blacklist) {
-        // 兼容处理：将type为'boss'的旧数据视为'company'
-        const normalizedBlacklist = data.blacklist.map((item: BlacklistItem) => ({
-          ...item,
-          type: item.type === 'boss' ? 'company' : item.type
-        }))
-        console.log('Normalized blacklist:', normalizedBlacklist)
-        setBlacklist(normalizedBlacklist)
+        setOptions(data.options)
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error)
+      console.error('Failed to fetch liepin data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  // 工具：解析括号列表字符串为数组，如 "[a,b]" 或 "a,b"
-  const parseListString = (raw?: string): string[] => {
-    if (!raw) return []
-    let s = raw.trim()
-    if (s.startsWith('[') && s.endsWith(']')) {
-      s = s.slice(1, -1)
-    }
-    if (!s) return []
-    return s
-      .split(',')
-      .map(v => v.trim().replace(/^"|"$/g, ''))
-      .filter(v => v.length > 0)
-  }
-
-  // 工具：将数组转为括号列表字符串
-  const toBracketList = (list: string[]): string => {
-    if (!list || list.length === 0) return ''
-    return `[${list.join(',')}]`
-  }
-
-  const handleSave = async (silent: boolean = false, overrides?: Partial<BossConfig>) => {
+  const handleSave = async () => {
     try {
-      // 组装要保存的负载：多选使用括号列表
-      const payload: BossConfig = {
-        ...config,
-        // 覆盖字段（用于失焦时使用当前控件值，避免异步状态滞后）
-        ...(overrides || {}),
-        // 关键词：前端发送逗号分隔的纯文本，后端统一组装为 JSON 列表
-        keywords: keywordsDisplay,
-        industry: toBracketList(selectedIndustry),
-        experience: toBracketList(selectedExperience),
-        degree: toBracketList(selectedDegree),
-        scale: toBracketList(selectedScale),
-        stage: toBracketList(selectedStage),
-        salary: toBracketList(selectedSalary),
-      }
-      const response = await fetch(`${API_BASE}/api/boss/config`, {
+      const payload = { ...config, keywords: serializeKeywordsForDb(config.keywords) }
+      const response = await fetch(`${API_BASE}/api/liepin/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -438,177 +186,53 @@ export default function BossPage() {
       })
 
       if (response.ok) {
-        // 统一保存 Cookie（Boss）
+        // 统一保存 Cookie（Liepin）
         try {
-          await fetch(`${API_BASE}/api/cookie/save?platform=boss`, { method: 'POST' })
+          await fetch(`${API_BASE}/api/cookie/save?platform=liepin`, { method: 'POST' })
         } catch (e) {
-          console.warn('保存 Cookie 失败（Boss）:', e)
+          console.warn('保存 Cookie 失败（Liepin）:', e)
         }
 
         fetchAllData()
-        if (!silent) {
-          setSaveResult({ success: true, message: '保存成功，配置与Cookie已更新。' })
-          setShowSaveDialog(true)
-        }
+        setSaveResult({ success: true, message: '保存成功，配置与Cookie已更新。' })
+        setShowSaveDialog(true)
       } else {
-        // 保存失败：不弹框，记录日志
         console.warn('保存失败：后端返回非 2xx 状态')
-        if (!silent) {
-          setSaveResult({ success: false, message: '保存失败：后端返回异常状态。' })
-          setShowSaveDialog(true)
-        }
+        setSaveResult({ success: false, message: '保存失败：后端返回异常状态。' })
+        setShowSaveDialog(true)
       }
     } catch (error) {
       console.error('Failed to save config:', error)
-      // 保存失败：不弹框
-      if (!silent) {
-        setSaveResult({ success: false, message: '保存失败：网络或服务异常。' })
-        setShowSaveDialog(true)
-      }
-    }
-  }
-
-  const handleResumeImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
-
-    const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/gif'])
-    const allowedExtension = /\.(png|jpe?g|gif)$/i.test(file.name)
-    if ((!allowedTypes.has(file.type) && !allowedExtension) || file.size === 0) {
-      setResumeImageMessage({ success: false, text: '请选择有效的 PNG、JPG、JPEG 或 GIF 图片。' })
-      return
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setResumeImageMessage({ success: false, text: '图片大小不能超过 10MB。' })
-      return
-    }
-
-    setLocalResumePreviewUrl(URL.createObjectURL(file))
-    setResumeImageUploading(true)
-    setResumeImageMessage(null)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      const response = await fetch(`${API_BASE}/api/boss/config/resume-image`, {
-        method: 'POST',
-        body: formData,
-      })
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok) {
-        throw new Error(data.message || `上传失败（HTTP ${response.status}）`)
-      }
-
-      setResumeImage(data.resumeImage || { exists: true })
-      setLocalResumePreviewUrl(null)
-      setResumeImageMessage({ success: true, text: '图片简历上传成功，可以预览或重新上传。' })
-    } catch (error) {
-      setLocalResumePreviewUrl(null)
-      setResumeImageMessage({
-        success: false,
-        text: error instanceof Error ? error.message : '图片简历上传失败，请确认后端服务已启动。',
-      })
-    } finally {
-      setResumeImageUploading(false)
-    }
-  }
-
-  const formatFileSize = (size?: number) => {
-    if (size == null) return ''
-    return size >= 1024 * 1024
-      ? `${(size / 1024 / 1024).toFixed(2)} MB`
-      : `${Math.max(1, Math.round(size / 1024))} KB`
-  }
-
-  const resumePreviewUrl = localResumePreviewUrl || (
-    resumeImage.exists && resumeImage.previewUrl
-      ? `${API_BASE}${resumeImage.previewUrl}?v=${resumeImage.updatedAt || 0}`
-      : null
-  )
-
-  const handleAddBlacklist = async () => {
-    if (!newBlacklistKeyword.trim()) {
-      // 输入为空：不弹框，直接返回
-      return
-    }
-
-    try {
-      const response = await fetch(`${API_BASE}/api/boss/config/blacklist`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          value: newBlacklistKeyword,
-          type: blacklistType, // 使用选中的类型
-        }),
-      })
-
-      if (response.ok) {
-        setNewBlacklistKeyword('')
-        fetchAllData()
-      } else {
-        // 添加失败：不弹框
-        console.warn('添加黑名单失败：后端返回非 2xx 状态')
-      }
-    } catch (error) {
-      console.error('Failed to add blacklist:', error)
-      // 添加失败：不弹框
-    }
-  }
-
-  const handleDeleteBlacklist = async (id: number) => {
-    try {
-      const response = await fetch(`${API_BASE}/api/boss/config/blacklist/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        fetchAllData()
-      } else {
-        // 删除失败：不弹框
-        console.warn('删除黑名单失败：后端返回非 2xx 状态')
-      }
-    } catch (error) {
-      console.error('Failed to delete blacklist:', error)
-      // 删除失败：不弹框
+      setSaveResult({ success: false, message: '保存失败：网络或服务异常。' })
+      setShowSaveDialog(true)
     }
   }
 
   const handleStartDelivery = async () => {
     try {
       setIsDelivering(true)
-      const response = await fetch(`${API_BASE}/api/boss/start`, {
+      const response = await fetch(`${API_BASE}/api/liepin/start`, {
         method: 'POST',
       })
       const data = await response.json()
 
       if (data.success) {
-        // 启动成功：不弹框，进度通过 SSE 推送
+        // 启动成功：不弹框
       } else {
-        // 启动失败必须让用户看见。
-        // 之前这里只写 console.warn，后端返回"请先登录"或"任务已在运行中"时，
-        // 界面上一点反应都没有，看着就像按钮坏了。
+        // 启动失败：不弹框
         console.warn('启动失败：', data.message)
-        setSaveResult({ success: false, title: '启动失败', message: data.message || '启动投递失败，请查看后端日志' })
-        setShowSaveDialog(true)
         setIsDelivering(false)
       }
     } catch (error) {
       console.error('Failed to start delivery:', error)
-      setSaveResult({
-        success: false,
-        title: '启动失败',
-        message: `无法连接后端服务（${API_BASE}），请确认服务已启动`,
-      })
-      setShowSaveDialog(true)
+      // 启动失败：不弹框
       setIsDelivering(false)
     }
   }
 
   const handleStopDelivery = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/boss/stop`, {
+      const response = await fetch(`${API_BASE}/api/liepin/stop`, {
         method: 'POST',
       })
       const data = await response.json()
@@ -617,20 +241,18 @@ export default function BossPage() {
         // 停止成功：不弹框
         setIsDelivering(false)
       } else {
-        // 停止失败：也要将状态设置为未投递（因为可能任务已经结束）
+        // 停止失败：不弹框
         console.warn('停止失败：', data.message)
-        setIsDelivering(false)
       }
     } catch (error) {
       console.error('Failed to stop delivery:', error)
-      // 停止失败：也要将状态设置为未投递
-      setIsDelivering(false)
+      // 停止失败：不弹框
     }
   }
 
   const triggerLogout = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/boss/logout`, { method: 'POST' })
+      const response = await fetch(`${API_BASE}/api/liepin/logout`, { method: 'POST' })
       const data = await response.json()
       if (data.success) {
         setIsLoggedIn(false)
@@ -657,11 +279,11 @@ export default function BossPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<BiBriefcase className="text-2xl" />}
-        title="Boss直聘配置"
-        subtitle="配置Boss直聘平台的求职参数"
+        icon={<BiSearch className="text-2xl" />}
+        title="猎聘配置"
+        subtitle="配置猎聘平台的求职参数"
         iconClass="text-white"
-        accentBgClass="bg-teal-500"
+        accentBgClass="bg-purple-500"
         actions={
           <div className="flex items-center gap-2">
             {checkingLogin ? (
@@ -670,7 +292,7 @@ export default function BossPage() {
               </Button>
             ) : !isLoggedIn ? (
               <Button size="sm" disabled className="rounded-full bg-gray-300 text-gray-600 cursor-not-allowed px-4 shadow">
-                <BiPlay className="mr-1" /> 请先登录Boss
+                <BiPlay className="mr-1" /> 请先登录猎聘
               </Button>
             ) : isDelivering ? (
               <Button onClick={handleStopDelivery} size="sm" className="rounded-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
@@ -684,7 +306,7 @@ export default function BossPage() {
             <Button onClick={() => setShowLogoutDialog(true)} size="sm" className="rounded-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <BiLogOut className="mr-1" /> 退出登录
             </Button>
-            <Button onClick={() => handleSave(false)} size="sm" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <Button onClick={handleSave} size="sm" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <BiSave className="mr-1" /> 保存配置
             </Button>
           </div>
@@ -698,433 +320,214 @@ export default function BossPage() {
         </TabsList>
 
         <TabsContent value="config" className="space-y-6 mt-6">
-          {/* 平台说明 */}
-          <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BiBriefcase className="text-primary" />
-                Boss直聘平台说明
-              </CardTitle>
-              <CardDescription>登录与投递操作提示</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">请在浏览器标签页中登录 Boss 直聘平台，登录成功后系统会自动检测登录状态。</p>
-                <p className="text-sm text-muted-foreground">登录成功后，点击“开始投递”按钮启动自动投递任务。</p>
-                <p className="text-sm text-muted-foreground">点击“保存配置”按钮可手动保存当前登录相关信息到数据库。</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 投递行为 */}
-          <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BiImage className="text-primary" />
-                投递行为
-              </CardTitle>
-              <CardDescription>设置发送打招呼语后的自动操作</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid gap-4 rounded-lg border bg-muted/20 p-4 md:grid-cols-[minmax(0,1fr)_220px]">
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-base font-medium">图片简历</Label>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        支持 PNG、JPG、JPEG、GIF，单张不超过 10MB。重新上传会替换当前图片。
-                      </p>
-                    </div>
-                    <input
-                      ref={resumeImageInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/gif,.png,.jpg,.jpeg,.gif"
-                      onChange={handleResumeImageChange}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={resumeImageUploading}
-                      onClick={() => resumeImageInputRef.current?.click()}
-                    >
-                      <BiUpload className="mr-2" />
-                      {resumeImageUploading ? '正在上传…' : resumeImage.exists ? '重新上传' : '选择并上传图片'}
-                    </Button>
-                    {resumeImage.exists && (
-                      <p className="text-xs text-muted-foreground">
-                        当前文件：{resumeImage.fileName || 'resume'}{resumeImage.size != null ? `（${formatFileSize(resumeImage.size)}）` : ''}
-                      </p>
-                    )}
-                    {resumeImageMessage && (
-                      <p className={`text-sm ${resumeImageMessage.success ? 'text-green-600' : 'text-red-600'}`}>
-                        {resumeImageMessage.text}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex min-h-36 items-center justify-center overflow-hidden rounded-md border bg-background">
-                    {resumePreviewUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowResumePreview(true)}
-                        className="group relative flex h-full w-full cursor-zoom-in items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
-                        aria-label="放大查看图片简历"
-                        title="点击查看大图"
-                      >
-                        <Image
-                          src={resumePreviewUrl}
-                          alt="图片简历预览"
-                          width={220}
-                          height={224}
-                          unoptimized
-                          className="max-h-56 w-full object-contain"
-                        />
-                        <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-black/60 py-1.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-                          <BiZoomIn className="text-base" /> 点击查看大图
-                        </span>
-                      </button>
-                    ) : (
-                      <div className="px-4 text-center text-sm text-muted-foreground">尚未上传图片简历</div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="space-y-1">
-                    <Label htmlFor="sendImgResume" className="text-base font-medium">
-                      自动发送图片简历
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      开启后，系统会在打招呼语发送成功后发送上方图片；上传图片不会自动开启。
-                    </p>
-                    {!resumeImage.exists && (
-                      <p className="text-xs text-amber-600">请先上传图片简历，再开启此选项。</p>
-                    )}
-                  </div>
-                  <button
-                    id="sendImgResume"
-                    type="button"
-                    role="switch"
-                    disabled={!resumeImage.exists}
-                    aria-checked={config.sendImgResume === 1}
-                    aria-label="自动发送图片简历"
-                    onClick={() => setConfig({ ...config, sendImgResume: config.sendImgResume === 1 ? 0 : 1 })}
-                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-                      config.sendImgResume === 1 ? 'bg-primary' : 'bg-muted-foreground/40'
-                    } ${resumeImage.exists ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                        config.sendImgResume === 1 ? 'translate-x-5' : 'translate-x-0.5'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 搜索配置 */}
-          <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BiSearch className="text-primary" />
-                搜索配置
-              </CardTitle>
-              <CardDescription>设置职位搜索关键词和目标城市</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="keywords">搜索关键词</Label>
-                  <Input
-                    id="keywords"
-                    value={keywordsDisplay}
-                    onChange={(e) => setKeywordsDisplay(e.target.value)}
-                    placeholder="例如：Java开发工程师"
-                  />
-                  <p className="text-xs text-muted-foreground">职位搜索的关键词</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="city">工作城市</Label>
-                  <Select
-                    id="city"
-                    value={config.cityCode || ''}
-                    onChange={(e) => setConfig({ ...config, cityCode: e.target.value })}
-                  >
-                    {options.city.map((city) => (
-                      <option key={city.id} value={city.code}>
-                        {city.name}
-                      </option>
-                    ))}
-                </Select>
-                <p className="text-xs text-muted-foreground">目标工作城市（按设定顺序显示）</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="jobType">职位类型</Label>
-                <Select
-                  id="jobType"
-                  value={config.jobType || ''}
-                  onChange={(e) => setConfig({ ...config, jobType: e.target.value })}
-                >
-                  {options.jobType.map((type) => (
-                    <option key={type.id} value={type.code}>
-                      {type.name}
-                    </option>
-                  ))}
-                </Select>
-                <p className="text-xs text-muted-foreground">选择职位类型</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>公司行业</Label>
-                <MultiSelect
-                  options={options.industry}
-                  selected={selectedIndustry}
-                    onChange={setSelectedIndustry}
-                    placeholder="选择公司行业"
-                  />
-                  <p className="text-xs text-muted-foreground">可多选</p>
-                </div>
-              
-              {/* HR活跃过滤开关 */}
-              <div className="space-y-2">
-                <Label htmlFor="filterDeadHr">HR活跃过滤</Label>
-                <Select
-                  id="filterDeadHr"
-                  value={String(config.filterDeadHr ?? 0)}
-                  onChange={(e) => setConfig({ ...config, filterDeadHr: Number(e.target.value) })}
-                >
-                  <option value="0">关闭</option>
-                  <option value="1">开启</option>
-                </Select>
-                <p className="text-xs text-muted-foreground">开启后将过滤活跃状态包含“年”的HR，但仍保存数据。</p>
-              </div>
-              </div>
-            </CardContent>
-        </Card>
-
-        {/* 薪资和经验 */}
-        <Card className="animate-in fade-in slide-in-from-bottom-6 duration-700">
+        {/* 平台说明 */}
+        <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BiMoney className="text-primary" />
-              薪资与经验要求
+              <BiBriefcase className="text-primary" />
+              猎聘平台说明
             </CardTitle>
-            <CardDescription>设置薪资待遇和工作经验要求</CardDescription>
+            <CardDescription>登录与投递操作提示</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">请在浏览器标签页中登录 猎聘 平台，登录成功后系统会自动检测登录状态。</p>
+              <p className="text-sm text-muted-foreground">登录成功后，点击“开始投递”按钮启动自动投递任务。</p>
+              <p className="text-sm text-muted-foreground">点击“保存配置”按钮可手动保存当前登录相关信息到数据库。</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 搜索配置 */}
+        <Card className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BiSearch className="text-primary" />
+              搜索配置
+            </CardTitle>
+            <CardDescription>设置职位搜索关键词和筛选条件</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label>薪资待遇</Label>
-                <MultiSelect
-                  options={options.salary}
-                  selected={selectedSalary}
-                  onChange={setSelectedSalary}
-                  placeholder="选择薪资待遇"
+                <Label htmlFor="keywords">搜索关键词</Label>
+                <Input
+                  id="keywords"
+                  value={config.keywords || ''}
+                  onChange={(e) => setConfig({ ...config, keywords: e.target.value })}
+                  placeholder="例如：大模型, Python, Golang"
                 />
-                <p className="text-xs text-muted-foreground">选项来源：字典表 type=salary（可多选）</p>
+                <p className="text-xs text-muted-foreground">关键词可多选，使用英文逗号分隔，例如：大模型, Python, Golang</p>
               </div>
+
               <div className="space-y-2">
-                <Label>工作经验</Label>
-                <MultiSelect
-                  options={options.experience}
-                  selected={selectedExperience}
-                  onChange={setSelectedExperience}
-                  placeholder="选择工作经验"
-                />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="city">工作城市</Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomCity(!isCustomCity)
+                      if (!isCustomCity) {
+                        // 切换到手动输入时，清空当前值
+                        setConfig({ ...config, city: '' })
+                      }
+                    }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {isCustomCity ? '从列表选择' : '手动输入'}
+                  </button>
+                </div>
+                {isCustomCity ? (
+                  <Input
+                    id="city"
+                    value={config.city || ''}
+                    onChange={(e) => setConfig({ ...config, city: e.target.value })}
+                    placeholder="请输入城市码，例如：410"
+                  />
+                ) : (
+                  <Select
+                    id="city"
+                    value={config.city || ''}
+                    onChange={(e) => setConfig({ ...config, city: e.target.value })}
+                  >
+                    <option value="">请选择城市</option>
+                    {options.city.map((city) => (
+                      <option key={city.id} value={city.name}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {isCustomCity ? '手动输入城市码（例如：410代表北京）' : '从列表选择城市，或点击"手动输入"自定义'}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* 公司要求 */}
-        <Card className="animate-in fade-in slide-in-from-bottom-7 duration-700">
+        {/* 薪资配置 */}
+        <Card className="animate-in fade-in slide-in-from-bottom-6 duration-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BiBuilding className="text-primary" />
-              公司要求
+              <BiMoney className="text-primary" />
+              薪资筛选
             </CardTitle>
-            <CardDescription>设置目标公司的规模和融资阶段</CardDescription>
+            <CardDescription>设置期望薪资范围</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="salaryCode">薪资范围</Label>
+                <Input
+                  id="salaryCode"
+                  value={config.salaryCode || ''}
+                  onChange={(e) => setConfig({ ...config, salaryCode: e.target.value })}
+                  placeholder="例如：54$96"
+                />
+                <p className="text-xs text-muted-foreground">按年薪（万）筛选，例如：54$96 表示年薪54-96万（约月薪4.5-8万）</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pubTime">招聘者活跃</Label>
+                <Select
+                  id="pubTime"
+                  value={config.pubTime || ''}
+                  onChange={(e) => setConfig({ ...config, pubTime: e.target.value })}
+                >
+                  <option value="">不限</option>
+                  <option value="1">一天以内</option>
+                  <option value="3">三天以内</option>
+                  <option value="7">一周以内</option>
+                  <option value="30">一个月以内</option>
+                </Select>
+                <p className="text-xs text-muted-foreground">按招聘者最近活跃时间筛选（对应猎聘 pubTime 参数）</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 批次投递设置 */}
+        <Card className="animate-in fade-in slide-in-from-bottom-6 duration-700">
+          <CardHeader>
+            <CardTitle>批次投递设置</CardTitle>
+            <CardDescription>控制投递节奏，降低风控风险</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <Label>学历要求</Label>
-                <MultiSelect
-                  options={options.degree}
-                  selected={selectedDegree}
-                  onChange={setSelectedDegree}
-                  placeholder="选择学历要求"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>公司规模</Label>
-                <MultiSelect
-                  options={options.scale}
-                  selected={selectedScale}
-                  onChange={setSelectedScale}
-                  placeholder="选择公司规模"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>融资阶段</Label>
-                <MultiSelect
-                  options={options.stage}
-                  selected={selectedStage}
-                  onChange={setSelectedStage}
-                  placeholder="选择融资阶段"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 黑名单管理 */}
-        <Card className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BiSearch className="text-primary" />
-              黑名单管理 ({blacklist.length} 条)
-            </CardTitle>
-            <CardDescription>添加或删除不想投递的公司、职位或HR</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* 添加黑名单 */}
-              <div className="flex gap-2">
-                <Select
-                  value={blacklistType}
-                  onChange={(e) => setBlacklistType(e.target.value)}
-                  className="w-32"
-                >
-                  <option value="company">公司</option>
-                  <option value="job">岗位</option>
-                  <option value="recruiter">HR</option>
-                </Select>
+                <Label htmlFor="batchSize">每批投递份数</Label>
                 <Input
-                  value={newBlacklistKeyword}
-                  onChange={(e) => setNewBlacklistKeyword(e.target.value)}
-                  placeholder={`输入${blacklistType === 'company' ? '公司名称' : blacklistType === 'job' ? '岗位关键词' : 'HR职位'}关键词`}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleAddBlacklist()
-                    }
-                  }}
+                  id="batchSize"
+                  type="number"
+                  min={0}
+                  className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  value={config.batchSize ?? ''}
+                  placeholder="0"
+                  onChange={(e) => setConfig({ ...config, batchSize: e.target.value === '' ? undefined : Number(e.target.value) || 0 })}
                 />
-                <Button onClick={handleAddBlacklist} className="whitespace-nowrap">
-                  <BiPlus />
-                  添加
-                </Button>
+                <p className="text-xs text-muted-foreground">0 表示不限批次（连续投递）</p>
               </div>
-
-              {/* 黑名单列表 - 按类型分组显示 */}
-              <div className="space-y-6">
-                {/* 公司黑名单 */}
-                <div>
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                    <BiBuilding className="text-orange-500" />
-                    <span>公司黑名单 ({blacklist.filter(item => item.type === 'company').length})</span>
-                  </h3>
-                  <div className="space-y-2">
-                    {blacklist.filter(item => item.type === 'company').length === 0 ? (
-                      <div className="text-center py-4 text-muted-foreground bg-muted/30 rounded-lg">
-                        <p className="text-xs">暂无公司黑名单</p>
-                      </div>
-                    ) : (
-                      blacklist.filter(item => item.type === 'company').map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800"
-                        >
-                          <span className="text-sm">{item.value}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteBlacklist(item.id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <BiTrash />
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
+              <div className="space-y-2">
+                <Label>每次投递间隔（秒）</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={config.applyIntervalMin ?? ''}
+                    placeholder="0"
+                    onChange={(e) => setConfig({ ...config, applyIntervalMin: e.target.value === '' ? undefined : Number(e.target.value) || 0 })}
+                  />
+                  <span className="text-muted-foreground">-</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={config.applyIntervalMax ?? ''}
+                    placeholder="0"
+                    onChange={(e) => setConfig({ ...config, applyIntervalMax: e.target.value === '' ? undefined : Number(e.target.value) || 0 })}
+                  />
                 </div>
-
-                {/* 岗位黑名单 */}
-                <div>
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                    <BiBriefcase className="text-blue-500" />
-                    <span>岗位黑名单 ({blacklist.filter(item => item.type === 'job').length})</span>
-                  </h3>
-                  <div className="space-y-2">
-                    {blacklist.filter(item => item.type === 'job').length === 0 ? (
-                      <div className="text-center py-4 text-muted-foreground bg-muted/30 rounded-lg">
-                        <p className="text-xs">暂无岗位黑名单</p>
-                      </div>
-                    ) : (
-                      blacklist.filter(item => item.type === 'job').map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800"
-                        >
-                          <span className="text-sm">{item.value}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteBlacklist(item.id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <BiTrash />
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                <p className="text-xs text-muted-foreground">每投一份后随机等待的秒数区间</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="batchAction">批次完成后</Label>
+                <Select
+                  id="batchAction"
+                  value={config.batchAction || 'continue'}
+                  onChange={(e) => setConfig({ ...config, batchAction: e.target.value })}
+                >
+                  <option value="continue">等待后继续投递</option>
+                  <option value="stop">直接停止任务</option>
+                </Select>
+                <p className="text-xs text-muted-foreground">一批投完后的动作</p>
+              </div>
+              <div className="space-y-2 md:col-span-3">
+                <Label>批次间等待（秒）</Label>
+                <div className="flex items-center gap-2 max-w-xs">
+                  <Input
+                    type="number"
+                    min={0}
+                    className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={config.batchWaitMin ?? ''}
+                    placeholder="0"
+                    onChange={(e) => setConfig({ ...config, batchWaitMin: e.target.value === '' ? undefined : Number(e.target.value) || 0 })}
+                  />
+                  <span className="text-muted-foreground">-</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={config.batchWaitMax ?? ''}
+                    placeholder="0"
+                    onChange={(e) => setConfig({ ...config, batchWaitMax: e.target.value === '' ? undefined : Number(e.target.value) || 0 })}
+                  />
                 </div>
-
-                {/* HR黑名单 */}
-                <div>
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                    <BiSearch className="text-green-500" />
-                    <span>HR黑名单 ({blacklist.filter(item => item.type === 'recruiter').length})</span>
-                  </h3>
-                  <div className="space-y-2">
-                    {blacklist.filter(item => item.type === 'recruiter').length === 0 ? (
-                      <div className="text-center py-4 text-muted-foreground bg-muted/30 rounded-lg">
-                        <p className="text-xs">暂无HR黑名单</p>
-                      </div>
-                    ) : (
-                      blacklist.filter(item => item.type === 'recruiter').map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800"
-                        >
-                          <span className="text-sm">{item.value}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteBlacklist(item.id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <BiTrash />
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                <p className="text-xs text-muted-foreground">批次完成且选择"继续"时，随机等待的秒数区间</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6 mt-6">
@@ -1132,43 +535,6 @@ export default function BossPage() {
         </TabsContent>
       </Tabs>
 
-      {/* 图片简历大图预览 */}
-      {showResumePreview && resumePreviewUrl && createPortal(
-        <div
-          className="fixed inset-0 z-[100] overflow-auto bg-black/85 p-4 backdrop-blur-sm sm:p-8"
-          role="dialog"
-          aria-modal="true"
-          aria-label="图片简历大图预览"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowResumePreview(false)
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setShowResumePreview(false)}
-            className="fixed right-4 top-4 z-[101] inline-flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white text-3xl text-gray-900 shadow-[0_4px_20px_rgba(0,0,0,0.65)] transition duration-200 hover:border-red-500 hover:bg-red-500 hover:text-white hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70 sm:right-6 sm:top-6"
-            aria-label="关闭大图预览"
-            title="关闭（Esc）"
-          >
-            <BiX />
-          </button>
-          <div className="flex min-h-full items-start justify-center py-10">
-            <Image
-              src={resumePreviewUrl}
-              alt="图片简历大图"
-              width={1400}
-              height={2000}
-              unoptimized
-              priority
-              className="h-auto w-[94vw] max-w-[1200px] rounded-md bg-white shadow-2xl"
-              onMouseDown={(event) => event.stopPropagation()}
-            />
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* 统计卡片已移除 */}
       {/* 退出确认弹框 */}
       {showLogoutDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -1241,7 +607,7 @@ export default function BossPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BiSave className={saveResult.success ? 'text-green-500' : 'text-red-500'} />
-                  {saveResult.title ?? (saveResult.success ? '保存成功' : '保存失败')}
+                  {saveResult.success ? '保存成功' : '保存失败'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
@@ -1258,180 +624,6 @@ export default function BossPage() {
             </Card>
           </div>
         </div>
-      )}
-    </div>
-  )
-}
-
-// 多选下拉组件（简单版），按代码选择并显示名称
-function MultiSelect({
-  options,
-  selected,
-  onChange,
-  placeholder,
-  onClose,
-}: {
-  options: BossOption[]
-  selected: string[]
-  onChange: (v: string[]) => void
-  placeholder?: string
-  onClose?: () => void
-}) {
-  const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const wrapperRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
-
-  // 确保组件已挂载（解决 SSR 问题）
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // 计算下拉框位置
-  const updatePosition = useCallback(() => {
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      setDropdownPosition({
-        top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width,
-      })
-    }
-  }, [])
-
-  // 打开时计算位置
-  useEffect(() => {
-    if (open) {
-      updatePosition()
-      // 监听滚动和窗口大小变化，更新位置
-      const handleUpdate = () => updatePosition()
-      window.addEventListener('scroll', handleUpdate, true)
-      window.addEventListener('resize', handleUpdate)
-      return () => {
-        window.removeEventListener('scroll', handleUpdate, true)
-        window.removeEventListener('resize', handleUpdate)
-      }
-    }
-  }, [open, updatePosition])
-
-  // 点击组件外部或焦点移出时关闭下拉
-  useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (!open) return
-      const target = e.target as Node
-      // 检查点击是否在按钮或下拉框内
-      const clickedButton = wrapperRef.current?.contains(target)
-      const clickedDropdown = dropdownRef.current?.contains(target)
-
-      console.log('[MultiSelect] 外部点击检测', {
-        clickedButton,
-        clickedDropdown,
-        targetElement: (target as HTMLElement)?.tagName,
-        targetClass: (target as HTMLElement)?.className
-      })
-
-      if (!clickedButton && !clickedDropdown) {
-        console.log('[MultiSelect] 检测到外部点击，关闭下拉框')
-        setOpen(false)
-        onClose?.()
-      } else {
-        console.log('[MultiSelect] 点击在组件内部，保持打开')
-      }
-    }
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        console.log('[MultiSelect] ESC 键关闭')
-        setOpen(false)
-        onClose?.()
-      }
-    }
-
-    if (open) {
-      console.log('[MultiSelect] 下拉框打开，注册监听器')
-      // 使用 setTimeout 确保 DOM 已更新
-      setTimeout(() => {
-        document.addEventListener('mousedown', handleOutsideClick)
-        document.addEventListener('keydown', handleEscape)
-      }, 0)
-    }
-
-    return () => {
-      if (open) {
-        console.log('[MultiSelect] 移除监听器')
-      }
-      document.removeEventListener('mousedown', handleOutsideClick)
-      document.removeEventListener('keydown', handleEscape)
-    }
-  }, [open, onClose])
-
-  const toggle = (code: string) => {
-    console.log('[MultiSelect] toggle 被调用', { code, currentSelected: selected })
-    if (selected.includes(code)) {
-      const newSelected = selected.filter((c) => c !== code)
-      console.log('[MultiSelect] 取消选择，新值:', newSelected)
-      onChange(newSelected)
-    } else {
-      const newSelected = [...selected, code]
-      console.log('[MultiSelect] 添加选择，新值:', newSelected)
-      onChange(newSelected)
-    }
-  }
-
-  const selectedNames = options
-    .filter((o) => selected.includes(o.code))
-    .map((o) => o.name)
-
-  return (
-    <div className="relative" ref={wrapperRef}>
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => { const next = !open; setOpen(next); if (!next) onClose?.() }}
-        className="flex h-10 w-full items-center justify-between rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,.25)] transition-all duration-200 hover:bg-white/15 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-0"
-      >
-        <span className="truncate text-sm">
-          {selectedNames.length > 0 ? selectedNames.join('，') : (placeholder || '请选择')}
-        </span>
-        <span className={`ml-2 text-xs text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>▼</span>
-      </button>
-      {open && mounted && createPortal(
-        <div
-          ref={dropdownRef}
-          className="dropdown-panel p-2"
-          style={{
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`,
-          }}
-        >
-          <div className="flex flex-col gap-2">
-            {options.map((opt) => {
-              const checked = selected.includes(opt.code)
-              return (
-                <div
-                  key={opt.id}
-                  className={`group inline-flex items-center justify-between gap-3 rounded-full px-3 py-2 cursor-pointer transition-all border ${checked ? 'border-teal-300/60 bg-gradient-to-r from-teal-500/12 to-cyan-500/12 text-teal-900 dark:text-teal-200 shadow' : 'border-white/20 bg-white/8 text-foreground hover:bg-white/12'}`}
-                  onClick={(e) => {
-                    console.log('[MultiSelect] div 被点击', {
-                      optionCode: opt.code,
-                      optionName: opt.name,
-                      currentChecked: checked
-                    })
-                    toggle(opt.code)
-                  }}
-                >
-                  <span className="flex items-center gap-3">
-                    <span className={`inline-flex h-4 w-4 items-center justify-center rounded-md border border-white/30 bg-white/10 shadow-inner transition-all ${checked ? 'bg-teal-400/60 border-teal-300/80' : ''}`}></span>
-                    <span className="text-sm truncate">{opt.name}</span>
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>,
-        document.body
       )}
     </div>
   )

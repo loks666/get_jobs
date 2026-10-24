@@ -42,6 +42,10 @@ public class Liepin {
     private final List<String> resultList = new ArrayList<>();
     private final List<LiepinEntity> lastApiEntities = new ArrayList<>();
     private boolean monitoringRegistered = false;
+    /** 当前批次内已成功投递数 */
+    private int appliedInBatch = 0;
+    /** 批次间隔随机源 */
+    private final java.util.Random batchRandom = new java.util.Random();
     @Setter
     private LiepinConfig config;
     @Getter
@@ -63,6 +67,7 @@ public class Liepin {
     public void prepare() {
         this.startDate = new Date();
         this.resultList.clear();
+        this.appliedInBatch = 0;
 
         // 监控猎聘接口请求与返回，输出被拦截的URL（精确匹配PC搜索相关接口）
         if (page != null && !monitoringRegistered) {
@@ -229,6 +234,7 @@ public class Liepin {
     private void submit(String keyword) {
         // 清洗关键词：去掉前后引号与多余空白
         String cleanKeyword = keyword == null ? "" : keyword.replace("\"", "").trim();
+        lastApiEntities.clear();
         page.navigate(getSearchUrl() + "&key=" + cleanKeyword);
         
         // 等待分页元素加载
@@ -258,15 +264,18 @@ public class Liepin {
                 .setState(WaitForSelectorState.ATTACHED)
                 .setTimeout(15000)
         );
-            // 额外等待一次接口响应，确保 lastApiEntities 刷新（精确匹配PC搜索接口）
-            try {
-                page.waitForResponse(r -> {
-                    try {
-                        String u = r.url();
-                        return u != null && u.contains("com.liepin.searchfront4c.pc-search-job") && r.status() == 200;
-                    } catch (Exception ignored) { return false; }
-                }, () -> {});
-            } catch (Exception ignored) {}
+            // 接口响应在卡片渲染前就已到达并被 onResponse 处理，这里不能再等 30 秒默认超时，
+            // 否则每页白白卡住半分钟。lastApiEntities 为空时才短暂等一下。
+            if (lastApiEntities.isEmpty()) {
+                try {
+                    page.waitForResponse(r -> {
+                        try {
+                            String u = r.url();
+                            return u != null && u.contains("com.liepin.searchfront4c.pc-search-job") && r.status() == 200;
+                        } catch (Exception ignored) { return false; }
+                    }, new Page.WaitForResponseOptions().setTimeout(3000), () -> {});
+                } catch (Exception ignored) {}
+            }
             info(String.format("正在投递【%s】第【%d】页...", cleanKeyword, i + 1));
             submitJob();
             info(String.format("已投递第【%d】页所有的岗位...", i + 1));
@@ -278,6 +287,7 @@ public class Liepin {
                 String cls = nextLi.first().getAttribute("class");
                 boolean disabled = cls != null && cls.contains("ant-pagination-disabled");
                 if (!disabled) {
+                    lastApiEntities.clear(); // 下一页接口数据到达前不要沿用上一页的
                     Locator btn = nextLi.first().locator("button.ant-pagination-item-link");
                     if (btn.count() > 0) {
                         btn.first().click();
@@ -303,7 +313,10 @@ public class Liepin {
             sb.append("dq=").append(config.getCityCode()).append("&");
         }
         if (config.getSalary() != null && !config.getSalary().isEmpty()) {
-            sb.append("salary=").append(config.getSalary()).append("&");
+            sb.append("salaryCode=").append(config.getSalary()).append("&");
+        }
+        if (config.getPubTime() != null && !config.getPubTime().isEmpty()) {
+            sb.append("pubTime=").append(config.getPubTime()).append("&");
         }
         sb.append("currentPage=0");
         return sb.toString();
@@ -569,6 +582,11 @@ public class Liepin {
                             liepinService.markDelivered(jobIdForUpdate);
                         }
                     }
+
+                    // 投递成功后的批次与间隔控制；返回 false 表示应结束遍历
+                    if (!handleBatchControlAfterApply()) {
+                        return;
+                    }
                     
                 } catch (Exception e) {
                     log.error("点击按钮失败: {}", e.getMessage());
@@ -587,8 +605,84 @@ public class Liepin {
         }
     }
 
+    /**
+     * 投递成功后的批次与间隔控制。
+     * @return false 表示应结束投递（批次后动作为 stop 或等待期间收到停止指令）
+     */
+    private boolean handleBatchControlAfterApply() {
+        appliedInBatch++;
+        int batchSize = config != null && config.getBatchSize() != null && config.getBatchSize() > 0
+                ? config.getBatchSize() : 0;
+        if (batchSize > 0 && appliedInBatch >= batchSize) {
+            String action = config.getBatchAction() == null ? "continue" : config.getBatchAction().trim();
+            if ("stop".equalsIgnoreCase(action)) {
+                info("已完成本批 " + appliedInBatch + " 份投递，批次后动作为停止，结束任务");
+                return false;
+            }
+            int wait = randomSeconds(config.getBatchWaitMin(), config.getBatchWaitMax(), 60, 180);
+            appliedInBatch = 0;
+            info("批次完成（" + batchSize + " 份），等待 " + wait + " 秒后继续下一批");
+            if (!interruptibleSleep(wait)) {
+                info("收到停止指令，结束投递");
+                return false;
+            }
+            return true;
+        }
+        Integer min = config != null ? config.getApplyIntervalMin() : null;
+        Integer max = config != null ? config.getApplyIntervalMax() : null;
+        int interval = randomSeconds(min, max, 0, 0);
+        if (interval > 0) {
+            info("投递间隔 " + interval + " 秒");
+            if (!interruptibleSleep(interval)) {
+                info("收到停止指令，结束投递");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** 在 [min,max] 内取随机秒数；未配置时用默认值，max<min 时按 min 处理 */
+    private int randomSeconds(Integer minV, Integer maxV, int defMin, int defMax) {
+        int min = minV != null && minV >= 0 ? minV : defMin;
+        int max = maxV != null && maxV >= min ? maxV : Math.max(defMax, min);
+        if (max <= min) {
+            return min;
+        }
+        return min + batchRandom.nextInt(max - min + 1);
+    }
+
+    /** 可中断等待（每秒检查停止指令）；true=正常结束，false=收到停止指令 */
+    private boolean interruptibleSleep(int seconds) {
+        for (int i = 0; i < seconds; i++) {
+            if (shouldStop()) {
+                return false;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return !shouldStop();
+    }
+
     // 从岗位卡片的 data 属性中提取 jobId（兼容 lastApiEntities 缺失场景）
     private Long extractJobIdFromCard(Locator card) {
+        try {
+            // 新版页面：jobId 在"聊一聊"容器的 data-tlg-ext 里（%7B%22jobId%22%3A%22...）
+            Locator chatBox = card.locator("[data-tlg-elem-id='c_pc_search_job_listcard_chat_btn']");
+            if (chatBox.count() > 0) {
+                String chatExt = chatBox.first().getAttribute("data-tlg-ext");
+                if (chatExt != null && !chatExt.isEmpty()) {
+                    String decoded = java.net.URLDecoder.decode(chatExt, java.nio.charset.StandardCharsets.UTF_8);
+                    String id = new com.fasterxml.jackson.databind.ObjectMapper().readTree(decoded).path("jobId").asText(null);
+                    if (id != null && !id.isEmpty()) {
+                        return Long.parseLong(id);
+                    }
+                }
+            }
+        } catch (Exception ignore) {}
         try {
             String ext = card.getAttribute("data-tlg-ext");
             if (ext != null && !ext.isEmpty()) {
