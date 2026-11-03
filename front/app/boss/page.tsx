@@ -728,10 +728,22 @@ export default function BossPage() {
                 <BiImage className="text-primary" />
                 投递行为
               </CardTitle>
-              <CardDescription>设置重复沟通与图片简历发送行为，保存后在下次启动投递时生效</CardDescription>
+              <CardDescription>设置打招呼语、重复沟通与图片简历发送行为，保存后在下次启动投递时生效</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                <div className="space-y-2 rounded-lg border bg-muted/20 p-4">
+                  <Label htmlFor="sayHi">自定义打招呼语</Label>
+                  <textarea
+                    id="sayHi"
+                    rows={4}
+                    value={config.sayHi ?? ''}
+                    onChange={event => setConfig(prev => ({ ...prev, sayHi: event.target.value }))}
+                    placeholder="请输入你的自我介绍和求职意向"
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm leading-7 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <p className="text-sm text-muted-foreground">用于首次沟通的默认打招呼语；启用 AI 时优先使用 AI 生成内容，未生成有效内容时使用此文本。重复沟通仍使用下方的逐行随机消息。修改后点击“保存配置”，下次启动投递生效。</p>
+                </div>
                 <div className="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <Label htmlFor="allowRepeatChat" className="text-base font-medium">向已沟通 Boss 再次发送消息</Label>
