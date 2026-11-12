@@ -1,5 +1,7 @@
 'use client'
 
+// Boss platform settings, delivery controls, and configuration persistence.
+
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { createSSEWithBackoff } from '@/lib/sse'
