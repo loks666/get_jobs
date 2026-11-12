@@ -1,5 +1,6 @@
 ---
 layout: home
+# Public project homepage using the default VitePress home layout.
 
 hero:
   name: "Get Jobs"
