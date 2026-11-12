@@ -1,3 +1,4 @@
+// Application build, dependency management, and packaging.
 import java.time.LocalDate
 import org.springframework.boot.gradle.tasks.run.BootRun
 import org.gradle.language.jvm.tasks.ProcessResources
