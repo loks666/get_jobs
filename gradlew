@@ -1,4 +1,5 @@
 #!/bin/sh
+# Project entry point: use the pinned Gradle Wrapper distribution.
 
 #
 # Copyright © 2015-2021 the original authors.

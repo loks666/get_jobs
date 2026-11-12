@@ -1,5 +1,7 @@
 # 贡献者许可协议 / Contributor License Agreement
 
+<!-- See README.md for the contribution workflow. -->
+
 **版本 1.0 · 适用项目：[get_jobs](https://github.com/loks666/get_jobs)**
 
 感谢你愿意为 get_jobs 贡献代码。在合并你的 Pull Request 之前，我们需要你同意本协议。

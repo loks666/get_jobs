@@ -1,1 +1,2 @@
+// Keep the Gradle project name aligned with the repository name.
 rootProject.name = 'get_jobs'
