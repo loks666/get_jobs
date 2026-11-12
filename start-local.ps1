@@ -1,3 +1,4 @@
+# Start the local application with its Java and database prerequisites.
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
