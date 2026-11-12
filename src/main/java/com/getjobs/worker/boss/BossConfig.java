@@ -13,6 +13,7 @@ import java.util.Map;
  * 配置加载由 BossConfigLoaderService 负责
  */
 @Data
+// Runtime settings consumed by the Boss delivery worker.
 public class BossConfig {
     public static final String DEFAULT_REPEAT_CHAT_MESSAGES = String.join("\n",
             "请问是有什么顾虑需要沟通吗？",
