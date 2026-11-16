@@ -65,6 +65,8 @@ public class PlaywrightManager {
 
     // 猎聘页面
     private Page liepinPage;
+    // 实习僧页面
+    private Page shixisengPage;
 
     // 51job页面（预留）
     private Page job51Page;
@@ -82,6 +84,8 @@ public class PlaywrightManager {
     private volatile boolean bossMonitoringPaused = false;
     // 控制是否暂停对liepinPage的后台监控
     private volatile boolean liepinMonitoringPaused = false;
+    // 控制是否暂停对shixisengPage的后台监控
+    private volatile boolean shixisengMonitoringPaused = false;
 
     // 控制是否暂停对51jobPage的后台监控
   private volatile boolean job51MonitoringPaused = false;
@@ -126,6 +130,8 @@ public class PlaywrightManager {
     private static final String ZHILIAN_URL = "https://www.zhaopin.com";
     private static final String BOSS_DOMAIN = "zhipin.com";
     private static final String LIEPIN_DOMAIN = "liepin.com";
+    private static final String SHIXISENG_URL = "https://www.shixiseng.com";
+    private static final String SHIXISENG_DOMAIN = "shixiseng.com";
     private static final String JOB51_DOMAIN = "51job.com";
     private static final String ZHILIAN_DOMAIN = "zhaopin.com";
     // 降噪：51job Cookie保存日志节流状态
@@ -360,6 +366,10 @@ public class PlaywrightManager {
             liepinPage.setDefaultTimeout(DEFAULT_TIMEOUT);
             log.info("✓ 猎聘 Page已创建");
 
+            shixisengPage = context.newPage();
+            shixisengPage.setDefaultTimeout(DEFAULT_TIMEOUT);
+            log.info("✓ 实习僧 Page已创建");
+
             job51Page = context.newPage();
             job51Page.setDefaultTimeout(DEFAULT_TIMEOUT);
             log.info("✓ 51job Page已创建");
@@ -387,6 +397,7 @@ public class PlaywrightManager {
             setupLiepinPlatform();
             setup51jobPlatform();
             setupZhilianPlatform();
+            setupShixisengPlatform();
 
             log.info("✓ 浏览器自动化引擎初始化完成（所有平台已依次启动）");
             log.info("========================================");
@@ -828,6 +839,134 @@ public class PlaywrightManager {
         });
 
         log.info("猎聘平台登录状态监控已启用");
+    }
+
+    /**
+     * 设置实习僧平台（加载Cookie、导航、监控）
+     */
+    private void setupShixisengPlatform() {
+        log.info("开始初始化实习僧平台...");
+
+        try {
+            CookieEntity cookieEntity = cookieService.getCookieByPlatform("shixiseng");
+            if (cookieEntity != null && cookieEntity.getCookieValue() != null && !cookieEntity.getCookieValue().isBlank()) {
+                String cookieStr = cookieEntity.getCookieValue();
+                List<Cookie> cookies = filterCookiesByDomain(parseCookiesFromString(cookieStr), SHIXISENG_DOMAIN);
+
+                if (!cookies.isEmpty()) {
+                    context.addCookies(cookies);
+                    log.info("已从数据库加载实习僧 Cookie并注入浏览器上下文，共 {} 条", cookies.size());
+                } else {
+                    log.warn("解析实习僧 Cookie失败，未能加载任何Cookie");
+                }
+            } else {
+                log.info("数据库未找到实习僧 Cookie或值为空，跳过Cookie注入");
+            }
+        } catch (Exception e) {
+            log.warn("从数据库加载实习僧 Cookie失败: {}", e.getMessage());
+        }
+
+        int maxRetries = 3;
+        boolean navigateSuccess = false;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                shixisengPage.navigate(SHIXISENG_URL, new Page.NavigateOptions()
+                        .setTimeout(60000)
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+                navigateSuccess = true;
+                break;
+            } catch (Exception e) {
+                boolean pageAccessible = false;
+                try {
+                    String url = shixisengPage.url();
+                    pageAccessible = url != null && url.contains("shixiseng.com");
+                } catch (Exception ignored) {
+                }
+                if (pageAccessible) {
+                    navigateSuccess = true;
+                    break;
+                }
+                if (attempt < maxRetries) {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+        }
+
+        if (!navigateSuccess) {
+            log.warn("实习僧页面导航失败");
+        }
+
+        try {
+            Thread.sleep(1000);
+            if (!checkIfShixisengLoggedIn()) {
+                log.info("实习僧平台未登录，请使用登录弹窗完成登录");
+                setLoginStatus("shixiseng", false);
+                try {
+                    Locator loginBtn = shixisengPage.locator(".login-status .login-btn .login, .login-status .login-btn").first();
+                    if (isVisibleQuick(loginBtn)) {
+                        loginBtn.click();
+                        log.info("已自动打开实习僧登录弹窗");
+                    }
+                } catch (Exception e) {
+                    log.debug("自动点击实习僧登录按钮失败: {}", e.getMessage());
+                }
+            } else {
+                log.info("实习僧平台已登录，Cookie有效");
+                onShixisengLoginSuccess();
+            }
+        } catch (Exception e) {
+            log.warn("检查实习僧登录状态失败: {}", e.getMessage());
+            setLoginStatus("shixiseng", false);
+        }
+
+        setupShixisengLoginMonitoring();
+        log.info("✓ 实习僧平台初始化完成");
+    }
+
+    /**
+     * 检查实习僧是否已登录
+     */
+    private boolean checkIfShixisengLoggedIn() {
+        try {
+            if (shixisengPage == null || shixisengPage.isClosed()) {
+                return false;
+            }
+            String url = shixisengPage.url();
+            if (url == null || !url.contains("shixiseng.com")) {
+                return false;
+            }
+            Locator loginBtn = shixisengPage.locator(".login-status .login-btn .login").first();
+            if (isVisibleQuick(loginBtn)) {
+                return false;
+            }
+            Locator loginedMine = shixisengPage.locator(".logined .mine, .logined").first();
+            return isVisibleQuick(loginedMine);
+        } catch (Exception e) {
+            log.debug("检查实习僧登录状态异常: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 设置实习僧平台登录状态监控
+     */
+    private void setupShixisengLoginMonitoring() {
+        if (shixisengPage == null) {
+            return;
+        }
+        shixisengPage.onLoad(page -> {
+            if (!shixisengMonitoringPaused && !isLoggedIn("shixiseng")) {
+                String url = page.url();
+                if (url != null && url.contains("shixiseng.com")) {
+                    checkShixisengLoginStatus(page);
+                }
+            }
+        });
+        log.info("实习僧平台登录状态监控已启用");
     }
 
     /**
@@ -1526,7 +1665,78 @@ public class PlaywrightManager {
             case "liepin" -> saveLiepinCookiesToDatabase(remark);
             case "51job" -> save51jobCookiesToDatabase(remark);
             case "zhilian" -> saveZhilianCookiesToDatabase(remark);
+            case "shixiseng" -> saveShixisengCookiesToDatabase(remark);
             default -> throw new IllegalArgumentException("Unsupported platform: " + platform);
+        }
+    }
+
+    public Page getShixisengPage() {
+        return shixisengPage;
+    }
+
+    public void pauseShixisengMonitoring() {
+        shixisengMonitoringPaused = true;
+        log.debug("实习僧登录监控已暂停");
+    }
+
+    public void resumeShixisengMonitoring() {
+        shixisengMonitoringPaused = false;
+        log.debug("实习僧登录监控已恢复");
+    }
+
+    private void checkShixisengLoginStatus(Page page) {
+        try {
+            boolean isLoggedIn = checkIfShixisengLoggedIn();
+            Boolean previousStatus = loginStatus.get("shixiseng");
+            if (isLoggedIn && (previousStatus == null || !previousStatus)) {
+                onShixisengLoginSuccess();
+            } else if (!isLoggedIn && Boolean.TRUE.equals(previousStatus)) {
+                setLoginStatus("shixiseng", false);
+            }
+        } catch (Exception e) {
+            log.debug("检查实习僧平台登录状态时发生异常: {}", e.getMessage());
+        }
+    }
+
+    private void onShixisengLoginSuccess() {
+        log.info("实习僧平台登录成功");
+        setLoginStatus("shixiseng", true);
+        saveShixisengCookiesToDatabase("login success");
+    }
+
+    private void saveShixisengCookiesToDatabase(String remark) {
+        try {
+            List<Cookie> cookies = filterCookiesByDomain(context.cookies(), SHIXISENG_DOMAIN);
+            String cookieJson = new ObjectMapper().writeValueAsString(cookies);
+            boolean result = cookieService.saveOrUpdateCookie("shixiseng", cookieJson, remark);
+            if (result) {
+                log.info("保存实习僧Cookie成功，共 {} 条，remark={}", cookies.size(), remark);
+            }
+        } catch (Exception e) {
+            log.warn("保存实习僧Cookie失败: {}", e.getMessage());
+        }
+    }
+
+    public void clearShixisengCookies() {
+        try {
+            if (context != null) {
+                List<Cookie> otherCookies = context.cookies().stream()
+                        .filter(c -> c.domain == null || !c.domain.toLowerCase(Locale.ROOT).contains(SHIXISENG_DOMAIN))
+                        .toList();
+                context.clearCookies();
+                if (!otherCookies.isEmpty()) {
+                    context.addCookies(otherCookies);
+                }
+                log.info("已清理实习僧Cookie并保留其他平台Cookie");
+            }
+            if (shixisengPage != null && !shixisengPage.isClosed()) {
+                shixisengPage.navigate(SHIXISENG_URL, new Page.NavigateOptions()
+                        .setTimeout(30000)
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+            }
+        } catch (Exception e) {
+            log.error("清理实习僧Cookie失败: {}", e.getMessage(), e);
+            throw new RuntimeException("清理实习僧Cookie失败", e);
         }
     }
 
@@ -1755,6 +1965,9 @@ public class PlaywrightManager {
                 if (liepinPage != null && !liepinMonitoringPaused) {
                     checkLiepinLoginStatus(liepinPage);
                 }
+                if (shixisengPage != null && !shixisengMonitoringPaused) {
+                    checkShixisengLoginStatus(shixisengPage);
+                }
                 // 其他平台如需也可启用（保留，但不强制）
                 if (bossPage != null && !bossMonitoringPaused) {
                     checkLoginStatus(bossPage, "boss");
@@ -1804,6 +2017,10 @@ public class PlaywrightManager {
             if (liepinPage != null) {
                 liepinPage.close();
                 log.info("猎聘页面已关闭");
+            }
+            if (shixisengPage != null) {
+                shixisengPage.close();
+                log.info("实习僧页面已关闭");
             }
             if (job51Page != null) {
                 job51Page.close();
@@ -1862,6 +2079,7 @@ public class PlaywrightManager {
         context = null;
         bossPage = null;
         liepinPage = null;
+        shixisengPage = null;
         job51Page = null;
         zhilianPage = null;
         browserClosed = false;

@@ -11,6 +11,7 @@ public enum Platform {
     ZHILIAN("智联招聘"),
     BOSS("Boss直聘"),
     LIEPIN("猎聘"),
+    SHIXISENG("实习僧"),
     JOB51("前程无忧"),
     LAGOU("拉勾网"),
     UNKNOWN("未知平台");

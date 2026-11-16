@@ -23,7 +23,7 @@ public class CookieSeedInitializer implements CommandLineRunner {
     /**
      * 统一平台标识（与控制器/PlaywrightManager 保持一致）
      */
-    private static final List<String> PLATFORMS = List.of("boss", "liepin", "51job", "zhilian");
+    private static final List<String> PLATFORMS = List.of("boss", "liepin", "shixiseng", "51job", "zhilian");
 
     @Override
     public void run(String... args) {

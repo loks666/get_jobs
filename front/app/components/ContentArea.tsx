@@ -16,6 +16,8 @@ export default function ContentArea({ children }: { children: ReactNode }) {
         return 'accent-amber'
       case '/zhilian':
         return 'accent-sky'
+      case '/shixiseng':
+        return 'accent-sky'
       default:
         return ''
     }
