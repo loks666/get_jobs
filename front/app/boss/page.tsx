@@ -147,6 +147,14 @@ export default function BossPage() {
 
   useEffect(() => {
     fetchAllData()
+    fetch(`${API_BASE}/api/boss/status`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((statusData) => {
+        if (statusData && typeof statusData.isRunning === 'boolean') {
+          setIsDelivering(statusData.isRunning)
+        }
+      })
+      .catch((err) => console.warn('[Boss] 获取任务状态失败:', err))
 
     // 确保在客户端环境且 EventSource 可用
     if (typeof window === 'undefined' || typeof EventSource === 'undefined') {

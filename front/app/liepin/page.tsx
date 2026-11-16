@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createSSEWithBackoff } from '@/lib/sse'
-import { BiSearch, BiSave, BiTargetLock, BiMap, BiMoney, BiTime, BiBookmark, BiBarChart, BiPlay, BiStop, BiLogOut, BiBriefcase } from 'react-icons/bi'
+import { BiSearch, BiSave, BiTargetLock, BiMap, BiMoney, BiTime, BiBookmark, BiBarChart, BiPlay, BiStop, BiLogOut, BiBriefcase, BiMessageDetail, BiImage, BiPlus, BiTrash, BiBuilding, BiShieldQuarter, BiBot } from 'react-icons/bi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -31,6 +31,12 @@ interface LiepinOptions {
   city: LiepinOption[]
 }
 
+interface BlacklistItem {
+  id: number
+  value: string
+  type: string
+}
+
 export default function LiepinPage() {
   const [config, setConfig] = useState<LiepinConfig>({
     keywords: '',
@@ -50,9 +56,27 @@ export default function LiepinPage() {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [showLogoutResultDialog, setShowLogoutResultDialog] = useState(false)
   const [logoutResult, setLogoutResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [sharedBossConfig, setSharedBossConfig] = useState<Record<string, unknown> | null>(null)
+  const [enableAI, setEnableAI] = useState(true)
+  const [sayHi, setSayHi] = useState('')
+  const [sendImgResume, setSendImgResume] = useState(true)
+  const [blacklist, setBlacklist] = useState<BlacklistItem[]>([])
+  const [newBlacklistKeyword, setNewBlacklistKeyword] = useState('')
+  const [blacklistType, setBlacklistType] = useState('job')
+  const [aiIntroduce, setAiIntroduce] = useState('')
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [showAiAdvanced, setShowAiAdvanced] = useState(false)
 
   useEffect(() => {
     fetchAllData()
+    fetch(`${API_BASE}/api/liepin/status`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((statusData) => {
+        if (statusData && typeof statusData.isRunning === 'boolean') {
+          setIsDelivering(statusData.isRunning)
+        }
+      })
+      .catch((err) => console.warn('[Liepin] 获取任务状态失败:', err))
 
     // 确保在客户端环境且 EventSource 可用
     if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
@@ -153,11 +177,120 @@ export default function LiepinPage() {
       if (data.options) {
         setOptions(data.options)
       }
+
+      try {
+        const bossRes = await fetch(`${API_BASE}/api/boss/config`)
+        const bossData = await bossRes.json()
+        if (bossData?.config) {
+          setSharedBossConfig(bossData.config)
+          setEnableAI(Boolean(bossData.config.enableAI))
+          setSayHi(bossData.config.sayHi || '')
+          setSendImgResume(Boolean(bossData.config.sendImgResume))
+        }
+        if (bossData?.blacklist) {
+          setBlacklist(
+            bossData.blacklist.map((item: BlacklistItem) => ({
+              ...item,
+              type: item.type === 'boss' ? 'company' : item.type,
+            }))
+          )
+        }
+      } catch (e) {
+        console.warn('获取共享AI与招呼语配置失败:', e)
+      }
+
+      try {
+        const aiRes = await fetch(`${API_BASE}/api/ai/config`)
+        const aiJson = await aiRes.json()
+        if (aiJson?.data) {
+          setAiIntroduce(aiJson.data.introduce || '')
+          setAiPrompt(aiJson.data.prompt || '')
+        }
+      } catch (e) {
+        console.warn('获取AI画像与Prompt失败:', e)
+      }
     } catch (error) {
       console.error('Failed to fetch liepin data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const syncSharedBossConfig = async (nextEnableAI: boolean, nextSayHi: string) => {
+    if (!sharedBossConfig) return
+    try {
+      const res = await fetch(`${API_BASE}/api/boss/config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...sharedBossConfig,
+          enableAI: nextEnableAI ? 1 : 0,
+          sayHi: nextSayHi,
+          sendImgResume: sendImgResume ? 1 : 0,
+        }),
+      })
+      if (res.ok) {
+        setSharedBossConfig({
+          ...sharedBossConfig,
+          enableAI: nextEnableAI ? 1 : 0,
+          sayHi: nextSayHi,
+          sendImgResume: sendImgResume ? 1 : 0,
+        })
+      }
+    } catch (e) {
+      console.warn('自动保存AI与招呼语配置失败:', e)
+    }
+  }
+
+  const saveAiProfile = async (nextIntroduce: string, nextPrompt: string) => {
+    try {
+      await fetch(`${API_BASE}/api/ai/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ introduce: nextIntroduce, prompt: nextPrompt }),
+      })
+    } catch (e) {
+      console.warn('保存AI画像与Prompt失败:', e)
+    }
+  }
+
+  const handleAddBlacklist = async () => {
+    if (!newBlacklistKeyword.trim()) return
+    try {
+      const response = await fetch(`${API_BASE}/api/boss/config/blacklist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: newBlacklistKeyword.trim(), type: blacklistType }),
+      })
+      if (response.ok) {
+        setNewBlacklistKeyword('')
+        fetchAllData()
+      }
+    } catch (e) {
+      console.error('添加黑名单失败:', e)
+    }
+  }
+
+  const handleDeleteBlacklist = async (id: number) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/boss/config/blacklist/${id}`, { method: 'DELETE' })
+      if (response.ok) {
+        fetchAllData()
+      }
+    } catch (e) {
+      console.error('删除黑名单失败:', e)
+    }
+  }
+
+  const togglePresetKeyword = (kw: string) => {
+    const current = (config.keywords || '')
+      .replace(/，/g, ',')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const exists = current.includes(kw)
+    const next = exists ? current.filter((item) => item !== kw) : [...current, kw]
+    setConfig({ ...config, keywords: next.join(', ') })
   }
 
   const handleSave = async () => {
@@ -172,6 +305,22 @@ export default function LiepinPage() {
       })
 
       if (response.ok) {
+        if (sharedBossConfig) {
+          try {
+            await fetch(`${API_BASE}/api/boss/config`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ...sharedBossConfig,
+                enableAI: enableAI ? 1 : 0,
+                sayHi,
+                sendImgResume: sendImgResume ? 1 : 0,
+              }),
+            })
+          } catch (e) {
+            console.warn('同步保存AI与招呼语配置失败:', e)
+          }
+        }
         // 统一保存 Cookie（Liepin）
         try {
           await fetch(`${API_BASE}/api/cookie/save?platform=liepin`, { method: 'POST' })
@@ -341,9 +490,29 @@ export default function LiepinPage() {
                   id="keywords"
                   value={config.keywords || ''}
                   onChange={(e) => setConfig({ ...config, keywords: e.target.value })}
-                  placeholder="例如：大模型, Python, Golang"
+                  placeholder="例如：AI产品实习生, 产品经理实习生, 产品实习生"
                 />
-                <p className="text-xs text-muted-foreground">关键词可多选，使用英文逗号分隔，例如：大模型, Python, Golang</p>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['AI产品实习生', '产品经理实习生', '产品实习生', '策略产品实习生', '产品助理实习生', '产品运营实习生'].map((kw) => {
+                    const active = (config.keywords || '').split(/[,，]/).map((s) => s.trim()).includes(kw)
+                    return (
+                      <button
+                        key={kw}
+                        type="button"
+                        onClick={() => togglePresetKeyword(kw)}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                          active
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-background text-muted-foreground hover:border-purple-400'
+                        }`}
+                      >
+                        {active ? '✓ ' : '+ '}
+                        {kw}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">关键词可多选，使用英文逗号分隔，也可点击上方标签快速增删</p>
               </div>
 
               <div className="space-y-2">
@@ -412,6 +581,168 @@ export default function LiepinPage() {
                   placeholder="例如：15$30"
                 />
                 <p className="text-xs text-muted-foreground">薪资范围码（例如：15$30表示15k-30k）</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 打招呼语与发简历配置（与Boss同步） */}
+        <Card className="animate-in fade-in slide-in-from-bottom-7 duration-700">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BiMessageDetail className="text-primary" />
+              打招呼语与自动发简历（与Boss同步）
+            </CardTitle>
+            <CardDescription>点击“聊一聊”打开沟通窗口后，将自动发送定制打招呼语并点击【发简历】投递猎聘内置简历（不再发送图片）</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
+                <div className="space-y-1">
+                  <Label htmlFor="liepin-enable-ai" className="text-base font-medium">启用 AI 定制打招呼语</Label>
+                  <p className="text-xs text-muted-foreground">根据岗位名称自动调用 DeepSeek 生成匹配度更高的招呼语，失败时回退下方默认招呼语</p>
+                </div>
+                <input
+                  id="liepin-enable-ai"
+                  type="checkbox"
+                  checked={enableAI}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setEnableAI(checked)
+                    syncSharedBossConfig(checked, sayHi)
+                  }}
+                  className="h-5 w-5 accent-purple-600 cursor-pointer"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="liepin-say-hi">默认打招呼语（AI 关闭或调用失败时兜底使用）</Label>
+                <textarea
+                  id="liepin-say-hi"
+                  rows={3}
+                  value={sayHi}
+                  onChange={(e) => setSayHi(e.target.value)}
+                  onBlur={() => syncSharedBossConfig(enableAI, sayHi)}
+                  placeholder="请输入自定义打招呼语..."
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+
+              <div className="border-t pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAiAdvanced(!showAiAdvanced)}
+                  className="text-sm font-medium text-purple-600 hover:underline flex items-center gap-1.5"
+                >
+                  <BiBot />
+                  {showAiAdvanced ? '收起 AI 个人介绍与筛选 Prompt 自定义' : '展开自定义 AI 个人介绍与筛选 Prompt（失焦自动保存）'}
+                </button>
+                {showAiAdvanced && (
+                  <div className="mt-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="liepin-ai-introduce">个人介绍（AI 生成招呼语时的简历事实底稿）</Label>
+                      <textarea
+                        id="liepin-ai-introduce"
+                        rows={4}
+                        value={aiIntroduce}
+                        onChange={(e) => setAiIntroduce(e.target.value)}
+                        onBlur={() => saveAiProfile(aiIntroduce, aiPrompt)}
+                        className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="liepin-ai-prompt">AI 筛选与招呼语 Prompt 模板</Label>
+                      <textarea
+                        id="liepin-ai-prompt"
+                        rows={4}
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        onBlur={() => saveAiProfile(aiIntroduce, aiPrompt)}
+                        className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 黑名单管理（与Boss共享，猎聘投递实时拦截） */}
+        <Card className="animate-in fade-in slide-in-from-bottom-7 duration-700">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BiShieldQuarter className="text-primary" />
+              黑名单管理（与Boss共享）
+            </CardTitle>
+            <CardDescription>添加或删除不想投递的公司、职位或HR，猎聘遍历卡片时会自动跳过</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Select
+                  value={blacklistType}
+                  onChange={(e) => setBlacklistType(e.target.value)}
+                  className="sm:w-36"
+                >
+                  <option value="job">职位关键词</option>
+                  <option value="company">公司名称</option>
+                  <option value="recruiter">HR称呼</option>
+                </Select>
+                <Input
+                  value={newBlacklistKeyword}
+                  onChange={(e) => setNewBlacklistKeyword(e.target.value)}
+                  placeholder="输入要屏蔽的关键词，回车或点击添加"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddBlacklist()
+                  }}
+                />
+                <Button onClick={handleAddBlacklist} className="whitespace-nowrap">
+                  <BiPlus className="mr-1" />
+                  添加
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  { type: 'job', label: '岗位黑名单', icon: <BiBriefcase className="text-blue-500" /> },
+                  { type: 'company', label: '公司黑名单', icon: <BiBuilding className="text-orange-500" /> },
+                  { type: 'recruiter', label: 'HR黑名单', icon: <BiSearch className="text-green-500" /> },
+                ].map((group) => {
+                  const items = blacklist.filter((item) => item.type === group.type)
+                  return (
+                    <div key={group.type}>
+                      <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        {group.icon}
+                        <span>
+                          {group.label} ({items.length})
+                        </span>
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {items.length === 0 ? (
+                          <span className="text-xs text-muted-foreground">暂无记录</span>
+                        ) : (
+                          items.map((item) => (
+                            <span
+                              key={item.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border bg-muted/40"
+                            >
+                              {item.value}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteBlacklist(item.id)}
+                                className="text-red-500 hover:text-red-700"
+                                title="删除"
+                              >
+                                <BiTrash />
+                              </button>
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </CardContent>
